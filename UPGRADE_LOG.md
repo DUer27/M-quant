@@ -4,6 +4,51 @@
 
 ## 2026-07-07
 
+### `0a30b57` Refine core decision factors
+- Refined the three highest-impact currently computable factors into stricter core decision factors:
+  - `trend_alignment`
+  - `volume_price_confirmation`
+  - `crowding_risk`
+- Real data basis: 600 Yiwan indicator rows from `2026-07-06 15:00:00`.
+- Trend quality now evaluates:
+  - moving-average direction
+  - price standing above key moving averages
+  - moving-average stack structure
+  - trend maturity
+  - trend extension risk
+- Volume-price confirmation now evaluates:
+  - volume support
+  - price-action quality
+  - volume-price sync
+  - trend background
+  - amount and candle-body quality
+  - volume-price divergence penalty
+  - blowoff-volume penalty
+- Crowding risk now evaluates:
+  - transaction crowding
+  - price heat
+  - candle distribution risk
+  - volume-price divergence
+  - profit-chip overheat
+  - limit-style heat
+- Added explanation fields:
+  - `trend_structure_score`
+  - `trend_extension_risk`
+  - `volume_price_quality`
+  - `volume_price_divergence_risk`
+  - `transaction_crowding_risk`
+  - `price_heat_risk`
+  - `crowding_alert_count`
+  - `factor_reason`
+- Added stricter labels:
+  - `强势候选`
+  - `观察候选`
+  - `风险观察`
+  - `中性`
+  - `弱势过滤`
+- Data honesty note: this is still a real-data cross-sectional decision score, not a verified alpha or backtest result.
+- Detail log: `logs/2026-07-07-core-decision-factor-upgrade.md`
+
 ### `1b763c3` Upgrade computed Yiwan factors to professional scores
 - Upgraded the currently computable Yiwan factors into professional cross-sectional scores.
 - Real data basis: 600 Yiwan indicator rows from `2026-07-06 15:00:00`.
