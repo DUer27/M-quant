@@ -244,13 +244,25 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   background: #fbfdff;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
+}
+
+input,
+select {
   height: 38px;
   padding: 0 10px;
+}
+
+textarea {
+  line-height: 1.5;
+  min-height: 180px;
+  padding: 10px;
+  resize: vertical;
 }
 
 .switch-row {
@@ -280,6 +292,30 @@ select {
 }
 
 .form-actions button.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.backtest-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 12px;
+}
+
+.backtest-actions button {
+  background: #eef4fa;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.backtest-actions button.primary {
   background: var(--primary);
   border-color: var(--primary);
   color: #ffffff;
@@ -436,6 +472,15 @@ td small {
 .risk-list {
   display: grid;
   gap: 18px;
+}
+
+.step-list {
+  color: var(--text);
+  display: grid;
+  gap: 10px;
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 22px;
 }
 
 .risk-list div {

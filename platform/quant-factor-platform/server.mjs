@@ -24,6 +24,7 @@ const researchFactorResultsPath =
 const researchFactorSummaryPath =
   '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-summary.json';
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
+const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -490,6 +491,15 @@ function sendJson(res, data, status = 200) {
   res.end(JSON.stringify(data));
 }
 
+function sendCsv(res, filename, text) {
+  res.writeHead(200, {
+    'Cache-Control': 'no-store',
+    'Content-Disposition': `attachment; filename="${filename}"`,
+    'Content-Type': 'text/csv; charset=utf-8',
+  });
+  res.end(`\ufeff${text}`);
+}
+
 function sendError(res, message, status = 400) {
   sendJson(res, { error: message }, status);
 }
@@ -599,6 +609,214 @@ function getUniverses() {
 function toNumber(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
+}
+
+function dateOnly(value) {
+  return String(value || '').slice(0, 10);
+}
+
+function jqSecurityCode(code) {
+  const padded = String(code || '').padStart(6, '0');
+  if (padded.startsWith('6')) return `${padded}.XSHG`;
+  return `${padded}.XSHE`;
+}
+
+function csvCell(value) {
+  const text = String(value ?? '');
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replaceAll('"', '""')}"`;
+  }
+  return text;
+}
+
+const exportableBacktestFactors = [
+  {
+    id: 'technical_composite',
+    name: '技术综合强度',
+    direction: 'positive',
+    usage: '第一版综合排序，用于检验趋势、量价、动能、筹码和拥挤扣分后的整体选股能力。',
+  },
+  {
+    id: 'trend_alignment',
+    name: '趋势质量专业版',
+    direction: 'positive',
+    usage: '验证中短期趋势结构是否具备持续收益预测力。',
+  },
+  {
+    id: 'volume_price_confirmation',
+    name: '量价确认专业版',
+    direction: 'positive',
+    usage: '验证上涨是否获得真实成交质量支持。',
+  },
+  {
+    id: 'crowding_risk',
+    name: '拥挤风险专业版',
+    direction: 'negative',
+    usage: '验证交易拥挤、爆量、过热是否对应后续回撤或弱收益。',
+  },
+  {
+    id: 'volume_price_divergence_risk',
+    name: '量价背离风险',
+    direction: 'negative',
+    usage: '验证放量但价格结构不健康时的风险识别能力。',
+  },
+  {
+    id: 'trend_extension_risk',
+    name: '趋势过伸风险',
+    direction: 'negative',
+    usage: '验证过度偏离趋势后追高的风险。',
+  },
+  {
+    id: 'kline_event_score',
+    name: '单根K线评分',
+    direction: 'positive',
+    usage: '验证华福单根K线评分是否对短期收益有辅助解释力。',
+  },
+  {
+    id: 'chip_health',
+    name: '筹码健康',
+    direction: 'positive',
+    usage: '验证获利盘、套牢盘和筹码集中度组合后的持仓质量。',
+  },
+  {
+    id: 'macd_acceleration',
+    name: 'MACD动能加速',
+    direction: 'positive',
+    usage: '验证 MACD 动能改善是否能强化趋势信号。',
+  },
+  {
+    id: 'kdj_momentum',
+    name: 'KDJ动能',
+    direction: 'positive',
+    usage: '验证短周期动能对 1/5/10 日收益的解释力。',
+  },
+];
+
+function buildJoinQuantFactorRows() {
+  const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
+  const sourceSummary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+
+  return rows.flatMap((row) => exportableBacktestFactors
+    .filter((factor) => row[factor.id] !== null && row[factor.id] !== undefined && row[factor.id] !== '')
+    .map((factor) => ({
+      date: dateOnly(row.date || row.stock_date),
+      security: jqSecurityCode(row.stock_code || row.code),
+      code: String(row.stock_code || row.code).padStart(6, '0'),
+      name: row.stock_name || row.name,
+      factor_name: factor.id,
+      factor_display_name: factor.name,
+      factor_direction: factor.direction,
+      factor_value: toNumber(row[factor.id], ''),
+      factor_version: 'm-quant-v1.0-real-cross-section',
+      source_file: sourceSummary.source_file || researchFactorResultsPath,
+      source_date: row.stock_date || row.date,
+      factor_label: row.factor_label || '',
+      close: row.close ?? '',
+    })));
+}
+
+function buildJoinQuantCsv() {
+  const rows = buildJoinQuantFactorRows();
+  const headers = [
+    'date',
+    'security',
+    'code',
+    'name',
+    'factor_name',
+    'factor_display_name',
+    'factor_direction',
+    'factor_value',
+    'factor_version',
+    'source_date',
+    'factor_label',
+    'close',
+    'source_file',
+  ];
+  return [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
+  ].join('\n');
+}
+
+function readImportedBacktestResults() {
+  return readJsonFile(importedBacktestResultsPath, []);
+}
+
+function buildBacktestResearchStatus() {
+  const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
+  const summary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+  const uniqueDates = new Set(rows.map((row) => dateOnly(row.date || row.stock_date)).filter(Boolean));
+  const uniqueStocks = new Set(rows.map((row) => row.stock_code || row.code).filter(Boolean));
+  const exportRows = buildJoinQuantFactorRows();
+  const importedResults = readImportedBacktestResults();
+
+  const canRunLocalValidatedBacktest = uniqueDates.size >= 60;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    dataPolicy: '复测中心只展示真实数据状态、导出包和外部实跑结果；没有未来收益时不生成IC、胜率、年化收益。',
+    source: {
+      file: summary.source_file || researchFactorResultsPath,
+      inputKind: summary.input_kind || 'unknown',
+      rows: rows.length,
+      uniqueDates: uniqueDates.size,
+      uniqueStocks: uniqueStocks.size,
+    },
+    metrics: {
+      exportableRows: exportRows.length,
+      exportableFactors: exportableBacktestFactors.length,
+      importedResultCount: importedResults.length,
+      localStatus: canRunLocalValidatedBacktest ? 'ready_for_local_factor_test' : 'blocked',
+      externalStatus: 'joinquant_ready',
+      requiredTradingDays: 60,
+      preferredTradingDays: 240,
+    },
+    blockers: [
+      {
+        id: 'future_returns',
+        status: rows.length > 0 ? 'requires_joinquant_or_history' : 'missing',
+        title: '缺少未来收益标签',
+        detail: '当前只有 2026-07-06 一个截面，不能在本地计算 IC、RankIC、分组收益或胜率。',
+      },
+      {
+        id: 'history_depth',
+        status: uniqueDates.size >= 60 ? 'ready' : 'blocked',
+        title: '历史截面不足',
+        detail: `当前只有 ${uniqueDates.size} 个交易日；最低建议 60 日，专业验证建议 120-240 日。`,
+      },
+      {
+        id: 'trade_calendar_adjustments',
+        status: 'handled_by_joinquant',
+        title: '交易日历/停牌/涨跌停处理',
+        detail: '短期建议由 JoinQuant 处理复权行情、停牌、涨跌停、手续费滑点和基准收益。',
+      },
+    ],
+    factors: exportableBacktestFactors.map((factor) => ({
+      ...factor,
+      status: rows.some((row) => row[factor.id] !== null && row[factor.id] !== undefined) ? 'exportable' : 'missing_field',
+      blocker: canRunLocalValidatedBacktest ? '本地可验证' : '需在 JoinQuant 匹配未来收益后验证',
+    })),
+    joinquant: {
+      csvEndpoint: '/backtest-api/joinquant-factor-export.csv',
+      rowFormat: 'long',
+      columns: [
+        'date',
+        'security',
+        'factor_name',
+        'factor_value',
+        'factor_version',
+      ],
+      steps: [
+        '在本平台下载因子CSV。',
+        '上传到 JoinQuant 研究环境。',
+        '读取CSV并按 date/security/factor_name 合并行情。',
+        '计算未来 1/5/10/20 日收益。',
+        '按交易日计算 IC、RankIC、分组收益和多空组合。',
+        '把实跑结果 JSON 回填到本平台复测中心。',
+      ],
+    },
+    importedResults,
+  };
 }
 
 function actionForRow(row) {
@@ -903,6 +1121,42 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'GET' && pathname === '/backtest-api/equity') {
     sendJson(res, buildEquityCurve(state));
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/backtest-api/research-status') {
+    sendJson(res, buildBacktestResearchStatus());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/backtest-api/joinquant-factor-export') {
+    sendJson(res, {
+      generatedAt: new Date().toISOString(),
+      dataPolicy: '该导出只包含当前真实截面因子值，不包含任何未来收益或回测结论。',
+      rows: buildJoinQuantFactorRows(),
+    });
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/backtest-api/joinquant-factor-export.csv') {
+    sendCsv(res, 'm-quant-joinquant-factor-export.csv', buildJoinQuantCsv());
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/backtest-api/import-results') {
+    const body = await readJsonBody(req);
+    const nextResult = {
+      ...body,
+      importedAt: new Date().toISOString(),
+      source: body.source || 'joinquant',
+    };
+    const nextResults = [nextResult, ...readImportedBacktestResults()].slice(0, 50);
+    writeFileSync(importedBacktestResultsPath, `${JSON.stringify(nextResults, null, 2)}\n`);
+    sendJson(res, {
+      message: '复测结果已导入；本平台只展示你外部实跑的真实结果。',
+      result: nextResult,
+      results: nextResults,
+    }, 201);
     return true;
   }
 
