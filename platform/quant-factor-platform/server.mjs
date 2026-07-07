@@ -23,6 +23,7 @@ const researchFactorResultsPath =
   '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-results.json';
 const researchFactorSummaryPath =
   '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-summary.json';
+const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -666,6 +667,11 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/strategy-api/definitions') {
+    sendJson(res, readJsonFile(strategyDefinitionsPath, []));
+    return true;
+  }
+
   if (req.method === 'POST' && pathname === '/factor-api/factors') {
     const body = await readJsonBody(req);
 
@@ -747,7 +753,8 @@ createServer(async (req, res) => {
   const isApiRequest = pathname.startsWith('/api/')
     || pathname.startsWith('/factor-api/')
     || pathname.startsWith('/backtest-api/')
-    || pathname.startsWith('/market-api/');
+    || pathname.startsWith('/market-api/')
+    || pathname.startsWith('/strategy-api/');
 
   if (isApiRequest) {
     try {
