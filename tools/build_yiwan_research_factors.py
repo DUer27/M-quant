@@ -312,6 +312,10 @@ def bounded_peak_score(series: pd.Series, target: float, width: float) -> pd.Ser
     return score.clip(lower=0, upper=1).fillna(0.5)
 
 
+def safe_ratio(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
+    return numerator / denominator.replace(0, np.nan)
+
+
 def price_position_score(close: pd.Series, ma_values: list[tuple[pd.Series, float]]) -> pd.Series:
     score = pd.Series(0.0, index=close.index)
     total = 0.0
@@ -355,9 +359,15 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
     amount_value = numeric_or_neutral(df, "amount", math.nan)
     change_value = numeric_or_neutral(df, "change_pct", math.nan)
     amplitude_value = numeric_or_neutral(df, "amplitude", math.nan)
+    change_rank = rank_pct(change_value, ascending=True)
+    amplitude_rank = rank_pct(amplitude_value, ascending=True)
+    bullish_body_score = clip01((signed_body + 1) / 2).fillna(0.5)
+    candle_quality = clip01(0.45 * close_position + 0.25 * bullish_body_score + 0.20 * lower_ratio + 0.10 * (1 - upper_ratio))
+    upper_shadow_pressure = clip01(0.65 * upper_ratio + 0.35 * ((upper_ratio > lower_ratio) & (close_position < 0.55)).astype(float))
 
     trend_cols = ["ma5_dir", "ma13_dir", "ma20_dir", "ma30_dir", "ma60_dir", "ma120_dir", "ma250_dir"]
     ma_columns = ["ma5", "ma13", "ma20", "ma30", "ma60", "ma120", "ma250"]
+    ma_lookup = {column: num_series(df[column]) for column in ma_columns if column in df.columns}
     ma_values = [(num_series(df[column]), weight) for column, weight in zip(ma_columns, [0.24, 0.20, 0.17, 0.14, 0.11, 0.08, 0.06]) if column in df.columns]
     trend_dir_score = score_from_dir_columns(
         df,
@@ -366,21 +376,33 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
     )
     trend_position_score = price_position_score(close, ma_values)
     trend_stack_score = ma_stack_score(ma_values)
-    factors["trend_alignment"] = score_from_dir_columns(
-        df,
-        trend_cols,
-        [0.22, 0.18, 0.16, 0.14, 0.12, 0.10, 0.08],
+    short_medium_spread = neutral_series(df)
+    medium_long_spread = neutral_series(df)
+    if "ma5" in ma_lookup and "ma20" in ma_lookup:
+        short_medium_spread = safe_ratio(ma_lookup["ma5"], ma_lookup["ma20"])
+    if "ma20" in ma_lookup and "ma60" in ma_lookup:
+        medium_long_spread = safe_ratio(ma_lookup["ma20"], ma_lookup["ma60"])
+    trend_maturity_score = clip01(
+        0.55 * bounded_peak_score(short_medium_spread, target=1.035, width=0.11)
+        + 0.45 * bounded_peak_score(medium_long_spread, target=1.045, width=0.13)
     )
+    reference_ma = ma_lookup.get("ma20", ma_lookup.get("ma13", ma_lookup.get("ma5", pd.Series(np.nan, index=df.index))))
+    price_ma_distance = safe_ratio(close, reference_ma) - 1
+    trend_extension_risk = clip01(((price_ma_distance.abs() - 0.035) / 0.14).fillna(0.5))
+    trend_extension_score = 1 - trend_extension_risk
+    trend_structure_score = clip01(0.40 * trend_dir_score + 0.34 * trend_stack_score + 0.26 * trend_position_score)
     factors["trend_alignment"] = clip01(
-        0.42 * trend_dir_score
-        + 0.34 * trend_position_score
-        + 0.24 * trend_stack_score
+        0.30 * trend_dir_score
+        + 0.25 * trend_position_score
+        + 0.20 * trend_stack_score
+        + 0.15 * trend_maturity_score
+        + 0.10 * trend_extension_score
     )
     availability["trend_alignment"] = {
         "status": "computed",
         "fields": [col for col in [*trend_cols, *ma_columns, "close"] if col in df.columns],
-        "formula": "0.42*均线方向 + 0.34*收盘价站上均线 + 0.24*均线多头堆叠",
-        "note": "专业版不只看网站方向字段，也检查价格是否站上多条均线、短中长期均线是否顺序排列。",
+        "formula": "0.30*均线方向 + 0.25*价格站位 + 0.20*均线堆叠 + 0.15*趋势成熟度 + 0.10*不过度乖离",
+        "note": "核心决策版同时检查方向、结构、价格位置、趋势成熟度和乖离风险；强趋势但过度偏离均线会被扣分。",
     }
 
     volume_ratio_rank = rank_pct(volume_ratio_value, ascending=True)
@@ -388,6 +410,32 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
     amount_rank = rank_pct(amount_value, ascending=True)
     volume_quality = bounded_peak_score(volume_ratio_value, target=1.8, width=2.2)
     turnover_quality = clip01(0.70 * turnover_rank + 0.30 * bounded_peak_score(turnover_value, target=6.0, width=10.0))
+    mavol_dir_score = score_from_dir_columns(df, ["mavol5_dir", "mavol10_dir"])
+    volume_support = clip01(
+        0.34 * mavol_dir_score
+        + 0.30 * volume_quality
+        + 0.20 * turnover_quality
+        + 0.16 * amount_rank
+    )
+    price_action_quality = clip01(
+        0.34 * change_rank
+        + 0.30 * close_position
+        + 0.22 * bullish_body_score
+        + 0.14 * (1 - upper_shadow_pressure)
+    )
+    volume_price_sync = clip01(
+        0.35 * ((change_value > 0) & (close_position >= 0.62)).astype(float)
+        + 0.25 * ((volume_ratio_value >= 0.8) & (volume_ratio_value <= 3.2)).astype(float)
+        + 0.20 * ((turnover_value >= 0.6) & (turnover_value <= 10)).astype(float)
+        + 0.20 * mavol_dir_score
+    )
+    volume_price_divergence_risk = clip01(
+        0.28 * ((change_value <= 0) & (volume_ratio_rank >= 0.65)).astype(float)
+        + 0.24 * ((close_position <= 0.42) & (volume_ratio_rank >= 0.65)).astype(float)
+        + 0.20 * upper_shadow_pressure
+        + 0.16 * ((turnover_value > 10) & (change_value < 2)).astype(float)
+        + 0.12 * ((amplitude_value > 10) & (close_position < 0.55)).astype(float)
+    )
     blowoff_penalty = clip01(
         0.45 * (volume_ratio_value > 4).astype(float)
         + 0.25 * (turnover_value > 12).astype(float)
@@ -395,19 +443,20 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
         + 0.10 * (amplitude_value > 12).astype(float)
     )
     factors["volume_price_confirmation"] = clip01(
-        0.28 * score_from_dir_columns(df, ["mavol5_dir", "mavol10_dir"])
-        + 0.24 * factors["trend_alignment"]
-        + 0.22 * volume_quality
-        + 0.12 * turnover_quality
-        + 0.10 * amount_rank
-        + 0.04 * close_position
-        - 0.16 * blowoff_penalty
+        0.24 * volume_support
+        + 0.22 * price_action_quality
+        + 0.20 * volume_price_sync
+        + 0.18 * factors["trend_alignment"]
+        + 0.08 * amount_rank
+        + 0.08 * candle_quality
+        - 0.22 * volume_price_divergence_risk
+        - 0.10 * blowoff_penalty
     )
     availability["volume_price_confirmation"] = {
         "status": "computed",
-        "fields": ["mavol5_dir", "mavol10_dir", "volume_ratio", "turnover", "amount", "close_position", "upper_shadow"],
-        "formula": "均量方向 + 趋势确认 + 温和放量质量 + 流动性；爆量、高换手、长上影、巨幅震荡扣分",
-        "note": "专业版把“放量确认”和“爆量出货风险”分开，避免把所有高量比都当成正信号。",
+        "fields": ["mavol5_dir", "mavol10_dir", "volume_ratio", "turnover", "amount", "change_pct", "open", "high", "low", "close"],
+        "formula": "量能支持 + 价格动作质量 + 量价同步 + 趋势背景 + 成交额/实体质量 - 量价背离 - 爆量出货风险",
+        "note": "核心决策版区分健康放量、缩量上涨、放量下跌、长上影放量和爆量高换手，避免把所有高成交都当成买入确认。",
     }
 
     if has_columns(df, ["stockk", "stockd", "stockj"]):
@@ -498,10 +547,6 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
         factors["chip_health"] = pd.Series(0.5, index=df.index)
         availability["chip_health"] = {"status": "unavailable", "reason": "缺少 huolipan/taolaopan"}
 
-    change_rank = rank_pct(change_value, ascending=True)
-    amplitude_rank = rank_pct(amplitude_value, ascending=True)
-    bullish_body_score = clip01((signed_body + 1) / 2).fillna(0.5)
-    candle_quality = clip01(0.45 * close_position + 0.25 * bullish_body_score + 0.20 * lower_ratio + 0.10 * (1 - upper_ratio))
     factors["intraday_strength"] = clip01(
         0.34 * change_rank
         + 0.26 * candle_quality
@@ -516,7 +561,6 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
         "note": "专业版用OHLC计算收盘位置、实体强弱、上下影线，避免只看涨幅和振幅。",
     }
 
-    upper_shadow_pressure = clip01(0.65 * upper_ratio + 0.35 * ((upper_ratio > lower_ratio) & (close_position < 0.55)).astype(float))
     chip_overheat = rank_pct(num_series(df["huolipan"]), ascending=True) if "huolipan" in df.columns else neutral_series(df)
     limit_style_heat = clip01(
         0.45 * (change_value >= 9.5).astype(float)
@@ -524,20 +568,45 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
         + 0.20 * (volume_ratio_value >= 3).astype(float)
         + 0.10 * (upper_ratio >= 0.35).astype(float)
     )
+    transaction_crowding_risk = clip01(
+        0.38 * turnover_rank
+        + 0.32 * volume_ratio_rank
+        + 0.18 * amount_rank
+        + 0.12 * (turnover_value >= 12).astype(float)
+    )
+    price_heat_risk = clip01(
+        0.32 * change_rank
+        + 0.24 * amplitude_rank
+        + 0.20 * trend_extension_risk
+        + 0.14 * limit_style_heat
+        + 0.10 * (close_position >= 0.9).astype(float)
+    )
+    candle_distribution_risk = clip01(
+        0.45 * upper_shadow_pressure
+        + 0.22 * ((close_position < 0.45) & (volume_ratio_rank > 0.65)).astype(float)
+        + 0.18 * ((body_ratio <= 0.18) & (amplitude_rank > 0.65)).astype(float)
+        + 0.15 * ((lower_ratio < 0.12) & (close_position < 0.35)).astype(float)
+    )
+    crowding_alert_count = (
+        (transaction_crowding_risk >= 0.75).astype(int)
+        + (price_heat_risk >= 0.75).astype(int)
+        + (volume_price_divergence_risk >= 0.55).astype(int)
+        + (blowoff_penalty >= 0.25).astype(int)
+        + (chip_overheat >= 0.85).astype(int)
+    )
     factors["crowding_risk"] = clip01(
-        0.24 * turnover_rank
-        + 0.22 * volume_ratio_rank
-        + 0.18 * amplitude_rank
-        + 0.13 * change_rank
+        0.30 * transaction_crowding_risk
+        + 0.22 * price_heat_risk
+        + 0.18 * candle_distribution_risk
+        + 0.14 * volume_price_divergence_risk
         + 0.10 * chip_overheat
-        + 0.08 * upper_shadow_pressure
-        + 0.05 * limit_style_heat
+        + 0.06 * limit_style_heat
     )
     availability["crowding_risk"] = {
         "status": "computed",
         "fields": ["turnover", "volume_ratio", "amplitude", "change_pct", "huolipan", "open", "high", "low", "close"],
-        "formula": "高换手 + 高量比 + 大振幅 + 高涨幅 + 高获利盘 + 上影压力 + 涨停式热度",
-        "note": "这是风险因子，分数越高越拥挤，主要用于降权、过滤或止盈提醒。",
+        "formula": "交易拥挤 + 价格热度 + K线派发风险 + 量价背离 + 高获利筹码 + 涨停式热度",
+        "note": "核心决策版把拥挤拆成交易拥挤、价格过热、长上影/低收盘派发、量价背离和筹码兑现压力；分数越高越应该降权或过滤。",
     }
 
     factors["technical_composite"] = clip01(
@@ -556,6 +625,13 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
         "note": "专业版把拥挤风险纳入综合分扣分项，避免高热度股票因为短线涨幅过强而被机械排到最前。",
     }
 
+    factors["trend_structure_score"] = trend_structure_score.round(6)
+    factors["trend_extension_risk"] = trend_extension_risk.round(6)
+    factors["volume_price_quality"] = volume_support.round(6)
+    factors["volume_price_divergence_risk"] = volume_price_divergence_risk.round(6)
+    factors["transaction_crowding_risk"] = transaction_crowding_risk.round(6)
+    factors["price_heat_risk"] = price_heat_risk.round(6)
+    factors["crowding_alert_count"] = crowding_alert_count.astype(int)
     factors["close_position_strength"] = close_position.round(6)
     factors["candle_body_quality"] = candle_quality.round(6)
     factors["upper_shadow_pressure"] = upper_shadow_pressure.round(6)
@@ -563,8 +639,21 @@ def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, A
     factors["chip_concentration_risk"] = concentration_risk.round(6) if "concentration_risk" in locals() else neutral_series(df).round(6)
     availability["professional_sub_factors"] = {
         "status": "computed",
-        "fields": ["close_position_strength", "candle_body_quality", "upper_shadow_pressure", "volume_blowoff_risk", "chip_concentration_risk"],
-        "note": "这些是专业版主因子的解释性子项，来自当前单日OHLC、量比、换手和筹码字段，不代表收益验证结果。",
+        "fields": [
+            "trend_structure_score",
+            "trend_extension_risk",
+            "volume_price_quality",
+            "volume_price_divergence_risk",
+            "transaction_crowding_risk",
+            "price_heat_risk",
+            "crowding_alert_count",
+            "close_position_strength",
+            "candle_body_quality",
+            "upper_shadow_pressure",
+            "volume_blowoff_risk",
+            "chip_concentration_risk",
+        ],
+        "note": "这些是核心决策因子的解释性子项，来自当前单日OHLC、量比、换手、均线和筹码字段，不代表收益验证结果。",
     }
 
     return factors, availability
@@ -720,13 +809,45 @@ def classify(row: pd.Series) -> str:
     score = row.get("technical_composite", 0.5)
     crowding = row.get("crowding_risk", 0.5)
     kline = row.get("kline_event_score", 0)
-    if score >= 0.70 and crowding <= 0.75 and kline >= 0:
+    divergence = row.get("volume_price_divergence_risk", 0)
+    extension = row.get("trend_extension_risk", 0)
+    alerts = row.get("crowding_alert_count", 0)
+    if alerts >= 3 or divergence >= 0.65:
+        return "风险观察"
+    if score >= 0.68 and crowding <= 0.50 and divergence <= 0.20 and extension <= 0.55 and kline >= 0:
         return "强势候选"
     if score >= 0.60 or kline > 0:
         return "观察候选"
     if score <= 0.40 or kline < 0:
         return "弱势过滤"
     return "中性"
+
+
+def explain_factor(row: pd.Series) -> str:
+    notes: list[str] = []
+    if row.get("trend_alignment", 0) >= 0.68:
+        notes.append("趋势质量强")
+    if row.get("trend_extension_risk", 0) >= 0.75:
+        notes.append("趋势过伸")
+    if row.get("volume_price_confirmation", 0) >= 0.72:
+        notes.append("量价确认强")
+    if row.get("volume_price_divergence_risk", 0) >= 0.45:
+        notes.append("量价背离风险")
+    if row.get("crowding_risk", 0) >= 0.60:
+        notes.append("拥挤风险高")
+    if row.get("transaction_crowding_risk", 0) >= 0.75:
+        notes.append("交易拥挤")
+    if row.get("upper_shadow_pressure", 0) >= 0.55:
+        notes.append("上影抛压")
+    if row.get("volume_blowoff_risk", 0) >= 0.25:
+        notes.append("爆量风险")
+    if row.get("crowding_alert_count", 0) >= 3:
+        notes.append(f"{int(row.get('crowding_alert_count', 0))}项风险警报")
+    if row.get("kline_patterns"):
+        notes.append(f"K线:{row.get('kline_patterns')}")
+    if row.get("kline_unscored_patterns"):
+        notes.append(f"未计分K线:{row.get('kline_unscored_patterns')}")
+    return "；".join(notes) if notes else "核心因子暂无极端信号"
 
 
 def build_factor_rows(input_kind: str, datasets: dict[str, pd.DataFrame]) -> tuple[pd.DataFrame, dict[str, Any]]:
@@ -770,6 +891,7 @@ def build_factor_rows(input_kind: str, datasets: dict[str, pd.DataFrame]) -> tup
         if pd.api.types.is_numeric_dtype(result[column]):
             result[column] = result[column].round(6)
     result["factor_label"] = merged.apply(classify, axis=1)
+    result["factor_reason"] = merged.apply(explain_factor, axis=1)
     result["technical_rank"] = merged["technical_composite"].rank(ascending=False, method="first").astype(int)
     result = result.sort_values(["technical_rank"], ascending=True)
 

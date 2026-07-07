@@ -113,8 +113,10 @@ function renderFactors(rows) {
       const tagClass = row.factor_label === '强势候选'
         ? 'good'
         : row.factor_label === '观察候选'
-          ? 'pending'
-          : row.factor_label === '弱势过滤'
+        ? 'pending'
+        : row.factor_label === '弱势过滤'
+          ? 'watch'
+          : row.factor_label === '风险观察'
             ? 'watch'
             : 'neutral';
       const stockCode = String(row.stock_code).padStart(6, '0');
@@ -127,13 +129,17 @@ function renderFactors(rows) {
           <td>${stockCode} ${row.stock_name}</td>
           <td>${Number(row.technical_composite).toFixed(2)}</td>
           <td>${Number(row.trend_alignment).toFixed(2)}</td>
+          <td>${Number(row.trend_extension_risk ?? 0).toFixed(2)}</td>
           <td>${Number(row.volume_price_confirmation).toFixed(2)}</td>
+          <td>${Number(row.volume_price_divergence_risk ?? 0).toFixed(2)}</td>
           <td>${Number(row.intraday_strength).toFixed(2)}</td>
           <td>${Number(row.close_position_strength ?? 0.5).toFixed(2)}</td>
           <td>${Number(row.upper_shadow_pressure ?? 0).toFixed(2)}</td>
           <td>${Number(row.volume_blowoff_risk ?? 0).toFixed(2)}</td>
           <td>${Number(row.kline_event_score || 0).toFixed(0)}</td>
           <td>${Number(row.crowding_risk).toFixed(2)}</td>
+          <td>${Number(row.transaction_crowding_risk ?? 0).toFixed(2)}</td>
+          <td>${Number(row.crowding_alert_count ?? 0).toFixed(0)}</td>
           <td><span class="tag ${tagClass}">${row.factor_label}</span></td>
         </tr>
       `;
