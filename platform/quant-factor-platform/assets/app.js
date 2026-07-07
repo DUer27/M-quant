@@ -542,7 +542,7 @@ function renderBacktestCenter(status) {
     <div class="status-item">
       <div>
         <strong>导出格式</strong>
-        <span>长表 CSV：date, security, factor_name, factor_value, factor_version</span>
+        <span>每个因子都可单独下载；全部导出仅作为批量研究备用。</span>
       </div>
       <span class="tag good">${escapeHtml(metrics.exportableRows ?? 0)} 行</span>
     </div>
@@ -565,10 +565,25 @@ function renderBacktestCenter(status) {
           <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
           <td>${escapeHtml(factor.usage)}</td>
           <td>${escapeHtml(factor.blocker)}</td>
+          <td>
+            <button
+              class="table-action"
+              data-factor-export="${escapeHtml(factor.id)}"
+              type="button"
+            >下载该因子</button>
+            <br><small>${escapeHtml(factor.exportRows ?? 0)} 行</small>
+          </td>
         </tr>
       `;
     })
     .join('');
+
+  elements.backtestFactorTable.querySelectorAll('[data-factor-export]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const factor = button.dataset.factorExport;
+      window.location.href = `/backtest-api/joinquant-factor-export.csv?factor=${encodeURIComponent(factor)}`;
+    });
+  });
 
   elements.joinquantStepList.innerHTML = (status.joinquant?.steps || [])
     .map((step) => `<li>${escapeHtml(step)}</li>`)

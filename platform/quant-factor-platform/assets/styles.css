@@ -322,6 +322,19 @@ textarea {
   font-weight: 700;
 }
 
+.table-action {
+  background: #eef4fa;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.2;
+  min-width: 86px;
+  padding: 7px 9px;
+  white-space: nowrap;
+}
+
 .form-message {
   color: var(--muted);
   font-size: 13px;
