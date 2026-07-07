@@ -596,6 +596,200 @@ function getUniverses() {
   ];
 }
 
+function toNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function actionForRow(row) {
+  const label = row.factor_label || '中性';
+  const composite = toNumber(row.technical_composite);
+  const crowding = toNumber(row.crowding_risk);
+  const divergence = toNumber(row.volume_price_divergence_risk);
+  const extension = toNumber(row.trend_extension_risk);
+  const alerts = toNumber(row.crowding_alert_count);
+
+  if (label === '强势候选') {
+    return {
+      action: '入池候选',
+      actionTone: 'good',
+      positionHint: '标准观察仓',
+      rule: '趋势、量价、拥挤三项通过',
+    };
+  }
+
+  if (label === '风险观察' || alerts >= 3 || divergence >= 0.55) {
+    return {
+      action: '暂不入场',
+      actionTone: 'watch',
+      positionHint: '只观察不加仓',
+      rule: '风险警报或量价背离过高',
+    };
+  }
+
+  if (composite >= 0.60 && crowding <= 0.55 && divergence <= 0.25 && extension <= 0.75) {
+    return {
+      action: '低仓观察',
+      actionTone: 'pending',
+      positionHint: '半仓以下观察',
+      rule: '核心分达标但未满足强势候选',
+    };
+  }
+
+  if (label === '弱势过滤') {
+    return {
+      action: '过滤',
+      actionTone: 'watch',
+      positionHint: '不参与',
+      rule: '核心分或K线信号偏弱',
+    };
+  }
+
+  return {
+    action: '中性跟踪',
+    actionTone: 'neutral',
+    positionHint: '等待确认',
+    rule: '信号未形成一致',
+  };
+}
+
+function buildLiveStrategySignals() {
+  const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
+  const summary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+  const sortedRows = rows
+    .map((row) => ({
+      ...row,
+      decisionScore: toNumber(row.technical_composite),
+      ...actionForRow(row),
+    }))
+    .sort((left, right) => right.decisionScore - left.decisionScore);
+
+  const labelCounts = sortedRows.reduce((counts, row) => {
+    const label = row.factor_label || '未标记';
+    counts[label] = (counts[label] || 0) + 1;
+    return counts;
+  }, {});
+
+  const entryCandidates = sortedRows.filter((row) => row.action === '入池候选');
+  const observationCandidates = sortedRows.filter((row) => row.action === '低仓观察');
+  const riskRows = sortedRows.filter((row) => row.action === '暂不入场');
+  const klineRows = sortedRows.filter((row) => toNumber(row.kline_event_score) > 0 && row.factor_label !== '风险观察');
+
+  return {
+    generatedAt: new Date().toISOString(),
+    dataPolicy: '当前策略信号只使用本地真实截面因子；未使用未来收益，不输出胜率、IC或年化收益。',
+    source: {
+      file: summary.source_file || researchFactorResultsPath,
+      inputKind: summary.input_kind || 'unknown',
+      rows: sortedRows.length,
+    },
+    metrics: {
+      executableStrategies: 1,
+      partialStrategies: 1,
+      blockedStrategies: 2,
+      entryCandidates: entryCandidates.length,
+      observationCandidates: observationCandidates.length,
+      riskRows: riskRows.length,
+      strongRows: labelCounts['强势候选'] || 0,
+      riskWatchRows: labelCounts['风险观察'] || 0,
+    },
+    strategies: [
+      {
+        id: 'core_decision_strategy',
+        name: '核心决策因子策略',
+        status: 'computed',
+        role: '当前主策略',
+        objective: '用趋势质量、量价确认和拥挤风险决定入池、观察或过滤。',
+        formula: 'technical_composite with trend_alignment + volume_price_confirmation - crowding_risk controls',
+        entryRules: [
+          '强势候选：核心分高、趋势不过伸、量价背离低、拥挤风险可控',
+          '观察候选：核心分达标但仍有过伸、交易拥挤或确认不足',
+          '风险观察：风险警报较多或量价背离偏高，默认不入场',
+        ],
+        riskControls: [
+          '不使用未来收益',
+          '不使用未采集资金字段伪造资金因子',
+          '拥挤风险和量价背离优先级高于单日涨幅',
+        ],
+        candidateCount: entryCandidates.length,
+      },
+      {
+        id: 'kline_assisted_strategy',
+        name: 'K线辅助确认策略',
+        status: 'partial_real_data',
+        role: '辅助策略',
+        objective: '用华福单根K线评分辅助核心决策因子，不独立生成收益结论。',
+        formula: 'kline_event_score + core decision filters',
+        entryRules: [
+          'K线分数为正时只作为加分解释',
+          '风险观察样本即使K线为正也不直接入场',
+          '倒锤头、低成交量纺锤线仅识别不计分',
+        ],
+        riskControls: [
+          '完整情绪加权K线仍等待240日价量共振历史',
+          '不复制研报收益数据',
+        ],
+        candidateCount: klineRows.length,
+      },
+      {
+        id: 'capital_follow_strategy',
+        name: '资金跟随策略',
+        status: 'requires_more_data',
+        role: '待激活',
+        objective: '等待暗盘、主力、散户资金数据后生成资金确认。',
+        formula: 'apzj/mpzj/shzj + 3/5日暗盘强度',
+        entryRules: ['需要资金页批量数据'],
+        riskControls: ['当前不计算，不伪造资金信号'],
+        candidateCount: 0,
+      },
+      {
+        id: 'market_regime_strategy',
+        name: '市场情绪仓位策略',
+        status: 'requires_more_data',
+        role: '待激活',
+        objective: '等待市场宽度和大盘资金数据后控制仓位开关。',
+        formula: 'market breadth + big money flow + panic/overheat state',
+        entryRules: ['需要大盘宽度和资金数据'],
+        riskControls: ['当前不计算，不伪造市场环境信号'],
+        candidateCount: 0,
+      },
+    ],
+    candidates: sortedRows.slice(0, 40).map((row) => ({
+      action: row.action,
+      actionTone: row.actionTone,
+      close: row.close,
+      code: row.stock_code || row.code,
+      crowdingRisk: row.crowding_risk,
+      decisionScore: row.decisionScore,
+      divergenceRisk: row.volume_price_divergence_risk,
+      extensionRisk: row.trend_extension_risk,
+      factorLabel: row.factor_label,
+      name: row.stock_name || row.name,
+      positionHint: row.positionHint,
+      reason: row.factor_reason || row.rule,
+      rule: row.rule,
+      technicalRank: row.technical_rank,
+      trend: row.trend_alignment,
+      volumePrice: row.volume_price_confirmation,
+      warningCount: row.crowding_alert_count,
+    })),
+    unavailable: [
+      {
+        id: 'capital_follow_strategy',
+        reason: '缺少暗盘/主力/散户资金明细，等待 date_batch 或资金页数据。',
+      },
+      {
+        id: 'market_regime_strategy',
+        reason: '缺少市场宽度、大盘资金和多日市场环境数据。',
+      },
+      {
+        id: 'validated_backtest',
+        reason: '缺少未来收益和多日价格序列，不能输出真实回测表现。',
+      },
+    ],
+  };
+}
+
 async function handleApi(req, res, pathname) {
   const state = readState();
   const url = new URL(req.url || '/', `http://localhost:${port}`);
@@ -669,6 +863,11 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'GET' && pathname === '/strategy-api/definitions') {
     sendJson(res, readJsonFile(strategyDefinitionsPath, []));
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/live-signals') {
+    sendJson(res, buildLiveStrategySignals());
     return true;
   }
 

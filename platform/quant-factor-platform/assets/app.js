@@ -47,8 +47,16 @@ const elements = {
   risk: document.querySelector('#risk-control'),
   savePreferences: document.querySelector('#save-preferences'),
   runBacktest: document.querySelector('#run-backtest'),
+  strategyBlockedCount: document.querySelector('#strategy-blocked-count'),
+  strategyCandidateTable: document.querySelector('#strategy-candidate-table'),
   strategyFactorList: document.querySelector('#strategy-factor-list'),
+  strategyLiveList: document.querySelector('#strategy-live-list'),
   strategyLibraryList: document.querySelector('#strategy-library-list'),
+  strategyObservationCount: document.querySelector('#strategy-observation-count'),
+  strategyPartialCount: document.querySelector('#strategy-partial-count'),
+  strategySourceFile: document.querySelector('#strategy-source-file'),
+  strategyStrongCount: document.querySelector('#strategy-strong-count'),
+  strategyUnavailableList: document.querySelector('#strategy-unavailable-list'),
   universe: document.querySelector('#universe'),
   validFactorCount: document.querySelector('#valid-factor-count'),
   views: document.querySelectorAll('.view'),
@@ -396,6 +404,87 @@ function renderStrategyLibrary(strategies) {
     .join('');
 }
 
+function toneForAction(actionTone) {
+  if (actionTone === 'good') return 'good';
+  if (actionTone === 'watch') return 'watch';
+  if (actionTone === 'pending') return 'pending';
+  return 'neutral';
+}
+
+function renderLiveStrategies(signalPack) {
+  const metrics = signalPack.metrics || {};
+  elements.strategyStrongCount.textContent = metrics.entryCandidates ?? '-';
+  elements.strategyObservationCount.textContent = metrics.observationCandidates ?? '-';
+  elements.strategyPartialCount.textContent = metrics.partialStrategies ?? '-';
+  elements.strategyBlockedCount.textContent = metrics.blockedStrategies ?? '-';
+  elements.strategySourceFile.textContent = signalPack.source?.file
+    ? `当前策略数据源：${signalPack.source.file}`
+    : '当前策略数据源：未加载';
+
+  elements.strategyLiveList.innerHTML = (signalPack.strategies || [])
+    .map((strategy) => {
+      const [label, tone] = labelForStatus(strategy.status);
+      return `
+        <article class="strategy-item">
+          <div class="strategy-head">
+            <div>
+              <h3>${escapeHtml(strategy.name)}</h3>
+              <p>${escapeHtml(strategy.objective)}</p>
+            </div>
+            <span class="tag ${tone}">${escapeHtml(label)}</span>
+          </div>
+          <div class="strategy-columns three">
+            <div>
+              <strong>角色</strong>
+              <span>${escapeHtml(strategy.role)}</span>
+            </div>
+            <div>
+              <strong>候选数</strong>
+              <span>${escapeHtml(strategy.candidateCount)}</span>
+            </div>
+            <div>
+              <strong>公式</strong>
+              <span>${escapeHtml(strategy.formula)}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join('');
+
+  elements.strategyCandidateTable.innerHTML = (signalPack.candidates || [])
+    .map((row) => {
+      const tone = toneForAction(row.actionTone);
+      return `
+        <tr title="${escapeHtml(row.reason)}">
+          <td>${escapeHtml(String(row.code).padStart(6, '0'))} ${escapeHtml(row.name)}</td>
+          <td>${Number(row.decisionScore).toFixed(3)}</td>
+          <td>${Number(row.trend).toFixed(2)}</td>
+          <td>${Number(row.volumePrice).toFixed(2)}</td>
+          <td>${Number(row.crowdingRisk).toFixed(2)}</td>
+          <td>${Number(row.divergenceRisk).toFixed(2)}</td>
+          <td>${Number(row.warningCount).toFixed(0)}</td>
+          <td><span class="tag ${tone}">${escapeHtml(row.action)}</span></td>
+          <td>${escapeHtml(row.positionHint)}</td>
+          <td>${escapeHtml(row.reason)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  elements.strategyUnavailableList.innerHTML = (signalPack.unavailable || [])
+    .map((item) => `
+      <div class="status-item">
+        <div>
+          <strong>${escapeHtml(item.id)}</strong>
+          <span>${escapeHtml(item.reason)}</span>
+        </div>
+        <span class="tag watch">等待数据</span>
+      </div>
+    `)
+    .join('');
+}
+
 function showView(viewName) {
   elements.views.forEach((view) => {
     view.classList.toggle('active', view.id === `${viewName}-view`);
@@ -468,7 +557,7 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
-  const [summary, factors, equity, risks, factorSummary, strategies, factorDefinitions] = await Promise.all([
+  const [summary, factors, equity, risks, factorSummary, strategies, factorDefinitions, liveStrategies] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
@@ -476,6 +565,7 @@ async function refreshDashboard() {
     request('/factor-api/real-factor-summary'),
     request('/strategy-api/definitions'),
     request('/factor-api/indicator-factor-definitions'),
+    request('/strategy-api/live-signals'),
   ]);
 
   renderSummary(summary);
@@ -484,6 +574,7 @@ async function refreshDashboard() {
   drawChart(equity);
   renderFactorLibrary(factorSummary, strategies, factorDefinitions);
   renderStrategyLibrary(strategies);
+  renderLiveStrategies(liveStrategies);
 }
 
 async function boot() {
