@@ -5,6 +5,27 @@ const appConfig = window.__QUANT_APP_CONFIG__ || {};
 document.title = appConfig.title || fallbackPreferences.app.name;
 document.querySelector('#api-url').textContent = appConfig.apiURL || '/api';
 
+const factorAvailabilityAliases = {
+  chip_health_factor: 'chip_health',
+  kdj_momentum_factor: 'kdj_momentum',
+  macd_acceleration_factor: 'macd_acceleration',
+  technical_composite_factor: 'technical_composite',
+  trend_alignment_factor: 'trend_alignment',
+  volume_trend_confirm_factor: 'volume_price_confirmation',
+};
+
+const categoryNames = {
+  capital_flow: '资金',
+  chip: '筹码',
+  composite: '综合',
+  event: '异动',
+  momentum: '动能',
+  price_volume: '量价',
+  sector: '板块',
+  sentiment: '情绪',
+  trend: '趋势',
+};
+
 const elements = {
   benchmark: document.querySelector('#benchmark'),
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
@@ -144,6 +165,7 @@ function labelForStatus(status) {
   if (status === 'computed') return ['已计算', 'good'];
   if (status === 'partial_real_data') return ['部分可用', 'pending'];
   if (status === 'insufficient_history' || status === 'blocked_by_resonance_history') return ['历史不足', 'watch'];
+  if (status === 'requires_more_data') return ['待采集字段', 'watch'];
   if (status === 'unavailable') return ['不可用', 'watch'];
   return [status || '待确认', 'neutral'];
 }
@@ -162,14 +184,91 @@ function factorDisplayName(id) {
     trend_alignment: '趋势排列',
     volume_price_confirmation: '量价确认',
     volume_price_resonance_60_5: '价量共振_60_5',
+    capital_follow_factor: '资金跟随因子',
+    event_volume_confirmation_factor: '异动放量确认因子',
+    institution_retail_divergence_factor: '主散背离因子',
+    panic_reversal_factor: '恐慌反转因子',
+    sector_capital_resonance_factor: '板块资金共振因子',
+    sentiment_overheat_factor: '情绪过热因子',
   };
   return names[id] || id;
 }
 
-function renderFactorLibrary(summary, strategies) {
+function buildLibraryEntries(summary, factorDefinitions) {
   const meta = summary.factor_meta || {};
   const availability = meta.availability || {};
-  const entries = Object.entries(availability);
+  const consumedAvailabilityIds = new Set();
+  const merged = [];
+
+  for (const definition of factorDefinitions) {
+    const availabilityId = factorAvailabilityAliases[definition.id] || definition.id;
+    const realState = availability[availabilityId];
+
+    if (realState) {
+      consumedAvailabilityIds.add(availabilityId);
+      merged.push([
+        availabilityId,
+        {
+          ...realState,
+          category: definition.category,
+          dataSource: definition.dataSource,
+          definitionId: definition.id,
+          direction: definition.direction,
+          displayName: definition.name,
+          formula: definition.formula || realState.formula,
+          note: realState.note || definition.signal,
+          requiredFields: definition.requiredFields,
+          usage: definition.usage,
+        },
+      ]);
+      continue;
+    }
+
+    merged.push([
+      definition.id,
+      {
+        category: definition.category,
+        dataSource: definition.dataSource,
+        direction: definition.direction,
+        displayName: definition.name,
+        fields: definition.requiredFields,
+        formula: definition.formula,
+        reason: `当前采集包没有完整的 ${definition.requiredFields.join(', ')} 字段或对应板块明细，只登记逻辑，不计算结果。`,
+        signal: definition.signal,
+        status: 'requires_more_data',
+        usage: definition.usage,
+      },
+    ]);
+  }
+
+  for (const [id, value] of Object.entries(availability)) {
+    if (!consumedAvailabilityIds.has(id)) {
+      merged.push([id, value]);
+    }
+  }
+
+  const statusOrder = {
+    computed: 0,
+    partial_real_data: 1,
+    insufficient_history: 2,
+    blocked_by_resonance_history: 3,
+    unavailable: 4,
+    requires_more_data: 5,
+  };
+
+  return merged.sort((left, right) => {
+    const leftOrder = statusOrder[left[1].status] ?? 9;
+    const rightOrder = statusOrder[right[1].status] ?? 9;
+
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+    return factorDisplayName(left[0]).localeCompare(factorDisplayName(right[0]), 'zh-CN');
+  });
+}
+
+function renderFactorLibrary(summary, strategies, factorDefinitions) {
+  const meta = summary.factor_meta || {};
+  const availability = meta.availability || {};
+  const entries = buildLibraryEntries(summary, factorDefinitions);
   const computed = entries.filter(([, value]) => value.status === 'computed');
   const unavailable = entries.filter(([, value]) => value.status !== 'computed');
   const kline = availability.kline_event_score || {};
@@ -188,17 +287,28 @@ function renderFactorLibrary(summary, strategies) {
   elements.factorLibraryTable.innerHTML = entries
     .map(([id, value]) => {
       const [label, tone] = labelForStatus(value.status);
+      const category = categoryNames[value.category] || value.category || '真实计算';
+      const source = value.dataSource ? `来源：${value.dataSource}` : '';
       const fields = Array.isArray(value.fields) && value.fields.length > 0
         ? value.fields.join(', ')
+        : Array.isArray(value.requiredFields) && value.requiredFields.length > 0
+          ? value.requiredFields.join(', ')
         : value.formula || '-';
-      const note = value.reason || value.note || value.formula || '基于当前真实明细数据计算';
+      const note = value.reason || value.note || value.signal || value.formula || '基于当前真实明细数据计算';
 
       return `
         <tr>
-          <td><strong>${escapeHtml(factorDisplayName(id))}</strong><br><small>${escapeHtml(id)}</small></td>
+          <td>
+            <strong>${escapeHtml(value.displayName || factorDisplayName(id))}</strong>
+            <br><small>${escapeHtml(id)}</small>
+            <br><small>${escapeHtml(category)}${source ? ` / ${escapeHtml(source)}` : ''}</small>
+          </td>
           <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
           <td>${escapeHtml(fields)}</td>
-          <td>${escapeHtml(note)}</td>
+          <td>
+            ${escapeHtml(note)}
+            ${value.usage ? `<br><small>${escapeHtml(value.usage)}</small>` : ''}
+          </td>
         </tr>
       `;
     })
@@ -347,20 +457,21 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
-  const [summary, factors, equity, risks, factorSummary, strategies] = await Promise.all([
+  const [summary, factors, equity, risks, factorSummary, strategies, factorDefinitions] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
     request('/api/risk'),
     request('/factor-api/real-factor-summary'),
     request('/strategy-api/definitions'),
+    request('/factor-api/indicator-factor-definitions'),
   ]);
 
   renderSummary(summary);
   renderFactors(factors);
   renderRisk(risks);
   drawChart(equity);
-  renderFactorLibrary(factorSummary, strategies);
+  renderFactorLibrary(factorSummary, strategies, factorDefinitions);
   renderStrategyLibrary(strategies);
 }
 
