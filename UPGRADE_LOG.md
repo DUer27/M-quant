@@ -191,3 +191,10 @@
 - Do not write IC, RankIC, win rate, annual return, or backtest results without future-return data.
 - Summary JSON files can describe structure, but factor computation must use real detailed rows.
 - Any unavailable factor should stay visible but marked as unavailable, insufficient history, or waiting for source fields.
+# 2026-07-07 JoinQuant 因子实测
+
+- 在 JoinQuant 研究环境实跑 M-quant 因子测试。
+- 导入 29 条真实测试摘要到平台 `imported-backtest-results.json`。
+- 历史重建覆盖 7 个因子：量价确认、趋势质量、拥挤风险、量价背离风险、趋势过伸风险、单根K线评分、技术综合强度。
+- 单日 Yiwan CSV 覆盖 `volume_price_confirmation`，仅验证 2026-07-06 到 2026-07-07 的 1 日收益。
+- 记录边界：历史重建版基于 JoinQuant OHLCV，并非 Yiwan 全字段复刻；未取得的 `ic_mean` 保持 `null`，不补假数据。
