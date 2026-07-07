@@ -4,6 +4,14 @@
 
 ## 2026-07-07
 
+### Collapse backtest result import panel
+- 将 `回测中心` 的 `结果回填` 改为默认折叠，避免 JSON 输入框和结果列表把页面撑得过长。
+- 默认显示 `点击展开`，展开后切换为 `收起`。
+- 结果 JSON 输入框从 10 行压缩为 8 行。
+- 已导入结果列表改为独立滚动区域，长列表不会继续拉长页面。
+- Data honesty note: only layout and interaction were changed; no factor value, IC, RankIC, win rate, annual return, or backtest result was created or modified.
+- Detail log: `logs/2026-07-07-backtest-import-disclosure.md`
+
 ### `5cc5d01` Add single-factor JoinQuant exports
 - Refined the JoinQuant export workflow from bulk-only export to one-factor-at-a-time export.
 - Kept the full export as a backup option, but made single-factor export the primary workflow.

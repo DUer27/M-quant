@@ -444,23 +444,27 @@
               <ol id="joinquant-step-list" class="step-list"></ol>
             </section>
 
-            <section class="panel">
-              <div class="panel-head">
+            <details class="panel disclosure-panel">
+              <summary>
                 <div>
                   <p class="eyebrow">Import Result</p>
                   <h2>结果回填</h2>
                 </div>
+                <span class="summary-label-open">点击展开</span>
+                <span class="summary-label-close">收起</span>
+              </summary>
+              <div class="disclosure-content">
+                <label>
+                  粘贴 JoinQuant 复测结果 JSON
+                  <textarea id="backtest-result-json" rows="8" placeholder='{"factor_name":"technical_composite","ic_mean":0.03,"rank_ic_mean":0.04}'></textarea>
+                </label>
+                <div class="backtest-actions">
+                  <button id="import-backtest-result" class="primary" type="button">导入结果</button>
+                </div>
+                <p id="backtest-import-message" class="form-message">只接收你实际在 JoinQuant 跑出的结果。</p>
+                <div id="imported-backtest-list" class="status-list compact-status-list"></div>
               </div>
-              <label>
-                粘贴 JoinQuant 复测结果 JSON
-                <textarea id="backtest-result-json" rows="10" placeholder='{"factor_name":"technical_composite","ic_mean":0.03,"rank_ic_mean":0.04}'></textarea>
-              </label>
-              <div class="backtest-actions">
-                <button id="import-backtest-result" class="primary" type="button">导入结果</button>
-              </div>
-              <p id="backtest-import-message" class="form-message">只接收你实际在 JoinQuant 跑出的结果。</p>
-              <div id="imported-backtest-list" class="status-list"></div>
-            </section>
+            </details>
           </section>
         </div>
 
