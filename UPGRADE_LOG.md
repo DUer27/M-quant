@@ -4,6 +4,17 @@
 
 ## 2026-07-07
 
+### Add research pipeline and refine validated-result navigation
+- 新增独立 `研究流水线` 大板块，用于管理因子假设、真实状态、实测证据、数据缺口和下一步动作。
+- 新增本地约束研究助手：
+  - `/research-api/pipeline`
+  - `/research-api/assistant`
+- 助手当前不调用外部 LLM，不上传数据，只基于项目内真实数据和真实回填结果做解释。
+- `实测结果` 增加因子目录筛选，并改为向下展开式，方便按真实测试结果中的因子快速查看。
+- `回测中心` 的 `结果回填` JSON 输入框继续保留，用于粘贴 JoinQuant 实跑结果。
+- Data honesty note: no IC, RankIC, RankIC t, win rate, annual return, or backtest result was created or altered.
+- Detail log: `logs/2026-07-07-research-pipeline-and-results-ux.md`
+
 ### Collapse backtest result import panel
 - 将 `回测中心` 的 `结果回填` 改为默认折叠，避免 JSON 输入框和结果列表把页面撑得过长。
 - 默认显示 `点击展开`，展开后切换为 `收起`。
