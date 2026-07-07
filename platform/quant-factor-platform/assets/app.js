@@ -10,19 +10,40 @@ const elements = {
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
   demoFactorCount: document.querySelector('#demo-factor-count'),
   factorTable: document.querySelector('#factor-table'),
+  factorLibraryTable: document.querySelector('#factor-library-table'),
   fee: document.querySelector('#fee'),
   formMessage: document.querySelector('#form-message'),
+  klineRulesTable: document.querySelector('#kline-rules-table'),
+  libraryComputedCount: document.querySelector('#library-computed-count'),
+  libraryKlineRuleCount: document.querySelector('#library-kline-rule-count'),
+  libraryRowCount: document.querySelector('#library-row-count'),
+  librarySourceFile: document.querySelector('#library-source-file'),
+  librarySourceKind: document.querySelector('#library-source-kind'),
+  libraryUnavailableCount: document.querySelector('#library-unavailable-count'),
+  navButtons: document.querySelectorAll('.nav button[data-view-target]'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
   risk: document.querySelector('#risk-control'),
   savePreferences: document.querySelector('#save-preferences'),
   runBacktest: document.querySelector('#run-backtest'),
+  strategyFactorList: document.querySelector('#strategy-factor-list'),
+  strategyLibraryList: document.querySelector('#strategy-library-list'),
   universe: document.querySelector('#universe'),
   validFactorCount: document.querySelector('#valid-factor-count'),
+  views: document.querySelectorAll('.view'),
 };
 
 function percent(value, digits = 1) {
   return `${(value * 100).toFixed(digits)}%`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 async function request(path, options = {}) {
@@ -119,6 +140,151 @@ function renderRisk(risks) {
     .join('');
 }
 
+function labelForStatus(status) {
+  if (status === 'computed') return ['已计算', 'good'];
+  if (status === 'partial_real_data') return ['部分可用', 'pending'];
+  if (status === 'insufficient_history' || status === 'blocked_by_resonance_history') return ['历史不足', 'watch'];
+  if (status === 'unavailable') return ['不可用', 'watch'];
+  return [status || '待确认', 'neutral'];
+}
+
+function factorDisplayName(id) {
+  const names = {
+    chip_health: '筹码健康',
+    crowding_risk: '拥挤风险',
+    emotion_weighted_kline_score: '情绪加权K线',
+    intraday_strength: '日内强度',
+    kdj_momentum: 'KDJ动能',
+    kline_event_score: '单根K线评分',
+    low_emotion_score: '低情绪反向',
+    macd_acceleration: 'MACD动能加速',
+    technical_composite: '技术综合强度',
+    trend_alignment: '趋势排列',
+    volume_price_confirmation: '量价确认',
+    volume_price_resonance_60_5: '价量共振_60_5',
+  };
+  return names[id] || id;
+}
+
+function renderFactorLibrary(summary, strategies) {
+  const meta = summary.factor_meta || {};
+  const availability = meta.availability || {};
+  const entries = Object.entries(availability);
+  const computed = entries.filter(([, value]) => value.status === 'computed');
+  const unavailable = entries.filter(([, value]) => value.status !== 'computed');
+  const kline = availability.kline_event_score || {};
+  const scoredRules = kline.rules || [];
+  const unscoredRules = kline.unscored_rules || [];
+
+  elements.libraryRowCount.textContent = meta.rows ?? '-';
+  elements.librarySourceKind.textContent = summary.input_kind || '未知输入';
+  elements.libraryComputedCount.textContent = computed.length;
+  elements.libraryUnavailableCount.textContent = unavailable.length;
+  elements.libraryKlineRuleCount.textContent = `${scoredRules.length}/${unscoredRules.length}`;
+  elements.librarySourceFile.textContent = summary.source_file
+    ? `当前数据源：${summary.source_file}`
+    : '当前数据源：未加载';
+
+  elements.factorLibraryTable.innerHTML = entries
+    .map(([id, value]) => {
+      const [label, tone] = labelForStatus(value.status);
+      const fields = Array.isArray(value.fields) && value.fields.length > 0
+        ? value.fields.join(', ')
+        : value.formula || '-';
+      const note = value.reason || value.note || value.formula || '基于当前真实明细数据计算';
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(factorDisplayName(id))}</strong><br><small>${escapeHtml(id)}</small></td>
+          <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
+          <td>${escapeHtml(fields)}</td>
+          <td>${escapeHtml(note)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  const klineRows = [
+    ...scoredRules.map((rule) => ({ ...rule, statusText: '计入总分' })),
+    ...unscoredRules.map((rule) => ({ ...rule, statusText: '仅识别' })),
+  ];
+
+  elements.klineRulesTable.innerHTML = klineRows
+    .map((rule) => {
+      const score = rule.score === null || rule.score === undefined ? '-' : rule.score;
+      const holding = rule.holding_days === null || rule.holding_days === undefined ? '-' : `${rule.holding_days}日`;
+      const kelly = typeof rule.kelly === 'number' ? percent(rule.kelly, 2) : '-';
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(rule.name)}</strong><br><small>${escapeHtml(rule.id)}</small></td>
+          <td>${escapeHtml(score)}</td>
+          <td>${escapeHtml(holding)}</td>
+          <td>${escapeHtml(kelly)}</td>
+          <td>${escapeHtml(rule.statusText)}；${escapeHtml(rule.source)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  const strategy = strategies[0] || {};
+  elements.strategyFactorList.innerHTML = (strategy.factors || [])
+    .map((factor) => {
+      const [label, tone] = labelForStatus(factor.currentStatus);
+      return `
+        <div class="status-item">
+          <div>
+            <strong>${escapeHtml(factor.name)}</strong>
+            <span>${escapeHtml(factor.formula)}</span>
+          </div>
+          <span class="tag ${tone}">${escapeHtml(label)}</span>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+function renderStrategyLibrary(strategies) {
+  elements.strategyLibraryList.innerHTML = strategies
+    .map((strategy) => {
+      const [label, tone] = labelForStatus(strategy.status);
+      const effective = strategy.currentRealDataState?.effectiveNow || [];
+      const pending = strategy.currentRealDataState?.notEffectiveYet || [];
+      return `
+        <article class="strategy-item">
+          <div class="strategy-head">
+            <div>
+              <h3>${escapeHtml(strategy.name)}</h3>
+              <p>${escapeHtml(strategy.dataPolicy)}</p>
+            </div>
+            <span class="tag ${tone}">${escapeHtml(label)}</span>
+          </div>
+          <div class="strategy-columns">
+            <div>
+              <strong>当前可用</strong>
+              <span>${escapeHtml(effective.join(', ') || '-')}</span>
+            </div>
+            <div>
+              <strong>等待数据</strong>
+              <span>${escapeHtml(pending.join(', ') || '-')}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join('');
+}
+
+function showView(viewName) {
+  elements.views.forEach((view) => {
+    view.classList.toggle('active', view.id === `${viewName}-view`);
+  });
+
+  elements.navButtons.forEach((button) => {
+    button.classList.toggle('active', button.dataset.viewTarget === viewName);
+  });
+}
+
 function drawChart(equity) {
   const canvas = document.querySelector('#equity-chart');
   const ctx = canvas.getContext('2d');
@@ -181,17 +347,21 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
-  const [summary, factors, equity, risks] = await Promise.all([
+  const [summary, factors, equity, risks, factorSummary, strategies] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
     request('/api/risk'),
+    request('/factor-api/real-factor-summary'),
+    request('/strategy-api/definitions'),
   ]);
 
   renderSummary(summary);
   renderFactors(factors);
   renderRisk(risks);
   drawChart(equity);
+  renderFactorLibrary(factorSummary, strategies);
+  renderStrategyLibrary(strategies);
 }
 
 async function boot() {
@@ -231,6 +401,12 @@ elements.runBacktest.addEventListener('click', async () => {
   } catch (error) {
     setFormMessage(`回测失败：${error.message}`, 'error');
   }
+});
+
+elements.navButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    showView(button.dataset.viewTarget);
+  });
 });
 
 boot();
