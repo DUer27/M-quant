@@ -329,6 +329,102 @@ textarea {
   margin-bottom: 14px;
 }
 
+.factor-directory {
+  background: #fbfcfe;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.factor-directory-disclosure summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  padding: 12px;
+}
+
+.factor-directory-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.factor-directory-disclosure summary div {
+  display: grid;
+  gap: 3px;
+}
+
+.factor-directory-disclosure summary span {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.factor-directory-disclosure summary strong {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.factor-directory-disclosure summary small,
+.factor-directory-empty {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.factor-directory-disclosure summary em {
+  background: #eef4fa;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  padding: 5px 10px;
+}
+
+.factor-directory-disclosure[open] summary em {
+  color: var(--primary);
+}
+
+.factor-directory-list {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  max-height: 300px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.factor-directory-button {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  min-height: 58px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.factor-directory-button:hover,
+.factor-directory-button.active {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.factor-directory-button strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.factor-directory-button span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .result-card {
   background: #f7fafc;
   border: 1px solid var(--border);
@@ -359,6 +455,208 @@ textarea {
   border-radius: 8px;
   margin-top: 12px;
   padding: 10px 12px;
+}
+
+.research-layout {
+  grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.5fr);
+}
+
+.research-factor-list {
+  display: grid;
+  gap: 10px;
+  max-height: 640px;
+  overflow: auto;
+}
+
+.research-factor-item {
+  align-items: center;
+  background: #fbfdff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+  text-align: left;
+}
+
+.research-factor-item:hover,
+.research-factor-item.active {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.research-factor-item div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.research-factor-item strong,
+.research-detail-head h3 {
+  font-size: 15px;
+}
+
+.research-factor-item span:not(.tag),
+.research-detail-head small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.research-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.research-detail-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.research-detail-head h3 {
+  margin: 0 0 4px;
+}
+
+.research-detail-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.research-detail-grid.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.research-detail-grid div {
+  background: #f7fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  min-height: 70px;
+  padding: 10px;
+}
+
+.research-detail-grid span,
+.research-section p,
+.research-section li,
+.assistant-status,
+.assistant-message li,
+.assistant-message p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.research-detail-grid strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.research-section {
+  background: #fbfcfe;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.research-section.action {
+  border-color: #b7d3ed;
+}
+
+.research-section strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.research-section p,
+.research-section ul {
+  margin: 0;
+}
+
+.research-section ul {
+  padding-left: 18px;
+}
+
+.assistant-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.assistant-status {
+  align-items: center;
+  background: #fbfcfe;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.assistant-messages {
+  background: #f7fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  max-height: 280px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.assistant-message {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.assistant-message.user {
+  background: #eef4fa;
+}
+
+.assistant-message strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.assistant-message ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.assistant-message p {
+  margin: 0;
+}
+
+.assistant-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 160px;
+}
+
+.assistant-actions button {
+  background: #eef4fa;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.assistant-actions button.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .table-scroll {
@@ -639,8 +937,12 @@ meter {
   }
 
   .metrics-grid,
+  .result-summary-grid,
   .content-grid,
   .content-grid.lower,
+  .research-layout,
+  .research-detail-grid,
+  .research-detail-grid.compact,
   .strategy-columns,
   .strategy-columns.three {
     grid-template-columns: 1fr;
@@ -667,6 +969,27 @@ meter {
   }
 
   .status-strip {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .factor-directory-disclosure summary {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .assistant-actions,
+  .research-detail-head,
+  .research-factor-item {
+    grid-template-columns: 1fr;
+  }
+
+  .assistant-actions {
+    display: grid;
+  }
+
+  .research-detail-head,
+  .research-factor-item {
     align-items: flex-start;
     flex-direction: column;
   }

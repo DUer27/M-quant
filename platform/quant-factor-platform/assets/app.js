@@ -62,7 +62,20 @@ const elements = {
   navButtons: document.querySelectorAll('.nav button[data-view-target]'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
+  askResearchAssistant: document.querySelector('#ask-research-assistant'),
   refreshBacktestCenter: document.querySelector('#refresh-backtest-center'),
+  researchActionList: document.querySelector('#research-action-list'),
+  researchAssistantFactor: document.querySelector('#research-assistant-factor'),
+  researchAssistantInput: document.querySelector('#research-assistant-input'),
+  researchAssistantMessages: document.querySelector('#research-assistant-messages'),
+  researchAssistantStatus: document.querySelector('#research-assistant-status'),
+  researchBlockedCount: document.querySelector('#research-blocked-count'),
+  researchCandidateCount: document.querySelector('#research-candidate-count'),
+  researchFactorCount: document.querySelector('#research-factor-count'),
+  researchFactorDetail: document.querySelector('#research-factor-detail'),
+  researchFactorList: document.querySelector('#research-factor-list'),
+  researchSourceFile: document.querySelector('#research-source-file'),
+  researchTestedCount: document.querySelector('#research-tested-count'),
   risk: document.querySelector('#risk-control'),
   savePreferences: document.querySelector('#save-preferences'),
   runBacktest: document.querySelector('#run-backtest'),
@@ -79,11 +92,16 @@ const elements = {
   universe: document.querySelector('#universe'),
   validFactorCount: document.querySelector('#valid-factor-count'),
   validatedBestHorizon: document.querySelector('#validated-best-horizon'),
+  validatedFactorDirectory: document.querySelector('#validated-factor-directory'),
   validatedFactorCount: document.querySelector('#validated-factor-count'),
   validatedHistoryCount: document.querySelector('#validated-history-count'),
   validatedResultCount: document.querySelector('#validated-result-count'),
   views: document.querySelectorAll('.view'),
 };
+
+let activeValidatedFactor = 'all';
+let activeResearchFactor = null;
+let currentResearchPipeline = null;
 
 function percent(value, digits = 1) {
   return `${(value * 100).toFixed(digits)}%`;
@@ -266,12 +284,93 @@ function resultTone(result) {
   return ['偏弱', 'watch'];
 }
 
+function resultFactorId(result) {
+  return result.factor_name || result.factor || result.name || 'unknown';
+}
+
+function renderValidatedFactorDirectory(results) {
+  const factorMap = new Map();
+
+  results.forEach((result) => {
+    const factor = resultFactorId(result);
+    const current = factorMap.get(factor) || {
+      count: 0,
+      displayName: factorDisplayName(factor),
+      historicalCount: 0,
+    };
+    current.count += 1;
+    if (Number(result.sample_dates ?? 0) >= 20) current.historicalCount += 1;
+    factorMap.set(factor, current);
+  });
+
+  if (activeValidatedFactor !== 'all' && !factorMap.has(activeValidatedFactor)) {
+    activeValidatedFactor = 'all';
+  }
+
+  const factorButtons = [...factorMap.entries()]
+    .sort((left, right) => {
+      const countDiff = right[1].count - left[1].count;
+      if (countDiff !== 0) return countDiff;
+      return left[1].displayName.localeCompare(right[1].displayName, 'zh-Hans-CN');
+    })
+    .map(([factor, meta]) => {
+      const active = activeValidatedFactor === factor ? ' active' : '';
+      const historicalText = meta.historicalCount ? ` / 历史 ${meta.historicalCount}` : '';
+      return `
+        <button class="factor-directory-button${active}" data-validated-factor="${escapeHtml(factor)}" type="button">
+          <strong>${escapeHtml(meta.displayName)}</strong>
+          <span>${escapeHtml(meta.count)} 条${historicalText}</span>
+        </button>
+      `;
+    })
+    .join('');
+  const activeMeta = activeValidatedFactor === 'all'
+    ? {
+      count: results.length,
+      displayName: '全部因子',
+      historicalCount: [...factorMap.values()].reduce((sum, item) => sum + item.historicalCount, 0),
+    }
+    : factorMap.get(activeValidatedFactor);
+  const activeHistoricalText = activeMeta?.historicalCount ? ` / 历史 ${activeMeta.historicalCount}` : '';
+
+  elements.validatedFactorDirectory.innerHTML = `
+    <details class="factor-directory-disclosure">
+      <summary>
+        <div>
+          <span>因子目录</span>
+          <strong>${escapeHtml(activeMeta?.displayName || '全部因子')}</strong>
+          <small>${escapeHtml(activeMeta?.count ?? results.length)} 条${activeHistoricalText}</small>
+        </div>
+        <em>点击展开</em>
+      </summary>
+      <div class="factor-directory-list">
+        <button class="factor-directory-button${activeValidatedFactor === 'all' ? ' active' : ''}" data-validated-factor="all" type="button">
+          <strong>全部因子</strong>
+          <span>${escapeHtml(results.length)} 条</span>
+        </button>
+        ${factorButtons}
+      </div>
+    </details>
+  `;
+
+  elements.validatedFactorDirectory.querySelectorAll('[data-validated-factor]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeValidatedFactor = button.dataset.validatedFactor || 'all';
+      renderBacktestResultSummary(results);
+    });
+  });
+}
+
 function renderBacktestResultSummary(results) {
   if (!results.length) {
+    activeValidatedFactor = 'all';
     elements.validatedResultCount.textContent = '0';
     elements.validatedFactorCount.textContent = '0';
     elements.validatedHistoryCount.textContent = '0';
     elements.validatedBestHorizon.textContent = '-';
+    elements.validatedFactorDirectory.innerHTML = `
+      <div class="factor-directory-empty">暂无可筛选因子。导入 JoinQuant 实跑结果后会自动生成目录。</div>
+    `;
     elements.backtestResultSummary.innerHTML = `
       <div class="result-card">
         <span>实测结果</span>
@@ -284,32 +383,37 @@ function renderBacktestResultSummary(results) {
     return;
   }
 
-  const factorCount = new Set(results.map((item) => item.factor_name || item.factor || item.name).filter(Boolean)).size;
-  const bestRankIc = results.reduce((best, item) => {
+  renderValidatedFactorDirectory(results);
+
+  const visibleResults = activeValidatedFactor === 'all'
+    ? results
+    : results.filter((item) => resultFactorId(item) === activeValidatedFactor);
+  const factorCount = new Set(visibleResults.map((item) => resultFactorId(item)).filter(Boolean)).size;
+  const bestRankIc = visibleResults.reduce((best, item) => {
     const current = Number(item.rank_ic_mean ?? item.rankIc);
     const previous = Number(best?.rank_ic_mean ?? best?.rankIc);
     if (!Number.isFinite(current)) return best;
     if (!best || !Number.isFinite(previous) || current > previous) return item;
     return best;
   }, null);
-  const bestLongShort = results.reduce((best, item) => {
+  const bestLongShort = visibleResults.reduce((best, item) => {
     const current = Number(item.long_short_mean ?? item.longShort);
     const previous = Number(best?.long_short_mean ?? best?.longShort);
     if (!Number.isFinite(current)) return best;
     if (!best || !Number.isFinite(previous) || current > previous) return item;
     return best;
   }, null);
-  const historicalCount = results.filter((item) => Number(item.sample_dates ?? 0) >= 20).length;
-  elements.validatedResultCount.textContent = results.length;
+  const historicalCount = visibleResults.filter((item) => Number(item.sample_dates ?? 0) >= 20).length;
+  elements.validatedResultCount.textContent = visibleResults.length;
   elements.validatedFactorCount.textContent = factorCount;
   elements.validatedHistoryCount.textContent = historicalCount;
   elements.validatedBestHorizon.textContent = bestLongShort?.horizon ? `${bestLongShort.horizon}日` : '-';
 
   elements.backtestResultSummary.innerHTML = `
     <div class="result-card">
-      <span>结果记录</span>
-      <strong>${escapeHtml(results.length)}</strong>
-      <small>${escapeHtml(factorCount)} 个因子</small>
+      <span>${activeValidatedFactor === 'all' ? '结果记录' : '当前因子结果'}</span>
+      <strong>${escapeHtml(visibleResults.length)}</strong>
+      <small>${activeValidatedFactor === 'all' ? `${escapeHtml(factorCount)} 个因子` : escapeHtml(factorDisplayName(activeValidatedFactor))}</small>
     </div>
     <div class="result-card">
       <span>历史样本结果</span>
@@ -328,17 +432,17 @@ function renderBacktestResultSummary(results) {
     </div>
   `;
 
-  elements.backtestResultTable.innerHTML = results
+  elements.backtestResultTable.innerHTML = visibleResults
     .slice()
     .sort((left, right) => {
       const leftDates = Number(left.sample_dates ?? 0);
       const rightDates = Number(right.sample_dates ?? 0);
       if (rightDates !== leftDates) return rightDates - leftDates;
-      return String(left.factor_name || left.factor || '').localeCompare(String(right.factor_name || right.factor || ''));
+      return String(resultFactorId(left)).localeCompare(String(resultFactorId(right)));
     })
     .map((result) => {
       const [label, tone] = resultTone(result);
-      const factor = result.factor_name || result.factor || result.name || 'unknown';
+      const factor = resultFactorId(result);
       return `
         <tr>
           <td><strong>${escapeHtml(factorDisplayName(factor))}</strong><br><small>${escapeHtml(result.factor_variant || factor)}</small></td>
@@ -356,12 +460,181 @@ function renderBacktestResultSummary(results) {
     })
     .join('');
 
-  const singleDayCount = results.filter((item) => Number(item.sample_dates ?? 0) < 20).length;
+  const singleDayCount = visibleResults.filter((item) => Number(item.sample_dates ?? 0) < 20).length;
   elements.backtestResultNotes.innerHTML = `
     <strong>结果边界：</strong>
+    ${activeValidatedFactor === 'all' ? '当前展示全部因子。' : `当前筛选：${escapeHtml(factorDisplayName(activeValidatedFactor))}。`}
     已导入结果来自 JoinQuant 实跑。${singleDayCount ? `${singleDayCount} 条为单日截面，只能跟踪，不能定论。` : ''}
     历史重建结果基于 JoinQuant OHLCV，和 Yiwan 全字段因子不是完全等价复刻。
   `;
+}
+
+function renderResearchDetail(entry) {
+  if (!entry) {
+    elements.researchFactorDetail.innerHTML = '<div class="library-source">暂无因子档案。</div>';
+    return;
+  }
+
+  const [realStatusLabel, realStatusTone] = labelForStatus(entry.realStatus);
+  const dataGaps = entry.dataGaps?.length
+    ? entry.dataGaps.map((gap) => `<li>${escapeHtml(gap)}</li>`).join('')
+    : '<li>当前没有额外缺口记录。</li>';
+  const dependencies = entry.dataDependencies?.length
+    ? entry.dataDependencies.join(', ')
+    : '当前没有登记字段依赖';
+
+  elements.researchFactorDetail.innerHTML = `
+    <div class="research-detail-head">
+      <div>
+        <h3>${escapeHtml(entry.name)}</h3>
+        <small>${escapeHtml(entry.factorId)} / ${escapeHtml(categoryNames[entry.category] || entry.category || 'research')}</small>
+      </div>
+      <span class="tag ${escapeHtml(entry.decisionTone)}">${escapeHtml(entry.decision)}</span>
+    </div>
+    <div class="research-detail-grid">
+      <div>
+        <span>阶段</span>
+        <strong>${escapeHtml(entry.stage)}</strong>
+      </div>
+      <div>
+        <span>真实状态</span>
+        <strong><span class="tag ${realStatusTone}">${escapeHtml(realStatusLabel)}</span></strong>
+      </div>
+      <div>
+        <span>回填结果</span>
+        <strong>${escapeHtml(entry.resultCount)} 条</strong>
+      </div>
+      <div>
+        <span>可导出行</span>
+        <strong>${escapeHtml(entry.exportRows)}</strong>
+      </div>
+    </div>
+    <div class="research-section">
+      <strong>研究假设</strong>
+      <p>${escapeHtml(entry.usage || entry.formula || '当前只登记为研究对象。')}</p>
+    </div>
+    <div class="research-section">
+      <strong>因子公式/口径</strong>
+      <p>${escapeHtml(entry.formula || '-')}</p>
+    </div>
+    <div class="research-section">
+      <strong>实测证据</strong>
+      <p>${escapeHtml(entry.evidence)}</p>
+      <div class="research-detail-grid compact">
+        <div><span>RankIC</span><strong>${formatNumber(entry.test?.bestRankIc)}</strong></div>
+        <div><span>RankIC t</span><strong>${formatNumber(entry.test?.bestRankIcT, 2)}</strong></div>
+        <div><span>多空收益</span><strong>${formatPercent(entry.test?.bestLongShort)}</strong></div>
+        <div><span>最佳周期</span><strong>${entry.test?.bestHorizon ? `${escapeHtml(entry.test.bestHorizon)}日` : '-'}</strong></div>
+      </div>
+    </div>
+    <div class="research-section">
+      <strong>数据依赖</strong>
+      <p>${escapeHtml(dependencies)}</p>
+    </div>
+    <div class="research-section">
+      <strong>数据缺口</strong>
+      <ul>${dataGaps}</ul>
+    </div>
+    <div class="research-section action">
+      <strong>下一步</strong>
+      <p>${escapeHtml(entry.nextAction)}</p>
+    </div>
+  `;
+}
+
+function renderResearchPipeline(pipeline) {
+  currentResearchPipeline = pipeline;
+  const entries = pipeline.entries || [];
+  const metrics = pipeline.metrics || {};
+
+  if (!activeResearchFactor || !entries.some((entry) => entry.factorId === activeResearchFactor)) {
+    activeResearchFactor = entries[0]?.factorId || null;
+  }
+
+  elements.researchFactorCount.textContent = metrics.factorCount ?? '-';
+  elements.researchTestedCount.textContent = metrics.testedCount ?? '-';
+  elements.researchCandidateCount.textContent = metrics.strategyCandidateCount ?? '-';
+  elements.researchBlockedCount.textContent = metrics.blockedCount ?? '-';
+  elements.researchSourceFile.textContent = pipeline.source?.file
+    ? `当前研究数据源：${pipeline.source.file}`
+    : '当前研究数据源：未加载';
+
+  elements.researchAssistantStatus.innerHTML = `
+    <span class="tag ${pipeline.assistant?.llmStatus === 'configured' ? 'good' : 'pending'}">
+      ${pipeline.assistant?.llmStatus === 'configured' ? 'LLM 已配置' : '本地约束助手'}
+    </span>
+    <span>${escapeHtml(pipeline.assistant?.policy || '只基于项目真实数据输出建议。')}</span>
+  `;
+
+  elements.researchFactorList.innerHTML = entries
+    .map((entry) => `
+      <button class="research-factor-item${entry.factorId === activeResearchFactor ? ' active' : ''}" data-research-factor="${escapeHtml(entry.factorId)}" type="button">
+        <div>
+          <strong>${escapeHtml(entry.name)}</strong>
+          <span>${escapeHtml(entry.stage)} / ${escapeHtml(entry.resultCount)} 条实测</span>
+        </div>
+        <span class="tag ${escapeHtml(entry.decisionTone)}">${escapeHtml(entry.decision)}</span>
+      </button>
+    `)
+    .join('');
+
+  elements.researchFactorList.querySelectorAll('[data-research-factor]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeResearchFactor = button.dataset.researchFactor;
+      renderResearchPipeline(currentResearchPipeline);
+    });
+  });
+
+  elements.researchAssistantFactor.innerHTML = `
+    <option value="">全局问题</option>
+    ${entries.map((entry) => `
+      <option value="${escapeHtml(entry.factorId)}"${entry.factorId === activeResearchFactor ? ' selected' : ''}>
+        ${escapeHtml(entry.name)}
+      </option>
+    `).join('')}
+  `;
+
+  const selected = entries.find((entry) => entry.factorId === activeResearchFactor);
+  renderResearchDetail(selected);
+
+  elements.researchActionList.innerHTML = entries
+    .slice(0, 8)
+    .map((entry) => `
+      <div class="status-item">
+        <div>
+          <strong>${escapeHtml(entry.name)}</strong>
+          <span>${escapeHtml(entry.nextAction)}</span>
+        </div>
+        <span class="tag ${escapeHtml(entry.decisionTone)}">${escapeHtml(entry.decision)}</span>
+      </div>
+    `)
+    .join('');
+
+  if (!elements.researchAssistantMessages.innerHTML) {
+    elements.researchAssistantMessages.innerHTML = `
+      <div class="assistant-message">
+        <strong>研究助手</strong>
+        <ul>
+          <li>我已经接入当前因子定义、真实计算状态和 JoinQuant 回填结果。</li>
+          <li>没有配置外部 LLM 前，我只用本地规则做解释和下一步建议。</li>
+          <li>所有建议都标记为待验证，不会当作真实收益结论。</li>
+        </ul>
+      </div>
+    `;
+  }
+}
+
+function appendAssistantMessage(role, lines) {
+  const content = Array.isArray(lines)
+    ? `<ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`
+    : `<p>${escapeHtml(lines)}</p>`;
+  elements.researchAssistantMessages.insertAdjacentHTML('beforeend', `
+    <div class="assistant-message ${role === 'user' ? 'user' : ''}">
+      <strong>${role === 'user' ? '你' : '研究助手'}</strong>
+      ${content}
+    </div>
+  `);
+  elements.researchAssistantMessages.scrollTop = elements.researchAssistantMessages.scrollHeight;
 }
 
 function buildLibraryEntries(summary, factorDefinitions) {
@@ -804,7 +1077,7 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
-  const [summary, factors, equity, risks, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus] = await Promise.all([
+  const [summary, factors, equity, risks, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
@@ -814,6 +1087,7 @@ async function refreshDashboard() {
     request('/factor-api/indicator-factor-definitions'),
     request('/strategy-api/live-signals'),
     request('/backtest-api/research-status'),
+    request('/research-api/pipeline'),
   ]);
 
   renderSummary(summary);
@@ -824,6 +1098,7 @@ async function refreshDashboard() {
   renderStrategyLibrary(strategies);
   renderLiveStrategies(liveStrategies);
   renderBacktestCenter(backtestStatus);
+  renderResearchPipeline(researchPipeline);
 }
 
 async function boot() {
@@ -894,6 +1169,31 @@ elements.importBacktestResult.addEventListener('click', async () => {
   } catch (error) {
     elements.backtestImportMessage.textContent = `导入失败：${error.message}`;
     elements.backtestImportMessage.dataset.tone = 'error';
+  }
+});
+
+elements.askResearchAssistant.addEventListener('click', async () => {
+  const message = elements.researchAssistantInput.value.trim();
+  const factorId = elements.researchAssistantFactor.value || activeResearchFactor || '';
+  if (!message && !factorId) {
+    appendAssistantMessage('assistant', '先选择一个因子，或输入一个研究问题。');
+    return;
+  }
+
+  appendAssistantMessage('user', message || `分析 ${factorDisplayName(factorId)}`);
+  elements.askResearchAssistant.disabled = true;
+
+  try {
+    const response = await request('/research-api/assistant', {
+      body: JSON.stringify({ factorId, message }),
+      method: 'POST',
+    });
+    appendAssistantMessage('assistant', response.answer || []);
+    elements.researchAssistantInput.value = '';
+  } catch (error) {
+    appendAssistantMessage('assistant', `助手失败：${error.message}`);
+  } finally {
+    elements.askResearchAssistant.disabled = false;
   }
 });
 

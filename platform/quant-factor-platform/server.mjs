@@ -835,6 +835,301 @@ function buildBacktestResearchStatus() {
   };
 }
 
+const researchFactorAliases = {
+  chip_health_factor: 'chip_health',
+  kdj_momentum_factor: 'kdj_momentum',
+  macd_acceleration_factor: 'macd_acceleration',
+  technical_composite_factor: 'technical_composite',
+  trend_alignment_factor: 'trend_alignment',
+  volume_trend_confirm_factor: 'volume_price_confirmation',
+};
+
+function canonicalFactorId(id) {
+  return researchFactorAliases[id] || id;
+}
+
+function researchFactorDisplayName(id) {
+  const exportable = exportableBacktestFactors.find((factor) => factor.id === id);
+  if (exportable) return exportable.name;
+  const definition = indicatorFactorDefinitions.find((factor) => canonicalFactorId(factor.id) === id);
+  return definition?.name || id;
+}
+
+function factorResultId(result) {
+  return result.factor_name || result.factor || result.name || 'unknown';
+}
+
+function summarizeImportedResults(results) {
+  return results.reduce((groups, result) => {
+    const factorId = factorResultId(result);
+    const current = groups[factorId] || {
+      all: [],
+      bestLongShort: null,
+      bestRankIc: null,
+      factorId,
+      historicalCount: 0,
+      singleDayCount: 0,
+    };
+    const sampleDates = toNumber(result.sample_dates, 0);
+    const rankIc = Number(result.rank_ic_mean ?? result.rankIc);
+    const longShort = Number(result.long_short_mean ?? result.longShort);
+    const currentBestRankIc = Number(current.bestRankIc?.rank_ic_mean ?? current.bestRankIc?.rankIc);
+    const currentBestLongShort = Number(current.bestLongShort?.long_short_mean ?? current.bestLongShort?.longShort);
+
+    current.all.push(result);
+    if (sampleDates >= 20) current.historicalCount += 1;
+    if (sampleDates < 20) current.singleDayCount += 1;
+    if (Number.isFinite(rankIc) && (!current.bestRankIc || !Number.isFinite(currentBestRankIc) || rankIc > currentBestRankIc)) {
+      current.bestRankIc = result;
+    }
+    if (Number.isFinite(longShort) && (!current.bestLongShort || !Number.isFinite(currentBestLongShort) || longShort > currentBestLongShort)) {
+      current.bestLongShort = result;
+    }
+    groups[factorId] = current;
+    return groups;
+  }, {});
+}
+
+function qualityFromResultStats(stats) {
+  if (!stats || !stats.all.length) {
+    return {
+      decision: '等待实测',
+      decisionTone: 'watch',
+      evidence: '尚未导入该因子的 JoinQuant 实跑结果。',
+      stage: '可研究',
+      status: 'waiting_test',
+    };
+  }
+
+  if (!stats.historicalCount) {
+    return {
+      decision: '跟踪中',
+      decisionTone: 'pending',
+      evidence: `${stats.all.length} 条结果均为单日或短样本，不能下长期结论。`,
+      stage: '已回填短样本',
+      status: 'tracking',
+    };
+  }
+
+  const best = stats.bestRankIc || {};
+  const rankIc = Number(best.rank_ic_mean ?? best.rankIc);
+  const rankIcT = Number(best.rank_ic_t ?? best.rankIcT);
+  const longShort = Number(best.long_short_mean ?? best.longShort);
+
+  if (rankIc >= 0.015 && longShort > 0 && (!Number.isFinite(rankIcT) || rankIcT >= 2)) {
+    return {
+      decision: '重点候选',
+      decisionTone: 'good',
+      evidence: `历史样本 RankIC ${rankIc.toFixed(4)}，多空收益 ${(longShort * 100).toFixed(2)}%。`,
+      stage: '已实测',
+      status: 'strategy_candidate',
+    };
+  }
+
+  if (rankIc > 0 && longShort > 0) {
+    return {
+      decision: '继续观察',
+      decisionTone: 'pending',
+      evidence: `方向为正，但显著性或强度还需要继续确认。RankIC ${rankIc.toFixed(4)}。`,
+      stage: '已实测',
+      status: 'watch',
+    };
+  }
+
+  return {
+    decision: '暂缓使用',
+    decisionTone: 'watch',
+    evidence: '当前历史结果未同时满足 RankIC 为正和多空收益为正。',
+    stage: '已实测',
+    status: 'hold',
+  };
+}
+
+function actionFromResearchEntry(entry, source) {
+  if (entry.status === 'strategy_candidate') {
+    return '进入策略池候选，优先做组合回测和样本外监控。';
+  }
+  if (entry.status === 'watch') {
+    return '继续扩大样本，观察 RankIC t、分年度稳定性和多空收益是否同步改善。';
+  }
+  if (entry.status === 'tracking') {
+    return '先不要下结论，补足至少 20 个历史截面；专业验证建议 120-240 个交易日。';
+  }
+  if (entry.exportRows > 0) {
+    return '下载单因子 CSV 到 JoinQuant 做 1/5/10/20 日收益检验。';
+  }
+  if (source.uniqueDates < 60) {
+    return '补充多日因子历史和未来收益标签，当前本地不能计算 IC。';
+  }
+  return '补齐 requiredFields 对应真实字段后再计算。';
+}
+
+function buildResearchPipeline() {
+  const backtestStatus = buildBacktestResearchStatus();
+  const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
+  const summary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+  const availability = summary.factor_meta?.availability || {};
+  const importedResults = readImportedBacktestResults();
+  const resultStats = summarizeImportedResults(importedResults);
+  const definitionByCanonicalId = indicatorFactorDefinitions.reduce((map, definition) => {
+    map[canonicalFactorId(definition.id)] = definition;
+    return map;
+  }, {});
+  const candidateIds = [
+    ...new Set([
+      ...exportableBacktestFactors.map((factor) => factor.id),
+      ...indicatorFactorDefinitions.map((factor) => canonicalFactorId(factor.id)),
+      ...Object.keys(availability).map(canonicalFactorId),
+      ...Object.keys(resultStats),
+    ]),
+  ];
+
+  const source = {
+    file: summary.source_file || researchFactorResultsPath,
+    inputKind: summary.input_kind || 'unknown',
+    rows: rows.length,
+    uniqueDates: backtestStatus.source.uniqueDates,
+    uniqueStocks: backtestStatus.source.uniqueStocks,
+  };
+
+  const entries = candidateIds.map((factorId) => {
+    const exportable = exportableBacktestFactors.find((factor) => factor.id === factorId);
+    const definition = definitionByCanonicalId[factorId] || {};
+    const availabilityState = availability[factorId] || availability[definition.id] || null;
+    const stats = resultStats[factorId];
+    const quality = qualityFromResultStats(stats);
+    const exportRows = exportable ? buildJoinQuantFactorRows({ factor: factorId }).length : 0;
+    const hasComputedRows = rows.some((row) => row[factorId] !== null && row[factorId] !== undefined);
+    const status = stats?.all.length
+      ? quality.status
+      : hasComputedRows || exportRows
+        ? 'waiting_test'
+        : availabilityState?.status || 'requires_more_data';
+    const statusQuality = stats?.all.length ? quality : qualityFromResultStats(null);
+    const dataGaps = [];
+
+    if (!hasComputedRows && !exportRows) dataGaps.push('当前真实结果中没有该因子值。');
+    if (source.uniqueDates < 60) dataGaps.push(`历史截面不足：当前 ${source.uniqueDates} 日，最低建议 60 日。`);
+    if (!stats?.historicalCount) dataGaps.push('缺少足够历史实测结果，不能确认稳定性。');
+    if (!definition.requiredFields && !exportable) dataGaps.push('缺少明确字段定义。');
+
+    const entry = {
+      category: definition.category || availabilityState?.category || exportable?.category || 'research',
+      dataDependencies: definition.requiredFields || availabilityState?.fields || [],
+      dataGaps,
+      dataSource: definition.dataSource || 'M-quant real factor/backtest records',
+      decision: statusQuality.decision,
+      decisionTone: statusQuality.decisionTone,
+      direction: exportable?.direction || definition.direction || availabilityState?.direction || 'positive',
+      evidence: statusQuality.evidence,
+      exportRows,
+      factorId,
+      formula: definition.formula || availabilityState?.formula || exportable?.usage || '-',
+      name: exportable?.name || definition.name || availabilityState?.displayName || researchFactorDisplayName(factorId),
+      nextAction: '',
+      realStatus: availabilityState?.status || (hasComputedRows ? 'computed' : 'unavailable'),
+      resultCount: stats?.all.length || 0,
+      stage: statusQuality.stage,
+      status,
+      test: {
+        bestHorizon: stats?.bestLongShort?.horizon ?? null,
+        bestLongShort: stats?.bestLongShort?.long_short_mean ?? stats?.bestLongShort?.longShort ?? null,
+        bestRankIc: stats?.bestRankIc?.rank_ic_mean ?? stats?.bestRankIc?.rankIc ?? null,
+        bestRankIcT: stats?.bestRankIc?.rank_ic_t ?? stats?.bestRankIc?.rankIcT ?? null,
+        historicalCount: stats?.historicalCount || 0,
+        singleDayCount: stats?.singleDayCount || 0,
+      },
+      usage: definition.usage || exportable?.usage || availabilityState?.usage || '',
+    };
+    entry.nextAction = actionFromResearchEntry(entry, source);
+    return entry;
+  }).sort((left, right) => {
+    const order = {
+      strategy_candidate: 0,
+      watch: 1,
+      tracking: 2,
+      waiting_test: 3,
+      computed: 4,
+      requires_more_data: 5,
+      unavailable: 6,
+      hold: 7,
+    };
+    const leftOrder = order[left.status] ?? 9;
+    const rightOrder = order[right.status] ?? 9;
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+    return left.name.localeCompare(right.name, 'zh-CN');
+  });
+
+  const metrics = {
+    blockedCount: entries.filter((entry) => entry.status === 'requires_more_data' || entry.status === 'unavailable').length,
+    factorCount: entries.length,
+    strategyCandidateCount: entries.filter((entry) => entry.status === 'strategy_candidate').length,
+    testedCount: entries.filter((entry) => entry.resultCount > 0).length,
+    waitingTestCount: entries.filter((entry) => entry.status === 'waiting_test' || entry.status === 'tracking').length,
+  };
+
+  return {
+    assistant: {
+      llmStatus: process.env.M_QUANT_LLM_PROVIDER ? 'configured' : 'not_configured',
+      mode: process.env.M_QUANT_LLM_PROVIDER ? 'llm_ready' : 'local_grounded_assistant',
+      policy: '助手只允许基于项目真实数据、真实回填结果和明确缺口输出建议；未接入模型时使用本地规则解释。',
+    },
+    blockers: backtestStatus.blockers,
+    entries,
+    generatedAt: new Date().toISOString(),
+    metrics,
+    source,
+  };
+}
+
+function buildAssistantResponse(message, factorId) {
+  const pipeline = buildResearchPipeline();
+  const text = String(message || '').trim();
+  const lower = text.toLowerCase();
+  const selected = factorId
+    ? pipeline.entries.find((entry) => entry.factorId === factorId)
+    : pipeline.entries.find((entry) => text.includes(entry.name) || lower.includes(entry.factorId.toLowerCase()));
+  const candidateEntries = pipeline.entries.filter((entry) => entry.status === 'strategy_candidate');
+  const testedEntries = pipeline.entries.filter((entry) => entry.resultCount > 0);
+  const waitingEntries = pipeline.entries.filter((entry) => entry.status === 'waiting_test' || entry.status === 'tracking');
+  const blockedEntries = pipeline.entries.filter((entry) => entry.status === 'requires_more_data' || entry.status === 'unavailable');
+
+  const bullets = [];
+  if (selected) {
+    bullets.push(`${selected.name}：${selected.decision}。${selected.evidence}`);
+    bullets.push(`当前阶段：${selected.stage}；真实结果 ${selected.resultCount} 条，历史结果 ${selected.test.historicalCount} 条。`);
+    if (selected.test.bestRankIc !== null) bullets.push(`最佳 RankIC：${Number(selected.test.bestRankIc).toFixed(4)}；RankIC t：${selected.test.bestRankIcT === null ? '缺失' : Number(selected.test.bestRankIcT).toFixed(2)}。`);
+    if (selected.dataGaps.length) bullets.push(`数据缺口：${selected.dataGaps.join('；')}`);
+    bullets.push(`下一步：${selected.nextAction}`);
+  } else if (lower.includes('缺') || text.includes('数据') || text.includes('采集')) {
+    bullets.push(`当前最大缺口是历史深度：${pipeline.source.uniqueDates} 个交易日，项目内本地复测最低建议 60 日，专业验证建议 120-240 日。`);
+    bullets.push('还需要未来收益标签、交易日历、停牌/涨跌停和复权行情，才能在项目内完整计算 RankIC、分组收益和多空收益。');
+    bullets.push(`等待字段或历史补齐的因子有 ${blockedEntries.length} 个。`);
+  } else if (text.includes('哪个') || text.includes('最好') || text.includes('优先')) {
+    if (candidateEntries.length) {
+      bullets.push(`当前可优先关注 ${candidateEntries.length} 个重点候选：${candidateEntries.map((entry) => entry.name).join('、')}。`);
+      bullets.push('优先级依据来自真实回填的 RankIC/多空收益/历史样本，不包含估算绩效。');
+    } else {
+      bullets.push('当前没有满足重点候选规则的因子，建议先扩大历史样本或继续导入 JoinQuant 实测结果。');
+    }
+  } else if (text.includes('回测') || text.includes('复测')) {
+    bullets.push(`已有 ${testedEntries.length} 个因子导入过真实测试结果，${waitingEntries.length} 个因子仍需要继续复测或补历史。`);
+    bullets.push('短期仍建议用 JoinQuant 处理未来收益、停牌、涨跌停和复权；项目内回测需要先导入多日行情和未来收益。');
+  } else {
+    bullets.push(`因子研究流水线当前跟踪 ${pipeline.metrics.factorCount} 个因子，其中 ${pipeline.metrics.testedCount} 个已有真实回填结果。`);
+    bullets.push(`重点候选 ${pipeline.metrics.strategyCandidateCount} 个，等待复测/跟踪 ${pipeline.metrics.waitingTestCount} 个，等待数据 ${pipeline.metrics.blockedCount} 个。`);
+    bullets.push('你可以问：哪个因子优先、某个因子缺什么数据、下一步如何复测、能不能进策略池。');
+  }
+
+  return {
+    answer: bullets,
+    factor: selected?.factorId || null,
+    generatedAt: new Date().toISOString(),
+    mode: pipeline.assistant.mode,
+    policy: pipeline.assistant.policy,
+  };
+}
+
 function actionForRow(row) {
   const label = row.factor_label || '中性';
   const composite = toNumber(row.technical_composite);
@@ -1105,6 +1400,17 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/research-api/pipeline') {
+    sendJson(res, buildResearchPipeline());
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/research-api/assistant') {
+    const body = await readJsonBody(req);
+    sendJson(res, buildAssistantResponse(body.message, body.factorId));
+    return true;
+  }
+
   if (req.method === 'POST' && pathname === '/factor-api/factors') {
     const body = await readJsonBody(req);
 
@@ -1237,6 +1543,7 @@ createServer(async (req, res) => {
     || pathname.startsWith('/factor-api/')
     || pathname.startsWith('/backtest-api/')
     || pathname.startsWith('/market-api/')
+    || pathname.startsWith('/research-api/')
     || pathname.startsWith('/strategy-api/');
 
   if (isApiRequest) {

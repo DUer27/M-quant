@@ -21,6 +21,7 @@
           <button class="active" data-view-target="dashboard">总览</button>
           <button data-view-target="factor-library">因子库</button>
           <button data-view-target="strategy-library">策略集</button>
+          <button data-view-target="research-pipeline">研究流水线</button>
           <button data-view-target="backtest-center">回测中心</button>
           <button data-view-target="validated-results">实测结果</button>
           <button data-view-target="dashboard">风控监控</button>
@@ -360,6 +361,87 @@
           </section>
         </div>
 
+        <div id="research-pipeline-view" class="view">
+          <section class="metrics-grid" aria-label="因子研究流水线指标">
+            <article class="metric">
+              <span>研究因子</span>
+              <strong id="research-factor-count">-</strong>
+              <small>纳入流水线</small>
+            </article>
+            <article class="metric">
+              <span>已实测</span>
+              <strong id="research-tested-count">-</strong>
+              <small>真实结果回填</small>
+            </article>
+            <article class="metric">
+              <span>策略候选</span>
+              <strong id="research-candidate-count">-</strong>
+              <small>满足初筛规则</small>
+            </article>
+            <article class="metric">
+              <span>等待数据</span>
+              <strong id="research-blocked-count">-</strong>
+              <small>字段/历史不足</small>
+            </article>
+          </section>
+
+          <section class="content-grid research-layout">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Research Pipeline</p>
+                  <h2>因子研究流水线</h2>
+                </div>
+              </div>
+              <div class="library-source" id="research-source-file">研究数据源等待加载</div>
+              <div id="research-factor-list" class="research-factor-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Factor Dossier</p>
+                  <h2>因子研究档案</h2>
+                </div>
+              </div>
+              <div id="research-factor-detail" class="research-detail"></div>
+            </section>
+          </section>
+
+          <section class="content-grid lower">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">LLM Research Assistant</p>
+                  <h2>研究助手</h2>
+                </div>
+              </div>
+              <div class="assistant-shell">
+                <div id="research-assistant-status" class="assistant-status"></div>
+                <div id="research-assistant-messages" class="assistant-messages"></div>
+                <label>
+                  研究问题
+                  <textarea id="research-assistant-input" rows="4" placeholder="例如：量价确认因子下一步该怎么测？哪个因子优先进入策略池？现在还缺什么数据？"></textarea>
+                </label>
+                <div class="assistant-actions">
+                  <select id="research-assistant-factor"></select>
+                  <button id="ask-research-assistant" class="primary" type="button">询问助手</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Next Actions</p>
+                  <h2>下一步队列</h2>
+                </div>
+              </div>
+              <div id="research-action-list" class="status-list"></div>
+            </section>
+          </section>
+        </div>
+
         <div id="backtest-center-view" class="view">
           <section class="metrics-grid" aria-label="复测中心指标">
             <article class="metric">
@@ -499,6 +581,7 @@
                 <h2>JoinQuant 实测结果</h2>
               </div>
             </div>
+            <div id="validated-factor-directory" class="factor-directory" aria-label="实测因子目录"></div>
             <div id="backtest-result-summary" class="result-summary-grid"></div>
             <div class="table-scroll result-table-scroll">
               <table>
