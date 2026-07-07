@@ -4,6 +4,31 @@
 
 ## 2026-07-07
 
+### `1fe9825` Activate backtest center for JoinQuant validation
+- Activated `回测中心` as an independent factor validation workstation.
+- Added real validation status instead of placeholder performance output.
+- Added JoinQuant export endpoints:
+  - `/backtest-api/research-status`
+  - `/backtest-api/joinquant-factor-export`
+  - `/backtest-api/joinquant-factor-export.csv`
+  - `/backtest-api/import-results`
+- Current data basis: 600 Yiwan indicator factor rows from one trading date.
+- Current local validation status: blocked because future returns and multi-day history are not available locally.
+- Exportable factors include:
+  - `technical_composite`
+  - `trend_alignment`
+  - `volume_price_confirmation`
+  - `crowding_risk`
+  - `volume_price_divergence_risk`
+  - `trend_extension_risk`
+  - `kline_event_score`
+  - `chip_health`
+  - `macd_acceleration`
+  - `kdj_momentum`
+- Added JoinQuant workflow document: `docs/joinquant-factor-backtest-plan.md`.
+- Data honesty note: no IC, RankIC, win rate, annual return, or future-return backtest result was created.
+- Detail log: `logs/2026-07-07-backtest-center-activation.md`
+
 ### `2af21b2` Activate strategy board with live signals
 - Activated the strategy board as a real strategy workstation instead of a static placeholder.
 - Added `/strategy-api/live-signals`, built only from current real factor outputs.
