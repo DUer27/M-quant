@@ -95,6 +95,15 @@ select {
   padding: 24px;
 }
 
+.view {
+  display: none;
+}
+
+.view.active {
+  display: grid;
+  gap: 18px;
+}
+
 .topbar {
   align-items: center;
   display: flex;
@@ -299,13 +308,19 @@ table {
 th,
 td {
   border-bottom: 1px solid var(--border);
+  line-height: 1.45;
   padding: 12px 8px;
   text-align: left;
+  vertical-align: top;
 }
 
 th {
   color: var(--muted);
   font-size: 12px;
+}
+
+td small {
+  color: var(--muted);
 }
 
 .tag {
@@ -333,6 +348,84 @@ th {
 .tag.neutral {
   background: #eef2f4;
   color: var(--muted);
+}
+
+.library-source {
+  background: #f7fafc;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
+}
+
+.status-list,
+.strategy-list {
+  display: grid;
+  gap: 12px;
+}
+
+.status-item {
+  align-items: start;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0 0 12px;
+}
+
+.status-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.status-item span,
+.strategy-item p,
+.strategy-columns span {
+  color: var(--muted);
+  display: block;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.strategy-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.strategy-head {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.strategy-head h3 {
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+.strategy-columns {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 14px;
+}
+
+.strategy-columns div {
+  background: #f7fafc;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.strategy-columns strong {
+  display: block;
+  margin-bottom: 5px;
 }
 
 .risk-list {
@@ -375,7 +468,8 @@ meter {
 
   .metrics-grid,
   .content-grid,
-  .content-grid.lower {
+  .content-grid.lower,
+  .strategy-columns {
     grid-template-columns: 1fr;
   }
 
