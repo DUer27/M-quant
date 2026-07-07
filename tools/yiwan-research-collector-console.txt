@@ -1,0 +1,371 @@
+(() => {
+  const API_PATH = '/myget.php';
+  const DEFAULT_DELAY_MS = 180;
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function stamp() {
+    const date = new Date();
+    const pad = (number) => String(number).padStart(2, '0');
+
+    return [
+      date.getFullYear(),
+      pad(date.getMonth() + 1),
+      pad(date.getDate()),
+      '-',
+      pad(date.getHours()),
+      pad(date.getMinutes()),
+      pad(date.getSeconds()),
+    ].join('');
+  }
+
+  function unwrapResponse(payload) {
+    if (payload && typeof payload === 'object') {
+      if (payload.code === 0) {
+        throw new Error(payload.msg || payload.data || '接口返回失败');
+      }
+
+      if ('data' in payload) {
+        return payload.data;
+      }
+    }
+
+    return payload;
+  }
+
+  async function api(params) {
+    const url = new URL(API_PATH, location.origin);
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        url.searchParams.set(key, value);
+      }
+    });
+
+    const response = await fetch(url.toString(), {
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const text = await response.text();
+
+    try {
+      return unwrapResponse(JSON.parse(text));
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        return text;
+      }
+      throw error;
+    }
+  }
+
+  function rows(data) {
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (data && Array.isArray(data.list)) {
+      return data.list;
+    }
+
+    if (data && Array.isArray(data.rows)) {
+      return data.rows;
+    }
+
+    if (data && Array.isArray(data.data)) {
+      return data.data;
+    }
+
+    return data ? [data] : [];
+  }
+
+  async function collectPaged({ fu, filename, maxPages = 80, pageParam = 'page', params = {}, delayMs = DEFAULT_DELAY_MS }) {
+    const allRows = [];
+
+    for (let page = 1; page <= maxPages; page += 1) {
+      const data = await api({
+        fu,
+        ...params,
+        [pageParam]: page,
+      });
+      const pageRows = rows(data);
+
+      console.log(`[YiwanResearchCollector] ${filename || fu} page=${page}, rows=${pageRows.length}`);
+
+      if (pageRows.length === 0) {
+        break;
+      }
+
+      allRows.push(...pageRows);
+      await sleep(delayMs);
+    }
+
+    return allRows;
+  }
+
+  async function getTradeDates() {
+    try {
+      const data = await api({ fu: 'get_trade_date_list' });
+      const tradeDates = rows(data).map((item) => {
+        if (typeof item === 'string') return item;
+        return item.date || item.tdate || item.data1 || item.trade_date || item.value || item;
+      }).filter(Boolean);
+
+      console.log(`[YiwanResearchCollector] trade dates=${tradeDates.length}`);
+      return tradeDates;
+    } catch (error) {
+      console.warn('[YiwanResearchCollector] get_trade_date_list failed:', error.message);
+      return [];
+    }
+  }
+
+  async function collectIndicators(options = {}) {
+    return collectPaged({
+      filename: 'indicators',
+      fu: 'get_zb_stock_my_list',
+      maxPages: options.maxPages || 80,
+      params: options.params || {},
+      delayMs: options.delayMs || DEFAULT_DELAY_MS,
+    });
+  }
+
+  async function collectDarkFactorByDate(date, options = {}) {
+    return collectPaged({
+      filename: `darkFactor-${date}`,
+      fu: 'get_ap_list_page',
+      maxPages: options.maxPages || 80,
+      params: {
+        date,
+        data1: date,
+        ...(options.params || {}),
+      },
+      delayMs: options.delayMs || DEFAULT_DELAY_MS,
+    });
+  }
+
+  async function collectMainForceByDate(date, options = {}) {
+    return collectPaged({
+      filename: `mainForce-${date}`,
+      fu: 'get_active_ap_tstock',
+      maxPages: options.maxPages || 80,
+      params: {
+        date,
+        data1: date,
+        ...(options.params || {}),
+      },
+      delayMs: options.delayMs || DEFAULT_DELAY_MS,
+    });
+  }
+
+  async function collectActiveApStockByDate(date, options = {}) {
+    return collectPaged({
+      filename: `activeApStock-${date}`,
+      fu: 'get_active_ap_stock',
+      maxPages: options.maxPages || 80,
+      params: {
+        date,
+        data1: date,
+        ...(options.params || {}),
+      },
+      delayMs: options.delayMs || DEFAULT_DELAY_MS,
+    });
+  }
+
+  async function collectBigMarket() {
+    try {
+      return await api({ fu: 'get_big_market' });
+    } catch (error) {
+      console.warn('[YiwanResearchCollector] get_big_market failed:', error.message);
+      return null;
+    }
+  }
+
+  async function collectBigApByDate(date) {
+    try {
+      return await api({ fu: 'get_big_ap', date, data1: date });
+    } catch (error) {
+      console.warn(`[YiwanResearchCollector] get_big_ap ${date} failed:`, error.message);
+      return null;
+    }
+  }
+
+  async function collectBigMarketDailyByDate(date) {
+    try {
+      return await api({ fu: 'get_bigmarket_daily', date, data1: date });
+    } catch (error) {
+      console.warn(`[YiwanResearchCollector] get_bigmarket_daily ${date} failed:`, error.message);
+      return null;
+    }
+  }
+
+  async function collectSectorByCodes(sectorCodes = []) {
+    const result = {};
+
+    for (const code of sectorCodes) {
+      try {
+        const info = await api({ fu: 'sector_stock_detail_info', code });
+        await sleep(DEFAULT_DELAY_MS);
+        const chart = await api({
+          fu: 'sector_stock_detail_chart',
+          code,
+          min: 480,
+          howtype: 'graph',
+          showdata: 'dde_z|zdfd',
+        });
+
+        result[code] = { info, chart };
+        console.log(`[YiwanResearchCollector] sector ${code} ok`);
+      } catch (error) {
+        result[code] = { error: error.message };
+        console.warn(`[YiwanResearchCollector] sector ${code} failed:`, error.message);
+      }
+
+      await sleep(DEFAULT_DELAY_MS);
+    }
+
+    return result;
+  }
+
+  function summarizeDataset(value) {
+    if (Array.isArray(value)) {
+      const fields = [...new Set(value.slice(0, 50).flatMap((row) => {
+        if (row && typeof row === 'object' && !Array.isArray(row)) {
+          return Object.keys(row);
+        }
+        return ['value'];
+      }))];
+
+      return {
+        rows: value.length,
+        fields,
+      };
+    }
+
+    if (value && typeof value === 'object') {
+      return {
+        rows: 1,
+        fields: Object.keys(value),
+      };
+    }
+
+    return {
+      rows: value ? 1 : 0,
+      fields: [],
+    };
+  }
+
+  function downloadJson(filename, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function collectResearchPack(options = {}) {
+    const maxDates = options.maxDates || 20;
+    const maxPages = options.maxPages || 80;
+    const delayMs = options.delayMs || DEFAULT_DELAY_MS;
+    const sectorCodes = options.sectorCodes || [];
+    const tradeDates = options.tradeDates || (await getTradeDates());
+    const selectedDates = tradeDates.slice(0, maxDates);
+    const pack = {
+      meta: {
+        source: location.origin,
+        collectedAt: new Date().toISOString(),
+        maxDates,
+        maxPages,
+        selectedDates,
+        note: '浏览器本地登录态采集。请勿分享 Cookie/token。是否可用于商业或自动化，请自行确认网站条款。',
+      },
+      indicators_current: [],
+      dark_factor_by_date: {},
+      main_force_by_date: {},
+      active_ap_stock_by_date: {},
+      big_market_current: null,
+      big_ap_by_date: {},
+      big_market_daily_by_date: {},
+      sector_by_code: {},
+    };
+
+    console.log('[YiwanResearchCollector] collect indicators current');
+    pack.indicators_current = await collectIndicators({ maxPages, delayMs });
+
+    for (const date of selectedDates) {
+      console.log(`[YiwanResearchCollector] collect date=${date}`);
+      pack.dark_factor_by_date[date] = await collectDarkFactorByDate(date, { maxPages, delayMs });
+      pack.main_force_by_date[date] = await collectMainForceByDate(date, { maxPages, delayMs });
+      pack.active_ap_stock_by_date[date] = await collectActiveApStockByDate(date, { maxPages, delayMs });
+      pack.big_ap_by_date[date] = await collectBigApByDate(date);
+      pack.big_market_daily_by_date[date] = await collectBigMarketDailyByDate(date);
+      await sleep(delayMs);
+    }
+
+    pack.big_market_current = await collectBigMarket();
+
+    if (sectorCodes.length > 0) {
+      pack.sector_by_code = await collectSectorByCodes(sectorCodes);
+    }
+
+    const summary = {
+      meta: pack.meta,
+      datasets: {
+        indicators_current: summarizeDataset(pack.indicators_current),
+        dark_factor_by_date: Object.fromEntries(Object.entries(pack.dark_factor_by_date).map(([date, data]) => [date, summarizeDataset(data)])),
+        main_force_by_date: Object.fromEntries(Object.entries(pack.main_force_by_date).map(([date, data]) => [date, summarizeDataset(data)])),
+        active_ap_stock_by_date: Object.fromEntries(Object.entries(pack.active_ap_stock_by_date).map(([date, data]) => [date, summarizeDataset(data)])),
+        big_market_current: summarizeDataset(pack.big_market_current),
+        big_ap_by_date: Object.fromEntries(Object.entries(pack.big_ap_by_date).map(([date, data]) => [date, summarizeDataset(data)])),
+        big_market_daily_by_date: Object.fromEntries(Object.entries(pack.big_market_daily_by_date).map(([date, data]) => [date, summarizeDataset(data)])),
+        sector_by_code: summarizeDataset(pack.sector_by_code),
+      },
+    };
+
+    const suffix = stamp();
+    downloadJson(`yiwan-research-pack-${suffix}.json`, pack);
+    downloadJson(`yiwan-research-summary-${suffix}.json`, summary);
+
+    console.log('[YiwanResearchCollector] done', summary);
+    return { pack, summary };
+  }
+
+  window.YiwanResearchCollector = {
+    api,
+    collectActiveApStockByDate,
+    collectBigApByDate,
+    collectBigMarket,
+    collectBigMarketDailyByDate,
+    collectDarkFactorByDate,
+    collectIndicators,
+    collectMainForceByDate,
+    collectResearchPack,
+    collectSectorByCodes,
+    getTradeDates,
+  };
+
+  console.log(`YiwanResearchCollector 已加载。
+
+建议先小规模测试：
+await YiwanResearchCollector.collectResearchPack({ maxDates: 2, maxPages: 5 })
+
+正式采集建议：
+await YiwanResearchCollector.collectResearchPack({ maxDates: 20, maxPages: 80 })
+
+如果你知道板块代码，可以加：
+await YiwanResearchCollector.collectResearchPack({ maxDates: 20, maxPages: 80, sectorCodes: ['000001'] })`);
+})();
+

@@ -1,0 +1,357 @@
+(() => {
+  const API_PATH = '/myget.php';
+  const STATE_KEY = 'YiwanSafeBatchCollector.state.v1';
+  const DEFAULT_DELAY_MS = 2000;
+  const DEFAULT_RETRIES = 3;
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function stamp() {
+    const date = new Date();
+    const pad = (number) => String(number).padStart(2, '0');
+    return [
+      date.getFullYear(),
+      pad(date.getMonth() + 1),
+      pad(date.getDate()),
+      '-',
+      pad(date.getHours()),
+      pad(date.getMinutes()),
+      pad(date.getSeconds()),
+    ].join('');
+  }
+
+  function normalizeDate(value) {
+    if (Array.isArray(value)) return normalizeDate(value[0]);
+    if (value && typeof value === 'object') {
+      return value.date || value.tdate || value.data1 || value.trade_date || value.value || '';
+    }
+    return String(value || '').trim();
+  }
+
+  function rows(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.list)) return data.list;
+    if (data && Array.isArray(data.rows)) return data.rows;
+    if (data && Array.isArray(data.data)) return data.data;
+    return data ? [data] : [];
+  }
+
+  function unwrapResponse(payload) {
+    if (payload && typeof payload === 'object') {
+      if (payload.code === 0) {
+        throw new Error(payload.msg || payload.data || '接口返回失败');
+      }
+      if ('data' in payload) return payload.data;
+    }
+    return payload;
+  }
+
+  function readState() {
+    try {
+      return JSON.parse(localStorage.getItem(STATE_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  function writeState(nextState) {
+    localStorage.setItem(STATE_KEY, JSON.stringify(nextState));
+    return nextState;
+  }
+
+  function downloadJson(filename, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    console.log(`[YiwanSafeBatchCollector] 已触发下载: ${filename}`);
+  }
+
+  async function api(params, options = {}) {
+    const retries = options.retries ?? DEFAULT_RETRIES;
+    const delayMs = options.delayMs ?? DEFAULT_DELAY_MS;
+    let lastError;
+
+    for (let attempt = 1; attempt <= retries + 1; attempt += 1) {
+      try {
+        const url = new URL(API_PATH, location.origin);
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.set(key, value);
+          }
+        });
+
+        const response = await fetch(url.toString(), {
+          credentials: 'include',
+          headers: { Accept: 'application/json, text/plain, */*' },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const text = await response.text();
+        try {
+          return unwrapResponse(JSON.parse(text));
+        } catch (error) {
+          if (error instanceof SyntaxError) return text;
+          throw error;
+        }
+      } catch (error) {
+        lastError = error;
+        const message = error && error.message ? error.message : String(error);
+        if (attempt > retries) break;
+        const waitMs = delayMs * attempt * 2;
+        console.warn(`[YiwanSafeBatchCollector] 请求失败，第 ${attempt}/${retries + 1} 次: ${message}，等待 ${waitMs}ms 后重试`);
+        await sleep(waitMs);
+      }
+    }
+
+    throw lastError;
+  }
+
+  async function getTradeDates(options = {}) {
+    const data = await api({ fu: 'get_trade_date_list' }, options);
+    const dates = rows(data).map(normalizeDate).filter(Boolean);
+    console.log(`[YiwanSafeBatchCollector] 交易日数量: ${dates.length}`);
+    return dates;
+  }
+
+  async function init(options = {}) {
+    const maxDates = options.maxDates || 60;
+    const dates = (options.tradeDates || await getTradeDates(options)).slice(0, maxDates);
+    const state = writeState({
+      runId: options.runId || stamp(),
+      source: location.origin,
+      createdAt: new Date().toISOString(),
+      dates,
+      nextDateIndex: 0,
+      nextIndicatorPage: 1,
+      completedDateBatches: [],
+      completedIndicatorPageBatches: [],
+    });
+    console.log('[YiwanSafeBatchCollector] 初始化完成', state);
+    return state;
+  }
+
+  function status() {
+    const state = readState();
+    console.log('[YiwanSafeBatchCollector] 当前进度', state);
+    return state;
+  }
+
+  function reset() {
+    localStorage.removeItem(STATE_KEY);
+    console.log('[YiwanSafeBatchCollector] 进度已清空');
+  }
+
+  async function collectIndicatorsPages(options = {}) {
+    const state = readState();
+    if (!state.runId) {
+      throw new Error('请先运行 YiwanSafeBatchCollector.init({ maxDates: 你要的日期数 })');
+    }
+
+    const pagesPerRun = options.pagesPerRun || 5;
+    const maxPages = options.maxPages || 80;
+    const delayMs = options.delayMs ?? DEFAULT_DELAY_MS;
+    const retries = options.retries ?? DEFAULT_RETRIES;
+    const startPage = state.nextIndicatorPage || 1;
+    const endPage = Math.min(maxPages, startPage + pagesPerRun - 1);
+    const allRows = [];
+
+    for (let page = startPage; page <= endPage; page += 1) {
+      const data = await api({ fu: 'get_zb_stock_my_list', page }, { delayMs, retries });
+      const pageRows = rows(data);
+      console.log(`[YiwanSafeBatchCollector] indicators page=${page}, rows=${pageRows.length}`);
+      if (pageRows.length === 0) {
+        state.nextIndicatorPage = maxPages + 1;
+        break;
+      }
+      allRows.push(...pageRows.map((row) => ({ ...row, source_page: page })));
+      state.nextIndicatorPage = page + 1;
+      await sleep(delayMs);
+    }
+
+    const payload = {
+      meta: {
+        type: 'indicators_pages',
+        runId: state.runId,
+        source: state.source,
+        collectedAt: new Date().toISOString(),
+        startPage,
+        endPage,
+        nextIndicatorPage: state.nextIndicatorPage,
+      },
+      indicators_current: allRows,
+    };
+
+    const filename = `yiwan-batch-${state.runId}-indicators-p${String(startPage).padStart(3, '0')}-p${String(endPage).padStart(3, '0')}.json`;
+    downloadJson(filename, payload);
+    state.completedIndicatorPageBatches = [...(state.completedIndicatorPageBatches || []), filename];
+    writeState(state);
+    return payload;
+  }
+
+  async function collectDate(date, options = {}) {
+    const delayMs = options.delayMs ?? DEFAULT_DELAY_MS;
+    const retries = options.retries ?? DEFAULT_RETRIES;
+    const maxPages = options.maxPages || 20;
+
+    async function collectPaged(fu) {
+      const allRows = [];
+      for (let page = 1; page <= maxPages; page += 1) {
+        const data = await api({ fu, date, data1: date, page }, { delayMs, retries });
+        const pageRows = rows(data);
+        console.log(`[YiwanSafeBatchCollector] ${fu} date=${date}, page=${page}, rows=${pageRows.length}`);
+        if (pageRows.length === 0) break;
+        allRows.push(...pageRows.map((row) => ({ ...row, source_date: date, source_page: page })));
+        await sleep(delayMs);
+      }
+      return allRows;
+    }
+
+    const result = {
+      dark_factor: [],
+      main_force: [],
+      active_ap_stock: [],
+      big_ap: null,
+      big_market_daily: null,
+    };
+
+    result.dark_factor = await collectPaged('get_ap_list_page');
+    await sleep(delayMs);
+    result.main_force = await collectPaged('get_active_ap_tstock');
+    await sleep(delayMs);
+    result.active_ap_stock = await collectPaged('get_active_ap_stock');
+    await sleep(delayMs);
+
+    try {
+      result.big_ap = await api({ fu: 'get_big_ap', date, data1: date }, { delayMs, retries });
+    } catch (error) {
+      result.big_ap = { error: error.message || String(error) };
+    }
+
+    await sleep(delayMs);
+
+    try {
+      result.big_market_daily = await api({ fu: 'get_bigmarket_daily', date, data1: date }, { delayMs, retries });
+    } catch (error) {
+      result.big_market_daily = { error: error.message || String(error) };
+    }
+
+    return result;
+  }
+
+  async function collectNextDateBatch(options = {}) {
+    const state = readState();
+    if (!state.runId || !Array.isArray(state.dates)) {
+      throw new Error('请先运行 YiwanSafeBatchCollector.init({ maxDates: 你要的日期数 })');
+    }
+
+    const datesPerRun = options.datesPerRun || 1;
+    const startIndex = state.nextDateIndex || 0;
+    const selectedDates = state.dates.slice(startIndex, startIndex + datesPerRun);
+    if (selectedDates.length === 0) {
+      console.log('[YiwanSafeBatchCollector] 日期已经全部采完');
+      return null;
+    }
+
+    const pack = {
+      meta: {
+        type: 'date_batch',
+        runId: state.runId,
+        source: state.source,
+        collectedAt: new Date().toISOString(),
+        startIndex,
+        nextDateIndex: startIndex,
+        dates: selectedDates,
+        maxPages: options.maxPages || 20,
+      },
+      dark_factor_by_date: {},
+      main_force_by_date: {},
+      active_ap_stock_by_date: {},
+      big_ap_by_date: {},
+      big_market_daily_by_date: {},
+    };
+
+    for (const date of selectedDates) {
+      const dateResult = await collectDate(date, options);
+      pack.dark_factor_by_date[date] = dateResult.dark_factor;
+      pack.main_force_by_date[date] = dateResult.main_force;
+      pack.active_ap_stock_by_date[date] = dateResult.active_ap_stock;
+      pack.big_ap_by_date[date] = dateResult.big_ap;
+      pack.big_market_daily_by_date[date] = dateResult.big_market_daily;
+
+      state.nextDateIndex = (state.nextDateIndex || 0) + 1;
+      pack.meta.nextDateIndex = state.nextDateIndex;
+      writeState(state);
+    }
+
+    const filename = `yiwan-batch-${state.runId}-dates-${selectedDates[0]}-${selectedDates[selectedDates.length - 1]}.json`;
+    downloadJson(filename, pack);
+    state.completedDateBatches = [...(state.completedDateBatches || []), filename];
+    writeState(state);
+    return pack;
+  }
+
+  async function collectTinyStep(options = {}) {
+    const state = readState();
+    if (!state.runId) {
+      await init({ maxDates: options.maxDates || 20, delayMs: options.delayMs, retries: options.retries });
+    }
+
+    const current = readState();
+    if ((current.nextIndicatorPage || 1) <= (options.maxIndicatorPages || 20)) {
+      return collectIndicatorsPages({
+        pagesPerRun: options.pagesPerRun || 2,
+        maxPages: options.maxIndicatorPages || 20,
+        delayMs: options.delayMs || DEFAULT_DELAY_MS,
+        retries: options.retries ?? DEFAULT_RETRIES,
+      });
+    }
+
+    return collectNextDateBatch({
+      datesPerRun: options.datesPerRun || 1,
+      maxPages: options.maxPages || 10,
+      delayMs: options.delayMs || DEFAULT_DELAY_MS,
+      retries: options.retries ?? DEFAULT_RETRIES,
+    });
+  }
+
+  window.YiwanSafeBatchCollector = {
+    api,
+    collectDate,
+    collectIndicatorsPages,
+    collectNextDateBatch,
+    collectTinyStep,
+    getTradeDates,
+    init,
+    reset,
+    status,
+  };
+
+  console.log(`YiwanSafeBatchCollector 已加载。
+
+第一次先初始化：
+YiwanSafeBatchCollector.init({ maxDates: 20 })
+
+然后一小步一小步跑：
+YiwanSafeBatchCollector.collectTinyStep({ delayMs: 2500, pagesPerRun: 2, maxIndicatorPages: 20, datesPerRun: 1, maxPages: 10 })
+
+每跑完一步都会下载一个 yiwan-batch-*.json。
+中途失败不影响已经下载的 batch 文件。
+查看进度：
+YiwanSafeBatchCollector.status()
+
+清空进度重来：
+YiwanSafeBatchCollector.reset()`);
+})();

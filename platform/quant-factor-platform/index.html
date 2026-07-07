@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>量化因子策略平台</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script src="/config/app-config.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">Q</div>
+          <div>
+            <strong>量化策略</strong>
+            <span>Factor Lab</span>
+          </div>
+        </div>
+        <nav class="nav">
+          <button class="active">总览</button>
+          <button>因子库</button>
+          <button>策略集</button>
+          <button>回测中心</button>
+          <button>风控监控</button>
+          <button>系统配置</button>
+        </nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Quant Factor Platform</p>
+            <h1>量化因子策略平台</h1>
+          </div>
+          <div class="status-strip">
+            <span class="status-dot"></span>
+            <span>开发环境</span>
+            <strong id="api-url">/api</strong>
+          </div>
+        </header>
+
+        <section class="metrics-grid" aria-label="核心指标">
+          <article class="metric">
+            <span>候选因子</span>
+            <strong id="candidate-factor-count">-</strong>
+            <small>当前系统登记数量</small>
+          </article>
+          <article class="metric">
+            <span>已验证因子</span>
+            <strong id="valid-factor-count">-</strong>
+            <small>真实历史回测通过</small>
+          </article>
+          <article class="metric">
+            <span>待验证因子</span>
+            <strong id="pending-factor-count">-</strong>
+            <small>需要真实数据检验</small>
+          </article>
+          <article class="metric">
+            <span>演示因子</span>
+            <strong id="demo-factor-count">-</strong>
+            <small>原型展示/估算数据</small>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <section class="panel chart-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Backtest Equity</p>
+                <h2>策略净值曲线</h2>
+              </div>
+              <div class="segmented">
+                <button class="active">3Y</button>
+                <button>1Y</button>
+                <button>6M</button>
+              </div>
+            </div>
+            <canvas id="equity-chart" width="920" height="360"></canvas>
+          </section>
+
+          <section class="panel config-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Preferences</p>
+                <h2>默认策略参数</h2>
+              </div>
+            </div>
+            <form class="settings-form">
+              <label>
+                股票池
+                <select id="universe">
+                  <option>沪深300</option>
+                  <option>中证500</option>
+                  <option>中证1000</option>
+                  <option>全A</option>
+                </select>
+              </label>
+              <label>
+                基准指数
+                <select id="benchmark">
+                  <option value="000300.SH">沪深300</option>
+                  <option value="000905.SH">中证500</option>
+                  <option value="000852.SH">中证1000</option>
+                  <option value="881001.WI">万得全A</option>
+                </select>
+              </label>
+              <label>
+                调仓频率
+                <select id="rebalance">
+                  <option value="monthly">每月</option>
+                  <option value="weekly">每周</option>
+                  <option value="daily">每日</option>
+                </select>
+              </label>
+              <label>
+                手续费率
+                <input id="fee" type="number" min="0" max="0.01" step="0.0001" value="0.0003" />
+              </label>
+              <label class="switch-row">
+                <span>启用风控</span>
+                <input id="risk-control" type="checkbox" checked />
+              </label>
+              <div class="form-actions">
+                <button id="save-preferences" type="button">保存配置</button>
+                <button id="run-backtest" class="primary" type="button">模拟回测</button>
+              </div>
+              <p id="form-message" class="form-message">配置由本地后端 API 管理</p>
+            </form>
+          </section>
+        </section>
+
+        <section class="content-grid lower">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Real Factor Ranking</p>
+                <h2>真实截面因子排名</h2>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>股票</th>
+                  <th>综合分</th>
+                  <th>趋势</th>
+                  <th>量价</th>
+                  <th>K线</th>
+                  <th>拥挤风险</th>
+                  <th>标签</th>
+                </tr>
+              </thead>
+              <tbody id="factor-table"></tbody>
+            </table>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Risk Monitor</p>
+                <h2>组合风险</h2>
+              </div>
+            </div>
+            <div class="risk-list">
+              <div>
+                <span>行业偏离</span>
+                <meter min="0" max="100" value="42"></meter>
+                <strong>42%</strong>
+              </div>
+              <div>
+                <span>个股集中度</span>
+                <meter min="0" max="100" value="28"></meter>
+                <strong>28%</strong>
+              </div>
+              <div>
+                <span>换手率</span>
+                <meter min="0" max="100" value="57"></meter>
+                <strong>57%</strong>
+              </div>
+              <div>
+                <span>暴露约束</span>
+                <meter min="0" max="100" value="35"></meter>
+                <strong>35%</strong>
+              </div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>
