@@ -361,6 +361,27 @@ textarea {
   padding: 10px 12px;
 }
 
+.table-scroll {
+  max-height: 430px;
+  overflow: auto;
+}
+
+.result-table-scroll {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.table-scroll table {
+  margin: 0;
+}
+
+.table-scroll thead th {
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .table-action {
   background: #eef4fa;
   border: 1px solid var(--border);

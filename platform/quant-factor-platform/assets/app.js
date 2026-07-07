@@ -78,6 +78,10 @@ const elements = {
   strategyUnavailableList: document.querySelector('#strategy-unavailable-list'),
   universe: document.querySelector('#universe'),
   validFactorCount: document.querySelector('#valid-factor-count'),
+  validatedBestHorizon: document.querySelector('#validated-best-horizon'),
+  validatedFactorCount: document.querySelector('#validated-factor-count'),
+  validatedHistoryCount: document.querySelector('#validated-history-count'),
+  validatedResultCount: document.querySelector('#validated-result-count'),
   views: document.querySelectorAll('.view'),
 };
 
@@ -264,6 +268,10 @@ function resultTone(result) {
 
 function renderBacktestResultSummary(results) {
   if (!results.length) {
+    elements.validatedResultCount.textContent = '0';
+    elements.validatedFactorCount.textContent = '0';
+    elements.validatedHistoryCount.textContent = '0';
+    elements.validatedBestHorizon.textContent = '-';
     elements.backtestResultSummary.innerHTML = `
       <div class="result-card">
         <span>实测结果</span>
@@ -292,6 +300,10 @@ function renderBacktestResultSummary(results) {
     return best;
   }, null);
   const historicalCount = results.filter((item) => Number(item.sample_dates ?? 0) >= 20).length;
+  elements.validatedResultCount.textContent = results.length;
+  elements.validatedFactorCount.textContent = factorCount;
+  elements.validatedHistoryCount.textContent = historicalCount;
+  elements.validatedBestHorizon.textContent = bestLongShort?.horizon ? `${bestLongShort.horizon}日` : '-';
 
   elements.backtestResultSummary.innerHTML = `
     <div class="result-card">
