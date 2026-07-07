@@ -21,7 +21,7 @@
           <button class="active" data-view-target="dashboard">总览</button>
           <button data-view-target="factor-library">因子库</button>
           <button data-view-target="strategy-library">策略集</button>
-          <button data-view-target="dashboard">回测中心</button>
+          <button data-view-target="backtest-center">回测中心</button>
           <button data-view-target="dashboard">风控监控</button>
           <button data-view-target="dashboard">系统配置</button>
         </nav>
@@ -355,6 +355,109 @@
                 </div>
               </div>
               <div id="strategy-library-list" class="strategy-list"></div>
+            </section>
+          </section>
+        </div>
+
+        <div id="backtest-center-view" class="view">
+          <section class="metrics-grid" aria-label="复测中心指标">
+            <article class="metric">
+              <span>可导出样本</span>
+              <strong id="backtest-row-count">-</strong>
+              <small id="backtest-date-count">等待数据</small>
+            </article>
+            <article class="metric">
+              <span>可测因子</span>
+              <strong id="backtest-factor-count">-</strong>
+              <small>当前真实截面分数</small>
+            </article>
+            <article class="metric">
+              <span>本地复测状态</span>
+              <strong id="backtest-local-status">-</strong>
+              <small>需历史收益标签</small>
+            </article>
+            <article class="metric">
+              <span>外部复测</span>
+              <strong id="backtest-external-status">-</strong>
+              <small>JoinQuant 推荐路径</small>
+            </article>
+          </section>
+
+          <section class="content-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Factor Validation</p>
+                  <h2>因子复测工作台</h2>
+                </div>
+              </div>
+              <div class="library-source" id="backtest-source-file">复测数据源等待加载</div>
+              <div id="backtest-status-list" class="status-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">JoinQuant Export</p>
+                  <h2>聚宽复测包</h2>
+                </div>
+              </div>
+              <div class="backtest-actions">
+                <button id="download-joinquant-csv" class="primary" type="button">下载因子CSV</button>
+                <button id="refresh-backtest-center" type="button">刷新状态</button>
+              </div>
+              <div id="joinquant-export-summary" class="status-list"></div>
+            </section>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Exportable Factors</p>
+                <h2>可送去 JoinQuant 复测的因子</h2>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>因子</th>
+                  <th>方向</th>
+                  <th>状态</th>
+                  <th>用途</th>
+                  <th>阻塞项</th>
+                </tr>
+              </thead>
+              <tbody id="backtest-factor-table"></tbody>
+            </table>
+          </section>
+
+          <section class="content-grid lower">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">JoinQuant Steps</p>
+                  <h2>复测步骤</h2>
+                </div>
+              </div>
+              <ol id="joinquant-step-list" class="step-list"></ol>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Import Result</p>
+                  <h2>结果回填</h2>
+                </div>
+              </div>
+              <label>
+                粘贴 JoinQuant 复测结果 JSON
+                <textarea id="backtest-result-json" rows="10" placeholder='{"factor_name":"technical_composite","ic_mean":0.03,"rank_ic_mean":0.04}'></textarea>
+              </label>
+              <div class="backtest-actions">
+                <button id="import-backtest-result" class="primary" type="button">导入结果</button>
+              </div>
+              <p id="backtest-import-message" class="form-message">只接收你实际在 JoinQuant 跑出的结果。</p>
+              <div id="imported-backtest-list" class="status-list"></div>
             </section>
           </section>
         </div>

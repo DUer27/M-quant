@@ -28,12 +28,27 @@ const categoryNames = {
 
 const elements = {
   benchmark: document.querySelector('#benchmark'),
+  backtestDateCount: document.querySelector('#backtest-date-count'),
+  backtestExternalStatus: document.querySelector('#backtest-external-status'),
+  backtestFactorCount: document.querySelector('#backtest-factor-count'),
+  backtestFactorTable: document.querySelector('#backtest-factor-table'),
+  backtestImportMessage: document.querySelector('#backtest-import-message'),
+  backtestLocalStatus: document.querySelector('#backtest-local-status'),
+  backtestResultJson: document.querySelector('#backtest-result-json'),
+  backtestRowCount: document.querySelector('#backtest-row-count'),
+  backtestSourceFile: document.querySelector('#backtest-source-file'),
+  backtestStatusList: document.querySelector('#backtest-status-list'),
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
   demoFactorCount: document.querySelector('#demo-factor-count'),
+  downloadJoinquantCsv: document.querySelector('#download-joinquant-csv'),
   factorTable: document.querySelector('#factor-table'),
   factorLibraryTable: document.querySelector('#factor-library-table'),
   fee: document.querySelector('#fee'),
   formMessage: document.querySelector('#form-message'),
+  importedBacktestList: document.querySelector('#imported-backtest-list'),
+  importBacktestResult: document.querySelector('#import-backtest-result'),
+  joinquantExportSummary: document.querySelector('#joinquant-export-summary'),
+  joinquantStepList: document.querySelector('#joinquant-step-list'),
   klineRulesTable: document.querySelector('#kline-rules-table'),
   libraryComputedCount: document.querySelector('#library-computed-count'),
   libraryKlineRuleCount: document.querySelector('#library-kline-rule-count'),
@@ -44,6 +59,7 @@ const elements = {
   navButtons: document.querySelectorAll('.nav button[data-view-target]'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
+  refreshBacktestCenter: document.querySelector('#refresh-backtest-center'),
   risk: document.querySelector('#risk-control'),
   savePreferences: document.querySelector('#save-preferences'),
   runBacktest: document.querySelector('#run-backtest'),
@@ -181,9 +197,16 @@ function renderRisk(risks) {
 
 function labelForStatus(status) {
   if (status === 'computed') return ['已计算', 'good'];
+  if (status === 'exportable') return ['可导出', 'good'];
   if (status === 'partial_real_data') return ['部分可用', 'pending'];
+  if (status === 'joinquant_ready') return ['聚宽可测', 'good'];
+  if (status === 'ready_for_local_factor_test') return ['本地可测', 'good'];
+  if (status === 'handled_by_joinquant') return ['交由聚宽', 'pending'];
   if (status === 'insufficient_history' || status === 'blocked_by_resonance_history') return ['历史不足', 'watch'];
   if (status === 'requires_more_data') return ['待采集字段', 'watch'];
+  if (status === 'requires_joinquant_or_history') return ['需外部复测', 'watch'];
+  if (status === 'blocked') return ['被阻塞', 'watch'];
+  if (status === 'missing_field') return ['缺字段', 'watch'];
   if (status === 'unavailable') return ['不可用', 'watch'];
   return [status || '待确认', 'neutral'];
 }
@@ -485,6 +508,85 @@ function renderLiveStrategies(signalPack) {
     .join('');
 }
 
+function renderBacktestCenter(status) {
+  const metrics = status.metrics || {};
+  const source = status.source || {};
+  const [localLabel, localTone] = labelForStatus(metrics.localStatus);
+  const [externalLabel, externalTone] = labelForStatus(metrics.externalStatus);
+
+  elements.backtestRowCount.textContent = source.rows ?? '-';
+  elements.backtestDateCount.textContent = `${source.uniqueDates ?? 0} 个交易日 / ${source.uniqueStocks ?? 0} 只股票`;
+  elements.backtestFactorCount.textContent = metrics.exportableFactors ?? '-';
+  elements.backtestLocalStatus.innerHTML = `<span class="tag ${localTone}">${escapeHtml(localLabel)}</span>`;
+  elements.backtestExternalStatus.innerHTML = `<span class="tag ${externalTone}">${escapeHtml(externalLabel)}</span>`;
+  elements.backtestSourceFile.textContent = source.file
+    ? `当前复测数据源：${source.file}`
+    : '当前复测数据源：未加载';
+
+  elements.backtestStatusList.innerHTML = (status.blockers || [])
+    .map((item) => {
+      const [label, tone] = labelForStatus(item.status);
+      return `
+        <div class="status-item">
+          <div>
+            <strong>${escapeHtml(item.title)}</strong>
+            <span>${escapeHtml(item.detail)}</span>
+          </div>
+          <span class="tag ${tone}">${escapeHtml(label)}</span>
+        </div>
+      `;
+    })
+    .join('');
+
+  elements.joinquantExportSummary.innerHTML = `
+    <div class="status-item">
+      <div>
+        <strong>导出格式</strong>
+        <span>长表 CSV：date, security, factor_name, factor_value, factor_version</span>
+      </div>
+      <span class="tag good">${escapeHtml(metrics.exportableRows ?? 0)} 行</span>
+    </div>
+    <div class="status-item">
+      <div>
+        <strong>数据边界</strong>
+        <span>${escapeHtml(status.dataPolicy)}</span>
+      </div>
+      <span class="tag pending">无绩效</span>
+    </div>
+  `;
+
+  elements.backtestFactorTable.innerHTML = (status.factors || [])
+    .map((factor) => {
+      const [label, tone] = labelForStatus(factor.status);
+      return `
+        <tr>
+          <td><strong>${escapeHtml(factor.name)}</strong><br><small>${escapeHtml(factor.id)}</small></td>
+          <td>${factor.direction === 'negative' ? '风险越高越差' : '分数越高越好'}</td>
+          <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
+          <td>${escapeHtml(factor.usage)}</td>
+          <td>${escapeHtml(factor.blocker)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  elements.joinquantStepList.innerHTML = (status.joinquant?.steps || [])
+    .map((step) => `<li>${escapeHtml(step)}</li>`)
+    .join('');
+
+  elements.importedBacktestList.innerHTML = (status.importedResults || [])
+    .map((result) => `
+      <div class="status-item">
+        <div>
+          <strong>${escapeHtml(result.factor_name || result.factor || result.name || 'JoinQuant结果')}</strong>
+          <span>IC: ${escapeHtml(result.ic_mean ?? result.ic ?? '-')} / RankIC: ${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 来源: ${escapeHtml(result.source || 'joinquant')}</span>
+        </div>
+        <span class="tag good">已导入</span>
+      </div>
+    `)
+    .join('') || '<div class="library-source">暂无导入结果。等你在 JoinQuant 跑完，把真实结果 JSON 粘贴回来。</div>';
+}
+
 function showView(viewName) {
   elements.views.forEach((view) => {
     view.classList.toggle('active', view.id === `${viewName}-view`);
@@ -557,7 +659,7 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
-  const [summary, factors, equity, risks, factorSummary, strategies, factorDefinitions, liveStrategies] = await Promise.all([
+  const [summary, factors, equity, risks, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
@@ -566,6 +668,7 @@ async function refreshDashboard() {
     request('/strategy-api/definitions'),
     request('/factor-api/indicator-factor-definitions'),
     request('/strategy-api/live-signals'),
+    request('/backtest-api/research-status'),
   ]);
 
   renderSummary(summary);
@@ -575,6 +678,7 @@ async function refreshDashboard() {
   renderFactorLibrary(factorSummary, strategies, factorDefinitions);
   renderStrategyLibrary(strategies);
   renderLiveStrategies(liveStrategies);
+  renderBacktestCenter(backtestStatus);
 }
 
 async function boot() {
@@ -613,6 +717,38 @@ elements.runBacktest.addEventListener('click', async () => {
     setFormMessage(result.message, 'success');
   } catch (error) {
     setFormMessage(`回测失败：${error.message}`, 'error');
+  }
+});
+
+elements.downloadJoinquantCsv.addEventListener('click', () => {
+  window.location.href = '/backtest-api/joinquant-factor-export.csv';
+});
+
+elements.refreshBacktestCenter.addEventListener('click', async () => {
+  try {
+    renderBacktestCenter(await request('/backtest-api/research-status'));
+    elements.backtestImportMessage.textContent = '复测中心状态已刷新';
+    elements.backtestImportMessage.dataset.tone = 'success';
+  } catch (error) {
+    elements.backtestImportMessage.textContent = `刷新失败：${error.message}`;
+    elements.backtestImportMessage.dataset.tone = 'error';
+  }
+});
+
+elements.importBacktestResult.addEventListener('click', async () => {
+  try {
+    const payload = JSON.parse(elements.backtestResultJson.value || '{}');
+    const response = await request('/backtest-api/import-results', {
+      body: JSON.stringify(payload),
+      method: 'POST',
+    });
+    elements.backtestImportMessage.textContent = response.message;
+    elements.backtestImportMessage.dataset.tone = 'success';
+    elements.backtestResultJson.value = '';
+    renderBacktestCenter(await request('/backtest-api/research-status'));
+  } catch (error) {
+    elements.backtestImportMessage.textContent = `导入失败：${error.message}`;
+    elements.backtestImportMessage.dataset.tone = 'error';
   }
 });
 
