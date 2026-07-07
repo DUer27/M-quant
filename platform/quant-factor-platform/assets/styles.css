@@ -382,6 +382,55 @@ textarea {
   z-index: 1;
 }
 
+.disclosure-panel {
+  padding: 0;
+}
+
+.disclosure-panel summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  padding: 18px;
+}
+
+.disclosure-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure-panel summary span {
+  background: #eef4fa;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
+.disclosure-panel .summary-label-close,
+.disclosure-panel[open] .summary-label-open {
+  display: none;
+}
+
+.disclosure-panel[open] .summary-label-close {
+  display: inline-flex;
+}
+
+.disclosure-panel[open] summary span {
+  color: var(--primary);
+}
+
+.disclosure-content {
+  border-top: 1px solid var(--border);
+  padding: 18px;
+}
+
+.compact-status-list {
+  max-height: 220px;
+  overflow: auto;
+}
+
 .table-action {
   background: #eef4fa;
   border: 1px solid var(--border);
