@@ -692,11 +692,25 @@ const exportableBacktestFactors = [
   },
 ];
 
-function buildJoinQuantFactorRows() {
+function findExportableBacktestFactor(factorId) {
+  if (!factorId) return null;
+  return exportableBacktestFactors.find((factor) => factor.id === factorId) || null;
+}
+
+function safeFilename(value) {
+  return String(value || 'factor')
+    .replaceAll(/[^a-zA-Z0-9_-]/g, '-')
+    .replaceAll(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function buildJoinQuantFactorRows(options = {}) {
+  const selectedFactor = findExportableBacktestFactor(options.factor);
+  const factors = selectedFactor ? [selectedFactor] : exportableBacktestFactors;
   const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
   const sourceSummary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
 
-  return rows.flatMap((row) => exportableBacktestFactors
+  return rows.flatMap((row) => factors
     .filter((factor) => row[factor.id] !== null && row[factor.id] !== undefined && row[factor.id] !== '')
     .map((factor) => ({
       date: dateOnly(row.date || row.stock_date),
@@ -715,8 +729,8 @@ function buildJoinQuantFactorRows() {
     })));
 }
 
-function buildJoinQuantCsv() {
-  const rows = buildJoinQuantFactorRows();
+function buildJoinQuantCsv(options = {}) {
+  const rows = buildJoinQuantFactorRows(options);
   const headers = [
     'date',
     'security',
@@ -795,6 +809,8 @@ function buildBacktestResearchStatus() {
       ...factor,
       status: rows.some((row) => row[factor.id] !== null && row[factor.id] !== undefined) ? 'exportable' : 'missing_field',
       blocker: canRunLocalValidatedBacktest ? '本地可验证' : '需在 JoinQuant 匹配未来收益后验证',
+      csvEndpoint: `/backtest-api/joinquant-factor-export.csv?factor=${factor.id}`,
+      exportRows: buildJoinQuantFactorRows({ factor: factor.id }).length,
     })),
     joinquant: {
       csvEndpoint: '/backtest-api/joinquant-factor-export.csv',
@@ -1130,16 +1146,30 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'GET' && pathname === '/backtest-api/joinquant-factor-export') {
+    const factor = url.searchParams.get('factor');
+    if (factor && !findExportableBacktestFactor(factor)) {
+      sendError(res, `未知因子：${factor}`, 404);
+      return true;
+    }
     sendJson(res, {
       generatedAt: new Date().toISOString(),
       dataPolicy: '该导出只包含当前真实截面因子值，不包含任何未来收益或回测结论。',
-      rows: buildJoinQuantFactorRows(),
+      factor: factor || 'all',
+      rows: buildJoinQuantFactorRows({ factor }),
     });
     return true;
   }
 
   if (req.method === 'GET' && pathname === '/backtest-api/joinquant-factor-export.csv') {
-    sendCsv(res, 'm-quant-joinquant-factor-export.csv', buildJoinQuantCsv());
+    const factor = url.searchParams.get('factor');
+    if (factor && !findExportableBacktestFactor(factor)) {
+      sendError(res, `未知因子：${factor}`, 404);
+      return true;
+    }
+    const filename = factor
+      ? `m-quant-joinquant-${safeFilename(factor)}.csv`
+      : 'm-quant-joinquant-all-factors.csv';
+    sendCsv(res, filename, buildJoinQuantCsv({ factor }));
     return true;
   }
 
