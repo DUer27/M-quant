@@ -297,89 +297,275 @@ def score_from_dir_columns(df: pd.DataFrame, columns: list[str], weights: list[f
     return score / total if total else pd.Series(0.5, index=df.index)
 
 
+def neutral_series(df: pd.DataFrame, value: float = 0.5) -> pd.Series:
+    return pd.Series(value, index=df.index, dtype=float)
+
+
+def numeric_or_neutral(df: pd.DataFrame, column: str, value: float = 0.5) -> pd.Series:
+    if column not in df.columns:
+        return neutral_series(df, value)
+    return num_series(df[column])
+
+
+def bounded_peak_score(series: pd.Series, target: float, width: float) -> pd.Series:
+    score = 1 - (num_series(series) - target).abs() / width
+    return score.clip(lower=0, upper=1).fillna(0.5)
+
+
+def price_position_score(close: pd.Series, ma_values: list[tuple[pd.Series, float]]) -> pd.Series:
+    score = pd.Series(0.0, index=close.index)
+    total = 0.0
+    for ma, weight in ma_values:
+        valid = ma.notna() & close.notna()
+        score += ((close > ma) & valid).astype(float) * weight
+        total += weight
+    return score / total if total else pd.Series(0.5, index=close.index)
+
+
+def ma_stack_score(ma_values: list[tuple[pd.Series, float]]) -> pd.Series:
+    if len(ma_values) < 2:
+        return pd.Series(0.5, index=ma_values[0][0].index if ma_values else [])
+    score = pd.Series(0.0, index=ma_values[0][0].index)
+    total = 0.0
+    for (short_ma, _), (long_ma, weight) in zip(ma_values[:-1], ma_values[1:]):
+        valid = short_ma.notna() & long_ma.notna()
+        score += ((short_ma > long_ma) & valid).astype(float) * weight
+        total += weight
+    return score / total if total else pd.Series(0.5, index=ma_values[0][0].index)
+
+
 def build_indicator_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
     factors = pd.DataFrame(index=df.index)
     availability: dict[str, Any] = {}
 
+    close = numeric_or_neutral(df, "close", math.nan)
+    open_ = numeric_or_neutral(df, "open", math.nan)
+    high = numeric_or_neutral(df, "high", math.nan)
+    low = numeric_or_neutral(df, "low", math.nan)
+    day_range = (high - low).replace(0, np.nan)
+    body = (close - open_).abs()
+    signed_body = (close - open_) / day_range
+    body_ratio = (body / day_range).clip(lower=0, upper=1).fillna(0.0)
+    upper_ratio = ((high - np.maximum(open_, close)) / day_range).clip(lower=0, upper=1).fillna(0.0)
+    lower_ratio = ((np.minimum(open_, close) - low) / day_range).clip(lower=0, upper=1).fillna(0.0)
+    close_position = ((close - low) / day_range).clip(lower=0, upper=1).fillna(0.5)
+
+    volume_ratio_value = numeric_or_neutral(df, "volume_ratio", math.nan)
+    turnover_value = numeric_or_neutral(df, "turnover", math.nan)
+    amount_value = numeric_or_neutral(df, "amount", math.nan)
+    change_value = numeric_or_neutral(df, "change_pct", math.nan)
+    amplitude_value = numeric_or_neutral(df, "amplitude", math.nan)
+
     trend_cols = ["ma5_dir", "ma13_dir", "ma20_dir", "ma30_dir", "ma60_dir", "ma120_dir", "ma250_dir"]
+    ma_columns = ["ma5", "ma13", "ma20", "ma30", "ma60", "ma120", "ma250"]
+    ma_values = [(num_series(df[column]), weight) for column, weight in zip(ma_columns, [0.24, 0.20, 0.17, 0.14, 0.11, 0.08, 0.06]) if column in df.columns]
+    trend_dir_score = score_from_dir_columns(
+        df,
+        trend_cols,
+        [0.22, 0.18, 0.16, 0.14, 0.12, 0.10, 0.08],
+    )
+    trend_position_score = price_position_score(close, ma_values)
+    trend_stack_score = ma_stack_score(ma_values)
     factors["trend_alignment"] = score_from_dir_columns(
         df,
         trend_cols,
         [0.22, 0.18, 0.16, 0.14, 0.12, 0.10, 0.08],
     )
-    availability["trend_alignment"] = {"status": "computed", "fields": [col for col in trend_cols if col in df.columns]}
-
-    volume_ratio_rank = rank_pct(df["volume_ratio"], ascending=True) if "volume_ratio" in df else pd.Series(0.5, index=df.index)
-    turnover_rank = rank_pct(df["turnover"], ascending=True) if "turnover" in df else pd.Series(0.5, index=df.index)
-    amount_rank = rank_pct(df["amount"], ascending=True) if "amount" in df else pd.Series(0.5, index=df.index)
-    factors["volume_price_confirmation"] = clip01(
-        0.35 * score_from_dir_columns(df, ["mavol5_dir", "mavol10_dir"])
-        + 0.25 * factors["trend_alignment"]
-        + 0.20 * volume_ratio_rank
-        + 0.10 * turnover_rank
-        + 0.10 * amount_rank
+    factors["trend_alignment"] = clip01(
+        0.42 * trend_dir_score
+        + 0.34 * trend_position_score
+        + 0.24 * trend_stack_score
     )
-    availability["volume_price_confirmation"] = {"status": "computed", "fields": ["mavol5_dir", "mavol10_dir", "volume_ratio", "turnover", "amount"]}
+    availability["trend_alignment"] = {
+        "status": "computed",
+        "fields": [col for col in [*trend_cols, *ma_columns, "close"] if col in df.columns],
+        "formula": "0.42*均线方向 + 0.34*收盘价站上均线 + 0.24*均线多头堆叠",
+        "note": "专业版不只看网站方向字段，也检查价格是否站上多条均线、短中长期均线是否顺序排列。",
+    }
+
+    volume_ratio_rank = rank_pct(volume_ratio_value, ascending=True)
+    turnover_rank = rank_pct(turnover_value, ascending=True)
+    amount_rank = rank_pct(amount_value, ascending=True)
+    volume_quality = bounded_peak_score(volume_ratio_value, target=1.8, width=2.2)
+    turnover_quality = clip01(0.70 * turnover_rank + 0.30 * bounded_peak_score(turnover_value, target=6.0, width=10.0))
+    blowoff_penalty = clip01(
+        0.45 * (volume_ratio_value > 4).astype(float)
+        + 0.25 * (turnover_value > 12).astype(float)
+        + 0.20 * (upper_ratio > 0.45).astype(float)
+        + 0.10 * (amplitude_value > 12).astype(float)
+    )
+    factors["volume_price_confirmation"] = clip01(
+        0.28 * score_from_dir_columns(df, ["mavol5_dir", "mavol10_dir"])
+        + 0.24 * factors["trend_alignment"]
+        + 0.22 * volume_quality
+        + 0.12 * turnover_quality
+        + 0.10 * amount_rank
+        + 0.04 * close_position
+        - 0.16 * blowoff_penalty
+    )
+    availability["volume_price_confirmation"] = {
+        "status": "computed",
+        "fields": ["mavol5_dir", "mavol10_dir", "volume_ratio", "turnover", "amount", "close_position", "upper_shadow"],
+        "formula": "均量方向 + 趋势确认 + 温和放量质量 + 流动性；爆量、高换手、长上影、巨幅震荡扣分",
+        "note": "专业版把“放量确认”和“爆量出货风险”分开，避免把所有高量比都当成正信号。",
+    }
 
     if has_columns(df, ["stockk", "stockd", "stockj"]):
         kdj_dir_score = score_from_dir_columns(df, ["stockk_dir", "stockd_dir", "stockj_dir"])
-        k_minus_d = num_series(df["stockk"]) - num_series(df["stockd"])
-        factors["kdj_momentum"] = clip01(
-            0.45 * kdj_dir_score
-            + 0.35 * rank_pct(k_minus_d, ascending=True)
-            + 0.20 * rank_pct(df["stockj"], ascending=True)
-            - (num_series(df["stockj"]) > 100).astype(float) * 0.15
+        stockk = num_series(df["stockk"])
+        stockd = num_series(df["stockd"])
+        stockj = num_series(df["stockj"])
+        k_minus_d = stockk - stockd
+        j_quality = bounded_peak_score(stockj, target=75, width=55)
+        kdj_cross_score = clip01(0.55 * rank_pct(k_minus_d, ascending=True) + 0.45 * (stockk > stockd).astype(float))
+        kdj_overheat_penalty = clip01(
+            0.55 * (stockj > 100).astype(float)
+            + 0.25 * ((stockj > 90) & (stockk < stockd)).astype(float)
+            + 0.20 * ((stockj > 95) & (close_position < 0.45)).astype(float)
         )
-        availability["kdj_momentum"] = {"status": "computed", "fields": ["stockk", "stockd", "stockj"]}
+        factors["kdj_momentum"] = clip01(
+            0.34 * kdj_dir_score
+            + 0.36 * kdj_cross_score
+            + 0.20 * j_quality
+            + 0.10 * close_position
+            - 0.18 * kdj_overheat_penalty
+        )
+        availability["kdj_momentum"] = {
+            "status": "computed",
+            "fields": ["stockk", "stockd", "stockj", "stockk_dir", "stockd_dir", "stockj_dir", "close_position"],
+            "formula": "KDJ方向 + K-D强弱 + J值适中度 + 收盘位置 - KDJ过热惩罚",
+            "note": "专业版不再让极端高J值无条件加分，J>100或高位走弱会扣分。",
+        }
     else:
         factors["kdj_momentum"] = pd.Series(0.5, index=df.index)
         availability["kdj_momentum"] = {"status": "unavailable", "reason": "缺少 stockk/stockd/stockj"}
 
     if has_columns(df, ["macd", "diff", "dea"]):
-        diff_minus_dea = num_series(df["diff"]) - num_series(df["dea"])
-        factors["macd_acceleration"] = clip01(
-            0.45 * score_from_dir_columns(df, ["macd_dir", "diff_dir", "dea_dir"])
-            + 0.30 * rank_pct(df["macd"], ascending=True)
-            + 0.25 * rank_pct(diff_minus_dea, ascending=True)
+        macd = num_series(df["macd"])
+        diff = num_series(df["diff"])
+        dea = num_series(df["dea"])
+        diff_minus_dea = diff - dea
+        zero_axis_score = clip01(
+            0.60 * ((macd > 0) & (diff > 0)).astype(float)
+            + 0.25 * ((macd > 0) & (diff_minus_dea > 0)).astype(float)
+            + 0.15 * ((macd <= 0) & (diff_minus_dea > 0)).astype(float)
         )
-        availability["macd_acceleration"] = {"status": "computed", "fields": ["macd", "diff", "dea"]}
+        factors["macd_acceleration"] = clip01(
+            0.34 * score_from_dir_columns(df, ["macd_dir", "diff_dir", "dea_dir"])
+            + 0.28 * rank_pct(macd, ascending=True)
+            + 0.23 * rank_pct(diff_minus_dea, ascending=True)
+            + 0.15 * zero_axis_score
+        )
+        availability["macd_acceleration"] = {
+            "status": "computed",
+            "fields": ["macd", "diff", "dea", "macd_dir", "diff_dir", "dea_dir"],
+            "formula": "MACD方向 + 柱体强度排名 + DIFF-DEA扩张 + 零轴状态",
+            "note": "专业版区分零轴上方加速、零轴下方修复和单纯弱反弹。",
+        }
     else:
         factors["macd_acceleration"] = pd.Series(0.5, index=df.index)
         availability["macd_acceleration"] = {"status": "unavailable", "reason": "缺少 macd/diff/dea"}
 
     if has_columns(df, ["huolipan", "taolaopan"]):
-        profit_rank = rank_pct(df["huolipan"], ascending=True)
-        trap_rank = rank_pct(df["taolaopan"], ascending=True)
-        overlap_penalty = rank_pct(df["qujianchonghe"], ascending=True) if "qujianchonghe" in df else pd.Series(0.5, index=df.index)
-        factors["chip_health"] = clip01(0.55 * profit_rank + 0.30 * (1 - trap_rank) + 0.15 * (1 - overlap_penalty))
-        availability["chip_health"] = {"status": "computed", "fields": ["huolipan", "taolaopan", "qujianchonghe"]}
+        profit = num_series(df["huolipan"])
+        trap = num_series(df["taolaopan"])
+        profit_rank = rank_pct(profit, ascending=True)
+        trap_rank = rank_pct(trap, ascending=True)
+        concentration_inputs = []
+        for column in ["qujianchonghe", "jiushijizhong", "qishijizhong"]:
+            if column in df.columns:
+                concentration_inputs.append(rank_pct(df[column], ascending=True))
+        concentration_risk = sum(concentration_inputs) / len(concentration_inputs) if concentration_inputs else neutral_series(df)
+        cost_comfort = neutral_series(df)
+        if "pinjunchengben" in df.columns and "close" in df.columns:
+            avg_cost = num_series(df["pinjunchengben"])
+            cost_ratio = close / avg_cost.replace(0, np.nan)
+            cost_comfort = bounded_peak_score(cost_ratio, target=1.08, width=0.22)
+        profit_comfort = clip01(0.50 * profit_rank + 0.50 * bounded_peak_score(profit, target=65, width=45))
+        factors["chip_health"] = clip01(
+            0.34 * profit_comfort
+            + 0.30 * (1 - trap_rank)
+            + 0.18 * (1 - concentration_risk)
+            + 0.18 * cost_comfort
+        )
+        availability["chip_health"] = {
+            "status": "computed",
+            "fields": [column for column in ["huolipan", "taolaopan", "qujianchonghe", "jiushijizhong", "qishijizhong", "pinjunchengben", "close"] if column in df.columns],
+            "formula": "获利盘舒适度 + 低套牢盘 + 低筹码拥挤 + 现价相对平均成本舒适区",
+            "note": "专业版避免把极端高获利盘简单视为好事，同时检查套牢压力、筹码集中和成本偏离。",
+        }
     else:
         factors["chip_health"] = pd.Series(0.5, index=df.index)
         availability["chip_health"] = {"status": "unavailable", "reason": "缺少 huolipan/taolaopan"}
 
-    change_rank = rank_pct(df["change_pct"], ascending=True) if "change_pct" in df else pd.Series(0.5, index=df.index)
-    amplitude_rank = rank_pct(df["amplitude"], ascending=True) if "amplitude" in df else pd.Series(0.5, index=df.index)
-    factors["intraday_strength"] = clip01(0.40 * change_rank + 0.20 * amplitude_rank + 0.20 * volume_ratio_rank + 0.20 * turnover_rank)
-    availability["intraday_strength"] = {"status": "computed", "fields": ["change_pct", "amplitude", "volume_ratio", "turnover"]}
-
-    factors["crowding_risk"] = clip01(
-        0.30 * turnover_rank
-        + 0.25 * volume_ratio_rank
-        + 0.20 * amplitude_rank
-        + 0.15 * change_rank
-        + 0.10 * (1 - factors["chip_health"])
+    change_rank = rank_pct(change_value, ascending=True)
+    amplitude_rank = rank_pct(amplitude_value, ascending=True)
+    bullish_body_score = clip01((signed_body + 1) / 2).fillna(0.5)
+    candle_quality = clip01(0.45 * close_position + 0.25 * bullish_body_score + 0.20 * lower_ratio + 0.10 * (1 - upper_ratio))
+    factors["intraday_strength"] = clip01(
+        0.34 * change_rank
+        + 0.26 * candle_quality
+        + 0.16 * volume_quality
+        + 0.14 * turnover_quality
+        + 0.10 * (1 - upper_ratio)
     )
-    availability["crowding_risk"] = {"status": "computed", "fields": ["turnover", "volume_ratio", "amplitude", "change_pct", "chip_health"]}
+    availability["intraday_strength"] = {
+        "status": "computed",
+        "fields": ["change_pct", "amplitude", "volume_ratio", "turnover", "open", "high", "low", "close"],
+        "formula": "涨跌幅强度 + 收盘位置/实体质量 + 温和量能 + 流动性 - 上影压力",
+        "note": "专业版用OHLC计算收盘位置、实体强弱、上下影线，避免只看涨幅和振幅。",
+    }
+
+    upper_shadow_pressure = clip01(0.65 * upper_ratio + 0.35 * ((upper_ratio > lower_ratio) & (close_position < 0.55)).astype(float))
+    chip_overheat = rank_pct(num_series(df["huolipan"]), ascending=True) if "huolipan" in df.columns else neutral_series(df)
+    limit_style_heat = clip01(
+        0.45 * (change_value >= 9.5).astype(float)
+        + 0.25 * (turnover_value >= 10).astype(float)
+        + 0.20 * (volume_ratio_value >= 3).astype(float)
+        + 0.10 * (upper_ratio >= 0.35).astype(float)
+    )
+    factors["crowding_risk"] = clip01(
+        0.24 * turnover_rank
+        + 0.22 * volume_ratio_rank
+        + 0.18 * amplitude_rank
+        + 0.13 * change_rank
+        + 0.10 * chip_overheat
+        + 0.08 * upper_shadow_pressure
+        + 0.05 * limit_style_heat
+    )
+    availability["crowding_risk"] = {
+        "status": "computed",
+        "fields": ["turnover", "volume_ratio", "amplitude", "change_pct", "huolipan", "open", "high", "low", "close"],
+        "formula": "高换手 + 高量比 + 大振幅 + 高涨幅 + 高获利盘 + 上影压力 + 涨停式热度",
+        "note": "这是风险因子，分数越高越拥挤，主要用于降权、过滤或止盈提醒。",
+    }
 
     factors["technical_composite"] = clip01(
-        0.25 * factors["trend_alignment"]
-        + 0.20 * factors["volume_price_confirmation"]
-        + 0.18 * factors["macd_acceleration"]
-        + 0.15 * factors["kdj_momentum"]
-        + 0.12 * factors["chip_health"]
-        + 0.10 * factors["intraday_strength"]
+        0.24 * factors["trend_alignment"]
+        + 0.18 * factors["volume_price_confirmation"]
+        + 0.17 * factors["macd_acceleration"]
+        + 0.14 * factors["kdj_momentum"]
+        + 0.13 * factors["chip_health"]
+        + 0.14 * factors["intraday_strength"]
+        - 0.16 * factors["crowding_risk"]
     )
-    availability["technical_composite"] = {"status": "computed", "fields": ["trend_alignment", "volume_price_confirmation", "macd_acceleration", "kdj_momentum", "chip_health", "intraday_strength"]}
+    availability["technical_composite"] = {
+        "status": "computed",
+        "fields": ["trend_alignment", "volume_price_confirmation", "macd_acceleration", "kdj_momentum", "chip_health", "intraday_strength", "crowding_risk"],
+        "formula": "趋势/量价/MACD/KDJ/筹码/日内强度加权，扣除拥挤风险",
+        "note": "专业版把拥挤风险纳入综合分扣分项，避免高热度股票因为短线涨幅过强而被机械排到最前。",
+    }
+
+    factors["close_position_strength"] = close_position.round(6)
+    factors["candle_body_quality"] = candle_quality.round(6)
+    factors["upper_shadow_pressure"] = upper_shadow_pressure.round(6)
+    factors["volume_blowoff_risk"] = blowoff_penalty.round(6)
+    factors["chip_concentration_risk"] = concentration_risk.round(6) if "concentration_risk" in locals() else neutral_series(df).round(6)
+    availability["professional_sub_factors"] = {
+        "status": "computed",
+        "fields": ["close_position_strength", "candle_body_quality", "upper_shadow_pressure", "volume_blowoff_risk", "chip_concentration_risk"],
+        "note": "这些是专业版主因子的解释性子项，来自当前单日OHLC、量比、换手和筹码字段，不代表收益验证结果。",
+    }
 
     return factors, availability
 

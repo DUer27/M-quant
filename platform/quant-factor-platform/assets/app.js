@@ -128,6 +128,10 @@ function renderFactors(rows) {
           <td>${Number(row.technical_composite).toFixed(2)}</td>
           <td>${Number(row.trend_alignment).toFixed(2)}</td>
           <td>${Number(row.volume_price_confirmation).toFixed(2)}</td>
+          <td>${Number(row.intraday_strength).toFixed(2)}</td>
+          <td>${Number(row.close_position_strength ?? 0.5).toFixed(2)}</td>
+          <td>${Number(row.upper_shadow_pressure ?? 0).toFixed(2)}</td>
+          <td>${Number(row.volume_blowoff_risk ?? 0).toFixed(2)}</td>
           <td>${Number(row.kline_event_score || 0).toFixed(0)}</td>
           <td>${Number(row.crowding_risk).toFixed(2)}</td>
           <td><span class="tag ${tagClass}">${row.factor_label}</span></td>
@@ -180,6 +184,7 @@ function factorDisplayName(id) {
     kline_event_score: '单根K线评分',
     low_emotion_score: '低情绪反向',
     macd_acceleration: 'MACD动能加速',
+    professional_sub_factors: '专业解释子因子',
     technical_composite: '技术综合强度',
     trend_alignment: '趋势排列',
     volume_price_confirmation: '量价确认',
@@ -215,7 +220,7 @@ function buildLibraryEntries(summary, factorDefinitions) {
           definitionId: definition.id,
           direction: definition.direction,
           displayName: definition.name,
-          formula: definition.formula || realState.formula,
+          formula: realState.formula || definition.formula,
           note: realState.note || definition.signal,
           requiredFields: definition.requiredFields,
           usage: definition.usage,
