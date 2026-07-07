@@ -34,7 +34,10 @@ const elements = {
   backtestFactorTable: document.querySelector('#backtest-factor-table'),
   backtestImportMessage: document.querySelector('#backtest-import-message'),
   backtestLocalStatus: document.querySelector('#backtest-local-status'),
+  backtestResultNotes: document.querySelector('#backtest-result-notes'),
   backtestResultJson: document.querySelector('#backtest-result-json'),
+  backtestResultSummary: document.querySelector('#backtest-result-summary'),
+  backtestResultTable: document.querySelector('#backtest-result-table'),
   backtestRowCount: document.querySelector('#backtest-row-count'),
   backtestSourceFile: document.querySelector('#backtest-source-file'),
   backtestStatusList: document.querySelector('#backtest-status-list'),
@@ -234,6 +237,119 @@ function factorDisplayName(id) {
     sentiment_overheat_factor: '情绪过热因子',
   };
   return names[id] || id;
+}
+
+function formatNumber(value, digits = 4) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  return number.toFixed(digits);
+}
+
+function formatPercent(value, digits = 2) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  return `${(number * 100).toFixed(digits)}%`;
+}
+
+function resultTone(result) {
+  const rankIc = Number(result.rank_ic_mean ?? result.rankIc ?? 0);
+  const longShort = Number(result.long_short_mean ?? result.longShort ?? 0);
+  const dates = Number(result.sample_dates ?? 0);
+
+  if (dates < 20) return ['跟踪中', 'pending'];
+  if (rankIc >= 0.015 && longShort > 0) return ['较好', 'good'];
+  if (rankIc > 0 && longShort > 0) return ['观察', 'pending'];
+  return ['偏弱', 'watch'];
+}
+
+function renderBacktestResultSummary(results) {
+  if (!results.length) {
+    elements.backtestResultSummary.innerHTML = `
+      <div class="result-card">
+        <span>实测结果</span>
+        <strong>0</strong>
+        <small>等待 JoinQuant 回填</small>
+      </div>
+    `;
+    elements.backtestResultTable.innerHTML = '<tr><td colspan="10">暂无实测结果。</td></tr>';
+    elements.backtestResultNotes.textContent = '当前只展示真实导入结果，不生成估算绩效。';
+    return;
+  }
+
+  const factorCount = new Set(results.map((item) => item.factor_name || item.factor || item.name).filter(Boolean)).size;
+  const bestRankIc = results.reduce((best, item) => {
+    const current = Number(item.rank_ic_mean ?? item.rankIc);
+    const previous = Number(best?.rank_ic_mean ?? best?.rankIc);
+    if (!Number.isFinite(current)) return best;
+    if (!best || !Number.isFinite(previous) || current > previous) return item;
+    return best;
+  }, null);
+  const bestLongShort = results.reduce((best, item) => {
+    const current = Number(item.long_short_mean ?? item.longShort);
+    const previous = Number(best?.long_short_mean ?? best?.longShort);
+    if (!Number.isFinite(current)) return best;
+    if (!best || !Number.isFinite(previous) || current > previous) return item;
+    return best;
+  }, null);
+  const historicalCount = results.filter((item) => Number(item.sample_dates ?? 0) >= 20).length;
+
+  elements.backtestResultSummary.innerHTML = `
+    <div class="result-card">
+      <span>结果记录</span>
+      <strong>${escapeHtml(results.length)}</strong>
+      <small>${escapeHtml(factorCount)} 个因子</small>
+    </div>
+    <div class="result-card">
+      <span>历史样本结果</span>
+      <strong>${escapeHtml(historicalCount)}</strong>
+      <small>样本期不少于 20 个截面</small>
+    </div>
+    <div class="result-card">
+      <span>最佳 RankIC</span>
+      <strong>${formatNumber(bestRankIc?.rank_ic_mean ?? bestRankIc?.rankIc)}</strong>
+      <small>${escapeHtml(factorDisplayName(bestRankIc?.factor_name || bestRankIc?.factor || '-'))} / ${escapeHtml(bestRankIc?.horizon ?? '-')}日</small>
+    </div>
+    <div class="result-card">
+      <span>最佳多空</span>
+      <strong>${formatPercent(bestLongShort?.long_short_mean ?? bestLongShort?.longShort)}</strong>
+      <small>${escapeHtml(factorDisplayName(bestLongShort?.factor_name || bestLongShort?.factor || '-'))} / ${escapeHtml(bestLongShort?.horizon ?? '-')}日</small>
+    </div>
+  `;
+
+  elements.backtestResultTable.innerHTML = results
+    .slice()
+    .sort((left, right) => {
+      const leftDates = Number(left.sample_dates ?? 0);
+      const rightDates = Number(right.sample_dates ?? 0);
+      if (rightDates !== leftDates) return rightDates - leftDates;
+      return String(left.factor_name || left.factor || '').localeCompare(String(right.factor_name || right.factor || ''));
+    })
+    .map((result) => {
+      const [label, tone] = resultTone(result);
+      const factor = result.factor_name || result.factor || result.name || 'unknown';
+      return `
+        <tr>
+          <td><strong>${escapeHtml(factorDisplayName(factor))}</strong><br><small>${escapeHtml(result.factor_variant || factor)}</small></td>
+          <td>${escapeHtml(result.horizon ?? '-')}日</td>
+          <td>${result.direction === 'negative' ? '风险越高越差' : '分数越高越好'}</td>
+          <td>${escapeHtml(result.sample_dates ?? '-')} / ${formatNumber(result.coverage_mean, 0)}</td>
+          <td>${formatNumber(result.rank_ic_mean ?? result.rankIc)}</td>
+          <td>${formatNumber(result.rank_ic_t ?? result.rankIcT)}</td>
+          <td>${formatPercent(result.long_short_mean ?? result.longShort)}</td>
+          <td>${formatPercent(result.long_short_positive_ratio ?? result.positiveRatio)}</td>
+          <td>${escapeHtml(result.source || 'joinquant')}</td>
+          <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  const singleDayCount = results.filter((item) => Number(item.sample_dates ?? 0) < 20).length;
+  elements.backtestResultNotes.innerHTML = `
+    <strong>结果边界：</strong>
+    已导入结果来自 JoinQuant 实跑。${singleDayCount ? `${singleDayCount} 条为单日截面，只能跟踪，不能定论。` : ''}
+    历史重建结果基于 JoinQuant OHLCV，和 Yiwan 全字段因子不是完全等价复刻。
+  `;
 }
 
 function buildLibraryEntries(summary, factorDefinitions) {
@@ -588,6 +704,8 @@ function renderBacktestCenter(status) {
   elements.joinquantStepList.innerHTML = (status.joinquant?.steps || [])
     .map((step) => `<li>${escapeHtml(step)}</li>`)
     .join('');
+
+  renderBacktestResultSummary(status.importedResults || []);
 
   elements.importedBacktestList.innerHTML = (status.importedResults || [])
     .map((result) => `

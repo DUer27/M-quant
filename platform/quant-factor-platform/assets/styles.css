@@ -322,6 +322,45 @@ textarea {
   font-weight: 700;
 }
 
+.result-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.result-card {
+  background: #f7fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  min-height: 88px;
+  padding: 12px;
+}
+
+.result-card span,
+.result-card small,
+.result-notes {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.result-card strong {
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.result-notes {
+  background: #fbfcfe;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+}
+
 .table-action {
   background: #eef4fa;
   border: 1px solid var(--border);
