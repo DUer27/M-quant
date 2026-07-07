@@ -22,10 +22,10 @@
       {
         "id": "kline_event_score",
         "name": "K线形态离散评分因子",
-        "formula": "识别K线形态后按PDF第17页Kelly离散分数赋值；当前实现单根K线子集。",
-        "requiredFields": ["kaipan", "zuigao", "zuidi", "zuixin"],
+        "formula": "识别K线形态后按PDF第17页Kelly离散分数赋值；当前已覆盖PDF第17页有明确分数的单根K线形态。",
+        "requiredFields": ["kaipan", "zuigao", "zuidi", "zuixin", "liangbi", "ma5", "ma13", "ma20", "ma5_dir", "ma13_dir", "ma20_dir"],
         "currentStatus": "computed",
-        "currentLimit": "多根形态需要更长OHLCV历史和更完整形态规则。"
+        "currentLimit": "倒锤头、低成交量纺锤线已识别但不计分，因为PDF第17页未给出明确Kelly分数；多根形态需要更长OHLCV历史和更完整形态规则。"
       },
       {
         "id": "volume_price_resonance_60_5",
@@ -67,7 +67,7 @@
       "computedRows": 600,
       "latestMergedPack": "/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/merged-batches/yiwan-merged-indicators-20260707-093737-p001-p020.json",
       "latestFactorOutput": "/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-results.json",
-      "effectiveNow": ["kline_event_score", "technical_composite", "trend_alignment", "volume_price_confirmation", "kdj_momentum", "macd_acceleration", "chip_health", "crowding_risk"],
+      "effectiveNow": ["kline_event_score", "kline_unscored_patterns", "technical_composite", "trend_alignment", "volume_price_confirmation", "kdj_momentum", "macd_acceleration", "chip_health", "crowding_risk"],
       "notEffectiveYet": ["volume_price_resonance_60_5", "low_emotion_score", "emotion_weighted_kline_score", "IC", "RankIC", "win_rate", "annual_return"]
     }
   }

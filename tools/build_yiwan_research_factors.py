@@ -54,6 +54,22 @@ HUAFU_KLINE_RULES = [
         "source": "华福证券PDF第17页",
     },
     {
+        "id": "high_volume_spinning_top",
+        "name": "高成交量纺锤线",
+        "score": -1,
+        "holding_days": 1,
+        "kelly": -0.0735,
+        "source": "华福证券PDF第17页",
+    },
+    {
+        "id": "hanging_man",
+        "name": "上吊线",
+        "score": 2,
+        "holding_days": 4,
+        "kelly": 0.1022,
+        "source": "华福证券PDF第17页",
+    },
+    {
         "id": "shooting_star",
         "name": "射击之星",
         "score": 2,
@@ -84,6 +100,26 @@ HUAFU_KLINE_RULES = [
         "holding_days": 1,
         "kelly": -0.1951,
         "source": "华福证券PDF第17页",
+    },
+]
+
+
+UNSCORED_SINGLE_KLINE_RULES = [
+    {
+        "id": "inverted_hammer",
+        "name": "倒锤头",
+        "score": None,
+        "holding_days": None,
+        "kelly": None,
+        "source": "华福证券PDF第5页列入单根K线形态，但第17页打分表未给出明确分数。",
+    },
+    {
+        "id": "low_volume_spinning_top",
+        "name": "低成交量纺锤线",
+        "score": None,
+        "holding_days": None,
+        "kelly": None,
+        "source": "华福证券PDF第5页列入单根K线形态，但第17页打分表未给出明确分数。",
     },
 ]
 
@@ -370,37 +406,85 @@ def detect_kline_patterns(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any
     upper_ratio = upper / day_range
     lower_ratio = lower / day_range
     signed_return = (close - open_) / open_.replace(0, np.nan)
+    volume_ratio = num_series(df["volume_ratio"]) if "volume_ratio" in df.columns else pd.Series(np.nan, index=df.index)
+
+    close_above_short_ma = pd.Series(False, index=df.index)
+    close_below_short_ma = pd.Series(False, index=df.index)
+    if "ma5" in df.columns:
+        ma5 = num_series(df["ma5"])
+        close_above_short_ma = close_above_short_ma | (close > ma5)
+        close_below_short_ma = close_below_short_ma | (close < ma5)
+    if "ma13" in df.columns:
+        ma13 = num_series(df["ma13"])
+        close_above_short_ma = close_above_short_ma | (close > ma13)
+        close_below_short_ma = close_below_short_ma | (close < ma13)
+    if "ma20" in df.columns:
+        ma20 = num_series(df["ma20"])
+        close_above_short_ma = close_above_short_ma | (close > ma20)
+        close_below_short_ma = close_below_short_ma | (close < ma20)
+
+    ma5_dir = num_series(df["ma5_dir"]) if "ma5_dir" in df.columns else pd.Series(np.nan, index=df.index)
+    ma13_dir = num_series(df["ma13_dir"]) if "ma13_dir" in df.columns else pd.Series(np.nan, index=df.index)
+    ma20_dir = num_series(df["ma20_dir"]) if "ma20_dir" in df.columns else pd.Series(np.nan, index=df.index)
+    up_context = (close_above_short_ma & ((ma5_dir > 0) | (ma13_dir > 0) | (ma20_dir > 0))).fillna(False)
+    down_context = (close_below_short_ma & ((ma5_dir <= 0) | (ma13_dir <= 0) | (ma20_dir <= 0))).fillna(False)
+
+    spinning_top_shape = (
+        (body_ratio > 0.08)
+        & (body_ratio <= 0.35)
+        & (upper_ratio >= 0.20)
+        & (lower_ratio >= 0.20)
+    )
+    high_volume = (volume_ratio >= 1.5) | (volume_ratio.rank(pct=True, ascending=True) >= 0.80)
+    low_volume = (volume_ratio <= 0.8) | (volume_ratio.rank(pct=True, ascending=True) <= 0.20)
+    long_lower_shadow = (lower_ratio >= 0.55) & (upper_ratio <= 0.18) & (body_ratio <= 0.35)
+    long_upper_shadow = (upper_ratio >= 0.55) & (lower_ratio <= 0.18) & (body_ratio <= 0.35)
 
     patterns = pd.DataFrame(index=df.index)
     patterns["bullish_marubozu"] = (close > open_) & (upper_ratio <= 0.08) & (lower_ratio <= 0.08) & (body_ratio >= 0.82)
     patterns["bearish_marubozu"] = (close < open_) & (upper_ratio <= 0.08) & (lower_ratio <= 0.08) & (body_ratio >= 0.82)
     patterns["big_bullish_candle"] = (signed_return >= 0.05) & (body_ratio >= 0.65)
     patterns["big_bearish_candle"] = (signed_return <= -0.05) & (body_ratio >= 0.65)
-    patterns["hammer"] = (lower_ratio >= 0.55) & (upper_ratio <= 0.18) & (body_ratio <= 0.35)
-    patterns["shooting_star"] = (upper_ratio >= 0.55) & (lower_ratio <= 0.18) & (body_ratio <= 0.35)
+    patterns["hammer"] = long_lower_shadow & ~up_context
+    patterns["hanging_man"] = long_lower_shadow & up_context
+    patterns["shooting_star"] = long_upper_shadow & up_context
+    patterns["inverted_hammer"] = long_upper_shadow & ~up_context
+    patterns["high_volume_spinning_top"] = spinning_top_shape & high_volume
+    patterns["low_volume_spinning_top"] = spinning_top_shape & low_volume
     patterns["doji"] = body_ratio <= 0.08
     patterns["dragonfly_doji"] = patterns["doji"] & (lower_ratio >= 0.60) & (upper_ratio <= 0.12)
     patterns["gravestone_doji"] = patterns["doji"] & (upper_ratio >= 0.60) & (lower_ratio <= 0.12)
 
     score = pd.Series(0.0, index=df.index)
     hit_names: list[list[str]] = [[] for _ in range(len(df))]
+    scored_pattern_ids = []
     for rule in HUAFU_KLINE_RULES:
         mask = patterns[rule["id"]].fillna(False)
+        scored_pattern_ids.append(rule["id"])
         score += mask.astype(float) * rule["score"]
         for row_position in np.where(mask.to_numpy())[0]:
             hit_names[row_position].append(rule["name"])
 
+    unscored_hit_names: list[list[str]] = [[] for _ in range(len(df))]
+    for rule in UNSCORED_SINGLE_KLINE_RULES:
+        mask = patterns[rule["id"]].fillna(False)
+        for row_position in np.where(mask.to_numpy())[0]:
+            unscored_hit_names[row_position].append(rule["name"])
+
     result = pd.DataFrame(index=df.index)
     result["kline_event_score"] = score
-    result["kline_event_count"] = patterns.sum(axis=1)
+    result["kline_event_count"] = patterns[scored_pattern_ids].sum(axis=1)
+    result["kline_unscored_event_count"] = patterns[[rule["id"] for rule in UNSCORED_SINGLE_KLINE_RULES]].sum(axis=1)
     result["kline_patterns"] = [";".join(names) if names else "" for names in hit_names]
+    result["kline_unscored_patterns"] = [";".join(names) if names else "" for names in unscored_hit_names]
 
     availability = {
         "kline_event_score": {
             "status": "computed",
-            "fields": required,
-            "note": "当前实现为可复现的单根K线子集；多根形态需要更长OHLCV历史和形态识别规则。",
+            "fields": required + ["volume_ratio", "ma5", "ma13", "ma20", "ma5_dir", "ma13_dir", "ma20_dir"],
+            "note": "当前实现为PDF第17页有明确Kelly打分的单根K线形态。倒锤头和低成交量纺锤线仅识别不计分，因为PDF第17页未给出明确分数。",
             "rules": HUAFU_KLINE_RULES,
+            "unscored_rules": UNSCORED_SINGLE_KLINE_RULES,
         }
     }
     return result, availability

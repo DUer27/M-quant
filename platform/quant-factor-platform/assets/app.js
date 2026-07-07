@@ -76,7 +76,10 @@ function renderFactors(rows) {
             ? 'watch'
             : 'neutral';
       const stockCode = String(row.stock_code).padStart(6, '0');
-      const reason = row.factor_reason || row.kline_patterns || '';
+      const klineNotes = [row.kline_patterns, row.kline_unscored_patterns ? `未计分：${row.kline_unscored_patterns}` : '']
+        .filter(Boolean)
+        .join('；');
+      const reason = row.factor_reason || klineNotes;
       return `
         <tr title="${reason}">
           <td>${stockCode} ${row.stock_name}</td>
