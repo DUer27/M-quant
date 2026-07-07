@@ -1,0 +1,74 @@
+[
+  {
+    "id": "huafu_emotion_weighted_kline",
+    "name": "华福情绪系数加权K线评分策略",
+    "source": {
+      "file": "/Users/Admin/Desktop/2026-05-28_华福证券_情绪系数加权个股K线评分的选股策略.pdf",
+      "pages": [16, 17, 18, 24, 25, 29, 30, 31],
+      "note": "仅复现报告中可由当前真实数据支持的逻辑；报告原始业绩不作为本平台业绩。"
+    },
+    "status": "partial_real_data",
+    "dataPolicy": "所有计算必须来自本地采集明细数据；无未来收益标签时不输出IC、胜率、年化收益。",
+    "universe": {
+      "current": "yiwan indicators_current 已采样本",
+      "target": "全A或用户指定股票池",
+      "filters": [
+        "剔除无法交易标的",
+        "剔除综合K线评分小于0的偏空标的",
+        "价量共振大于2时标记为情绪过热，策略默认过滤或降权"
+      ]
+    },
+    "factors": [
+      {
+        "id": "kline_event_score",
+        "name": "K线形态离散评分因子",
+        "formula": "识别K线形态后按PDF第17页Kelly离散分数赋值；当前实现单根K线子集。",
+        "requiredFields": ["kaipan", "zuigao", "zuidi", "zuixin"],
+        "currentStatus": "computed",
+        "currentLimit": "多根形态需要更长OHLCV历史和更完整形态规则。"
+      },
+      {
+        "id": "volume_price_resonance_60_5",
+        "name": "价量共振情绪因子",
+        "formula": "MA(volume,5)/MA(volume,240) * MA(close,60)/lag(MA(close,60),5)",
+        "requiredFields": ["stock_code", "date", "zuixin", "zongshou"],
+        "currentStatus": "insufficient_history",
+        "currentLimit": "每只股票至少需要240个交易日成交量和65个交易日价格。"
+      },
+      {
+        "id": "low_emotion_score",
+        "name": "低情绪反向因子",
+        "formula": "-zscore(volume_price_resonance_60_5) by date",
+        "requiredFields": ["volume_price_resonance_60_5"],
+        "currentStatus": "blocked_by_resonance_history",
+        "currentLimit": "价量共振暂无有效值，不能标准化。"
+      },
+      {
+        "id": "emotion_weighted_kline_score",
+        "name": "情绪系数加权K线因子",
+        "formula": "low_emotion_score * kline_event_score",
+        "requiredFields": ["low_emotion_score", "kline_event_score"],
+        "currentStatus": "blocked_by_resonance_history",
+        "currentLimit": "等待足够历史后才可计算。"
+      }
+    ],
+    "portfolioRules": {
+      "ranking": "按 emotion_weighted_kline_score 降序；当前历史不足时仅可观察 kline_event_score 与 technical_composite。",
+      "selection": "报告使用Top50等权多头；本平台必须等待足够历史和未来收益标签后再启用真实回测。",
+      "rebalance": "日频生成信号，实际调仓频率待回测确认。",
+      "riskControls": [
+        "不使用summary文件计算",
+        "不使用短历史替代240日量能",
+        "不展示未验证收益指标",
+        "情绪过热样本默认过滤或单独风控标记"
+      ]
+    },
+    "currentRealDataState": {
+      "computedRows": 600,
+      "latestMergedPack": "/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/merged-batches/yiwan-merged-indicators-20260707-093737-p001-p020.json",
+      "latestFactorOutput": "/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-results.json",
+      "effectiveNow": ["kline_event_score", "technical_composite", "trend_alignment", "volume_price_confirmation", "kdj_momentum", "macd_acceleration", "chip_health", "crowding_risk"],
+      "notEffectiveYet": ["volume_price_resonance_60_5", "low_emotion_score", "emotion_weighted_kline_score", "IC", "RankIC", "win_rate", "annual_return"]
+    }
+  }
+]
