@@ -276,14 +276,86 @@
         </div>
 
         <div id="strategy-library-view" class="view">
+          <section class="metrics-grid" aria-label="策略集指标">
+            <article class="metric">
+              <span>入池候选</span>
+              <strong id="strategy-strong-count">-</strong>
+              <small>核心策略通过</small>
+            </article>
+            <article class="metric">
+              <span>低仓观察</span>
+              <strong id="strategy-observation-count">-</strong>
+              <small>等待二次确认</small>
+            </article>
+            <article class="metric">
+              <span>部分可用</span>
+              <strong id="strategy-partial-count">-</strong>
+              <small>规则未完全闭环</small>
+            </article>
+            <article class="metric">
+              <span>待数据策略</span>
+              <strong id="strategy-blocked-count">-</strong>
+              <small>缺资金/历史字段</small>
+            </article>
+          </section>
+
           <section class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Strategy Library</p>
-                <h2>策略集</h2>
+                <p class="eyebrow">Live Strategy Signals</p>
+                <h2>策略工作台</h2>
               </div>
             </div>
-            <div id="strategy-library-list" class="strategy-list"></div>
+            <div class="library-source" id="strategy-source-file">策略数据源等待加载</div>
+            <div id="strategy-live-list" class="strategy-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Decision Candidates</p>
+                <h2>真实策略候选</h2>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>股票</th>
+                  <th>决策分</th>
+                  <th>趋势</th>
+                  <th>量价</th>
+                  <th>拥挤</th>
+                  <th>背离</th>
+                  <th>警报</th>
+                  <th>动作</th>
+                  <th>仓位</th>
+                  <th>原因</th>
+                </tr>
+              </thead>
+              <tbody id="strategy-candidate-table"></tbody>
+            </table>
+          </section>
+
+          <section class="content-grid lower">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Unavailable</p>
+                  <h2>等待数据的策略</h2>
+                </div>
+              </div>
+              <div id="strategy-unavailable-list" class="status-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Definitions</p>
+                  <h2>策略定义</h2>
+                </div>
+              </div>
+              <div id="strategy-library-list" class="strategy-list"></div>
+            </section>
           </section>
         </div>
       </main>

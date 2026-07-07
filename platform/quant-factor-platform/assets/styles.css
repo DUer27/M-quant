@@ -190,6 +190,7 @@ h2 {
 
 .panel {
   min-width: 0;
+  overflow-x: auto;
   padding: 18px;
 }
 
@@ -416,6 +417,10 @@ td small {
   margin-top: 14px;
 }
 
+.strategy-columns.three {
+  grid-template-columns: 0.7fr 0.5fr minmax(0, 1.4fr);
+}
+
 .strategy-columns div {
   background: #f7fafc;
   border: 1px solid var(--border);
@@ -469,7 +474,8 @@ meter {
   .metrics-grid,
   .content-grid,
   .content-grid.lower,
-  .strategy-columns {
+  .strategy-columns,
+  .strategy-columns.three {
     grid-template-columns: 1fr;
   }
 
