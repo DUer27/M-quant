@@ -4,6 +4,18 @@
 
 ## 2026-07-07
 
+### `5cc5d01` Add single-factor JoinQuant exports
+- Refined the JoinQuant export workflow from bulk-only export to one-factor-at-a-time export.
+- Kept the full export as a backup option, but made single-factor export the primary workflow.
+- Added per-factor CSV endpoints:
+  - `/backtest-api/joinquant-factor-export.csv?factor=volume_price_confirmation`
+  - `/backtest-api/joinquant-factor-export.csv?factor=trend_alignment`
+  - `/backtest-api/joinquant-factor-export.csv?factor=crowding_risk`
+- The backtest center factor table now includes `下载该因子` for each exportable factor.
+- Verified `volume_price_confirmation` returns one header row plus 600 real rows, with no mixed factor rows.
+- Data honesty note: exports still contain factor values only; no IC, RankIC, win rate, annual return, or future-return result was created.
+- Detail log: `logs/2026-07-07-single-factor-export.md`
+
 ### `1fe9825` Activate backtest center for JoinQuant validation
 - Activated `回测中心` as an independent factor validation workstation.
 - Added real validation status instead of placeholder performance output.
