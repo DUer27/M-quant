@@ -4,6 +4,26 @@
 
 ## 2026-07-07
 
+### `2af21b2` Activate strategy board with live signals
+- Activated the strategy board as a real strategy workstation instead of a static placeholder.
+- Added `/strategy-api/live-signals`, built only from current real factor outputs.
+- Real data basis: 600 Yiwan indicator rows from `2026-07-06 15:00:00`.
+- Current strategy board shows:
+  - 1 executable strategy: `核心决策因子策略`
+  - 1 partially available strategy: `K线辅助确认策略`
+  - 2 waiting-for-data strategies: `资金跟随策略`, `市场情绪仓位策略`
+  - 2 `入池候选`
+  - 9 `低仓观察`
+  - 66 risk rows
+- Candidate actions now include:
+  - `入池候选`
+  - `低仓观察`
+  - `暂不入场`
+  - `中性跟踪`
+  - `过滤`
+- Data honesty note: no IC, RankIC, win rate, annual return, or future-return backtest result was created.
+- Detail log: `logs/2026-07-07-strategy-board-activation.md`
+
 ### `0a30b57` Refine core decision factors
 - Refined the three highest-impact currently computable factors into stricter core decision factors:
   - `trend_alignment`
