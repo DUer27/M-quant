@@ -4,6 +4,22 @@
 
 ## 2026-07-07
 
+### Add Yiwan capital-flow factor pack
+- 使用用户提供的 `2026-07-01`、`2026-07-02`、`2026-07-03` 日期包构建真实资金流因子。
+- 新增资金因子：
+  - `capital_follow_signal`
+  - `active_ap_accumulation`
+  - `main_force_alignment`
+  - `institutional_contra_divergence`
+  - `capital_overheat_risk`
+  - `capital_persistence_2d`
+  - `market_capital_regime`
+- 生成 1239 行个股资金因子，覆盖 1040 只股票。
+- 个股资金因子覆盖 `2026-07-01`、`2026-07-02`；`2026-07-03` 仅用于市场资金状态。
+- 接入因子库、研究流水线和回测中心单因子导出。
+- Data honesty note: these are real factor values from user-provided Yiwan date batches, not validated performance metrics; no IC, RankIC, win rate, annual return, or future return was created.
+- Detail log: `logs/2026-07-07-capital-flow-factor-pack.md`
+
 ### Add research pipeline and refine validated-result navigation
 - 新增独立 `研究流水线` 大板块，用于管理因子假设、真实状态、实测证据、数据缺口和下一步动作。
 - 新增本地约束研究助手：

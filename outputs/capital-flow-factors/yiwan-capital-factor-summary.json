@@ -1,0 +1,138 @@
+{
+  "source_files": [
+    "/Users/Admin/Desktop/yiwan-batch-20260707-093737-dates-2026-07-01-2026-07-01.json",
+    "/Users/Admin/Desktop/yiwan-batch-20260707-093737-dates-2026-07-02-2026-07-02.json",
+    "/Users/Admin/Desktop/yiwan-batch-20260707-093737-dates-2026-07-03-2026-07-03.json"
+  ],
+  "input_kind": "yiwan_date_capital_batches",
+  "data_policy": "Only real rows from user-provided Yiwan date batches are used. No performance metrics or future returns are created.",
+  "rows": 1239,
+  "stock_dates": [
+    "2026-07-01",
+    "2026-07-02"
+  ],
+  "unique_stocks": 1040,
+  "section_rows": {
+    "main_force": 591,
+    "active_ap_stock": 994
+  },
+  "market_regimes": [
+    {
+      "date": "2026-07-01",
+      "market_capital_regime": 1.0,
+      "cum_flow": 124560862857.14285,
+      "cum_ma": 97290811714.28572,
+      "flow_vs_ma": 0.280294,
+      "intraday_ap_end": 11453300.0,
+      "intraday_ap_slope": 1.0,
+      "status": "computed_from_big_market_daily_and_big_ap"
+    },
+    {
+      "date": "2026-07-02",
+      "market_capital_regime": 0.275276,
+      "cum_flow": 89702715714.28572,
+      "cum_ma": 94224667142.85715,
+      "flow_vs_ma": -0.047991,
+      "intraday_ap_end": -10616300.0,
+      "intraday_ap_slope": -0.928526,
+      "status": "computed_from_big_market_daily_and_big_ap"
+    },
+    {
+      "date": "2026-07-03",
+      "market_capital_regime": 0.446739,
+      "cum_flow": 78564451428.57144,
+      "cum_ma": 93290596285.71428,
+      "flow_vs_ma": -0.157852,
+      "intraday_ap_end": 10744100.0,
+      "intraday_ap_slope": 0.756456,
+      "status": "computed_from_big_market_daily_and_big_ap"
+    }
+  ],
+  "factor_meta": {
+    "status": "computed",
+    "input_kind": "yiwan_date_capital_batches",
+    "rows": 1239,
+    "availability": {
+      "capital_follow_signal": {
+        "status": "computed",
+        "category": "capital_flow",
+        "displayName": "资金跟随信号",
+        "fields": [
+          "main_force_by_date",
+          "active_ap_stock_by_date",
+          "columns 49/53/61/62/77"
+        ],
+        "formula": "主力/活跃暗盘吸筹分数均值 + 双来源确认；分数越高表示资金信号越一致。",
+        "note": "字段来自用户日期包真实行。数字列含义按同批页面结构使用，不写入收益结论。",
+        "usage": "作为资金确认因子，适合和趋势质量、量价确认共同过滤。"
+      },
+      "active_ap_accumulation": {
+        "status": "computed",
+        "category": "capital_flow",
+        "displayName": "活跃暗盘吸筹",
+        "fields": [
+          "active_ap_stock_by_date",
+          "columns 53/61/62/77/10"
+        ],
+        "formula": "活跃暗盘资金强度 + 净流入强度 + 价格确认 + 热度舒适度 - 过高换手惩罚。",
+        "note": "仅在活跃暗盘个股列表出现的股票上计算。"
+      },
+      "main_force_alignment": {
+        "status": "computed",
+        "category": "capital_flow",
+        "displayName": "主力一致性",
+        "fields": [
+          "main_force_by_date",
+          "columns 53/61/62/77/10"
+        ],
+        "formula": "主力资金强度 + 净流入强度 + 价格确认 + 热度舒适度 - 过高换手惩罚。",
+        "note": "仅在主力数据列表出现的股票上计算。"
+      },
+      "institutional_contra_divergence": {
+        "status": "computed",
+        "category": "capital_flow",
+        "displayName": "主反向背离",
+        "fields": [
+          "columns 53/61/62"
+        ],
+        "formula": "主资金强度 + 净流入强度 - 反向流压力。",
+        "note": "用于观察资金方向是否一致，不等同于收益预测。"
+      },
+      "capital_overheat_risk": {
+        "status": "computed",
+        "category": "risk",
+        "displayName": "资金过热风险",
+        "fields": [
+          "turnover",
+          "heat_score",
+          "change_pct",
+          "reverse_flow",
+          "net_flow"
+        ],
+        "formula": "高换手 + 高热度 + 高涨幅 + 反向流压力 + 净流弱化。",
+        "note": "风险因子，分数越高越应谨慎。"
+      },
+      "capital_persistence_2d": {
+        "status": "partial_real_data",
+        "category": "capital_flow",
+        "displayName": "2日资金持续性",
+        "fields": [
+          "capital_follow_signal by stock/date"
+        ],
+        "formula": "当日资金跟随信号与上一可用交易日信号加权。",
+        "note": "当前只有 2026-07-01 和 2026-07-02 有个股资金行，样本很短，只能作为持续性雏形。"
+      },
+      "market_capital_regime": {
+        "status": "computed",
+        "category": "market",
+        "displayName": "市场资金状态",
+        "fields": [
+          "big_market_daily_by_date",
+          "big_ap_by_date"
+        ],
+        "formula": "大盘累计资金相对均线 + 盘中暗盘累计斜率。",
+        "note": "市场级状态因子，不是个股因子，不输出个股收益结论。"
+      }
+    }
+  }
+}
