@@ -23,6 +23,10 @@ const researchFactorResultsPath =
   '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-results.json';
 const researchFactorSummaryPath =
   '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-summary.json';
+const capitalFactorResultsPath =
+  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/capital-flow-factors/yiwan-capital-factor-results.json';
+const capitalFactorSummaryPath =
+  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/capital-flow-factors/yiwan-capital-factor-summary.json';
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
 const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
 
@@ -690,6 +694,42 @@ const exportableBacktestFactors = [
     direction: 'positive',
     usage: '验证短周期动能对 1/5/10 日收益的解释力。',
   },
+  {
+    id: 'capital_follow_signal',
+    name: '资金跟随信号',
+    direction: 'positive',
+    usage: '验证主力与活跃暗盘资金同向增强时，是否对应后续收益改善。',
+  },
+  {
+    id: 'active_ap_accumulation',
+    name: '活跃暗盘吸筹',
+    direction: 'positive',
+    usage: '验证活跃暗盘资金强度和净流入强度是否能作为资金确认。',
+  },
+  {
+    id: 'main_force_alignment',
+    name: '主力一致性',
+    direction: 'positive',
+    usage: '验证主力资金强度、净流入和价格确认是否同向。',
+  },
+  {
+    id: 'institutional_contra_divergence',
+    name: '主反向背离',
+    direction: 'positive',
+    usage: '验证主资金强、反向流压力低的资金结构是否更健康。',
+  },
+  {
+    id: 'capital_overheat_risk',
+    name: '资金过热风险',
+    direction: 'negative',
+    usage: '验证高换手、高热度、高涨幅并伴随反向流压力时的回撤风险。',
+  },
+  {
+    id: 'capital_persistence_2d',
+    name: '2日资金持续性',
+    direction: 'positive',
+    usage: '验证连续两日资金跟随信号是否比单日资金信号更稳定。',
+  },
 ];
 
 function findExportableBacktestFactor(factorId) {
@@ -707,8 +747,8 @@ function safeFilename(value) {
 function buildJoinQuantFactorRows(options = {}) {
   const selectedFactor = findExportableBacktestFactor(options.factor);
   const factors = selectedFactor ? [selectedFactor] : exportableBacktestFactors;
-  const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
-  const sourceSummary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+  const rows = readBacktestFactorRows();
+  const sourceSummary = readCombinedFactorSummary();
 
   return rows.flatMap((row) => factors
     .filter((factor) => row[factor.id] !== null && row[factor.id] !== undefined && row[factor.id] !== '')
@@ -756,9 +796,60 @@ function readImportedBacktestResults() {
   return readJsonFile(importedBacktestResultsPath, []);
 }
 
+function readPrimaryFactorRows() {
+  return readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
+}
+
+function readCapitalFactorRows() {
+  return readJsonFile(capitalFactorResultsPath, []);
+}
+
+function readBacktestFactorRows() {
+  return [
+    ...readPrimaryFactorRows(),
+    ...readCapitalFactorRows(),
+  ];
+}
+
+function readCombinedFactorSummary() {
+  const primary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+  const capital = readJsonFile(capitalFactorSummaryPath, {});
+  const primaryMeta = primary.factor_meta || {};
+  const capitalMeta = capital.factor_meta || {};
+  const primaryAvailability = primaryMeta.availability || {};
+  const capitalAvailability = capitalMeta.availability || {};
+
+  if (!Object.keys(capital).length) return primary;
+
+  return {
+    ...primary,
+    additional_sources: [
+      ...(primary.additional_sources || []),
+      {
+        file: capitalFactorSummaryPath,
+        input_kind: capital.input_kind,
+        rows: capital.rows || 0,
+        stock_dates: capital.stock_dates || [],
+        unique_stocks: capital.unique_stocks || 0,
+      },
+    ],
+    factor_meta: {
+      ...primaryMeta,
+      availability: {
+        ...primaryAvailability,
+        ...capitalAvailability,
+      },
+      capital_factor_meta: capitalMeta,
+      capital_market_regimes: capital.market_regimes || [],
+      rows: (primaryMeta.rows || 0) + (capital.rows || 0),
+    },
+    input_kind: [primary.input_kind, capital.input_kind].filter(Boolean).join(' + '),
+  };
+}
+
 function buildBacktestResearchStatus() {
-  const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
-  const summary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+  const rows = readBacktestFactorRows();
+  const summary = readCombinedFactorSummary();
   const uniqueDates = new Set(rows.map((row) => dateOnly(row.date || row.stock_date)).filter(Boolean));
   const uniqueStocks = new Set(rows.map((row) => row.stock_code || row.code).filter(Boolean));
   const exportRows = buildJoinQuantFactorRows();
@@ -966,8 +1057,8 @@ function actionFromResearchEntry(entry, source) {
 
 function buildResearchPipeline() {
   const backtestStatus = buildBacktestResearchStatus();
-  const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
-  const summary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+  const rows = readBacktestFactorRows();
+  const summary = readCombinedFactorSummary();
   const availability = summary.factor_meta?.availability || {};
   const importedResults = readImportedBacktestResults();
   const resultStats = summarizeImportedResults(importedResults);
@@ -1376,7 +1467,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'GET' && pathname === '/factor-api/real-factor-summary') {
-    sendJson(res, readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {}));
+    sendJson(res, readCombinedFactorSummary());
     return true;
   }
 
