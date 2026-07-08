@@ -2,6 +2,32 @@
 
 > This file is the human-readable upgrade ledger. Every meaningful platform, data, factor, or strategy change should be recorded here with the matching local git commit.
 
+## 2026-07-08
+
+### Add real JoinQuant volatility x market-cap strategy results
+- 新增策略交叉分层脚本导出：
+  - `/strategy-api/joinquant-volatility-size-script.py?strategy=core_volume_price_trend_v1`
+- 交叉口径：
+  - 市场波动率：沪深300 20日滚动年化波动率。
+  - 高波动：滚动约1年 70% 分位以上。
+  - 低波动：滚动约1年 30% 分位以下。
+  - 中波动：两者之间。
+  - 市值层：JoinQuant `valuation.market_cap` 当日沪深300截面分位。
+  - 大市值：市值分位 >= 0.67。
+  - 小市值：市值分位 <= 0.33。
+  - 中市值：两者之间。
+- 在 JoinQuant 研究环境实跑并导入真实结果：
+  - `result_type`: `strategy_regime_size_backtest`
+  - `source`: `joinquant_volatility_market_cap_cross_rebuild`
+  - 9 个组合：高/中/低波动 × 大/中/小市值。
+  - 27 条周期结果：每个组合覆盖 5日、10日、20日。
+  - 样本：35400 因子行、3237 条策略候选、118 个测试日。
+- `策略实测` 页面已支持同时按市场波动率和市值层筛选。
+- 策略池新增 `交叉脚本` 按钮，方便后续重新导出 JoinQuant 脚本。
+- 已验证页面筛选：`高波动 + 大市值` 可显示 5/10/20 日三条真实结果。
+- Data honesty note: these strategy results came from JoinQuant real OHLCV, CSI300 index data, and `valuation.market_cap`; no estimated or fabricated performance result was written.
+- Detail log: `logs/2026-07-08-strategy-volatility-size-cross.md`
+
 ## 2026-07-07
 
 ### Add Yiwan capital-flow factor pack

@@ -45,10 +45,16 @@ const elements = {
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
   demoFactorCount: document.querySelector('#demo-factor-count'),
   downloadJoinquantCsv: document.querySelector('#download-joinquant-csv'),
+  draftStrategyJump: document.querySelector('#draft-strategy-jump'),
+  draftStrategyPagination: document.querySelector('#draft-strategy-pagination'),
+  draftStrategySearch: document.querySelector('#draft-strategy-search'),
+  draftStrategyToggle: document.querySelector('#draft-strategy-toggle'),
   factorTable: document.querySelector('#factor-table'),
   factorLibraryTable: document.querySelector('#factor-library-table'),
   fee: document.querySelector('#fee'),
   formMessage: document.querySelector('#form-message'),
+  formalStrategyList: document.querySelector('#formal-strategy-list'),
+  formalStrategyPolicy: document.querySelector('#formal-strategy-policy'),
   importedBacktestList: document.querySelector('#imported-backtest-list'),
   importBacktestResult: document.querySelector('#import-backtest-result'),
   joinquantExportSummary: document.querySelector('#joinquant-export-summary'),
@@ -87,6 +93,16 @@ const elements = {
   strategyLibraryList: document.querySelector('#strategy-library-list'),
   strategyObservationCount: document.querySelector('#strategy-observation-count'),
   strategyPartialCount: document.querySelector('#strategy-partial-count'),
+  strategyResultBestHorizon: document.querySelector('#strategy-result-best-horizon'),
+  strategyResultCount: document.querySelector('#strategy-result-count'),
+  strategyResultDirectory: document.querySelector('#strategy-result-directory'),
+  strategyResultNotes: document.querySelector('#strategy-result-notes'),
+  strategyResultRegimeFilter: document.querySelector('#strategy-result-regime-filter'),
+  strategyResultSizeFilter: document.querySelector('#strategy-result-size-filter'),
+  strategyResultStrategyCount: document.querySelector('#strategy-result-strategy-count'),
+  strategyResultSummary: document.querySelector('#strategy-result-summary'),
+  strategyResultTable: document.querySelector('#strategy-result-table'),
+  strategyResultTradeCount: document.querySelector('#strategy-result-trade-count'),
   strategySourceFile: document.querySelector('#strategy-source-file'),
   strategyStrongCount: document.querySelector('#strategy-strong-count'),
   strategyUnavailableList: document.querySelector('#strategy-unavailable-list'),
@@ -100,9 +116,16 @@ const elements = {
   views: document.querySelectorAll('.view'),
 };
 
+let activeStrategyResult = 'all';
+let activeStrategyRegimeResult = 'all';
+let activeStrategySizeResult = 'all';
 let activeValidatedFactor = 'all';
 let activeResearchFactor = null;
 let currentResearchPipeline = null;
+let currentStrategySignalPack = null;
+let draftStrategyExpanded = false;
+let draftStrategyPage = 1;
+let draftStrategyQuery = '';
 
 function percent(value, digits = 1) {
   return `${(value * 100).toFixed(digits)}%`;
@@ -223,6 +246,15 @@ function renderRisk(risks) {
 
 function labelForStatus(status) {
   if (status === 'computed') return ['已计算', 'good'];
+  if (status === 'real_signal_computed') return ['真实信号已算', 'good'];
+  if (status === 'strategy_candidate') return ['重点候选', 'good'];
+  if (status === 'candidate_module') return ['候选模块', 'pending'];
+  if (status === 'watch') return ['继续观察', 'pending'];
+  if (status === 'tracking') return ['跟踪中', 'pending'];
+  if (status === 'hold') return ['暂缓使用', 'watch'];
+  if (status === 'market_state_only') return ['市场状态', 'pending'];
+  if (status === 'strategy_waiting_backtest') return ['待策略复测', 'watch'];
+  if (status === 'factor_tested_strategy_unvalidated') return ['因子已测策略待测', 'pending'];
   if (status === 'exportable') return ['可导出', 'good'];
   if (status === 'partial_real_data') return ['部分可用', 'pending'];
   if (status === 'joinquant_ready') return ['聚宽可测', 'good'];
@@ -239,10 +271,13 @@ function labelForStatus(status) {
 
 function factorDisplayName(id) {
   const names = {
+    capital_source_count: '资金来源数',
     chip_health: '筹码健康',
     crowding_risk: '拥挤风险',
     emotion_weighted_kline_score: '情绪加权K线',
+    flow_vs_ma: '资金相对均值',
     intraday_strength: '日内强度',
+    intraday_ap_slope: '日内暗盘斜率',
     kdj_momentum: 'KDJ动能',
     kline_event_score: '单根K线评分',
     low_emotion_score: '低情绪反向',
@@ -250,7 +285,9 @@ function factorDisplayName(id) {
     professional_sub_factors: '专业解释子因子',
     technical_composite: '技术综合强度',
     trend_alignment: '趋势排列',
+    trend_extension_risk: '趋势过伸风险',
     volume_price_confirmation: '量价确认',
+    volume_price_divergence_risk: '量价背离风险',
     volume_price_resonance_60_5: '价量共振_60_5',
     active_ap_accumulation: '活跃暗盘吸筹',
     capital_follow_factor: '资金跟随因子',
@@ -294,6 +331,488 @@ function resultTone(result) {
 
 function resultFactorId(result) {
   return result.factor_name || result.factor || result.name || 'unknown';
+}
+
+function isStrategyBacktestResult(result) {
+  return result?.result_type === 'strategy_backtest'
+    || result?.result_type === 'strategy_regime_backtest'
+    || result?.result_type === 'strategy_size_backtest'
+    || result?.result_type === 'strategy_regime_size_backtest'
+    || result?.result_type === 'trading_backtest'
+    || result?.result_type === 'strategy_trading_backtest'
+    || Array.isArray(result?.summary) && result.summary.some((item) => item?.result_type === 'strategy_backtest' || item?.result_type === 'strategy_regime_backtest' || item?.result_type === 'strategy_size_backtest' || item?.result_type === 'strategy_regime_size_backtest');
+}
+
+function flattenStrategyResults(results) {
+  return results.flatMap((result) => {
+    if (Array.isArray(result?.summary) && result.summary.some((item) => item?.result_type === 'strategy_backtest' || item?.result_type === 'strategy_regime_backtest' || item?.result_type === 'strategy_size_backtest' || item?.result_type === 'strategy_regime_size_backtest')) {
+      return result.summary
+        .filter((item) => item?.result_type === 'strategy_backtest' || item?.result_type === 'strategy_regime_backtest' || item?.result_type === 'strategy_size_backtest' || item?.result_type === 'strategy_regime_size_backtest')
+        .map((item) => ({
+          ...item,
+          importedAt: result.importedAt,
+          packetSample: result.sample,
+          source: item.source || result.source,
+          strategy_id: item.strategy_id || result.strategy_id,
+          strategy_name: item.strategy_name || result.strategy_name,
+        }));
+    }
+
+    if (result?.result_type === 'trading_backtest' || result?.result_type === 'strategy_trading_backtest') {
+      return [{
+        ...result,
+        horizon: result.horizon || '交易回测',
+        mean_return: result.strategy_return,
+        daily_mean_return: result.strategy_annual_return,
+        daily_positive_ratio: result.daily_win_rate,
+        sample_trades: result.trade_count,
+        source: result.source || 'joinquant_trading_backtest',
+      }];
+    }
+
+    return result?.result_type === 'strategy_backtest' || result?.result_type === 'strategy_regime_backtest' || result?.result_type === 'strategy_size_backtest' || result?.result_type === 'strategy_regime_size_backtest' ? [result] : [];
+  });
+}
+
+function resultStrategyId(result) {
+  return result.strategy_id || result.strategyId || result.name || 'unknown_strategy';
+}
+
+function strategyResultName(result) {
+  return result.strategy_name || result.strategyName || resultStrategyId(result);
+}
+
+function formatStrategyHorizon(value) {
+  if (Number.isFinite(Number(value))) return `${value}日`;
+  return value || '-';
+}
+
+function strategyResultMarketRegime(result) {
+  if (result.market_regime_name) return result.market_regime_name;
+  if (result.market_regime === 'high_volatility') return '高波动';
+  if (result.market_regime === 'medium_volatility') return '中波动';
+  if (result.market_regime === 'low_volatility') return '低波动';
+  if (result.result_type === 'strategy_regime_backtest') return '分层未标注';
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') return '交易回测';
+  return '未分层';
+}
+
+function strategyResultRegimeKey(result) {
+  if (result.market_regime === 'high_volatility') return 'high_volatility';
+  if (result.market_regime === 'medium_volatility') return 'medium_volatility';
+  if (result.market_regime === 'low_volatility') return 'low_volatility';
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') return 'trading_backtest';
+  return 'unsegmented';
+}
+
+const strategyRegimeOptions = [
+  { key: 'all', label: '全部', description: '所有真实结果' },
+  { key: 'high_volatility', label: '高波动', description: '沪深300波动率高分位' },
+  { key: 'medium_volatility', label: '中波动', description: '沪深300波动率中位区间' },
+  { key: 'low_volatility', label: '低波动', description: '沪深300波动率低分位' },
+  { key: 'unsegmented', label: '未分层/交易回测', description: '普通历史检验或交易回测' },
+];
+
+function strategyResultSizeBucket(result) {
+  if (result.market_cap_bucket_name) return result.market_cap_bucket_name;
+  if (result.market_cap_bucket === 'large_cap') return '大市值';
+  if (result.market_cap_bucket === 'mid_cap') return '中市值';
+  if (result.market_cap_bucket === 'small_cap') return '小市值';
+  if (result.result_type === 'strategy_size_backtest') return '市值未标注';
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') return '交易回测';
+  return '未分层';
+}
+
+function strategyResultSizeKey(result) {
+  if (result.market_cap_bucket === 'large_cap') return 'large_cap';
+  if (result.market_cap_bucket === 'mid_cap') return 'mid_cap';
+  if (result.market_cap_bucket === 'small_cap') return 'small_cap';
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') return 'trading_backtest';
+  return 'unsegmented';
+}
+
+function formatMarketCap(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  return `${formatNumber(number, 1)}亿`;
+}
+
+const strategySizeOptions = [
+  { key: 'all', label: '全部', description: '所有真实结果' },
+  { key: 'large_cap', label: '大市值', description: '当日沪深300市值高分位' },
+  { key: 'mid_cap', label: '中市值', description: '当日沪深300市值中位区间' },
+  { key: 'small_cap', label: '小市值', description: '当日沪深300市值低分位' },
+  { key: 'unsegmented', label: '未分层/交易回测', description: '普通历史检验或交易回测' },
+];
+
+function strategyResultTone(result) {
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') {
+    const strategyReturn = Number(result.strategy_return ?? 0);
+    const excessReturn = Number(result.excess_return ?? 0);
+    if (strategyReturn > 0 && excessReturn > 0) return ['交易通过', 'good'];
+    if (strategyReturn >= 0) return ['待优化', 'pending'];
+    return ['偏弱', 'watch'];
+  }
+
+  const dates = Number(result.sample_dates ?? 0);
+  const meanReturn = Number(result.daily_mean_return ?? result.mean_return ?? 0);
+  const positiveRatio = Number(result.daily_positive_ratio ?? result.positive_ratio ?? 0);
+
+  if (dates < 20) return ['跟踪中', 'pending'];
+  if (meanReturn > 0 && positiveRatio >= 0.55) return ['可继续', 'good'];
+  if (meanReturn > 0 && positiveRatio >= 0.5) return ['观察', 'pending'];
+  return ['偏弱', 'watch'];
+}
+
+function renderStrategyResultDirectory(rows) {
+  const strategyMap = new Map();
+
+  rows.forEach((result) => {
+    const strategyId = resultStrategyId(result);
+    const current = strategyMap.get(strategyId) || {
+      count: 0,
+      displayName: strategyResultName(result),
+      trades: 0,
+    };
+    current.count += 1;
+    current.trades += Number(result.sample_trades ?? 0);
+    strategyMap.set(strategyId, current);
+  });
+
+  if (activeStrategyResult !== 'all' && !strategyMap.has(activeStrategyResult)) {
+    activeStrategyResult = 'all';
+  }
+
+  const activeMeta = activeStrategyResult === 'all'
+    ? {
+      count: rows.length,
+      displayName: '全部策略',
+      trades: [...strategyMap.values()].reduce((sum, item) => sum + item.trades, 0),
+    }
+    : strategyMap.get(activeStrategyResult);
+
+  const strategyButtons = [...strategyMap.entries()]
+    .sort((left, right) => right[1].count - left[1].count)
+    .map(([strategyId, meta]) => `
+      <button class="factor-directory-button${activeStrategyResult === strategyId ? ' active' : ''}" data-strategy-result="${escapeHtml(strategyId)}" type="button">
+        <strong>${escapeHtml(meta.displayName)}</strong>
+        <span>${escapeHtml(meta.count)} 条 / ${escapeHtml(meta.trades)} 样本</span>
+      </button>
+    `)
+    .join('');
+
+  elements.strategyResultDirectory.innerHTML = `
+    <details class="factor-directory-disclosure">
+      <summary>
+        <div>
+          <span>策略目录</span>
+          <strong>${escapeHtml(activeMeta?.displayName || '全部策略')}</strong>
+          <small>${escapeHtml(activeMeta?.count ?? rows.length)} 条 / ${escapeHtml(activeMeta?.trades ?? 0)} 样本</small>
+        </div>
+        <em>点击展开</em>
+      </summary>
+      <div class="factor-directory-list">
+        <button class="factor-directory-button${activeStrategyResult === 'all' ? ' active' : ''}" data-strategy-result="all" type="button">
+          <strong>全部策略</strong>
+          <span>${escapeHtml(rows.length)} 条</span>
+        </button>
+        ${strategyButtons}
+      </div>
+    </details>
+  `;
+
+  elements.strategyResultDirectory.querySelectorAll('[data-strategy-result]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeStrategyResult = button.dataset.strategyResult || 'all';
+      renderStrategyResultSummary(rows);
+    });
+  });
+}
+
+function renderStrategyRegimeFilter(rows) {
+  const scopeRows = activeStrategyResult === 'all'
+    ? rows
+    : rows.filter((result) => resultStrategyId(result) === activeStrategyResult);
+
+  const countByRegime = new Map(strategyRegimeOptions.map((option) => [
+    option.key,
+    { rows: 0, trades: 0 },
+  ]));
+
+  scopeRows.forEach((result) => {
+    const key = strategyResultRegimeKey(result);
+    const normalizedKey = key === 'trading_backtest' ? 'unsegmented' : key;
+    const current = countByRegime.get(normalizedKey) || { rows: 0, trades: 0 };
+    current.rows += 1;
+    current.trades += Number(result.sample_trades ?? 0);
+    countByRegime.set(normalizedKey, current);
+  });
+
+  const totalTrades = scopeRows.reduce((sum, result) => sum + Number(result.sample_trades ?? 0), 0);
+  countByRegime.set('all', { rows: scopeRows.length, trades: totalTrades });
+
+  if (!strategyRegimeOptions.some((option) => option.key === activeStrategyRegimeResult)) {
+    activeStrategyRegimeResult = 'all';
+  }
+
+  const activeOption = strategyRegimeOptions.find((option) => option.key === activeStrategyRegimeResult) || strategyRegimeOptions[0];
+  elements.strategyResultRegimeFilter.innerHTML = `
+    <div class="strategy-regime-filter-head">
+      <span>市场波动率筛选</span>
+      <strong>${escapeHtml(activeOption.label)}</strong>
+      <small>只展示已导入的真实策略实测结果</small>
+    </div>
+    <div class="strategy-regime-filter-actions">
+      ${strategyRegimeOptions.map((option) => {
+        const meta = countByRegime.get(option.key) || { rows: 0, trades: 0 };
+        return `
+          <button class="${activeStrategyRegimeResult === option.key ? 'active' : ''}" data-strategy-regime="${escapeHtml(option.key)}" type="button">
+            <strong>${escapeHtml(option.label)}</strong>
+            <span>${escapeHtml(meta.rows)} 条 / ${escapeHtml(meta.trades)} 样本</span>
+          </button>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  elements.strategyResultRegimeFilter.querySelectorAll('[data-strategy-regime]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeStrategyRegimeResult = button.dataset.strategyRegime || 'all';
+      renderStrategyResultSummary(rows);
+    });
+  });
+}
+
+function applyStrategyRegimeFilter(rows) {
+  if (activeStrategyRegimeResult === 'all') return rows;
+  return rows.filter((result) => {
+    const key = strategyResultRegimeKey(result);
+    if (activeStrategyRegimeResult === 'unsegmented') {
+      return key === 'unsegmented' || key === 'trading_backtest';
+    }
+    return key === activeStrategyRegimeResult;
+  });
+}
+
+function applyStrategySizeFilter(rows) {
+  if (activeStrategySizeResult === 'all') return rows;
+  return rows.filter((result) => {
+    const key = strategyResultSizeKey(result);
+    if (activeStrategySizeResult === 'unsegmented') {
+      return key === 'unsegmented' || key === 'trading_backtest';
+    }
+    return key === activeStrategySizeResult;
+  });
+}
+
+function renderStrategySizeFilter(rows) {
+  const strategyScopedRows = activeStrategyResult === 'all'
+    ? rows
+    : rows.filter((result) => resultStrategyId(result) === activeStrategyResult);
+  const scopeRows = applyStrategyRegimeFilter(strategyScopedRows);
+
+  const countBySize = new Map(strategySizeOptions.map((option) => [
+    option.key,
+    { rows: 0, trades: 0 },
+  ]));
+
+  scopeRows.forEach((result) => {
+    const key = strategyResultSizeKey(result);
+    const normalizedKey = key === 'trading_backtest' ? 'unsegmented' : key;
+    const current = countBySize.get(normalizedKey) || { rows: 0, trades: 0 };
+    current.rows += 1;
+    current.trades += Number(result.sample_trades ?? 0);
+    countBySize.set(normalizedKey, current);
+  });
+
+  const totalTrades = scopeRows.reduce((sum, result) => sum + Number(result.sample_trades ?? 0), 0);
+  countBySize.set('all', { rows: scopeRows.length, trades: totalTrades });
+
+  if (!strategySizeOptions.some((option) => option.key === activeStrategySizeResult)) {
+    activeStrategySizeResult = 'all';
+  }
+
+  const activeOption = strategySizeOptions.find((option) => option.key === activeStrategySizeResult) || strategySizeOptions[0];
+  elements.strategyResultSizeFilter.innerHTML = `
+    <div class="strategy-regime-filter-head">
+      <span>市值分层筛选</span>
+      <strong>${escapeHtml(activeOption.label)}</strong>
+      <small>按 JoinQuant valuation.market_cap 实测分层</small>
+    </div>
+    <div class="strategy-regime-filter-actions">
+      ${strategySizeOptions.map((option) => {
+        const meta = countBySize.get(option.key) || { rows: 0, trades: 0 };
+        return `
+          <button class="${activeStrategySizeResult === option.key ? 'active' : ''}" data-strategy-size="${escapeHtml(option.key)}" type="button">
+            <strong>${escapeHtml(option.label)}</strong>
+            <span>${escapeHtml(meta.rows)} 条 / ${escapeHtml(meta.trades)} 样本</span>
+          </button>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  elements.strategyResultSizeFilter.querySelectorAll('[data-strategy-size]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeStrategySizeResult = button.dataset.strategySize || 'all';
+      renderStrategyResultSummary(rows);
+    });
+  });
+}
+
+function renderStrategyResultSummary(rows) {
+  if (!rows.length) {
+    activeStrategyResult = 'all';
+    activeStrategyRegimeResult = 'all';
+    activeStrategySizeResult = 'all';
+    elements.strategyResultCount.textContent = '0';
+    elements.strategyResultStrategyCount.textContent = '0';
+    elements.strategyResultTradeCount.textContent = '0';
+    elements.strategyResultBestHorizon.textContent = '-';
+    elements.strategyResultDirectory.innerHTML = '<div class="factor-directory-empty">暂无策略实测结果。跑完 JoinQuant 策略检验后会自动生成目录。</div>';
+    elements.strategyResultRegimeFilter.innerHTML = '';
+    elements.strategyResultSizeFilter.innerHTML = '';
+    elements.strategyResultSummary.innerHTML = `
+      <div class="result-card">
+        <span>策略实测</span>
+        <strong>0</strong>
+        <small>等待真实结果回填</small>
+      </div>
+    `;
+    elements.strategyResultTable.innerHTML = '<tr><td colspan="12">暂无策略实测结果。</td></tr>';
+    elements.strategyResultNotes.textContent = '这里不展示估算绩效，只展示 JoinQuant 实跑或研究环境真实计算结果。';
+    return;
+  }
+
+  renderStrategyResultDirectory(rows);
+  renderStrategyRegimeFilter(rows);
+  renderStrategySizeFilter(rows);
+
+  const strategyScopedRows = activeStrategyResult === 'all'
+    ? rows
+    : rows.filter((result) => resultStrategyId(result) === activeStrategyResult);
+  const regimeScopedRows = applyStrategyRegimeFilter(strategyScopedRows);
+  const visibleRows = applyStrategySizeFilter(regimeScopedRows);
+  const activeRegimeOption = strategyRegimeOptions.find((option) => option.key === activeStrategyRegimeResult) || strategyRegimeOptions[0];
+  const activeSizeOption = strategySizeOptions.find((option) => option.key === activeStrategySizeResult) || strategySizeOptions[0];
+
+  if (!visibleRows.length) {
+    const strategyLabel = activeStrategyResult === 'all'
+      ? '全部策略'
+      : strategyResultName(rows.find((result) => resultStrategyId(result) === activeStrategyResult) || {});
+    elements.strategyResultCount.textContent = '0';
+    elements.strategyResultStrategyCount.textContent = '0';
+    elements.strategyResultTradeCount.textContent = '0';
+    elements.strategyResultBestHorizon.textContent = '-';
+    elements.strategyResultSummary.innerHTML = `
+      <div class="result-card">
+        <span>结果记录</span>
+        <strong>0</strong>
+        <small>${escapeHtml(strategyLabel)}</small>
+      </div>
+      <div class="result-card">
+        <span>分层条件</span>
+        <strong>${escapeHtml(activeRegimeOption.label)} / ${escapeHtml(activeSizeOption.label)}</strong>
+        <small>暂无真实回填</small>
+      </div>
+      <div class="result-card">
+        <span>样本交易</span>
+        <strong>0</strong>
+        <small>未显示任何候选/成交样本</small>
+      </div>
+      <div class="result-card">
+        <span>最佳周期</span>
+        <strong>-</strong>
+        <small>等待真实分层结果</small>
+      </div>
+    `;
+    elements.strategyResultTable.innerHTML = '<tr><td colspan="12">当前策略、市场状态与市值层筛选下暂无真实策略实测结果。</td></tr>';
+    elements.strategyResultNotes.innerHTML = `
+      <strong>结果边界：</strong>
+      当前筛选为 ${escapeHtml(strategyLabel)} / ${escapeHtml(activeRegimeOption.label)} / ${escapeHtml(activeSizeOption.label)}。
+      没有导入 JoinQuant 对应分层 JSON 前，这里不会展示该条件下绩效。
+    `;
+    return;
+  }
+
+  const strategyCount = new Set(visibleRows.map(resultStrategyId)).size;
+  const tradeCount = visibleRows.reduce((sum, result) => sum + Number(result.sample_trades ?? 0), 0);
+  const bestMean = visibleRows.reduce((best, result) => {
+    const current = Number(result.daily_mean_return ?? result.mean_return);
+    const previous = Number(best?.daily_mean_return ?? best?.mean_return);
+    if (!Number.isFinite(current)) return best;
+    if (!best || !Number.isFinite(previous) || current > previous) return result;
+    return best;
+  }, null);
+  const positiveRows = visibleRows.filter((result) => Number(result.daily_mean_return ?? result.mean_return) > 0).length;
+
+  elements.strategyResultCount.textContent = visibleRows.length;
+  elements.strategyResultStrategyCount.textContent = strategyCount;
+  elements.strategyResultTradeCount.textContent = tradeCount;
+  elements.strategyResultBestHorizon.textContent = formatStrategyHorizon(bestMean?.horizon);
+
+  elements.strategyResultSummary.innerHTML = `
+    <div class="result-card">
+      <span>结果记录</span>
+      <strong>${escapeHtml(visibleRows.length)}</strong>
+      <small>${escapeHtml(strategyCount)} 个策略</small>
+    </div>
+    <div class="result-card">
+      <span>样本交易</span>
+      <strong>${escapeHtml(tradeCount)}</strong>
+      <small>候选/成交样本合计</small>
+    </div>
+    <div class="result-card">
+      <span>分层条件</span>
+      <strong>${escapeHtml(activeRegimeOption.label)} / ${escapeHtml(activeSizeOption.label)}</strong>
+      <small>${escapeHtml(visibleRows.length)} 条真实结果</small>
+    </div>
+      <div class="result-card">
+        <span>最佳周期</span>
+        <strong>${escapeHtml(formatStrategyHorizon(bestMean?.horizon))}</strong>
+        <small>${formatPercent(bestMean?.daily_mean_return ?? bestMean?.mean_return)} 平均收益</small>
+      </div>
+  `;
+
+  elements.strategyResultTable.innerHTML = visibleRows
+    .slice()
+    .sort((left, right) => {
+      const strategyDiff = strategyResultName(left).localeCompare(strategyResultName(right), 'zh-Hans-CN');
+      if (strategyDiff !== 0) return strategyDiff;
+      const regimeDiff = strategyResultMarketRegime(left).localeCompare(strategyResultMarketRegime(right), 'zh-Hans-CN');
+      if (regimeDiff !== 0) return regimeDiff;
+      const sizeDiff = strategyResultSizeBucket(left).localeCompare(strategyResultSizeBucket(right), 'zh-Hans-CN');
+      if (sizeDiff !== 0) return sizeDiff;
+      return Number(left.horizon ?? 0) - Number(right.horizon ?? 0);
+    })
+    .map((result) => {
+      const [label, tone] = strategyResultTone(result);
+      return `
+        <tr>
+          <td><strong>${escapeHtml(strategyResultName(result))}</strong><br><small>${escapeHtml(resultStrategyId(result))}</small></td>
+          <td>${escapeHtml(formatStrategyHorizon(result.horizon))}</td>
+          <td>${escapeHtml(strategyResultMarketRegime(result))}<br><small>${formatPercent(result.market_vol_mean)}</small></td>
+          <td>${escapeHtml(strategyResultSizeBucket(result))}<br><small>${formatMarketCap(result.market_cap_mean)}</small></td>
+          <td>${escapeHtml(result.date_range || `${result.sample_dates ?? '-'} 日 / ${result.sample_trades ?? '-'} 条`)}</td>
+          <td>${formatPercent(result.mean_return)}</td>
+          <td>${formatPercent(result.daily_mean_return)}</td>
+          <td>${formatPercent(result.daily_positive_ratio ?? result.positive_ratio)}</td>
+          <td>${formatPercent(result.best_daily_return)} / ${formatPercent(result.worst_daily_return)}</td>
+          <td>${formatNumber(result.avg_candidates_per_date, 1)}</td>
+          <td>${escapeHtml(result.source || 'joinquant')}</td>
+          <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  elements.strategyResultNotes.innerHTML = `
+    <strong>结果边界：</strong>
+    ${activeStrategyResult === 'all' ? '当前展示全部策略' : `当前策略：${escapeHtml(strategyResultName(visibleRows[0]))}`}；
+    市场状态：${escapeHtml(activeRegimeOption.label)}；市值层：${escapeHtml(activeSizeOption.label)}；正收益记录 ${escapeHtml(positiveRows)} 条。
+    分层结果只来自 JoinQuant 对应脚本导入的真实 JSON；未导入则不展示。
+  `;
 }
 
 function renderValidatedFactorDirectory(results) {
@@ -836,6 +1355,107 @@ function renderStrategyLibrary(strategies) {
     .join('');
 }
 
+function renderTextList(items) {
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return '<span>-</span>';
+  return `<ul class="compact-list">${list.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+}
+
+function factorItemId(item) {
+  return typeof item === 'string' ? item : item.factorId;
+}
+
+function factorItemName(item) {
+  return typeof item === 'string' ? factorDisplayName(item) : item.name || factorDisplayName(item.factorId);
+}
+
+function renderBacktestValue(value, type = 'number') {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
+  if (type === 'percent') return formatPercent(value, 2);
+  return formatNumber(value, 4);
+}
+
+function renderFactorBacktestDetail(item, strategyId) {
+  if (typeof item === 'string') return '';
+  const panelId = `${strategyId}-${item.factorId}-backtest`;
+  const [statusLabel, statusTone] = labelForStatus(item.status);
+  const rows = item.detail || [];
+  return `
+    <div id="${escapeHtml(panelId)}" class="factor-backtest-detail" hidden>
+      <div class="factor-backtest-summary">
+        <strong>${escapeHtml(factorItemName(item))}</strong>
+        <span class="tag ${statusTone}">${escapeHtml(statusLabel)}</span>
+      </div>
+      <div class="strategy-columns three compact-columns">
+        <div>
+          <strong>策略角色</strong>
+          <span>${escapeHtml(item.role || '-')}</span>
+        </div>
+        <div>
+          <strong>最佳周期</strong>
+          <span>${item.bestHorizon ? `${escapeHtml(item.bestHorizon)}日` : '待测'}</span>
+        </div>
+        <div>
+          <strong>证据口径</strong>
+          <span>${escapeHtml(item.evidence || '-')}</span>
+        </div>
+      </div>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>周期</th>
+            <th>RankIC</th>
+            <th>RankIC t</th>
+            <th>多空收益</th>
+            <th>正收益占比</th>
+            <th>样本日</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.length ? rows.map((row) => `
+            <tr>
+              <td>${escapeHtml(row.horizon)}日${row.isReferenceOnly ? ' / 参考' : ''}</td>
+              <td>${renderBacktestValue(row.rankIc)}</td>
+              <td>${renderBacktestValue(row.rankIcT)}</td>
+              <td>${renderBacktestValue(row.longShort, 'percent')}</td>
+              <td>${renderBacktestValue(row.positiveRatio, 'percent')}</td>
+              <td>${escapeHtml(row.sampleDates ?? '-')}</td>
+            </tr>
+          `).join('') : '<tr><td colspan="6">暂无真实回测明细。</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderFactorChips(items, strategyId = 'strategy') {
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return '<span>-</span>';
+  return `
+    <div class="factor-chip-list">
+      ${list.map((item) => {
+        const factorId = factorItemId(item);
+        const panelId = `${strategyId}-${factorId}-backtest`;
+        const label = typeof item === 'string'
+          ? factorDisplayName(item)
+          : item.bestHorizon
+            ? `${factorItemName(item)} / ${item.bestHorizon}日`
+            : `${factorItemName(item)} / 待测`;
+        const subLabel = typeof item === 'string'
+          ? ''
+          : `${item.role || '因子'}${item.weight === null || item.weight === undefined ? '' : ` / 权重 ${item.weight}`}`;
+        return `
+          <button class="factor-chip strategy-factor-button" type="button" data-factor-panel="${escapeHtml(panelId)}">
+            <span>${escapeHtml(label)}</span>
+            ${subLabel ? `<small>${escapeHtml(subLabel)}</small>` : ''}
+          </button>
+        `;
+      }).join('')}
+    </div>
+    ${list.map((item) => renderFactorBacktestDetail(item, strategyId)).join('')}
+  `;
+}
+
 function toneForAction(actionTone) {
   if (actionTone === 'good') return 'good';
   if (actionTone === 'watch') return 'watch';
@@ -843,59 +1463,188 @@ function toneForAction(actionTone) {
   return 'neutral';
 }
 
+function renderStrategyCard(strategy) {
+  const [label, tone] = labelForStatus(strategy.status);
+  const exportBase = `/strategy-api/joinquant-strategy-export.json?strategy=${encodeURIComponent(strategy.id)}`;
+  const exportCsv = `/strategy-api/joinquant-strategy-export.csv?strategy=${encodeURIComponent(strategy.id)}`;
+  const exportScript = `/strategy-api/joinquant-strategy-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const historicalScript = `/strategy-api/joinquant-strategy-historical-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const volatilityRegimeScript = `/strategy-api/joinquant-volatility-regime-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const marketCapScript = `/strategy-api/joinquant-market-cap-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const volatilitySizeScript = `/strategy-api/joinquant-volatility-size-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const tradingBacktestScript = `/strategy-api/joinquant-trading-backtest-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  return `
+    <article class="strategy-item">
+      <div class="strategy-head">
+        <div>
+          <h3>${escapeHtml(strategy.name)}</h3>
+          <p>${escapeHtml(strategy.objective)}</p>
+          <p>${escapeHtml(strategy.validationState || '')}</p>
+        </div>
+        <span class="tag ${tone}">${escapeHtml(label)}</span>
+      </div>
+      <div class="strategy-columns three strategy-summary">
+        <div>
+          <strong>角色</strong>
+          <span>${escapeHtml(strategy.role)}</span>
+        </div>
+        <div>
+          <strong>信号 / 候选</strong>
+          <span>${escapeHtml(strategy.computedSignalCount ?? 0)} / ${escapeHtml(strategy.candidateCount ?? 0)}</span>
+        </div>
+        <div>
+          <strong>数据基础</strong>
+          <span>${escapeHtml(strategy.dataBasis || '-')}</span>
+        </div>
+      </div>
+      <div class="strategy-rule-grid">
+        <div>
+          <strong>使用因子</strong>
+          ${renderFactorChips(strategy.factorState, strategy.id)}
+        </div>
+        <div>
+          <strong>入池规则</strong>
+          ${renderTextList(strategy.entryRules)}
+        </div>
+        <div>
+          <strong>风控过滤</strong>
+          ${renderTextList(strategy.riskFilters || strategy.riskControls)}
+        </div>
+        <div>
+          <strong>组合规则</strong>
+          ${renderTextList(strategy.portfolioRules)}
+        </div>
+      </div>
+      <div class="strategy-formula">
+        <strong>排序公式</strong>
+        <span>${escapeHtml(strategy.rankingFormula || strategy.formula || '-')}</span>
+      </div>
+      <div class="strategy-next-action">
+        <strong>下一步</strong>
+        <span>${escapeHtml(strategy.nextAction || strategy.exportStatus || '-')}</span>
+      </div>
+      <div class="strategy-export-actions">
+        <button type="button" data-strategy-download="${escapeHtml(exportBase)}">路线JSON</button>
+        <button type="button" data-strategy-download="${escapeHtml(exportCsv)}">策略CSV</button>
+        <button type="button" data-strategy-download="${escapeHtml(exportScript)}">聚宽脚本</button>
+        <button type="button" data-strategy-download="${escapeHtml(historicalScript)}">历史脚本</button>
+        <button type="button" data-strategy-download="${escapeHtml(volatilityRegimeScript)}">波动率脚本</button>
+        <button type="button" data-strategy-download="${escapeHtml(marketCapScript)}">市值脚本</button>
+        <button type="button" data-strategy-download="${escapeHtml(volatilitySizeScript)}">交叉脚本</button>
+        <button type="button" data-strategy-download="${escapeHtml(tradingBacktestScript)}">回测脚本</button>
+      </div>
+    </article>
+  `;
+}
+
+function strategySearchText(strategy) {
+  return [
+    strategy.name,
+    strategy.objective,
+    strategy.validationState,
+    strategy.role,
+    strategy.status,
+    ...(strategy.factorState || []).map((factor) => [
+      factorItemId(factor),
+      factorItemName(factor),
+      typeof factor === 'string' ? '' : factor.role,
+      typeof factor === 'string' ? '' : factor.bestHorizon,
+    ].join(' ')),
+    ...(strategy.entryRules || []),
+  ].join(' ').toLowerCase();
+}
+
+function filteredDraftStrategies(strategies) {
+  const query = draftStrategyQuery.trim().toLowerCase();
+  if (!query) return strategies;
+  return strategies.filter((strategy) => strategySearchText(strategy).includes(query));
+}
+
+function syncDraftStrategyJump(strategies) {
+  const selected = elements.draftStrategyJump.value;
+  elements.draftStrategyJump.innerHTML = [
+    '<option value="">全部草案</option>',
+    ...strategies.map((strategy) => `<option value="${escapeHtml(strategy.id)}">${escapeHtml(strategy.name)}</option>`),
+  ].join('');
+  if (strategies.some((strategy) => strategy.id === selected)) {
+    elements.draftStrategyJump.value = selected;
+  }
+}
+
+function renderDraftStrategies(signalPack) {
+  const strategies = signalPack.strategies || [];
+  syncDraftStrategyJump(strategies);
+
+  const filtered = filteredDraftStrategies(strategies);
+  const pageSize = draftStrategyExpanded ? 4 : 2;
+  const pageCount = draftStrategyExpanded ? Math.max(1, Math.ceil(filtered.length / pageSize)) : 1;
+  draftStrategyPage = Math.min(Math.max(1, draftStrategyPage), pageCount);
+  const visibleStrategies = draftStrategyExpanded
+    ? filtered.slice((draftStrategyPage - 1) * pageSize, draftStrategyPage * pageSize)
+    : filtered.slice(0, pageSize);
+
+  elements.strategyLiveList.innerHTML = visibleStrategies.length
+    ? visibleStrategies.map(renderStrategyCard).join('')
+    : '<div class="empty-state"><strong>没有匹配的草案策略</strong><span>换一个关键词再筛选。</span></div>';
+
+  const hiddenCount = Math.max(0, filtered.length - visibleStrategies.length);
+  elements.draftStrategyToggle.textContent = filtered.length <= 2
+    ? '已全部显示'
+    : draftStrategyExpanded
+      ? '收起'
+      : `展开其余 ${hiddenCount} 个`;
+  elements.draftStrategyToggle.disabled = filtered.length <= 2;
+
+  if (draftStrategyExpanded && filtered.length > 4) {
+    elements.draftStrategyPagination.innerHTML = `
+      <button type="button" data-draft-page="prev" ${draftStrategyPage <= 1 ? 'disabled' : ''}>上一页</button>
+      <span>第 ${draftStrategyPage} / ${pageCount} 页</span>
+      <button type="button" data-draft-page="next" ${draftStrategyPage >= pageCount ? 'disabled' : ''}>下一页</button>
+    `;
+  } else {
+    elements.draftStrategyPagination.innerHTML = '';
+  }
+}
+
 function renderLiveStrategies(signalPack) {
   const metrics = signalPack.metrics || {};
-  elements.strategyStrongCount.textContent = metrics.entryCandidates ?? '-';
-  elements.strategyObservationCount.textContent = metrics.observationCandidates ?? '-';
-  elements.strategyPartialCount.textContent = metrics.partialStrategies ?? '-';
-  elements.strategyBlockedCount.textContent = metrics.blockedStrategies ?? '-';
+  const formalStrategies = signalPack.formalStrategies || [];
+  currentStrategySignalPack = signalPack;
+  elements.strategyStrongCount.textContent = metrics.draftStrategies ?? (signalPack.strategies || []).length;
+  elements.strategyObservationCount.textContent = metrics.entryCandidates ?? '-';
+  elements.strategyPartialCount.textContent = metrics.capitalCandidates ?? metrics.partialStrategies ?? '-';
+  elements.strategyBlockedCount.textContent = metrics.formalStrategies ?? formalStrategies.length;
   elements.strategySourceFile.textContent = signalPack.source?.file
-    ? `当前策略数据源：${signalPack.source.file}`
+    ? `当前策略数据源：${signalPack.source.file}；技术截面 ${signalPack.source.primaryRows ?? 0} 条，资金截面 ${signalPack.source.capitalRows ?? 0} 条`
     : '当前策略数据源：未加载';
 
-  elements.strategyLiveList.innerHTML = (signalPack.strategies || [])
-    .map((strategy) => {
-      const [label, tone] = labelForStatus(strategy.status);
-      return `
-        <article class="strategy-item">
-          <div class="strategy-head">
-            <div>
-              <h3>${escapeHtml(strategy.name)}</h3>
-              <p>${escapeHtml(strategy.objective)}</p>
-            </div>
-            <span class="tag ${tone}">${escapeHtml(label)}</span>
-          </div>
-          <div class="strategy-columns three">
-            <div>
-              <strong>角色</strong>
-              <span>${escapeHtml(strategy.role)}</span>
-            </div>
-            <div>
-              <strong>候选数</strong>
-              <span>${escapeHtml(strategy.candidateCount)}</span>
-            </div>
-            <div>
-              <strong>公式</strong>
-              <span>${escapeHtml(strategy.formula)}</span>
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join('');
+  renderDraftStrategies(signalPack);
+
+  const formalPolicy = signalPack.formalPolicy || {};
+  elements.formalStrategyPolicy.textContent = formalPolicy.description || '正式策略池只接收已完成策略级回测的组合。';
+  elements.formalStrategyList.innerHTML = formalStrategies.length
+    ? formalStrategies.map(renderStrategyCard).join('')
+    : `
+      <div class="empty-state">
+        <strong>${escapeHtml(formalPolicy.title || '暂无正式策略')}</strong>
+        <span>${escapeHtml(formalPolicy.nextAction || '等待策略级回测结果。')}</span>
+        ${renderTextList(formalPolicy.requiredEvidence)}
+      </div>
+    `;
 
   elements.strategyCandidateTable.innerHTML = (signalPack.candidates || [])
     .map((row) => {
       const tone = toneForAction(row.actionTone);
       return `
         <tr title="${escapeHtml(row.reason)}">
+          <td><strong>${escapeHtml(row.strategyName || '-')}</strong><br><small>${escapeHtml(row.signalDate || '-')}</small></td>
           <td>${escapeHtml(String(row.code).padStart(6, '0'))} ${escapeHtml(row.name)}</td>
-          <td>${Number(row.decisionScore).toFixed(3)}</td>
-          <td>${Number(row.trend).toFixed(2)}</td>
-          <td>${Number(row.volumePrice).toFixed(2)}</td>
-          <td>${Number(row.crowdingRisk).toFixed(2)}</td>
-          <td>${Number(row.divergenceRisk).toFixed(2)}</td>
-          <td>${Number(row.warningCount).toFixed(0)}</td>
+          <td>${formatNumber(row.decisionScore, 3)}</td>
+          <td>${formatNumber(row.trend ?? row.capitalFollow, 2)}</td>
+          <td>${formatNumber(row.volumePrice ?? row.capitalAp, 2)}</td>
+          <td>${formatNumber(row.crowdingRisk ?? row.capitalOverheat, 2)}</td>
+          <td>${formatNumber(row.divergenceRisk ?? row.capitalPersistence, 2)}</td>
+          <td>${formatNumber(row.warningCount ?? row.capitalSourceCount, 0)}</td>
           <td><span class="tag ${tone}">${escapeHtml(row.action)}</span></td>
           <td>${escapeHtml(row.positionHint)}</td>
           <td>${escapeHtml(row.reason)}</td>
@@ -910,6 +1659,7 @@ function renderLiveStrategies(signalPack) {
         <div>
           <strong>${escapeHtml(item.id)}</strong>
           <span>${escapeHtml(item.reason)}</span>
+          ${item.nextAction ? `<span>下一步：${escapeHtml(item.nextAction)}</span>` : ''}
         </div>
         <span class="tag watch">等待数据</span>
       </div>
@@ -998,18 +1748,31 @@ function renderBacktestCenter(status) {
     .map((step) => `<li>${escapeHtml(step)}</li>`)
     .join('');
 
-  renderBacktestResultSummary(status.importedResults || []);
+  const importedResults = status.importedResults || [];
+  const factorResults = importedResults.filter((result) => !isStrategyBacktestResult(result));
+  const strategyResults = flattenStrategyResults(importedResults);
+  renderBacktestResultSummary(factorResults);
+  renderStrategyResultSummary(strategyResults);
 
-  elements.importedBacktestList.innerHTML = (status.importedResults || [])
-    .map((result) => `
-      <div class="status-item">
-        <div>
-          <strong>${escapeHtml(result.factor_name || result.factor || result.name || 'JoinQuant结果')}</strong>
-          <span>IC: ${escapeHtml(result.ic_mean ?? result.ic ?? '-')} / RankIC: ${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 来源: ${escapeHtml(result.source || 'joinquant')}</span>
+  elements.importedBacktestList.innerHTML = importedResults
+    .map((result) => {
+      const isStrategy = isStrategyBacktestResult(result);
+      const title = isStrategy
+        ? result.strategy_name || result.summary?.[0]?.strategy_name || '策略实测结果'
+        : result.factor_name || result.factor || result.name || 'JoinQuant结果';
+      const detail = isStrategy
+        ? `策略结果: ${escapeHtml(result.summary?.length ?? 1)} 条 / 来源: ${escapeHtml(result.source || result.summary?.[0]?.source || 'joinquant')}`
+        : `IC: ${escapeHtml(result.ic_mean ?? result.ic ?? '-')} / RankIC: ${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 来源: ${escapeHtml(result.source || 'joinquant')}`;
+      return `
+        <div class="status-item">
+          <div>
+            <strong>${escapeHtml(title)}</strong>
+            <span>${detail}</span>
+          </div>
+          <span class="tag good">已导入</span>
         </div>
-        <span class="tag good">已导入</span>
-      </div>
-    `)
+      `;
+    })
     .join('') || '<div class="library-source">暂无导入结果。等你在 JoinQuant 跑完，把真实结果 JSON 粘贴回来。</div>';
 }
 
@@ -1146,6 +1909,59 @@ elements.runBacktest.addEventListener('click', async () => {
   } catch (error) {
     setFormMessage(`回测失败：${error.message}`, 'error');
   }
+});
+
+elements.draftStrategySearch.addEventListener('input', () => {
+  draftStrategyQuery = elements.draftStrategySearch.value;
+  draftStrategyPage = 1;
+  if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
+});
+
+elements.draftStrategyJump.addEventListener('change', () => {
+  const strategyId = elements.draftStrategyJump.value;
+  const strategy = (currentStrategySignalPack?.strategies || []).find((item) => item.id === strategyId);
+  draftStrategyQuery = strategy ? strategy.name : '';
+  draftStrategyExpanded = Boolean(strategy);
+  draftStrategyPage = 1;
+  elements.draftStrategySearch.value = draftStrategyQuery;
+  if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
+});
+
+elements.draftStrategyToggle.addEventListener('click', () => {
+  draftStrategyExpanded = !draftStrategyExpanded;
+  draftStrategyPage = 1;
+  if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
+});
+
+elements.draftStrategyPagination.addEventListener('click', (event) => {
+  const action = event.target?.dataset?.draftPage;
+  if (!action || !currentStrategySignalPack) return;
+  draftStrategyPage += action === 'next' ? 1 : -1;
+  renderDraftStrategies(currentStrategySignalPack);
+});
+
+elements.strategyLiveList.addEventListener('click', (event) => {
+  const downloadButton = event.target.closest('[data-strategy-download]');
+  if (downloadButton) {
+    window.location.href = downloadButton.dataset.strategyDownload;
+    return;
+  }
+
+  const button = event.target.closest('.strategy-factor-button');
+  if (!button) return;
+  const article = button.closest('.strategy-item');
+  const panelId = button.dataset.factorPanel;
+  const panel = article?.querySelector(`#${CSS.escape(panelId)}`);
+  if (!panel) return;
+  const shouldOpen = panel.hidden;
+  article.querySelectorAll('.factor-backtest-detail').forEach((detail) => {
+    detail.hidden = true;
+  });
+  article.querySelectorAll('.strategy-factor-button').forEach((chip) => {
+    chip.classList.remove('active');
+  });
+  panel.hidden = !shouldOpen;
+  button.classList.toggle('active', shouldOpen);
 });
 
 elements.downloadJoinquantCsv.addEventListener('click', () => {

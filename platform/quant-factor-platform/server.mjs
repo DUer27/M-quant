@@ -29,6 +29,7 @@ const capitalFactorSummaryPath =
   '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/capital-flow-factors/yiwan-capital-factor-summary.json';
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
 const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
+const primaryStrategyHorizons = [5, 10, 20];
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -504,6 +505,15 @@ function sendCsv(res, filename, text) {
   res.end(`\ufeff${text}`);
 }
 
+function sendText(res, filename, text, contentType = 'text/plain; charset=utf-8') {
+  res.writeHead(200, {
+    'Cache-Control': 'no-store',
+    'Content-Disposition': `attachment; filename="${filename}"`,
+    'Content-Type': contentType,
+  });
+  res.end(text);
+}
+
 function sendError(res, message, status = 400) {
   sendJson(res, { error: message }, status);
 }
@@ -792,6 +802,1584 @@ function buildJoinQuantCsv(options = {}) {
   ].join('\n');
 }
 
+function findLiveStrategy(strategyId) {
+  const signalPack = buildLiveStrategySignals();
+  const strategy = signalPack.strategies.find((item) => item.id === strategyId);
+  return { signalPack, strategy };
+}
+
+function buildJoinQuantStrategyRows(strategyId) {
+  const { strategy } = findLiveStrategy(strategyId);
+  if (!strategy) return null;
+  const factorStates = Array.isArray(strategy.factorState) ? strategy.factorState : [];
+  const routeFactors = factorStates
+    .map((factor) => (typeof factor === 'string' ? { factorId: factor, role: '', weight: null } : factor))
+    .filter((factor) => factor.factorId);
+  const factorIds = new Set(routeFactors.map((factor) => factor.factorId));
+  const factorById = routeFactors.reduce((map, factor) => {
+    map[factor.factorId] = factor;
+    return map;
+  }, {});
+  const rows = readBacktestFactorRows();
+  const sourceSummary = readCombinedFactorSummary();
+
+  return rows.flatMap((row) => Array.from(factorIds)
+    .filter((factorId) => row[factorId] !== null && row[factorId] !== undefined && row[factorId] !== '')
+    .map((factorId) => {
+      const factor = factorById[factorId] || {};
+      return {
+        date: dateOnly(row.date || row.stock_date),
+        security: jqSecurityCode(row.stock_code || row.code),
+        code: String(row.stock_code || row.code).padStart(6, '0'),
+        name: row.stock_name || row.name,
+        strategy_id: strategy.id,
+        strategy_name: strategy.name,
+        factor_name: factorId,
+        factor_display_name: factor.name || researchFactorDisplayName(factorId),
+        factor_role: factor.role || '',
+        factor_weight: factor.weight ?? '',
+        best_horizon: factor.bestHorizon ?? '',
+        factor_status: factor.status || '',
+        factor_value: toNumber(row[factorId], ''),
+        factor_version: 'm-quant-strategy-route-v1',
+        source_date: row.stock_date || row.date,
+        close: row.close ?? '',
+        source_file: sourceSummary.source_file || researchFactorResultsPath,
+      };
+    }));
+}
+
+function buildJoinQuantStrategyCsv(strategyId) {
+  const rows = buildJoinQuantStrategyRows(strategyId);
+  if (!rows) return null;
+  const headers = [
+    'date',
+    'security',
+    'code',
+    'name',
+    'strategy_id',
+    'strategy_name',
+    'factor_name',
+    'factor_display_name',
+    'factor_role',
+    'factor_weight',
+    'best_horizon',
+    'factor_status',
+    'factor_value',
+    'factor_version',
+    'source_date',
+    'close',
+    'source_file',
+  ];
+  return [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
+  ].join('\n');
+}
+
+function buildJoinQuantStrategyPackage(strategyId) {
+  const { signalPack, strategy } = findLiveStrategy(strategyId);
+  if (!strategy) return null;
+  const rows = buildJoinQuantStrategyRows(strategyId) || [];
+  const factorStates = Array.isArray(strategy.factorState) ? strategy.factorState : [];
+  const routeFactors = factorStates
+    .map((factor) => (typeof factor === 'string' ? {
+      factorId: factor,
+      name: researchFactorDisplayName(factor),
+      role: '',
+      weight: null,
+      bestHorizon: null,
+      detail: [],
+    } : factor));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    dataPolicy: '策略级导出只包含 M-quant 当前真实策略路线和真实因子值；1日仅作参考，5/10/20 用于选择最佳周期；不包含任何虚构收益。',
+    joinquantUsage: {
+      csvEndpoint: `/strategy-api/joinquant-strategy-export.csv?strategy=${strategy.id}`,
+      scriptEndpoint: `/strategy-api/joinquant-strategy-script.py?strategy=${strategy.id}`,
+      historicalScriptEndpoint: `/strategy-api/joinquant-strategy-historical-script.py?strategy=${strategy.id}`,
+      resultImportEndpoint: '/backtest-api/import-results',
+      mode: 'uploaded_factor_event_test',
+      note: 'CSV 脚本验证当前真实截面；历史重建脚本在 JoinQuant 用 OHLCV 重建因子并做策略级样本检验。',
+    },
+    route: {
+      id: strategy.id,
+      name: strategy.name,
+      status: strategy.status,
+      objective: strategy.objective,
+      rankingFormula: strategy.rankingFormula,
+      entryRules: strategy.entryRules,
+      riskFilters: strategy.riskFilters,
+      portfolioRules: strategy.portfolioRules,
+      nextAction: strategy.nextAction,
+      factors: routeFactors.map((factor) => ({
+        factorId: factor.factorId,
+        name: factor.name,
+        role: factor.role,
+        weight: factor.weight,
+        bestHorizon: factor.bestHorizon,
+        status: factor.status,
+        evidence: factor.evidence,
+        detail: factor.detail || [],
+      })),
+    },
+    exportStats: {
+      rows: rows.length,
+      uniqueDates: new Set(rows.map((row) => row.date).filter(Boolean)).size,
+      uniqueStocks: new Set(rows.map((row) => row.security).filter(Boolean)).size,
+      factors: new Set(rows.map((row) => row.factor_name).filter(Boolean)).size,
+    },
+    source: signalPack.source,
+  };
+}
+
+function buildJoinQuantStrategyScript(strategyId) {
+  const pack = buildJoinQuantStrategyPackage(strategyId);
+  if (!pack) return null;
+  const strategy = pack.route;
+  const factors = strategy.factors.filter((factor) => factor.factorId);
+  const factorIds = factors.map((factor) => factor.factorId);
+  const weights = factors.reduce((map, factor) => {
+    if (typeof factor.weight === 'number') map[factor.factorId] = factor.weight;
+    return map;
+  }, {});
+  const positiveFactors = factors
+    .filter((factor) => typeof factor.weight === 'number' && factor.weight > 0)
+    .map((factor) => factor.factorId);
+  const negativeFactors = factors
+    .filter((factor) => typeof factor.weight === 'number' && factor.weight < 0)
+    .map((factor) => factor.factorId);
+
+  return `# M-quant JoinQuant strategy route test
+# Strategy: ${strategy.name}
+# Generated: ${pack.generatedAt}
+# Policy: 1日只作参考；5/10/20 日用于选择因子最佳周期。本脚本只使用你上传的真实因子CSV，不生成虚构收益。
+#
+# 使用方法：
+# 1. 在 M-quant 下载策略CSV：${pack.joinquantUsage.csvEndpoint}
+# 2. 上传到 JoinQuant 研究环境，文件名建议：m_quant_strategy_${strategy.id}.csv
+# 3. 在研究环境运行本脚本，确认 CSV_PATH 指向上传文件。
+# 4. 将输出 JSON 复制回 M-quant 回测中心“结果回填”。
+#
+# 注意：当前 CSV 覆盖多少交易日，就只能验证多少信号日。若只有单日截面，不能当成多年策略回测。
+
+import json
+import math
+
+import numpy as np
+import pandas as pd
+
+CSV_PATH = 'm_quant_strategy_${strategy.id}.csv'
+STRATEGY_ID = '${strategy.id}'
+STRATEGY_NAME = ${JSON.stringify(strategy.name)}
+FACTOR_IDS = ${JSON.stringify(factorIds, null, 2)}
+FACTOR_WEIGHTS = ${JSON.stringify(weights, null, 2)}
+POSITIVE_FACTORS = ${JSON.stringify(positiveFactors, null, 2)}
+NEGATIVE_FACTORS = ${JSON.stringify(negativeFactors, null, 2)}
+HORIZONS = [5, 10, 20]
+TOP_N = 30
+BENCHMARK = '000300.XSHG'
+
+
+def _to_float(value):
+    try:
+        number = float(value)
+        if math.isnan(number):
+            return np.nan
+        return number
+    except Exception:
+        return np.nan
+
+
+def load_strategy_factors(path=CSV_PATH):
+    df = pd.read_csv(path)
+    required = {'date', 'security', 'factor_name', 'factor_value'}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError('CSV缺少字段: %s' % ','.join(sorted(missing)))
+    df['date'] = pd.to_datetime(df['date']).dt.date
+    df['factor_value'] = df['factor_value'].map(_to_float)
+    wide = df.pivot_table(
+        index=['date', 'security'],
+        columns='factor_name',
+        values='factor_value',
+        aggfunc='last',
+    ).reset_index()
+    return wide
+
+
+def cross_section_rank(series, higher_is_better=True):
+    ranked = series.rank(pct=True, method='average')
+    if not higher_is_better:
+        ranked = 1 - ranked
+    return ranked.fillna(0.5)
+
+
+def score_one_date(frame):
+    scored = frame.copy()
+    score = pd.Series(0.0, index=scored.index)
+    for factor, weight in FACTOR_WEIGHTS.items():
+        if factor not in scored.columns:
+            continue
+        higher_is_better = weight >= 0
+        score += abs(weight) * cross_section_rank(scored[factor], higher_is_better=higher_is_better)
+    scored['strategy_score'] = score
+    return scored.sort_values('strategy_score', ascending=False)
+
+
+def select_candidates(wide):
+    selected = []
+    for date, frame in wide.groupby('date'):
+        frame = frame.copy()
+        # 核心量价趋势策略的当前入池过滤。其他策略可先只看综合分，再按 M-quant 页面规则补充。
+        if STRATEGY_ID == 'core_volume_price_trend_v1':
+            if 'trend_alignment' in frame.columns:
+                frame = frame[frame['trend_alignment'] >= 0.60]
+            if 'volume_price_confirmation' in frame.columns:
+                frame = frame[frame['volume_price_confirmation'] >= 0.60]
+            if 'crowding_risk' in frame.columns:
+                frame = frame[frame['crowding_risk'] <= 0.55]
+            if 'volume_price_divergence_risk' in frame.columns:
+                frame = frame[frame['volume_price_divergence_risk'] <= 0.45]
+            if 'trend_extension_risk' in frame.columns:
+                frame = frame[frame['trend_extension_risk'] <= 0.75]
+        scored = score_one_date(frame)
+        selected.append(scored.head(TOP_N))
+    if not selected:
+        return pd.DataFrame()
+    return pd.concat(selected, ignore_index=True)
+
+
+def get_forward_return(security, date, horizon):
+    # JoinQuant 研究环境可用 get_price。这里避免同时传 start_date 和 count。
+    prices = get_price(
+        security,
+        end_date=date,
+        count=1,
+        frequency='daily',
+        fields=['close'],
+        panel=False,
+    )
+    if prices is None or len(prices) == 0:
+        return np.nan
+    start_close = float(prices['close'].iloc[-1])
+    trade_days = list(get_trade_days(start_date=date, end_date='2035-01-01'))
+    if len(trade_days) <= horizon:
+        return np.nan
+    end_date = trade_days[horizon]
+    future = get_price(
+        security,
+        start_date=date,
+        end_date=end_date,
+        frequency='daily',
+        fields=['close'],
+        panel=False,
+    )
+    if future is None or len(future) <= horizon:
+        return np.nan
+    end_close = float(future['close'].iloc[-1])
+    if start_close <= 0:
+        return np.nan
+    return end_close / start_close - 1
+
+
+def evaluate_candidates(candidates):
+    rows = []
+    for _, row in candidates.iterrows():
+        item = {
+            'date': str(row['date']),
+            'security': row['security'],
+            'strategy_score': float(row['strategy_score']),
+        }
+        for horizon in HORIZONS:
+            item['ret_%sd' % horizon] = get_forward_return(row['security'], row['date'], horizon)
+        rows.append(item)
+    result = pd.DataFrame(rows)
+    summary = []
+    for horizon in HORIZONS:
+        col = 'ret_%sd' % horizon
+        values = result[col].dropna() if col in result.columns else pd.Series(dtype=float)
+        summary.append({
+            'strategy_id': STRATEGY_ID,
+            'strategy_name': STRATEGY_NAME,
+            'horizon': horizon,
+            'sample_trades': int(values.shape[0]),
+            'mean_return': None if values.empty else float(values.mean()),
+            'median_return': None if values.empty else float(values.median()),
+            'positive_ratio': None if values.empty else float((values > 0).mean()),
+            'source': 'joinquant_uploaded_m_quant_strategy_csv',
+            'note': '策略级事件检验；1日不参与正式筛选，5/10/20 为主评估周期。',
+        })
+    return result, summary
+
+
+def run():
+    factors = load_strategy_factors(CSV_PATH)
+    candidates = select_candidates(factors)
+    detail, summary = evaluate_candidates(candidates)
+    output = {
+        'strategy_id': STRATEGY_ID,
+        'strategy_name': STRATEGY_NAME,
+        'factor_ids': FACTOR_IDS,
+        'candidate_count': int(candidates.shape[0]) if candidates is not None else 0,
+        'summary': summary,
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    return output, detail
+
+
+result_json, detail_df = run()
+`;
+}
+
+function buildJoinQuantStrategyHistoricalScript(strategyId) {
+  const pack = buildJoinQuantStrategyPackage(strategyId);
+  if (!pack) return null;
+  const strategy = pack.route;
+  const factors = strategy.factors.filter((factor) => factor.factorId);
+  const factorIds = factors.map((factor) => factor.factorId);
+  const weights = factors.reduce((map, factor) => {
+    if (typeof factor.weight === 'number') map[factor.factorId] = factor.weight;
+    return map;
+  }, {});
+
+  return `# M-quant JoinQuant historical strategy rebuild
+# Strategy: ${strategy.name}
+# Generated: ${pack.generatedAt}
+# Policy: 不生成虚构收益。本脚本只在 JoinQuant 研究环境读取真实历史 OHLCV，重建可由行情复现的因子，再做策略级样本检验。
+#
+# 使用方法：
+# 1. 在 JoinQuant 研究环境新建 Python3 Notebook。
+# 2. 粘贴并运行本脚本。
+# 3. 复制最后打印的 JSON，回填到 M-quant 回测中心。
+#
+# 重要边界：
+# - 这是 JoinQuant OHLCV 重建版，不等于 Yiwan 全字段原始因子。
+# - 资金、筹码、暗盘等字段若 JoinQuant 无法提供，本脚本不会凭空补造。
+# - 1日不进入正式策略筛选；主评估周期为 5/10/20 日。
+
+import json
+import math
+
+import numpy as np
+import pandas as pd
+
+from jqdata import *
+
+
+STRATEGY_ID = '${strategy.id}'
+STRATEGY_NAME = ${JSON.stringify(strategy.name)}
+INDEX_CODE = '000300.XSHG'
+PRICE_START = '2022-12-01'
+FACTOR_START = '2024-01-01'
+END_LIMIT = '2026-07-07'
+HORIZONS = [5, 10, 20]
+FACTOR_DAY_STEP = 5
+MIN_CROSS_SECTION = 80
+TOP_N = 30
+FACTOR_IDS = ${JSON.stringify(factorIds, null, 2)}
+FACTOR_WEIGHTS = ${JSON.stringify(weights, null, 2)}
+
+
+def clip01(value):
+    return value.clip(lower=0, upper=1)
+
+
+def bounded_peak_score(series, target, width):
+    return clip01(1 - (series - target).abs() / width)
+
+
+def safe_ratio(a, b):
+    return a / b.replace(0, np.nan)
+
+
+def rank_pct(series):
+    return series.rank(pct=True)
+
+
+def normalize_price_frame(price):
+    if price is None or len(price) == 0:
+        return pd.DataFrame()
+    df = price.copy()
+    if 'time' not in df.columns:
+        df = df.reset_index()
+        if 'index' in df.columns and 'time' not in df.columns:
+            df = df.rename(columns={'index': 'time'})
+    if 'code' not in df.columns and 'security' in df.columns:
+        df = df.rename(columns={'security': 'code'})
+    df['date'] = pd.to_datetime(df['time']).dt.normalize()
+    return df
+
+
+def build_historical_factor_table():
+    all_days = pd.to_datetime(get_trade_days(start_date=FACTOR_START, end_date=END_LIMIT))
+    if len(all_days) <= max(HORIZONS) + 1:
+        raise ValueError('历史交易日不足，无法做 5/10/20 日策略检验。')
+
+    latest_trade_day = all_days[-1]
+    usable_end = all_days[-max(HORIZONS) - 1]
+    test_days = all_days[all_days <= usable_end][::FACTOR_DAY_STEP]
+    if len(test_days) == 0:
+        raise ValueError('没有可用测试日。')
+
+    universe_by_date = {}
+    securities = set()
+    for day in test_days:
+        stocks = get_index_stocks(INDEX_CODE, date=day.strftime('%Y-%m-%d'))
+        universe_by_date[pd.Timestamp(day).normalize()] = set(stocks)
+        securities.update(stocks)
+
+    securities = sorted(securities)
+    price = get_price(
+        securities,
+        start_date=PRICE_START,
+        end_date=latest_trade_day.strftime('%Y-%m-%d'),
+        frequency='daily',
+        fields=['open', 'high', 'low', 'close', 'volume', 'money'],
+        panel=False,
+        fq='pre',
+    )
+    price = normalize_price_frame(price)
+    if price.empty:
+        raise ValueError('get_price 返回空数据。')
+
+    price = price.sort_values(['code', 'date']).copy()
+    group = price.groupby('code', group_keys=False)
+    price['prev_close'] = group['close'].shift(1)
+    price['change_pct'] = (price['close'] / price['prev_close'] - 1) * 100
+    price['amplitude'] = (price['high'] - price['low']) / price['prev_close'].replace(0, np.nan) * 100
+    price['volume_ma20'] = group['volume'].rolling(20, min_periods=10).mean().reset_index(level=0, drop=True)
+    price['volume_ratio'] = price['volume'] / price['volume_ma20'].replace(0, np.nan)
+
+    for window in [5, 10, 13, 20, 30, 60, 120, 250]:
+        price['ma%d' % window] = group['close'].rolling(window, min_periods=max(5, window // 2)).mean().reset_index(level=0, drop=True)
+        price['ma%d_dir' % window] = price.groupby('code')['ma%d' % window].transform(lambda s: s.diff())
+    for window in [5, 10]:
+        price['mavol%d' % window] = group['volume'].rolling(window, min_periods=max(3, window // 2)).mean().reset_index(level=0, drop=True)
+        price['mavol%d_dir' % window] = price.groupby('code')['mavol%d' % window].transform(lambda s: s.diff())
+    for horizon in HORIZONS:
+        price['future_return_%d' % horizon] = group['close'].shift(-horizon) / price['close'] - 1
+
+    rows = []
+    for day, universe in universe_by_date.items():
+        part = price[(price['date'] == day) & (price['code'].isin(universe))].copy()
+        if len(part) < MIN_CROSS_SECTION:
+            continue
+
+        day_range = (part['high'] - part['low']).replace(0, np.nan)
+        signed_body = (part['close'] - part['open']) / day_range
+        body_ratio = ((part['close'] - part['open']).abs() / day_range).clip(0, 1).fillna(0)
+        upper_ratio = ((part['high'] - np.maximum(part['open'], part['close'])) / day_range).clip(0, 1).fillna(0)
+        lower_ratio = ((np.minimum(part['open'], part['close']) - part['low']) / day_range).clip(0, 1).fillna(0)
+        close_position = ((part['close'] - part['low']) / day_range).clip(0, 1).fillna(0.5)
+
+        change_rank = rank_pct(part['change_pct'])
+        amplitude_rank = rank_pct(part['amplitude'])
+        volume_ratio_rank = rank_pct(part['volume_ratio'])
+        amount_rank = rank_pct(part['money'])
+
+        bullish_body_score = clip01((signed_body + 1) / 2).fillna(0.5)
+        candle_quality = clip01(0.45 * close_position + 0.25 * bullish_body_score + 0.20 * lower_ratio + 0.10 * (1 - upper_ratio))
+        upper_shadow_pressure = clip01(0.65 * upper_ratio + 0.35 * (((upper_ratio > lower_ratio) & (close_position < 0.55)).astype(float)))
+
+        trend_dir_score = (
+            0.22 * (part['ma5_dir'] > 0).astype(float)
+            + 0.18 * (part['ma13_dir'] > 0).astype(float)
+            + 0.16 * (part['ma20_dir'] > 0).astype(float)
+            + 0.14 * (part['ma30_dir'] > 0).astype(float)
+            + 0.12 * (part['ma60_dir'] > 0).astype(float)
+            + 0.10 * (part['ma120_dir'] > 0).astype(float)
+            + 0.08 * (part['ma250_dir'] > 0).astype(float)
+        )
+        trend_position_score = (
+            0.24 * (part['close'] > part['ma5']).astype(float)
+            + 0.20 * (part['close'] > part['ma13']).astype(float)
+            + 0.17 * (part['close'] > part['ma20']).astype(float)
+            + 0.14 * (part['close'] > part['ma30']).astype(float)
+            + 0.11 * (part['close'] > part['ma60']).astype(float)
+            + 0.08 * (part['close'] > part['ma120']).astype(float)
+            + 0.06 * (part['close'] > part['ma250']).astype(float)
+        )
+        trend_stack_score = (
+            0.35 * (part['ma5'] > part['ma20']).astype(float)
+            + 0.30 * (part['ma20'] > part['ma60']).astype(float)
+            + 0.20 * (part['ma60'] > part['ma120']).astype(float)
+            + 0.15 * (part['ma120'] > part['ma250']).astype(float)
+        )
+        short_medium_spread = safe_ratio(part['ma5'], part['ma20'])
+        medium_long_spread = safe_ratio(part['ma20'], part['ma60'])
+        trend_maturity = clip01(0.55 * bounded_peak_score(short_medium_spread, 1.035, 0.11) + 0.45 * bounded_peak_score(medium_long_spread, 1.045, 0.13))
+        price_ma_distance = safe_ratio(part['close'], part['ma20']) - 1
+        trend_extension_risk = clip01(((price_ma_distance.abs() - 0.035) / 0.14).fillna(0.5))
+        trend_alignment = clip01(0.30 * trend_dir_score + 0.25 * trend_position_score + 0.20 * trend_stack_score + 0.15 * trend_maturity + 0.10 * (1 - trend_extension_risk))
+
+        volume_quality = bounded_peak_score(part['volume_ratio'], 1.8, 2.2)
+        volume_support = clip01(0.36 * (part['mavol5_dir'] > 0).astype(float) + 0.28 * (part['mavol10_dir'] > 0).astype(float) + 0.20 * volume_quality + 0.16 * amount_rank)
+        price_action_quality = clip01(0.34 * change_rank + 0.30 * close_position + 0.22 * bullish_body_score + 0.14 * (1 - upper_shadow_pressure))
+        volume_price_sync = clip01(
+            0.35 * ((part['change_pct'] > 0) & (close_position >= 0.62)).astype(float)
+            + 0.25 * ((part['volume_ratio'] >= 0.8) & (part['volume_ratio'] <= 3.2)).astype(float)
+            + 0.20 * amount_rank
+            + 0.20 * ((part['mavol5_dir'] > 0) | (part['mavol10_dir'] > 0)).astype(float)
+        )
+        volume_price_divergence_risk = clip01(
+            0.30 * ((part['change_pct'] <= 0) & (volume_ratio_rank >= 0.65)).astype(float)
+            + 0.25 * ((close_position <= 0.42) & (volume_ratio_rank >= 0.65)).astype(float)
+            + 0.22 * upper_shadow_pressure
+            + 0.13 * ((part['volume_ratio'] > 3.5) & (part['change_pct'] < 2)).astype(float)
+            + 0.10 * ((part['amplitude'] > 10) & (close_position < 0.55)).astype(float)
+        )
+        blowoff_penalty = clip01(
+            0.50 * (part['volume_ratio'] > 4).astype(float)
+            + 0.25 * (upper_ratio > 0.45).astype(float)
+            + 0.25 * (part['amplitude'] > 12).astype(float)
+        )
+        volume_price_confirmation = clip01(
+            0.24 * volume_support
+            + 0.22 * price_action_quality
+            + 0.20 * volume_price_sync
+            + 0.18 * trend_alignment
+            + 0.08 * amount_rank
+            + 0.08 * candle_quality
+            - 0.22 * volume_price_divergence_risk
+            - 0.10 * blowoff_penalty
+        )
+
+        transaction_crowding_risk = clip01(0.46 * volume_ratio_rank + 0.42 * amount_rank + 0.12 * (part['volume_ratio'] >= 3).astype(float))
+        price_heat_risk = clip01(0.34 * change_rank + 0.26 * amplitude_rank + 0.22 * trend_extension_risk + 0.18 * (close_position >= 0.9).astype(float))
+        candle_distribution_risk = clip01(
+            0.45 * upper_shadow_pressure
+            + 0.22 * ((close_position < 0.45) & (volume_ratio_rank > 0.65)).astype(float)
+            + 0.18 * ((body_ratio <= 0.18) & (amplitude_rank > 0.65)).astype(float)
+            + 0.15 * ((lower_ratio < 0.12) & (close_position < 0.35)).astype(float)
+        )
+        crowding_risk = clip01(0.34 * transaction_crowding_risk + 0.24 * price_heat_risk + 0.20 * candle_distribution_risk + 0.16 * volume_price_divergence_risk + 0.06 * (part['change_pct'] >= 9.5).astype(float))
+
+        signed_return = (part['close'] - part['open']) / part['open'].replace(0, np.nan)
+        up_context = (part['close'] > part['ma20']) & (part['ma20_dir'] > 0)
+        spinning_top = (body_ratio > 0.08) & (body_ratio <= 0.35) & (upper_ratio >= 0.20) & (lower_ratio >= 0.20)
+        high_volume = (part['volume_ratio'] >= 1.5) | (volume_ratio_rank >= 0.80)
+        long_lower = (lower_ratio >= 0.55) & (upper_ratio <= 0.18) & (body_ratio <= 0.35)
+        long_upper = (upper_ratio >= 0.55) & (lower_ratio <= 0.18) & (body_ratio <= 0.35)
+        kline_event_score = pd.Series(0.0, index=part.index)
+        kline_event_score += ((part['close'] > part['open']) & (upper_ratio <= 0.08) & (lower_ratio <= 0.08) & (body_ratio >= 0.82)).astype(float) * 2
+        kline_event_score += ((part['close'] < part['open']) & (upper_ratio <= 0.08) & (lower_ratio <= 0.08) & (body_ratio >= 0.82)).astype(float) * -2
+        kline_event_score += ((signed_return >= 0.05) & (body_ratio >= 0.65)).astype(float) * 2
+        kline_event_score += ((signed_return <= -0.05) & (body_ratio >= 0.65)).astype(float) * 2
+        kline_event_score += (long_lower & ~up_context).astype(float) * -3
+        kline_event_score += (spinning_top & high_volume).astype(float) * -1
+        kline_event_score += (long_lower & up_context).astype(float) * 2
+        kline_event_score += (long_upper & up_context).astype(float) * 2
+        doji = body_ratio <= 0.08
+        kline_event_score += doji.astype(float) * 1
+        kline_event_score += (doji & (lower_ratio >= 0.60) & (upper_ratio <= 0.12)).astype(float) * 2
+        kline_event_score += (doji & (upper_ratio >= 0.60) & (lower_ratio <= 0.12)).astype(float) * -2
+
+        intraday_strength = clip01(0.34 * change_rank + 0.26 * candle_quality + 0.16 * volume_quality + 0.14 * amount_rank + 0.10 * (1 - upper_ratio))
+        technical_composite = clip01(0.30 * trend_alignment + 0.27 * volume_price_confirmation + 0.18 * intraday_strength + 0.10 * (kline_event_score.rank(pct=True)) - 0.15 * crowding_risk)
+
+        out = part[['date', 'code', 'close'] + ['future_return_%d' % h for h in HORIZONS]].copy()
+        out['technical_composite'] = technical_composite
+        out['trend_alignment'] = trend_alignment
+        out['volume_price_confirmation'] = volume_price_confirmation
+        out['crowding_risk'] = crowding_risk
+        out['volume_price_divergence_risk'] = volume_price_divergence_risk
+        out['trend_extension_risk'] = trend_extension_risk
+        out['kline_event_score'] = kline_event_score
+        rows.append(out)
+
+    if not rows:
+        raise ValueError('没有形成可用策略样本。')
+    return pd.concat(rows, ignore_index=True)
+
+
+def cross_section_rank(series, higher_is_better=True):
+    ranked = series.rank(pct=True, method='average')
+    if not higher_is_better:
+        ranked = 1 - ranked
+    return ranked.fillna(0.5)
+
+
+def apply_entry_rules(frame):
+    part = frame.copy()
+    if STRATEGY_ID == 'core_volume_price_trend_v1':
+        part = part[part['trend_alignment'] >= 0.60]
+        part = part[part['volume_price_confirmation'] >= 0.60]
+        part = part[part['crowding_risk'] <= 0.55]
+        part = part[part['volume_price_divergence_risk'] <= 0.45]
+        part = part[part['trend_extension_risk'] <= 0.75]
+    return part
+
+
+def score_strategy(frame):
+    scored = frame.copy()
+    score = pd.Series(0.0, index=scored.index)
+    active_factor_count = 0
+    for factor, weight in FACTOR_WEIGHTS.items():
+        if factor not in scored.columns:
+            continue
+        score += abs(weight) * cross_section_rank(scored[factor], higher_is_better=(weight >= 0))
+        active_factor_count += 1
+    scored['strategy_score'] = score
+    scored['active_factor_count'] = active_factor_count
+    return scored.sort_values('strategy_score', ascending=False)
+
+
+def select_candidates(factor_table):
+    selected = []
+    diagnostics = []
+    for date, frame in factor_table.groupby('date'):
+        filtered = apply_entry_rules(frame)
+        scored = score_strategy(filtered)
+        picked = scored.head(TOP_N).copy()
+        diagnostics.append({
+            'date': pd.Timestamp(date).strftime('%Y-%m-%d'),
+            'universe': int(frame.shape[0]),
+            'after_entry_rules': int(filtered.shape[0]),
+            'selected': int(picked.shape[0]),
+        })
+        if not picked.empty:
+            selected.append(picked)
+    if not selected:
+        return pd.DataFrame(), diagnostics
+    return pd.concat(selected, ignore_index=True), diagnostics
+
+
+def summarize_strategy(candidates):
+    summaries = []
+    if candidates.empty:
+        return summaries
+    for horizon in HORIZONS:
+        col = 'future_return_%d' % horizon
+        values = candidates[col].replace([np.inf, -np.inf], np.nan).dropna()
+        daily = candidates.groupby('date')[col].mean().replace([np.inf, -np.inf], np.nan).dropna()
+        summaries.append({
+            'result_type': 'strategy_backtest',
+            'strategy_id': STRATEGY_ID,
+            'strategy_name': STRATEGY_NAME,
+            'horizon': horizon,
+            'sample_dates': int(daily.shape[0]),
+            'sample_trades': int(values.shape[0]),
+            'mean_return': None if values.empty else float(values.mean()),
+            'median_return': None if values.empty else float(values.median()),
+            'positive_ratio': None if values.empty else float((values > 0).mean()),
+            'daily_mean_return': None if daily.empty else float(daily.mean()),
+            'daily_positive_ratio': None if daily.empty else float((daily > 0).mean()),
+            'best_daily_return': None if daily.empty else float(daily.max()),
+            'worst_daily_return': None if daily.empty else float(daily.min()),
+            'avg_candidates_per_date': None if daily.empty else float(values.shape[0] / daily.shape[0]),
+            'source': 'joinquant_historical_ohlcv_strategy_rebuild',
+            'note': '策略级历史重建检验；5/10/20 日为主评估周期。OHLCV可复现因子，不包含无法取得的 Yiwan 暗盘/筹码原字段。',
+        })
+    return summaries
+
+
+def run():
+    factor_table = build_historical_factor_table()
+    candidates, diagnostics = select_candidates(factor_table)
+    summary = summarize_strategy(candidates)
+    preview_cols = ['date', 'code', 'strategy_score', 'active_factor_count'] + [c for c in FACTOR_IDS if c in candidates.columns]
+    preview = candidates[preview_cols].head(50).copy() if not candidates.empty else pd.DataFrame(columns=preview_cols)
+    if 'date' in preview.columns:
+        preview['date'] = preview['date'].dt.strftime('%Y-%m-%d')
+    output = {
+        'result_type': 'strategy_backtest',
+        'strategy_id': STRATEGY_ID,
+        'strategy_name': STRATEGY_NAME,
+        'source': 'joinquant_historical_ohlcv_strategy_rebuild',
+        'data_policy': '真实 JoinQuant OHLCV 重建；未生成任何虚构收益；非 Yiwan 全字段等价复刻。',
+        'config': {
+            'index_code': INDEX_CODE,
+            'price_start': PRICE_START,
+            'factor_start': FACTOR_START,
+            'end_limit': END_LIMIT,
+            'horizons': HORIZONS,
+            'factor_day_step': FACTOR_DAY_STEP,
+            'top_n': TOP_N,
+            'factor_ids': FACTOR_IDS,
+            'factor_weights': FACTOR_WEIGHTS,
+        },
+        'sample': {
+            'factor_rows': int(factor_table.shape[0]),
+            'candidate_rows': int(candidates.shape[0]) if candidates is not None else 0,
+            'test_dates': int(factor_table['date'].nunique()),
+            'selected_dates': int(candidates['date'].nunique()) if candidates is not None and not candidates.empty else 0,
+        },
+        'summary': summary,
+        'diagnostics_tail': diagnostics[-20:],
+        'candidate_preview': preview.to_dict(orient='records'),
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    return output
+
+
+result_json = run()
+	`;
+}
+
+function buildJoinQuantStrategyVolatilityRegimeScript(strategyId) {
+  const baseScript = buildJoinQuantStrategyHistoricalScript(strategyId);
+  if (!baseScript) return null;
+
+  const regimeExtension = `
+
+# --- Market volatility regime extension ---
+# 目的：在同一套策略候选样本上，按真实市场波动率环境拆分回测结果。
+# 口径：以沪深300日收益的20日滚动年化波动率为市场状态代理；
+#      使用过去约1年滚动分位数划分高/中/低波动，避免使用未来信息。
+
+REGIME_INDEX_CODE = '000300.XSHG'
+REGIME_WINDOW = 20
+REGIME_LOOKBACK = 252
+REGIME_MIN_PERIODS = 60
+
+
+def normalize_index_price_frame(price):
+    if price is None or len(price) == 0:
+        return pd.DataFrame()
+    df = price.copy()
+    if 'time' not in df.columns:
+        df = df.reset_index()
+        if 'index' in df.columns and 'time' not in df.columns:
+            df = df.rename(columns={'index': 'time'})
+    df['date'] = pd.to_datetime(df['time']).dt.normalize()
+    return df[['date', 'close']].dropna().sort_values('date')
+
+
+def build_market_regimes():
+    index_price = get_price(
+        REGIME_INDEX_CODE,
+        start_date=PRICE_START,
+        end_date=END_LIMIT,
+        frequency='daily',
+        fields=['close'],
+        panel=False,
+        fq='pre',
+    )
+    index_price = normalize_index_price_frame(index_price)
+    if index_price.empty:
+        raise ValueError('市场指数 get_price 返回空数据，无法做波动率分层。')
+
+    index_price['index_return'] = index_price['close'].pct_change()
+    index_price['market_vol_20d'] = index_price['index_return'].rolling(REGIME_WINDOW, min_periods=REGIME_WINDOW).std() * math.sqrt(252)
+    index_price['vol_p30'] = index_price['market_vol_20d'].rolling(REGIME_LOOKBACK, min_periods=REGIME_MIN_PERIODS).quantile(0.30).shift(1)
+    index_price['vol_p70'] = index_price['market_vol_20d'].rolling(REGIME_LOOKBACK, min_periods=REGIME_MIN_PERIODS).quantile(0.70).shift(1)
+
+    valid = index_price.dropna(subset=['market_vol_20d', 'vol_p30', 'vol_p70']).copy()
+    if valid.empty:
+        raise ValueError('市场波动率有效样本不足，无法划分高/中/低波动。')
+
+    valid['market_regime'] = 'medium_volatility'
+    valid.loc[valid['market_vol_20d'] >= valid['vol_p70'], 'market_regime'] = 'high_volatility'
+    valid.loc[valid['market_vol_20d'] <= valid['vol_p30'], 'market_regime'] = 'low_volatility'
+    valid['market_regime_name'] = valid['market_regime'].map({
+        'high_volatility': '高波动',
+        'medium_volatility': '中波动',
+        'low_volatility': '低波动',
+    })
+    return valid[['date', 'market_vol_20d', 'vol_p30', 'vol_p70', 'market_regime', 'market_regime_name']]
+
+
+def summarize_strategy_by_regime(candidates):
+    summaries = []
+    if candidates.empty:
+        return summaries
+
+    regime_order = [
+        ('high_volatility', '高波动'),
+        ('medium_volatility', '中波动'),
+        ('low_volatility', '低波动'),
+    ]
+    for regime_id, regime_name in regime_order:
+        regime_candidates = candidates[candidates['market_regime'] == regime_id].copy()
+        if regime_candidates.empty:
+            continue
+
+        for horizon in HORIZONS:
+            col = 'future_return_%d' % horizon
+            values = regime_candidates[col].replace([np.inf, -np.inf], np.nan).dropna()
+            daily = regime_candidates.groupby('date')[col].mean().replace([np.inf, -np.inf], np.nan).dropna()
+            summaries.append({
+                'result_type': 'strategy_regime_backtest',
+                'strategy_id': STRATEGY_ID,
+                'strategy_name': STRATEGY_NAME,
+                'horizon': horizon,
+                'market_regime': regime_id,
+                'market_regime_name': regime_name,
+                'sample_dates': int(daily.shape[0]),
+                'sample_trades': int(values.shape[0]),
+                'mean_return': None if values.empty else float(values.mean()),
+                'median_return': None if values.empty else float(values.median()),
+                'positive_ratio': None if values.empty else float((values > 0).mean()),
+                'daily_mean_return': None if daily.empty else float(daily.mean()),
+                'daily_positive_ratio': None if daily.empty else float((daily > 0).mean()),
+                'best_daily_return': None if daily.empty else float(daily.max()),
+                'worst_daily_return': None if daily.empty else float(daily.min()),
+                'avg_candidates_per_date': None if daily.empty else float(values.shape[0] / daily.shape[0]),
+                'market_vol_mean': None if regime_candidates['market_vol_20d'].dropna().empty else float(regime_candidates['market_vol_20d'].mean()),
+                'source': 'joinquant_market_volatility_regime_rebuild',
+                'note': '按沪深300 20日滚动年化波动率分层；收益来自 JoinQuant 真实 OHLCV 重建候选样本。',
+            })
+    return summaries
+
+
+def run_regime():
+    factor_table = build_historical_factor_table()
+    candidates, diagnostics = select_candidates(factor_table)
+    market_regimes = build_market_regimes()
+
+    if candidates.empty:
+        merged = candidates.copy()
+    else:
+        merged = candidates.merge(market_regimes, on='date', how='left')
+        merged = merged.dropna(subset=['market_regime']).copy()
+
+    summary = summarize_strategy_by_regime(merged)
+    regime_counts = {}
+    if not merged.empty:
+        regime_count_rows = []
+        for regime_id, part in merged.groupby('market_regime'):
+            regime_count_rows.append({
+                'market_regime': regime_id,
+                'sample_dates': int(part['date'].nunique()),
+                'sample_trades': int(part['code'].count()),
+                'market_vol_mean': None if part['market_vol_20d'].dropna().empty else float(part['market_vol_20d'].mean()),
+            })
+        regime_counts = regime_count_rows
+
+    preview_cols = ['date', 'code', 'strategy_score', 'market_regime_name', 'market_vol_20d'] + [c for c in FACTOR_IDS if c in merged.columns]
+    preview = merged[preview_cols].head(50).copy() if not merged.empty else pd.DataFrame(columns=preview_cols)
+    if 'date' in preview.columns:
+        preview['date'] = preview['date'].dt.strftime('%Y-%m-%d')
+
+    output = {
+        'result_type': 'strategy_regime_backtest',
+        'strategy_id': STRATEGY_ID,
+        'strategy_name': STRATEGY_NAME,
+        'source': 'joinquant_market_volatility_regime_rebuild',
+        'data_policy': '真实 JoinQuant OHLCV 与沪深300指数行情计算；未生成任何虚构收益。',
+        'config': {
+            'strategy_index_code': INDEX_CODE,
+            'regime_index_code': REGIME_INDEX_CODE,
+            'price_start': PRICE_START,
+            'factor_start': FACTOR_START,
+            'end_limit': END_LIMIT,
+            'horizons': HORIZONS,
+            'factor_day_step': FACTOR_DAY_STEP,
+            'top_n': TOP_N,
+            'regime_window': REGIME_WINDOW,
+            'regime_lookback': REGIME_LOOKBACK,
+            'high_volatility_rule': 'market_vol_20d >= trailing 70% quantile',
+            'low_volatility_rule': 'market_vol_20d <= trailing 30% quantile',
+        },
+        'sample': {
+            'factor_rows': int(factor_table.shape[0]),
+            'candidate_rows_before_regime': int(candidates.shape[0]) if candidates is not None else 0,
+            'candidate_rows_after_regime': int(merged.shape[0]) if merged is not None else 0,
+            'test_dates': int(factor_table['date'].nunique()),
+            'selected_dates_after_regime': int(merged['date'].nunique()) if merged is not None and not merged.empty else 0,
+        },
+        'regime_counts': regime_counts,
+        'summary': summary,
+        'diagnostics_tail': diagnostics[-20:],
+        'candidate_preview': preview.to_dict(orient='records'),
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    return output
+
+
+result_json = run_regime()
+`;
+
+  return baseScript.replace(/\nresult_json = run\(\)\s*$/, regimeExtension);
+}
+
+function buildJoinQuantStrategyMarketCapScript(strategyId) {
+  const baseScript = buildJoinQuantStrategyHistoricalScript(strategyId);
+  if (!baseScript) return null;
+
+  const sizeExtension = `
+
+# --- Market capitalization bucket extension ---
+# 目的：在同一套策略候选样本上，按真实市值层拆分回测结果。
+# 口径：每个测试日用 JoinQuant valuation.market_cap 获取沪深300成分股总市值；
+#      按当日全截面市值分位划分大/中/小市值，避免使用未来信息。
+
+MARKET_CAP_FIELD = 'valuation.market_cap'
+LARGE_CAP_QUANTILE = 0.67
+SMALL_CAP_QUANTILE = 0.33
+
+
+def build_market_cap_buckets(factor_table):
+    rows = []
+    for day, frame in factor_table.groupby('date'):
+        codes = sorted(frame['code'].dropna().unique().tolist())
+        if len(codes) < MIN_CROSS_SECTION:
+            continue
+
+        fundamentals = get_fundamentals(
+            query(valuation.code, valuation.market_cap).filter(valuation.code.in_(codes)),
+            date=pd.Timestamp(day).strftime('%Y-%m-%d'),
+        )
+        if fundamentals is None or fundamentals.empty:
+            continue
+
+        cap = fundamentals[['code', 'market_cap']].dropna().copy()
+        if len(cap) < MIN_CROSS_SECTION:
+            continue
+
+        cap['date'] = pd.Timestamp(day).normalize()
+        cap['market_cap_rank_pct'] = cap['market_cap'].rank(pct=True, method='average')
+        cap['market_cap_bucket'] = 'mid_cap'
+        cap.loc[cap['market_cap_rank_pct'] >= LARGE_CAP_QUANTILE, 'market_cap_bucket'] = 'large_cap'
+        cap.loc[cap['market_cap_rank_pct'] <= SMALL_CAP_QUANTILE, 'market_cap_bucket'] = 'small_cap'
+        cap['market_cap_bucket_name'] = cap['market_cap_bucket'].map({
+            'large_cap': '大市值',
+            'mid_cap': '中市值',
+            'small_cap': '小市值',
+        })
+        rows.append(cap[['date', 'code', 'market_cap', 'market_cap_rank_pct', 'market_cap_bucket', 'market_cap_bucket_name']])
+
+    if not rows:
+        raise ValueError('JoinQuant fundamentals 未返回足够市值数据，无法做市值分层。')
+    return pd.concat(rows, ignore_index=True)
+
+
+def summarize_strategy_by_market_cap(candidates):
+    summaries = []
+    if candidates.empty:
+        return summaries
+
+    bucket_order = [
+        ('large_cap', '大市值'),
+        ('mid_cap', '中市值'),
+        ('small_cap', '小市值'),
+    ]
+    for bucket_id, bucket_name in bucket_order:
+        bucket_candidates = candidates[candidates['market_cap_bucket'] == bucket_id].copy()
+        if bucket_candidates.empty:
+            continue
+
+        for horizon in HORIZONS:
+            col = 'future_return_%d' % horizon
+            values = bucket_candidates[col].replace([np.inf, -np.inf], np.nan).dropna()
+            daily = bucket_candidates.groupby('date')[col].mean().replace([np.inf, -np.inf], np.nan).dropna()
+            summaries.append({
+                'result_type': 'strategy_size_backtest',
+                'strategy_id': STRATEGY_ID,
+                'strategy_name': STRATEGY_NAME,
+                'horizon': horizon,
+                'market_cap_bucket': bucket_id,
+                'market_cap_bucket_name': bucket_name,
+                'sample_dates': int(daily.shape[0]),
+                'sample_trades': int(values.shape[0]),
+                'mean_return': None if values.empty else float(values.mean()),
+                'median_return': None if values.empty else float(values.median()),
+                'positive_ratio': None if values.empty else float((values > 0).mean()),
+                'daily_mean_return': None if daily.empty else float(daily.mean()),
+                'daily_positive_ratio': None if daily.empty else float((daily > 0).mean()),
+                'best_daily_return': None if daily.empty else float(daily.max()),
+                'worst_daily_return': None if daily.empty else float(daily.min()),
+                'avg_candidates_per_date': None if daily.empty else float(values.shape[0] / daily.shape[0]),
+                'market_cap_mean': None if bucket_candidates['market_cap'].dropna().empty else float(bucket_candidates['market_cap'].mean()),
+                'source': 'joinquant_market_cap_bucket_rebuild',
+                'note': '按 JoinQuant valuation.market_cap 当日截面分层；收益来自 JoinQuant 真实 OHLCV 重建候选样本。',
+            })
+    return summaries
+
+
+def run_market_cap_bucket():
+    factor_table = build_historical_factor_table()
+    candidates, diagnostics = select_candidates(factor_table)
+    market_caps = build_market_cap_buckets(factor_table)
+
+    if candidates.empty:
+        merged = candidates.copy()
+    else:
+        merged = candidates.merge(market_caps, on=['date', 'code'], how='left')
+        merged = merged.dropna(subset=['market_cap_bucket']).copy()
+
+    summary = summarize_strategy_by_market_cap(merged)
+    bucket_counts = []
+    if not merged.empty:
+        for bucket_id, part in merged.groupby('market_cap_bucket'):
+            bucket_counts.append({
+                'market_cap_bucket': bucket_id,
+                'sample_dates': int(part['date'].nunique()),
+                'sample_trades': int(part['code'].count()),
+                'market_cap_mean': None if part['market_cap'].dropna().empty else float(part['market_cap'].mean()),
+            })
+
+    preview_cols = ['date', 'code', 'strategy_score', 'market_cap_bucket_name', 'market_cap'] + [c for c in FACTOR_IDS if c in merged.columns]
+    preview = merged[preview_cols].head(50).copy() if not merged.empty else pd.DataFrame(columns=preview_cols)
+    if 'date' in preview.columns:
+        preview['date'] = preview['date'].dt.strftime('%Y-%m-%d')
+
+    output = {
+        'result_type': 'strategy_size_backtest',
+        'strategy_id': STRATEGY_ID,
+        'strategy_name': STRATEGY_NAME,
+        'source': 'joinquant_market_cap_bucket_rebuild',
+        'data_policy': '真实 JoinQuant OHLCV 与 valuation.market_cap 计算；未生成任何虚构收益。',
+        'config': {
+            'strategy_index_code': INDEX_CODE,
+            'price_start': PRICE_START,
+            'factor_start': FACTOR_START,
+            'end_limit': END_LIMIT,
+            'horizons': HORIZONS,
+            'factor_day_step': FACTOR_DAY_STEP,
+            'top_n': TOP_N,
+            'market_cap_field': MARKET_CAP_FIELD,
+            'large_cap_rule': 'market_cap_rank_pct >= 0.67 within daily index universe',
+            'small_cap_rule': 'market_cap_rank_pct <= 0.33 within daily index universe',
+        },
+        'sample': {
+            'factor_rows': int(factor_table.shape[0]),
+            'candidate_rows_before_size': int(candidates.shape[0]) if candidates is not None else 0,
+            'candidate_rows_after_size': int(merged.shape[0]) if merged is not None else 0,
+            'test_dates': int(factor_table['date'].nunique()),
+            'selected_dates_after_size': int(merged['date'].nunique()) if merged is not None and not merged.empty else 0,
+        },
+        'market_cap_bucket_counts': bucket_counts,
+        'summary': summary,
+        'diagnostics_tail': diagnostics[-20:],
+        'candidate_preview': preview.to_dict(orient='records'),
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    return output
+
+
+result_json = run_market_cap_bucket()
+`;
+
+  return baseScript.replace(/\nresult_json = run\(\)\s*$/, sizeExtension);
+}
+
+function buildJoinQuantStrategyVolatilitySizeScript(strategyId) {
+  const baseScript = buildJoinQuantStrategyHistoricalScript(strategyId);
+  if (!baseScript) return null;
+
+  const crossExtension = `
+
+# --- Market volatility x market capitalization extension ---
+# 目的：在同一套策略候选样本上，交叉拆分“高/中/低波动 × 大/中/小市值”。
+# 口径：
+# - 市场波动：沪深300 20日滚动年化波动率，并用过去约1年滚动30/70分位划分高/中/低。
+# - 市值层：每个测试日用 JoinQuant valuation.market_cap，按当日沪深300截面分位划分大/中/小。
+# - 两者都只使用测试日当时可取得的数据，不使用未来收益参与分层。
+
+REGIME_INDEX_CODE = '000300.XSHG'
+REGIME_WINDOW = 20
+REGIME_LOOKBACK = 252
+REGIME_MIN_PERIODS = 60
+MARKET_CAP_FIELD = 'valuation.market_cap'
+LARGE_CAP_QUANTILE = 0.67
+SMALL_CAP_QUANTILE = 0.33
+
+
+def normalize_index_price_frame(price):
+    if price is None or len(price) == 0:
+        return pd.DataFrame()
+    df = price.copy()
+    if 'time' not in df.columns:
+        df = df.reset_index()
+        if 'index' in df.columns and 'time' not in df.columns:
+            df = df.rename(columns={'index': 'time'})
+    df['date'] = pd.to_datetime(df['time']).dt.normalize()
+    return df[['date', 'close']].dropna().sort_values('date')
+
+
+def build_market_regimes():
+    index_price = get_price(
+        REGIME_INDEX_CODE,
+        start_date=PRICE_START,
+        end_date=END_LIMIT,
+        frequency='daily',
+        fields=['close'],
+        panel=False,
+        fq='pre',
+    )
+    index_price = normalize_index_price_frame(index_price)
+    if index_price.empty:
+        raise ValueError('市场指数 get_price 返回空数据，无法做波动率分层。')
+
+    index_price['index_return'] = index_price['close'].pct_change()
+    index_price['market_vol_20d'] = index_price['index_return'].rolling(REGIME_WINDOW, min_periods=REGIME_WINDOW).std() * math.sqrt(252)
+    index_price['vol_p30'] = index_price['market_vol_20d'].rolling(REGIME_LOOKBACK, min_periods=REGIME_MIN_PERIODS).quantile(0.30).shift(1)
+    index_price['vol_p70'] = index_price['market_vol_20d'].rolling(REGIME_LOOKBACK, min_periods=REGIME_MIN_PERIODS).quantile(0.70).shift(1)
+
+    valid = index_price.dropna(subset=['market_vol_20d', 'vol_p30', 'vol_p70']).copy()
+    if valid.empty:
+        raise ValueError('市场波动率有效样本不足，无法划分高/中/低波动。')
+
+    valid['market_regime'] = 'medium_volatility'
+    valid.loc[valid['market_vol_20d'] >= valid['vol_p70'], 'market_regime'] = 'high_volatility'
+    valid.loc[valid['market_vol_20d'] <= valid['vol_p30'], 'market_regime'] = 'low_volatility'
+    valid['market_regime_name'] = valid['market_regime'].map({
+        'high_volatility': '高波动',
+        'medium_volatility': '中波动',
+        'low_volatility': '低波动',
+    })
+    return valid[['date', 'market_vol_20d', 'vol_p30', 'vol_p70', 'market_regime', 'market_regime_name']]
+
+
+def build_market_cap_buckets(factor_table):
+    rows = []
+    for day, frame in factor_table.groupby('date'):
+        codes = sorted(frame['code'].dropna().unique().tolist())
+        if len(codes) < MIN_CROSS_SECTION:
+            continue
+
+        fundamentals = get_fundamentals(
+            query(valuation.code, valuation.market_cap).filter(valuation.code.in_(codes)),
+            date=pd.Timestamp(day).strftime('%Y-%m-%d'),
+        )
+        if fundamentals is None or fundamentals.empty:
+            continue
+
+        cap = fundamentals[['code', 'market_cap']].dropna().copy()
+        if len(cap) < MIN_CROSS_SECTION:
+            continue
+
+        cap['date'] = pd.Timestamp(day).normalize()
+        cap['market_cap_rank_pct'] = cap['market_cap'].rank(pct=True, method='average')
+        cap['market_cap_bucket'] = 'mid_cap'
+        cap.loc[cap['market_cap_rank_pct'] >= LARGE_CAP_QUANTILE, 'market_cap_bucket'] = 'large_cap'
+        cap.loc[cap['market_cap_rank_pct'] <= SMALL_CAP_QUANTILE, 'market_cap_bucket'] = 'small_cap'
+        cap['market_cap_bucket_name'] = cap['market_cap_bucket'].map({
+            'large_cap': '大市值',
+            'mid_cap': '中市值',
+            'small_cap': '小市值',
+        })
+        rows.append(cap[['date', 'code', 'market_cap', 'market_cap_rank_pct', 'market_cap_bucket', 'market_cap_bucket_name']])
+
+    if not rows:
+        raise ValueError('JoinQuant fundamentals 未返回足够市值数据，无法做市值分层。')
+    return pd.concat(rows, ignore_index=True)
+
+
+def summarize_strategy_by_regime_and_market_cap(candidates):
+    summaries = []
+    if candidates.empty:
+        return summaries
+
+    regime_order = [
+        ('high_volatility', '高波动'),
+        ('medium_volatility', '中波动'),
+        ('low_volatility', '低波动'),
+    ]
+    bucket_order = [
+        ('large_cap', '大市值'),
+        ('mid_cap', '中市值'),
+        ('small_cap', '小市值'),
+    ]
+    for regime_id, regime_name in regime_order:
+        regime_candidates = candidates[candidates['market_regime'] == regime_id].copy()
+        if regime_candidates.empty:
+            continue
+        for bucket_id, bucket_name in bucket_order:
+            bucket_candidates = regime_candidates[regime_candidates['market_cap_bucket'] == bucket_id].copy()
+            if bucket_candidates.empty:
+                continue
+            for horizon in HORIZONS:
+                col = 'future_return_%d' % horizon
+                values = bucket_candidates[col].replace([np.inf, -np.inf], np.nan).dropna()
+                daily = bucket_candidates.groupby('date')[col].mean().replace([np.inf, -np.inf], np.nan).dropna()
+                summaries.append({
+                    'result_type': 'strategy_regime_size_backtest',
+                    'strategy_id': STRATEGY_ID,
+                    'strategy_name': STRATEGY_NAME,
+                    'horizon': horizon,
+                    'market_regime': regime_id,
+                    'market_regime_name': regime_name,
+                    'market_cap_bucket': bucket_id,
+                    'market_cap_bucket_name': bucket_name,
+                    'sample_dates': int(daily.shape[0]),
+                    'sample_trades': int(values.shape[0]),
+                    'mean_return': None if values.empty else float(values.mean()),
+                    'median_return': None if values.empty else float(values.median()),
+                    'positive_ratio': None if values.empty else float((values > 0).mean()),
+                    'daily_mean_return': None if daily.empty else float(daily.mean()),
+                    'daily_positive_ratio': None if daily.empty else float((daily > 0).mean()),
+                    'best_daily_return': None if daily.empty else float(daily.max()),
+                    'worst_daily_return': None if daily.empty else float(daily.min()),
+                    'avg_candidates_per_date': None if daily.empty else float(values.shape[0] / daily.shape[0]),
+                    'market_vol_mean': None if bucket_candidates['market_vol_20d'].dropna().empty else float(bucket_candidates['market_vol_20d'].mean()),
+                    'market_cap_mean': None if bucket_candidates['market_cap'].dropna().empty else float(bucket_candidates['market_cap'].mean()),
+                    'source': 'joinquant_volatility_market_cap_cross_rebuild',
+                    'note': '按沪深300波动率与 JoinQuant valuation.market_cap 交叉分层；收益来自 JoinQuant 真实 OHLCV 重建候选样本。',
+                })
+    return summaries
+
+
+def run_regime_market_cap_cross():
+    factor_table = build_historical_factor_table()
+    candidates, diagnostics = select_candidates(factor_table)
+    market_regimes = build_market_regimes()
+    market_caps = build_market_cap_buckets(factor_table)
+
+    if candidates.empty:
+        merged = candidates.copy()
+    else:
+        merged = candidates.merge(market_regimes, on='date', how='left')
+        merged = merged.merge(market_caps, on=['date', 'code'], how='left')
+        merged = merged.dropna(subset=['market_regime', 'market_cap_bucket']).copy()
+
+    summary = summarize_strategy_by_regime_and_market_cap(merged)
+    cross_counts = []
+    if not merged.empty:
+        for (regime_id, bucket_id), part in merged.groupby(['market_regime', 'market_cap_bucket']):
+            cross_counts.append({
+                'market_regime': regime_id,
+                'market_regime_name': str(part['market_regime_name'].dropna().iloc[0]) if not part['market_regime_name'].dropna().empty else regime_id,
+                'market_cap_bucket': bucket_id,
+                'market_cap_bucket_name': str(part['market_cap_bucket_name'].dropna().iloc[0]) if not part['market_cap_bucket_name'].dropna().empty else bucket_id,
+                'sample_dates': int(part['date'].nunique()),
+                'sample_trades': int(part['code'].count()),
+                'market_vol_mean': None if part['market_vol_20d'].dropna().empty else float(part['market_vol_20d'].mean()),
+                'market_cap_mean': None if part['market_cap'].dropna().empty else float(part['market_cap'].mean()),
+            })
+
+    preview_cols = [
+        'date',
+        'code',
+        'strategy_score',
+        'market_regime_name',
+        'market_vol_20d',
+        'market_cap_bucket_name',
+        'market_cap',
+    ] + [c for c in FACTOR_IDS if c in merged.columns]
+    preview = merged[preview_cols].head(50).copy() if not merged.empty else pd.DataFrame(columns=preview_cols)
+    if 'date' in preview.columns:
+        preview['date'] = preview['date'].dt.strftime('%Y-%m-%d')
+
+    output = {
+        'result_type': 'strategy_regime_size_backtest',
+        'strategy_id': STRATEGY_ID,
+        'strategy_name': STRATEGY_NAME,
+        'source': 'joinquant_volatility_market_cap_cross_rebuild',
+        'data_policy': '真实 JoinQuant OHLCV、沪深300指数行情与 valuation.market_cap 计算；未生成任何虚构收益。',
+        'config': {
+            'strategy_index_code': INDEX_CODE,
+            'regime_index_code': REGIME_INDEX_CODE,
+            'price_start': PRICE_START,
+            'factor_start': FACTOR_START,
+            'end_limit': END_LIMIT,
+            'horizons': HORIZONS,
+            'factor_day_step': FACTOR_DAY_STEP,
+            'top_n': TOP_N,
+            'regime_window': REGIME_WINDOW,
+            'regime_lookback': REGIME_LOOKBACK,
+            'high_volatility_rule': 'market_vol_20d >= trailing 70% quantile',
+            'low_volatility_rule': 'market_vol_20d <= trailing 30% quantile',
+            'market_cap_field': MARKET_CAP_FIELD,
+            'large_cap_rule': 'market_cap_rank_pct >= 0.67 within daily index universe',
+            'small_cap_rule': 'market_cap_rank_pct <= 0.33 within daily index universe',
+        },
+        'sample': {
+            'factor_rows': int(factor_table.shape[0]),
+            'candidate_rows_before_cross': int(candidates.shape[0]) if candidates is not None else 0,
+            'candidate_rows_after_cross': int(merged.shape[0]) if merged is not None else 0,
+            'test_dates': int(factor_table['date'].nunique()),
+            'selected_dates_after_cross': int(merged['date'].nunique()) if merged is not None and not merged.empty else 0,
+        },
+        'cross_counts': cross_counts,
+        'summary': summary,
+        'diagnostics_tail': diagnostics[-20:],
+        'candidate_preview': preview.to_dict(orient='records'),
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    return output
+
+
+result_json = run_regime_market_cap_cross()
+`;
+
+  return baseScript.replace(/\nresult_json = run\(\)\s*$/, crossExtension);
+}
+
+function buildJoinQuantTradingBacktestScript(strategyId) {
+  const pack = buildJoinQuantStrategyPackage(strategyId);
+  if (!pack) return null;
+  const strategy = pack.route;
+
+  return `# M-quant JoinQuant trading backtest script
+# Strategy: ${strategy.name}
+# Generated: ${pack.generatedAt}
+# Policy: 这是给 JoinQuant “策略回测”页面使用的交易脚本；只使用 JoinQuant 历史 OHLCV 重建可复现信号，不生成虚构绩效。
+
+import numpy as np
+import pandas as pd
+
+
+def initialize(context):
+    set_benchmark('000300.XSHG')
+    set_option('use_real_price', True)
+    set_order_cost(OrderCost(open_tax=0, close_tax=0.001, open_commission=0.0003, close_commission=0.0003, min_commission=5), type='stock')
+
+    g.index_code = '000300.XSHG'
+    g.max_hold = 30
+    g.min_cross_section = 80
+    g.lookback = 270
+    g.rebalance_days = 5
+    g.day_count = 0
+
+    run_daily(rebalance, time='14:50')
+
+
+def clip01(value):
+    return value.clip(lower=0, upper=1)
+
+
+def bounded_peak_score(series, target, width):
+    return clip01(1 - (series - target).abs() / width)
+
+
+def safe_ratio(a, b):
+    return a / b.replace(0, np.nan)
+
+
+def rank_pct(series):
+    return series.rank(pct=True)
+
+
+def normalize_price_frame(price):
+    if price is None or len(price) == 0:
+        return pd.DataFrame()
+    df = price.copy()
+    if 'time' not in df.columns:
+        df = df.reset_index()
+        if 'index' in df.columns and 'time' not in df.columns:
+            df = df.rename(columns={'index': 'time'})
+    if 'code' not in df.columns and 'security' in df.columns:
+        df = df.rename(columns={'security': 'code'})
+    df['date'] = pd.to_datetime(df['time']).dt.normalize()
+    return df
+
+
+def build_signal_table(context):
+    today = context.previous_date
+    stocks = get_index_stocks(g.index_code, date=today)
+    current_data = get_current_data()
+    stocks = [
+        stock for stock in stocks
+        if stock in current_data
+        and not current_data[stock].paused
+        and not current_data[stock].is_st
+        and 'ST' not in current_data[stock].name
+    ]
+    if len(stocks) < g.min_cross_section:
+        return pd.DataFrame()
+
+    price = get_price(
+        stocks,
+        end_date=today,
+        count=g.lookback,
+        frequency='daily',
+        fields=['open', 'high', 'low', 'close', 'volume', 'money'],
+        panel=False,
+        fq='pre',
+    )
+    price = normalize_price_frame(price)
+    if price.empty:
+        return pd.DataFrame()
+
+    price = price.sort_values(['code', 'date']).copy()
+    group = price.groupby('code', group_keys=False)
+    price['prev_close'] = group['close'].shift(1)
+    price['change_pct'] = (price['close'] / price['prev_close'] - 1) * 100
+    price['amplitude'] = (price['high'] - price['low']) / price['prev_close'].replace(0, np.nan) * 100
+    price['volume_ma20'] = group['volume'].rolling(20, min_periods=10).mean().reset_index(level=0, drop=True)
+    price['volume_ratio'] = price['volume'] / price['volume_ma20'].replace(0, np.nan)
+
+    for window in [5, 10, 13, 20, 30, 60, 120, 250]:
+        price['ma%d' % window] = group['close'].rolling(window, min_periods=max(5, window // 2)).mean().reset_index(level=0, drop=True)
+        price['ma%d_dir' % window] = price.groupby('code')['ma%d' % window].transform(lambda s: s.diff())
+    for window in [5, 10]:
+        price['mavol%d' % window] = group['volume'].rolling(window, min_periods=max(3, window // 2)).mean().reset_index(level=0, drop=True)
+        price['mavol%d_dir' % window] = price.groupby('code')['mavol%d' % window].transform(lambda s: s.diff())
+
+    latest_date = price['date'].max()
+    part = price[price['date'] == latest_date].drop_duplicates('code').copy()
+    if len(part) < g.min_cross_section:
+        return pd.DataFrame()
+
+    day_range = (part['high'] - part['low']).replace(0, np.nan)
+    signed_body = (part['close'] - part['open']) / day_range
+    body_ratio = ((part['close'] - part['open']).abs() / day_range).clip(0, 1).fillna(0)
+    upper_ratio = ((part['high'] - np.maximum(part['open'], part['close'])) / day_range).clip(0, 1).fillna(0)
+    lower_ratio = ((np.minimum(part['open'], part['close']) - part['low']) / day_range).clip(0, 1).fillna(0)
+    close_position = ((part['close'] - part['low']) / day_range).clip(0, 1).fillna(0.5)
+
+    change_rank = rank_pct(part['change_pct'])
+    amplitude_rank = rank_pct(part['amplitude'])
+    volume_ratio_rank = rank_pct(part['volume_ratio'])
+    amount_rank = rank_pct(part['money'])
+
+    bullish_body_score = clip01((signed_body + 1) / 2).fillna(0.5)
+    candle_quality = clip01(0.45 * close_position + 0.25 * bullish_body_score + 0.20 * lower_ratio + 0.10 * (1 - upper_ratio))
+    upper_shadow_pressure = clip01(0.65 * upper_ratio + 0.35 * (((upper_ratio > lower_ratio) & (close_position < 0.55)).astype(float)))
+
+    trend_dir_score = (
+        0.22 * (part['ma5_dir'] > 0).astype(float)
+        + 0.18 * (part['ma13_dir'] > 0).astype(float)
+        + 0.16 * (part['ma20_dir'] > 0).astype(float)
+        + 0.14 * (part['ma30_dir'] > 0).astype(float)
+        + 0.12 * (part['ma60_dir'] > 0).astype(float)
+        + 0.10 * (part['ma120_dir'] > 0).astype(float)
+        + 0.08 * (part['ma250_dir'] > 0).astype(float)
+    )
+    trend_position_score = (
+        0.24 * (part['close'] > part['ma5']).astype(float)
+        + 0.20 * (part['close'] > part['ma13']).astype(float)
+        + 0.17 * (part['close'] > part['ma20']).astype(float)
+        + 0.14 * (part['close'] > part['ma30']).astype(float)
+        + 0.11 * (part['close'] > part['ma60']).astype(float)
+        + 0.08 * (part['close'] > part['ma120']).astype(float)
+        + 0.06 * (part['close'] > part['ma250']).astype(float)
+    )
+    trend_stack_score = (
+        0.35 * (part['ma5'] > part['ma20']).astype(float)
+        + 0.30 * (part['ma20'] > part['ma60']).astype(float)
+        + 0.20 * (part['ma60'] > part['ma120']).astype(float)
+        + 0.15 * (part['ma120'] > part['ma250']).astype(float)
+    )
+    short_medium_spread = safe_ratio(part['ma5'], part['ma20'])
+    medium_long_spread = safe_ratio(part['ma20'], part['ma60'])
+    trend_maturity = clip01(0.55 * bounded_peak_score(short_medium_spread, 1.035, 0.11) + 0.45 * bounded_peak_score(medium_long_spread, 1.045, 0.13))
+    price_ma_distance = safe_ratio(part['close'], part['ma20']) - 1
+    trend_extension_risk = clip01(((price_ma_distance.abs() - 0.035) / 0.14).fillna(0.5))
+    trend_alignment = clip01(0.30 * trend_dir_score + 0.25 * trend_position_score + 0.20 * trend_stack_score + 0.15 * trend_maturity + 0.10 * (1 - trend_extension_risk))
+
+    volume_quality = bounded_peak_score(part['volume_ratio'], 1.8, 2.2)
+    volume_support = clip01(0.36 * (part['mavol5_dir'] > 0).astype(float) + 0.28 * (part['mavol10_dir'] > 0).astype(float) + 0.20 * volume_quality + 0.16 * amount_rank)
+    price_action_quality = clip01(0.34 * change_rank + 0.30 * close_position + 0.22 * bullish_body_score + 0.14 * (1 - upper_shadow_pressure))
+    volume_price_sync = clip01(
+        0.35 * ((part['change_pct'] > 0) & (close_position >= 0.62)).astype(float)
+        + 0.25 * ((part['volume_ratio'] >= 0.8) & (part['volume_ratio'] <= 3.2)).astype(float)
+        + 0.20 * amount_rank
+        + 0.20 * ((part['mavol5_dir'] > 0) | (part['mavol10_dir'] > 0)).astype(float)
+    )
+    volume_price_divergence_risk = clip01(
+        0.30 * ((part['change_pct'] <= 0) & (volume_ratio_rank >= 0.65)).astype(float)
+        + 0.25 * ((close_position <= 0.42) & (volume_ratio_rank >= 0.65)).astype(float)
+        + 0.22 * upper_shadow_pressure
+        + 0.13 * ((part['volume_ratio'] > 3.5) & (part['change_pct'] < 2)).astype(float)
+        + 0.10 * ((part['amplitude'] > 10) & (close_position < 0.55)).astype(float)
+    )
+    blowoff_penalty = clip01(
+        0.50 * (part['volume_ratio'] > 4).astype(float)
+        + 0.25 * (upper_ratio > 0.45).astype(float)
+        + 0.25 * (part['amplitude'] > 12).astype(float)
+    )
+    volume_price_confirmation = clip01(
+        0.24 * volume_support
+        + 0.22 * price_action_quality
+        + 0.20 * volume_price_sync
+        + 0.18 * trend_alignment
+        + 0.08 * amount_rank
+        + 0.08 * candle_quality
+        - 0.22 * volume_price_divergence_risk
+        - 0.10 * blowoff_penalty
+    )
+
+    transaction_crowding_risk = clip01(0.46 * volume_ratio_rank + 0.42 * amount_rank + 0.12 * (part['volume_ratio'] >= 3).astype(float))
+    price_heat_risk = clip01(0.34 * change_rank + 0.26 * amplitude_rank + 0.22 * trend_extension_risk + 0.18 * (close_position >= 0.9).astype(float))
+    candle_distribution_risk = clip01(
+        0.45 * upper_shadow_pressure
+        + 0.22 * ((close_position < 0.45) & (volume_ratio_rank > 0.65)).astype(float)
+        + 0.18 * ((body_ratio <= 0.18) & (amplitude_rank > 0.65)).astype(float)
+        + 0.15 * ((lower_ratio < 0.12) & (close_position < 0.35)).astype(float)
+    )
+    crowding_risk = clip01(0.34 * transaction_crowding_risk + 0.24 * price_heat_risk + 0.20 * candle_distribution_risk + 0.16 * volume_price_divergence_risk + 0.06 * (part['change_pct'] >= 9.5).astype(float))
+
+    signed_return = (part['close'] - part['open']) / part['open'].replace(0, np.nan)
+    up_context = (part['close'] > part['ma20']) & (part['ma20_dir'] > 0)
+    spinning_top = (body_ratio > 0.08) & (body_ratio <= 0.35) & (upper_ratio >= 0.20) & (lower_ratio >= 0.20)
+    high_volume = (part['volume_ratio'] >= 1.5) | (volume_ratio_rank >= 0.80)
+    long_lower = (lower_ratio >= 0.55) & (upper_ratio <= 0.18) & (body_ratio <= 0.35)
+    long_upper = (upper_ratio >= 0.55) & (lower_ratio <= 0.18) & (body_ratio <= 0.35)
+    kline_event_score = pd.Series(0.0, index=part.index)
+    kline_event_score += ((part['close'] > part['open']) & (upper_ratio <= 0.08) & (lower_ratio <= 0.08) & (body_ratio >= 0.82)).astype(float) * 2
+    kline_event_score += ((part['close'] < part['open']) & (upper_ratio <= 0.08) & (lower_ratio <= 0.08) & (body_ratio >= 0.82)).astype(float) * -2
+    kline_event_score += ((signed_return >= 0.05) & (body_ratio >= 0.65)).astype(float) * 2
+    kline_event_score += ((signed_return <= -0.05) & (body_ratio >= 0.65)).astype(float) * 2
+    kline_event_score += (long_lower & ~up_context).astype(float) * -3
+    kline_event_score += (spinning_top & high_volume).astype(float) * -1
+    kline_event_score += (long_lower & up_context).astype(float) * 2
+    kline_event_score += (long_upper & up_context).astype(float) * 2
+    doji = body_ratio <= 0.08
+    kline_event_score += doji.astype(float) * 1
+    kline_event_score += (doji & (lower_ratio >= 0.60) & (upper_ratio <= 0.12)).astype(float) * 2
+    kline_event_score += (doji & (upper_ratio >= 0.60) & (lower_ratio <= 0.12)).astype(float) * -2
+
+    intraday_strength = clip01(0.34 * change_rank + 0.26 * candle_quality + 0.16 * volume_quality + 0.14 * amount_rank + 0.10 * (1 - upper_ratio))
+    technical_composite = clip01(0.30 * trend_alignment + 0.27 * volume_price_confirmation + 0.18 * intraday_strength + 0.10 * (kline_event_score.rank(pct=True)) - 0.15 * crowding_risk)
+
+    out = part[['code']].copy()
+    out['volume_price_confirmation'] = volume_price_confirmation
+    out['trend_alignment'] = trend_alignment
+    out['technical_composite'] = technical_composite
+    out['kline_event_score'] = kline_event_score
+    out['crowding_risk'] = crowding_risk
+    out['volume_price_divergence_risk'] = volume_price_divergence_risk
+    out['trend_extension_risk'] = trend_extension_risk
+
+    out = out[
+        (out['trend_alignment'] >= 0.60)
+        & (out['volume_price_confirmation'] >= 0.60)
+        & (out['crowding_risk'] <= 0.55)
+        & (out['volume_price_divergence_risk'] <= 0.45)
+        & (out['trend_extension_risk'] <= 0.75)
+    ].copy()
+    if out.empty:
+        return out
+
+    score = pd.Series(0.0, index=out.index)
+    weights = {
+        'volume_price_confirmation': 0.35,
+        'trend_alignment': 0.30,
+        'technical_composite': 0.15,
+        'kline_event_score': 0.10,
+        'crowding_risk': -0.20,
+        'volume_price_divergence_risk': -0.15,
+        'trend_extension_risk': -0.10,
+    }
+    for factor, weight in weights.items():
+        ranked = out[factor].rank(pct=True)
+        if weight < 0:
+            ranked = 1 - ranked
+        score += abs(weight) * ranked.fillna(0.5)
+    out['strategy_score'] = score
+    return out.sort_values('strategy_score', ascending=False)
+
+
+def rebalance(context):
+    g.day_count += 1
+    if g.day_count % g.rebalance_days != 1:
+        return
+
+    signal = build_signal_table(context)
+    targets = list(signal.head(g.max_hold)['code']) if not signal.empty else []
+    current_positions = list(context.portfolio.positions.keys())
+
+    for stock in current_positions:
+        if stock not in targets:
+            order_target_value(stock, 0)
+
+    if not targets:
+        log.info('M-quant: no target stocks on %s' % context.current_dt.date())
+        return
+
+    cash_per_stock = context.portfolio.total_value / len(targets)
+    for stock in targets:
+        order_target_value(stock, cash_per_stock)
+
+    log.info('M-quant targets %d: %s' % (len(targets), ','.join(targets[:10])))
+`;
+}
+
 function readImportedBacktestResults() {
   return readJsonFile(importedBacktestResultsPath, []);
 }
@@ -956,6 +2544,7 @@ function summarizeImportedResults(results) {
     const current = groups[factorId] || {
       all: [],
       bestLongShort: null,
+      bestPrimaryHorizon: null,
       bestRankIc: null,
       factorId,
       historicalCount: 0,
@@ -976,9 +2565,57 @@ function summarizeImportedResults(results) {
     if (Number.isFinite(longShort) && (!current.bestLongShort || !Number.isFinite(currentBestLongShort) || longShort > currentBestLongShort)) {
       current.bestLongShort = result;
     }
+    current.bestPrimaryHorizon = chooseBestPrimaryHorizon(current.all);
     groups[factorId] = current;
     return groups;
   }, {});
+}
+
+function resultRankIc(result) {
+  return Number(result?.rank_ic_mean ?? result?.rankIc);
+}
+
+function resultRankIcT(result) {
+  return Number(result?.rank_ic_t ?? result?.rankIcT);
+}
+
+function resultLongShort(result) {
+  return Number(result?.long_short_mean ?? result?.longShort);
+}
+
+function resultPositiveRatio(result) {
+  return Number(result?.long_short_positive_ratio ?? result?.positiveRatio);
+}
+
+function resultSampleDates(result) {
+  return toNumber(result?.sample_dates ?? result?.sampleDates, 0);
+}
+
+function isPrimaryHorizonResult(result) {
+  return primaryStrategyHorizons.includes(toNumber(result?.horizon, 0)) && resultSampleDates(result) >= 20;
+}
+
+function primaryHorizonScore(result) {
+  const rankIc = resultRankIc(result);
+  const rankIcT = resultRankIcT(result);
+  const longShort = resultLongShort(result);
+  const positiveRatio = resultPositiveRatio(result);
+  const hasPositiveDirection = rankIc > 0 && longShort > 0;
+  const passes = hasPositiveDirection && rankIc >= 0.015 && Number.isFinite(rankIcT) && rankIcT >= 2;
+  return (
+    (passes ? 100 : 0)
+    + (hasPositiveDirection ? 20 : 0)
+    + (Number.isFinite(rankIcT) ? Math.max(-5, Math.min(5, rankIcT)) : 0)
+    + (Number.isFinite(rankIc) ? rankIc * 100 : 0)
+    + (Number.isFinite(longShort) ? longShort * 20 : 0)
+    + (Number.isFinite(positiveRatio) ? positiveRatio : 0)
+  );
+}
+
+function chooseBestPrimaryHorizon(results) {
+  const candidates = results.filter(isPrimaryHorizonResult);
+  if (!candidates.length) return null;
+  return [...candidates].sort((left, right) => primaryHorizonScore(right) - primaryHorizonScore(left))[0];
 }
 
 function qualityFromResultStats(stats) {
@@ -1002,16 +2639,26 @@ function qualityFromResultStats(stats) {
     };
   }
 
-  const best = stats.bestRankIc || {};
+  const best = stats.bestPrimaryHorizon || {};
   const rankIc = Number(best.rank_ic_mean ?? best.rankIc);
   const rankIcT = Number(best.rank_ic_t ?? best.rankIcT);
   const longShort = Number(best.long_short_mean ?? best.longShort);
 
-  if (rankIc >= 0.015 && longShort > 0 && (!Number.isFinite(rankIcT) || rankIcT >= 2)) {
+  if (!best || !Object.keys(best).length) {
+    return {
+      decision: '跟踪中',
+      decisionTone: 'pending',
+      evidence: '已有结果但缺少 5/10/20 日历史样本，1日结果只作参考。',
+      stage: '已回填短样本',
+      status: 'tracking',
+    };
+  }
+
+  if (rankIc >= 0.015 && longShort > 0 && Number.isFinite(rankIcT) && rankIcT >= 2) {
     return {
       decision: '重点候选',
       decisionTone: 'good',
-      evidence: `历史样本 RankIC ${rankIc.toFixed(4)}，多空收益 ${(longShort * 100).toFixed(2)}%。`,
+      evidence: `${best.horizon}日为当前最佳周期，RankIC ${rankIc.toFixed(4)}，RankIC t ${rankIcT.toFixed(2)}，多空收益 ${(longShort * 100).toFixed(2)}%。`,
       stage: '已实测',
       status: 'strategy_candidate',
     };
@@ -1021,7 +2668,7 @@ function qualityFromResultStats(stats) {
     return {
       decision: '继续观察',
       decisionTone: 'pending',
-      evidence: `方向为正，但显著性或强度还需要继续确认。RankIC ${rankIc.toFixed(4)}。`,
+      evidence: `${best.horizon}日为当前最佳周期，方向为正但显著性或强度还需要确认。RankIC ${rankIc.toFixed(4)}，RankIC t ${Number.isFinite(rankIcT) ? rankIcT.toFixed(2) : '缺失'}。`,
       stage: '已实测',
       status: 'watch',
     };
@@ -1053,6 +2700,68 @@ function actionFromResearchEntry(entry, source) {
     return '补充多日因子历史和未来收益标签，当前本地不能计算 IC。';
   }
   return '补齐 requiredFields 对应真实字段后再计算。';
+}
+
+function factorBacktestProfile(factorId, role = 'signal') {
+  const importedResults = readImportedBacktestResults().filter((result) => factorResultId(result) === factorId);
+  const primaryResults = importedResults.filter(isPrimaryHorizonResult);
+  const referenceResults = importedResults.filter((result) => toNumber(result.horizon, 0) === 1);
+  const bestPrimary = chooseBestPrimaryHorizon(importedResults);
+  const rankIc = resultRankIc(bestPrimary);
+  const rankIcT = resultRankIcT(bestPrimary);
+  const longShort = resultLongShort(bestPrimary);
+  const positiveRatio = resultPositiveRatio(bestPrimary);
+  const status = !importedResults.length
+    ? 'waiting_test'
+    : !bestPrimary
+      ? 'tracking'
+      : rankIc >= 0.015 && longShort > 0 && Number.isFinite(rankIcT) && rankIcT >= 2
+        ? 'strategy_candidate'
+        : rankIc > 0 && longShort > 0
+          ? 'watch'
+          : 'hold';
+
+  return {
+    bestHorizon: bestPrimary?.horizon ?? null,
+    bestLongShort: Number.isFinite(longShort) ? longShort : null,
+    bestPositiveRatio: Number.isFinite(positiveRatio) ? positiveRatio : null,
+    bestRankIc: Number.isFinite(rankIc) ? rankIc : null,
+    bestRankIcT: Number.isFinite(rankIcT) ? rankIcT : null,
+    bestSampleDates: bestPrimary ? resultSampleDates(bestPrimary) : 0,
+    detail: importedResults
+      .filter((result) => [1, 5, 10, 20].includes(toNumber(result.horizon, 0)))
+      .sort((left, right) => toNumber(left.horizon, 0) - toNumber(right.horizon, 0))
+      .map((result) => ({
+        horizon: toNumber(result.horizon, 0),
+        isReferenceOnly: toNumber(result.horizon, 0) === 1,
+        longShort: Number.isFinite(resultLongShort(result)) ? resultLongShort(result) : null,
+        positiveRatio: Number.isFinite(resultPositiveRatio(result)) ? resultPositiveRatio(result) : null,
+        rankIc: Number.isFinite(resultRankIc(result)) ? resultRankIc(result) : null,
+        rankIcT: Number.isFinite(resultRankIcT(result)) ? resultRankIcT(result) : null,
+        sampleDates: resultSampleDates(result),
+        source: result.source || '',
+      })),
+    evidence: bestPrimary
+      ? `${bestPrimary.horizon}日为 5/10/20 中当前最佳周期；1日仅作参考。`
+      : importedResults.length
+        ? '已有回测结果，但缺少可用于正式路线的 5/10/20 日历史样本。'
+        : '尚未导入该因子的真实回测结果。',
+    factorId,
+    name: researchFactorDisplayName(factorId),
+    primaryHorizonCount: primaryResults.length,
+    referenceHorizonCount: referenceResults.length,
+    role,
+    status,
+  };
+}
+
+function strategyFactor(factorId, role, weight = null) {
+  const profile = factorBacktestProfile(factorId, role);
+  return {
+    ...profile,
+    label: profile.bestHorizon ? `${profile.name} / ${profile.bestHorizon}日` : `${profile.name} / 待测`,
+    weight,
+  };
 }
 
 function buildResearchPipeline() {
@@ -1123,10 +2832,10 @@ function buildResearchPipeline() {
       stage: statusQuality.stage,
       status,
       test: {
-        bestHorizon: stats?.bestLongShort?.horizon ?? null,
-        bestLongShort: stats?.bestLongShort?.long_short_mean ?? stats?.bestLongShort?.longShort ?? null,
-        bestRankIc: stats?.bestRankIc?.rank_ic_mean ?? stats?.bestRankIc?.rankIc ?? null,
-        bestRankIcT: stats?.bestRankIc?.rank_ic_t ?? stats?.bestRankIc?.rankIcT ?? null,
+        bestHorizon: stats?.bestPrimaryHorizon?.horizon ?? null,
+        bestLongShort: stats?.bestPrimaryHorizon?.long_short_mean ?? stats?.bestPrimaryHorizon?.longShort ?? null,
+        bestRankIc: stats?.bestPrimaryHorizon?.rank_ic_mean ?? stats?.bestPrimaryHorizon?.rankIc ?? null,
+        bestRankIcT: stats?.bestPrimaryHorizon?.rank_ic_t ?? stats?.bestPrimaryHorizon?.rankIcT ?? null,
         historicalCount: stats?.historicalCount || 0,
         singleDayCount: stats?.singleDayCount || 0,
       },
@@ -1273,138 +2982,412 @@ function actionForRow(row) {
   };
 }
 
+function coreStrategyScore(row) {
+  const trend = toNumber(row.trend_alignment);
+  const volumePrice = toNumber(row.volume_price_confirmation);
+  const composite = toNumber(row.technical_composite);
+  const kline = Math.max(0, Math.min(1, toNumber(row.kline_event_score) / 10));
+  const crowding = toNumber(row.crowding_risk);
+  const divergence = toNumber(row.volume_price_divergence_risk);
+  const extension = toNumber(row.trend_extension_risk);
+
+  return Number((
+    0.35 * volumePrice
+    + 0.30 * trend
+    + 0.15 * composite
+    + 0.10 * kline
+    - 0.20 * crowding
+    - 0.15 * divergence
+    - 0.10 * extension
+  ).toFixed(6));
+}
+
+function actionForCoreStrategy(row) {
+  const trend = toNumber(row.trend_alignment);
+  const volumePrice = toNumber(row.volume_price_confirmation);
+  const crowding = toNumber(row.crowding_risk);
+  const divergence = toNumber(row.volume_price_divergence_risk);
+  const extension = toNumber(row.trend_extension_risk);
+  const alerts = toNumber(row.crowding_alert_count);
+  const label = row.factor_label || '';
+
+  if (label === '弱势过滤' || label === '风险观察') {
+    return {
+      action: '风险过滤',
+      actionTone: 'watch',
+      positionHint: '不参与',
+      reason: `原始截面标签为${label}，核心策略不允许直接入池`,
+    };
+  }
+
+  if (trend >= 0.60 && volumePrice >= 0.60 && crowding <= 0.55 && divergence <= 0.45 && extension <= 0.75 && alerts <= 2) {
+    return {
+      action: '核心入池',
+      actionTone: 'good',
+      positionHint: '候选观察仓',
+      reason: '趋势和量价确认同时通过，拥挤、背离、过伸未触发硬过滤',
+    };
+  }
+
+  if (trend >= 0.55 && volumePrice >= 0.55 && crowding <= 0.65 && divergence <= 0.55 && extension <= 0.85) {
+    return {
+      action: '二线观察',
+      actionTone: 'pending',
+      positionHint: '轻仓或等待二次确认',
+      reason: '方向基本成立，但至少一项风险或确认强度未达到主入池线',
+    };
+  }
+
+  if (crowding > 0.70 || divergence > 0.60 || extension > 0.90 || alerts >= 3) {
+    return {
+      action: '风险过滤',
+      actionTone: 'watch',
+      positionHint: '不参与',
+      reason: '拥挤、背离、过伸或警报数量超过策略过滤线',
+    };
+  }
+
+  return {
+    action: '等待确认',
+    actionTone: 'neutral',
+    positionHint: '继续跟踪',
+    reason: '趋势、量价或风险条件尚未形成一致',
+  };
+}
+
+function capitalStrategyScore(row) {
+  const follow = toNumber(row.capital_follow_signal);
+  const ap = toNumber(row.active_ap_accumulation);
+  const mainForce = toNumber(row.main_force_alignment);
+  const persistence = toNumber(row.capital_persistence_2d);
+  const overheat = toNumber(row.capital_overheat_risk);
+
+  return Number((
+    0.40 * follow
+    + 0.25 * ap
+    + 0.20 * mainForce
+    + 0.15 * persistence
+    - 0.25 * overheat
+  ).toFixed(6));
+}
+
+function actionForCapitalStrategy(row) {
+  const follow = toNumber(row.capital_follow_signal);
+  const ap = toNumber(row.active_ap_accumulation);
+  const mainForce = toNumber(row.main_force_alignment);
+  const overheat = toNumber(row.capital_overheat_risk);
+  const sourceCount = toNumber(row.capital_source_count);
+
+  if (follow >= 0.65 && ap >= 0.60 && overheat <= 0.60 && sourceCount >= 2) {
+    return {
+      action: '资金跟随候选',
+      actionTone: 'good',
+      positionHint: '候选模块，先复测不实盘',
+      reason: '资金跟随、暗盘吸筹和多来源确认通过，资金过热未越线',
+    };
+  }
+
+  if (follow >= 0.55 && (ap >= 0.55 || mainForce >= 0.60) && overheat <= 0.70) {
+    return {
+      action: '资金观察',
+      actionTone: 'pending',
+      positionHint: '观察名单',
+      reason: '资金方向存在，但确认源或过热约束未达到主入池线',
+    };
+  }
+
+  if (overheat > 0.70) {
+    return {
+      action: '过热过滤',
+      actionTone: 'watch',
+      positionHint: '不追高',
+      reason: '资金热度过高，策略默认等待降温或二次确认',
+    };
+  }
+
+  return {
+    action: '资金未确认',
+    actionTone: 'neutral',
+    positionHint: '继续跟踪',
+    reason: '资金跟随或主动吸筹强度不足',
+  };
+}
+
+function stockCodeFromRow(row) {
+  return String(row.stock_code || row.code || '').padStart(6, '0');
+}
+
+function stockNameFromRow(row) {
+  return row.stock_name || row.name || '-';
+}
+
 function buildLiveStrategySignals() {
-  const rows = readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
-  const summary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
-  const sortedRows = rows
+  const primaryRows = readPrimaryFactorRows();
+  const capitalRows = readCapitalFactorRows();
+  const primarySummary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
+  const capitalSummary = readJsonFile(capitalFactorSummaryPath, {});
+  const capitalRegimes = Array.isArray(capitalSummary.market_regimes) ? capitalSummary.market_regimes : [];
+
+  const coreRows = primaryRows
     .map((row) => ({
       ...row,
-      decisionScore: toNumber(row.technical_composite),
-      ...actionForRow(row),
+      decisionScore: coreStrategyScore(row),
+      strategyId: 'core_volume_price_trend_v1',
+      strategyName: '核心量价趋势策略 v1',
+      signalDate: dateOnly(row.stock_date || row.date),
+      ...actionForCoreStrategy(row),
     }))
     .sort((left, right) => right.decisionScore - left.decisionScore);
 
-  const labelCounts = sortedRows.reduce((counts, row) => {
+  const capitalSignalRows = capitalRows
+    .map((row) => ({
+      ...row,
+      decisionScore: capitalStrategyScore(row),
+      strategyId: 'capital_follow_v0',
+      strategyName: '资金跟随策略 v0',
+      signalDate: dateOnly(row.stock_date || row.date),
+      ...actionForCapitalStrategy(row),
+    }))
+    .sort((left, right) => right.decisionScore - left.decisionScore);
+
+  const labelCounts = coreRows.reduce((counts, row) => {
     const label = row.factor_label || '未标记';
     counts[label] = (counts[label] || 0) + 1;
     return counts;
   }, {});
 
-  const entryCandidates = sortedRows.filter((row) => row.action === '入池候选');
-  const observationCandidates = sortedRows.filter((row) => row.action === '低仓观察');
-  const riskRows = sortedRows.filter((row) => row.action === '暂不入场');
-  const klineRows = sortedRows.filter((row) => toNumber(row.kline_event_score) > 0 && row.factor_label !== '风险观察');
+  const entryCandidates = coreRows.filter((row) => row.action === '核心入池');
+  const observationCandidates = coreRows.filter((row) => row.action === '二线观察');
+  const riskRows = coreRows.filter((row) => row.action === '风险过滤');
+  const klineRows = coreRows.filter((row) => toNumber(row.kline_event_score) > 0 && row.factor_label !== '风险观察');
+  const capitalCandidates = capitalSignalRows.filter((row) => row.action === '资金跟随候选');
+  const capitalObservation = capitalSignalRows.filter((row) => row.action === '资金观察');
+  const latestRegime = capitalRegimes[capitalRegimes.length - 1] || null;
+  const coreRouteFactors = [
+    strategyFactor('volume_price_confirmation', '入场确认', 0.35),
+    strategyFactor('trend_alignment', '趋势确认', 0.30),
+    strategyFactor('technical_composite', '综合辅助', 0.15),
+    strategyFactor('kline_event_score', '形态辅助', 0.10),
+    strategyFactor('crowding_risk', '风险过滤', -0.20),
+    strategyFactor('volume_price_divergence_risk', '背离过滤', -0.15),
+    strategyFactor('trend_extension_risk', '追高过滤', -0.10),
+  ];
+  const capitalRouteFactors = [
+    strategyFactor('capital_follow_signal', '资金主信号', 0.40),
+    strategyFactor('active_ap_accumulation', '暗盘吸筹确认', 0.25),
+    strategyFactor('main_force_alignment', '主力一致确认', 0.20),
+    strategyFactor('capital_persistence_2d', '资金持续性', 0.15),
+    strategyFactor('capital_overheat_risk', '资金过热过滤', -0.25),
+    strategyFactor('capital_source_count', '资金来源约束', null),
+  ];
+  const klineRouteFactors = [
+    strategyFactor('kline_event_score', '形态辅助', 0.10),
+    strategyFactor('volume_price_confirmation', '量价确认', null),
+    strategyFactor('trend_alignment', '趋势背景', null),
+  ];
+  const marketRouteFactors = [
+    strategyFactor('market_capital_regime', '仓位环境', null),
+    strategyFactor('flow_vs_ma', '资金环境确认', null),
+    strategyFactor('intraday_ap_slope', '日内资金确认', null),
+  ];
+
+  const strategyCandidates = [
+    ...entryCandidates.slice(0, 25),
+    ...capitalCandidates.slice(0, 15),
+  ];
 
   return {
     generatedAt: new Date().toISOString(),
-    dataPolicy: '当前策略信号只使用本地真实截面因子；未使用未来收益，不输出胜率、IC或年化收益。',
+    dataPolicy: '策略工作台只使用本地真实截面因子；1日结果只作参考，5/10/20 日真实回测结果用于选择因子最佳周期。',
     source: {
-      file: summary.source_file || researchFactorResultsPath,
-      inputKind: summary.input_kind || 'unknown',
-      rows: sortedRows.length,
+      file: [
+        primarySummary.source_file || researchFactorResultsPath,
+        capitalSummary.source_files?.length ? capitalFactorResultsPath : '',
+      ].filter(Boolean).join(' | '),
+      inputKind: [primarySummary.input_kind || 'technical_cross_section', capitalSummary.input_kind || ''].filter(Boolean).join(' + '),
+      primaryRows: coreRows.length,
+      capitalRows: capitalSignalRows.length,
+      rows: coreRows.length + capitalSignalRows.length,
     },
     metrics: {
+      draftStrategies: 4,
       executableStrategies: 1,
-      partialStrategies: 1,
-      blockedStrategies: 2,
+      formalStrategies: 0,
+      partialStrategies: 2,
+      blockedStrategies: 1,
       entryCandidates: entryCandidates.length,
       observationCandidates: observationCandidates.length,
+      capitalCandidates: capitalCandidates.length,
       riskRows: riskRows.length,
       strongRows: labelCounts['强势候选'] || 0,
       riskWatchRows: labelCounts['风险观察'] || 0,
     },
     strategies: [
       {
-        id: 'core_decision_strategy',
-        name: '核心决策因子策略',
-        status: 'computed',
+        id: 'core_volume_price_trend_v1',
+        name: '核心量价趋势策略 v1',
+        pool: 'draft',
+        status: 'real_signal_computed',
+        validationState: '因子有真实截面值，策略组合尚未完成历史回测',
         role: '当前主策略',
-        objective: '用趋势质量、量价确认和拥挤风险决定入池、观察或过滤。',
-        formula: 'technical_composite with trend_alignment + volume_price_confirmation - crowding_risk controls',
+        objective: '用趋势质量确认方向，用量价确认验证成交质量，再用拥挤、背离、过伸做硬过滤。',
+        dataBasis: `技术截面 ${coreRows.length} 条；最新日期 ${dateOnly(primaryRows[0]?.stock_date || primaryRows[0]?.date) || '-'}`,
+        factorState: coreRouteFactors,
+        rankingFormula: '按每个因子在 5/10/20 中的最佳周期定角色：量价确认 + 趋势确认 + 技术综合 + K线辅助 - 拥挤/背离/过伸风险',
         entryRules: [
-          '强势候选：核心分高、趋势不过伸、量价背离低、拥挤风险可控',
-          '观察候选：核心分达标但仍有过伸、交易拥挤或确认不足',
-          '风险观察：风险警报较多或量价背离偏高，默认不入场',
+          'trend_alignment >= 0.60',
+          'volume_price_confirmation >= 0.60',
+          'crowding_risk <= 0.55',
+          'volume_price_divergence_risk <= 0.45',
+          'trend_extension_risk <= 0.75 且 crowding_alert_count <= 2',
         ],
-        riskControls: [
-          '不使用未来收益',
-          '不使用未采集资金字段伪造资金因子',
-          '拥挤风险和量价背离优先级高于单日涨幅',
+        riskFilters: [
+          'crowding_risk > 0.70 或 volume_price_divergence_risk > 0.60 直接过滤',
+          'trend_extension_risk > 0.90 不追高',
+          '拥挤和背离优先级高于单日涨幅',
         ],
+        portfolioRules: ['候选池先取排序前20-50只', '1日只作参考，正式入选看5/10/20最佳周期', '正式仓位必须等待策略级组合回测确认'],
+        nextAction: '先按因子最佳周期组合回测核心量价路线，再决定是否进入正式策略池。',
         candidateCount: entryCandidates.length,
+        computedSignalCount: coreRows.length,
+        exportStatus: '因子可导出；策略收益未验证',
       },
       {
-        id: 'kline_assisted_strategy',
-        name: 'K线辅助确认策略',
-        status: 'partial_real_data',
-        role: '辅助策略',
-        objective: '用华福单根K线评分辅助核心决策因子，不独立生成收益结论。',
-        formula: 'kline_event_score + core decision filters',
+        id: 'capital_follow_v0',
+        name: '资金跟随策略 v0',
+        pool: 'draft',
+        status: 'candidate_module',
+        validationState: '资金因子已由真实日期批次计算，策略尚未实测',
+        role: '候选策略模块',
+        objective: '捕捉主力/暗盘资金同步流入且未过热的股票，作为量价策略之外的资金确认模块。',
+        dataBasis: `资金截面 ${capitalSignalRows.length} 条；日期 ${Array.from(new Set(capitalRows.map((row) => dateOnly(row.stock_date || row.date)))).filter(Boolean).join(', ') || '-'}`,
+        factorState: capitalRouteFactors,
+        rankingFormula: '资金因子当前缺少 5/10/20 回测周期，先保留真实资金逻辑；补齐后再选择最佳周期。',
         entryRules: [
-          'K线分数为正时只作为加分解释',
+          'capital_follow_signal >= 0.65',
+          'active_ap_accumulation >= 0.60',
+          'capital_overheat_risk <= 0.60',
+          'capital_source_count >= 2',
+        ],
+        riskFilters: [
+          'capital_overheat_risk > 0.70 过滤',
+          '只有单一资金来源时不作为主信号',
+          '资金日期和技术日期不一致时先独立复测，不强行合成',
+        ],
+        portfolioRules: ['先作为独立候选池测试', '确认 5/10/20 最佳周期后再和核心量价趋势做交集或加权并集', '资金因子至少补 20-60 个交易日后进入正式组合回测'],
+        nextAction: '继续按日期批量采集资金页，优先补齐连续 20 个交易日，再测资金跟随因子的未来收益。',
+        candidateCount: capitalCandidates.length,
+        computedSignalCount: capitalSignalRows.length,
+        exportStatus: '因子可导出；策略收益未验证',
+      },
+      {
+        id: 'kline_assisted_confirmation',
+        name: 'K线辅助确认策略',
+        pool: 'draft',
+        status: 'partial_real_data',
+        validationState: '单根K线分数已计算，完整情绪加权K线仍缺 240 日价量历史',
+        role: '辅助确认',
+        objective: '把华福研报的单根K线评分作为入池解释和边际加分，不单独替代趋势与量价。',
+        dataBasis: `kline_event_score 已在 ${coreRows.length} 条技术截面中计算；正分样本 ${klineRows.length} 条`,
+        factorState: klineRouteFactors,
+        rankingFormula: 'K线评分按 5/10/20 最佳周期作为辅助项；当前不单独生成主策略排序',
+        entryRules: [
+          'kline_event_score > 0 时可为核心策略加分',
           '风险观察样本即使K线为正也不直接入场',
-          '倒锤头、低成交量纺锤线仅识别不计分',
+          'PDF未给明确分数的形态只识别不计分',
         ],
-        riskControls: [
-          '完整情绪加权K线仍等待240日价量共振历史',
-          '不复制研报收益数据',
+        riskFilters: [
+          '缺少 240 日成交量历史时不计算 emotion_weighted_kline_score',
+          '不复制研报原始收益，不展示未实测绩效',
         ],
+        portfolioRules: ['辅助核心量价趋势，不独立建仓', '等价量共振历史补齐后再升级为情绪加权K线策略'],
+        nextAction: '补 240 日 OHLCV 与未来收益标签，复现情绪系数加权K线后再评估是否独立成策略。',
         candidateCount: klineRows.length,
+        computedSignalCount: coreRows.length,
+        exportStatus: '单根K线可观察；完整策略待数据',
       },
       {
-        id: 'capital_follow_strategy',
-        name: '资金跟随策略',
-        status: 'requires_more_data',
-        role: '待激活',
-        objective: '等待暗盘、主力、散户资金数据后生成资金确认。',
-        formula: 'apzj/mpzj/shzj + 3/5日暗盘强度',
-        entryRules: ['需要资金页批量数据'],
-        riskControls: ['当前不计算，不伪造资金信号'],
+        id: 'market_capital_regime_position',
+        name: '市场资金状态仓位模块',
+        pool: 'draft',
+        status: latestRegime ? 'market_state_only' : 'requires_more_data',
+        validationState: latestRegime ? '市场层资金状态已计算，不能替代个股选股回测' : '等待大盘资金数据',
+        role: '仓位开关',
+        objective: '用市场资金环境决定策略是否放大、正常、降仓或暂停，不负责个股排序。',
+        dataBasis: latestRegime
+          ? `市场状态 ${capitalRegimes.length} 日；最新 ${latestRegime.date}，market_capital_regime=${Number(latestRegime.market_capital_regime).toFixed(3)}`
+          : '暂无可用市场资金状态',
+        factorState: marketRouteFactors,
+        rankingFormula: '市场级别仓位乘数，不参与个股排序',
+        entryRules: [
+          'market_capital_regime >= 0.65：允许正常或偏积极',
+          '0.35 <= market_capital_regime < 0.65：正常观察',
+          'market_capital_regime < 0.35：降仓或暂停新增',
+        ],
+        riskFilters: ['只有 3 日市场状态，暂不做长期阈值结论', '不能把市场状态当作个股超额收益验证'],
+        portfolioRules: ['作为策略组合仓位乘数', '正式参数等待更长市场历史回测'],
+        nextAction: '持续采集市场资金状态，和核心策略候选收益一起回测仓位乘数效果。',
         candidateCount: 0,
-      },
-      {
-        id: 'market_regime_strategy',
-        name: '市场情绪仓位策略',
-        status: 'requires_more_data',
-        role: '待激活',
-        objective: '等待市场宽度和大盘资金数据后控制仓位开关。',
-        formula: 'market breadth + big money flow + panic/overheat state',
-        entryRules: ['需要大盘宽度和资金数据'],
-        riskControls: ['当前不计算，不伪造市场环境信号'],
-        candidateCount: 0,
+        computedSignalCount: capitalRegimes.length,
+        exportStatus: '市场状态已计算；仓位效果待验证',
       },
     ],
-    candidates: sortedRows.slice(0, 40).map((row) => ({
+    formalPolicy: {
+      status: 'empty',
+      title: '正式策略池只接收已完成策略级回测的组合',
+      description: '当前项目内还没有策略级历史回测结果，因此不把任何草案策略提升为正式策略。',
+      requiredEvidence: [
+        '策略组合在历史区间完成回测，不只看单因子截面值',
+        '因子周期路线必须从 5/10/20 日中选择，1日只作参考',
+        '至少包含未来收益、分组收益或组合净值曲线',
+        '记录回撤、换手、交易成本、样本交易日和股票池口径',
+        '通过后再写入正式策略池，作为可复用决策策略',
+      ],
+      nextAction: '先回测核心量价趋势策略 v1；通过后再把它从草案池提升到正式策略池。',
+    },
+    formalStrategies: [],
+    candidates: strategyCandidates.slice(0, 50).map((row) => ({
       action: row.action,
       actionTone: row.actionTone,
       close: row.close,
-      code: row.stock_code || row.code,
+      code: stockCodeFromRow(row),
       crowdingRisk: row.crowding_risk,
       decisionScore: row.decisionScore,
       divergenceRisk: row.volume_price_divergence_risk,
       extensionRisk: row.trend_extension_risk,
       factorLabel: row.factor_label,
-      name: row.stock_name || row.name,
+      name: stockNameFromRow(row),
       positionHint: row.positionHint,
-      reason: row.factor_reason || row.rule,
+      reason: row.reason || row.factor_reason || row.rule,
       rule: row.rule,
+      signalDate: row.signalDate,
+      strategyId: row.strategyId,
+      strategyName: row.strategyName,
       technicalRank: row.technical_rank,
       trend: row.trend_alignment,
       volumePrice: row.volume_price_confirmation,
+      capitalFollow: row.capital_follow_signal,
+      capitalAp: row.active_ap_accumulation,
+      capitalOverheat: row.capital_overheat_risk,
+      capitalPersistence: row.capital_persistence_2d,
+      capitalSourceCount: row.capital_source_count,
       warningCount: row.crowding_alert_count,
     })),
     unavailable: [
       {
-        id: 'capital_follow_strategy',
-        reason: '缺少暗盘/主力/散户资金明细，等待 date_batch 或资金页数据。',
+        id: 'validated_strategy_performance',
+        reason: '当前只有真实截面信号，没有策略级未来收益、回撤、换手和分组收益。',
+        nextAction: '把每个策略的候选名单按日期导出到 JoinQuant 或补齐本地历史行情后逐个回测。',
       },
       {
-        id: 'market_regime_strategy',
-        reason: '缺少市场宽度、大盘资金和多日市场环境数据。',
+        id: 'multi_day_capital_history',
+        reason: `资金数据目前 ${Array.from(new Set(capitalRows.map((row) => dateOnly(row.stock_date || row.date)))).filter(Boolean).length} 个交易日，资金策略仍缺连续历史。`,
+        nextAction: '继续用分批脚本每天追加，不需要一次性大量采集。',
       },
       {
-        id: 'validated_backtest',
-        reason: '缺少未来收益和多日价格序列，不能输出真实回测表现。',
+        id: 'emotion_weighted_kline_full_version',
+        reason: '完整华福情绪加权K线需要 240 日成交量、60 日均线变化和未来收益标签。',
+        nextAction: '先把单根K线作为辅助项，等 OHLCV 历史补齐后再升级。',
       },
     ],
   };
@@ -1488,6 +3471,135 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'GET' && pathname === '/strategy-api/live-signals') {
     sendJson(res, buildLiveStrategySignals());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-strategy-export') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const pack = buildJoinQuantStrategyPackage(strategyId);
+    if (!pack) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendJson(res, pack);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-strategy-export.json') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const pack = buildJoinQuantStrategyPackage(strategyId);
+    if (!pack) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendText(
+      res,
+      `m-quant-strategy-${safeFilename(strategyId)}-route.json`,
+      `${JSON.stringify(pack, null, 2)}\n`,
+      'application/json; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-strategy-export.csv') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const csv = buildJoinQuantStrategyCsv(strategyId);
+    if (csv === null) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendCsv(res, `m-quant-strategy-${safeFilename(strategyId)}-joinquant.csv`, csv);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-strategy-script.py') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const script = buildJoinQuantStrategyScript(strategyId);
+    if (script === null) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendText(res, `m-quant-strategy-${safeFilename(strategyId)}-joinquant.py`, script, 'text/x-python; charset=utf-8');
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-strategy-historical-script.py') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const script = buildJoinQuantStrategyHistoricalScript(strategyId);
+    if (script === null) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendText(
+      res,
+      `m-quant-strategy-${safeFilename(strategyId)}-joinquant-historical.py`,
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-volatility-regime-script.py') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const script = buildJoinQuantStrategyVolatilityRegimeScript(strategyId);
+    if (script === null) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendText(
+      res,
+      `m-quant-strategy-${safeFilename(strategyId)}-joinquant-volatility-regime.py`,
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-market-cap-script.py') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const script = buildJoinQuantStrategyMarketCapScript(strategyId);
+    if (script === null) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendText(
+      res,
+      `m-quant-strategy-${safeFilename(strategyId)}-joinquant-market-cap.py`,
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-volatility-size-script.py') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const script = buildJoinQuantStrategyVolatilitySizeScript(strategyId);
+    if (script === null) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendText(
+      res,
+      `m-quant-strategy-${safeFilename(strategyId)}-joinquant-volatility-size.py`,
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-trading-backtest-script.py') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const script = buildJoinQuantTradingBacktestScript(strategyId);
+    if (script === null) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendText(
+      res,
+      `m-quant-strategy-${safeFilename(strategyId)}-joinquant-trading-backtest.py`,
+      script,
+      'text/x-python; charset=utf-8',
+    );
     return true;
   }
 
