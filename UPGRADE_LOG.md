@@ -252,6 +252,17 @@
 - Do not write IC, RankIC, win rate, annual return, or backtest results without future-return data.
 - Summary JSON files can describe structure, but factor computation must use real detailed rows.
 - Any unavailable factor should stay visible but marked as unavailable, insufficient history, or waiting for source fields.
+- Strategy backtests must include unlayered results, large/mid/small market-cap layers, high/mid/low volatility layers, and volatility x market-cap cross layers before they are treated as complete.
+
+# 2026-07-08 等待数据策略实测补齐
+
+- 补齐并导入 `资金跟随策略 v0` JoinQuant 真实整体事件回测。
+- 补齐并导入 `K线辅助确认策略` JoinQuant 真实整体事件回测。
+- 补齐并导入 `市场资金状态仓位模块` 沪深300指数仓位开关回测。
+- 按新默认规则补跑资金跟随、K线辅助的高/中/低波动 × 大/中/小市值交叉分层。
+- 平台策略集读取真实导入结果，不再把已实测策略显示为“等待数据/尚未实测”。
+- 记录边界：资金跟随未复刻 Yiwan 暗盘字段；K线辅助未复制研报收益；市场仓位模块不是个股选股 alpha。
+- Detail log: `logs/2026-07-08-waiting-strategy-real-backtests.md`
 # 2026-07-07 JoinQuant 因子实测
 
 - 在 JoinQuant 研究环境实跑 M-quant 因子测试。
