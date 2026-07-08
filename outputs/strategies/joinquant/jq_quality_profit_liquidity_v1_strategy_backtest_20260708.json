@@ -1,0 +1,613 @@
+{
+  "result_type": "strategy_backtest",
+  "strategy_id": "jq_quality_profit_liquidity_v1",
+  "strategy_name": "JQ质量利润流动性策略 v1",
+  "source": "joinquant_jq_quality_profit_liquidity_strategy_v1",
+  "data_policy": "真实 JoinQuant valuation、indicator、OHLCV 计算；未生成任何虚构收益。",
+  "config": {
+    "index_code": "000300.XSHG",
+    "price_start": "2022-12-01",
+    "factor_start": "2024-01-01",
+    "end_limit": "2026-07-07",
+    "horizons": [
+      5,
+      10,
+      20
+    ],
+    "factor_day_step": 5,
+    "top_n": 30,
+    "factor_weights": {
+      "profit_growth_jq": 0.4,
+      "quality_growth_jq": 0.35,
+      "liquidity_quality_jq": 0.25
+    },
+    "test_dates": 118,
+    "unique_securities": 348
+  },
+  "sample": {
+    "factor_rows": 35400,
+    "candidate_rows": 3540,
+    "test_dates": 118,
+    "selected_dates": 118
+  },
+  "summary": [
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "horizon": 5,
+      "sample_dates": 118,
+      "sample_trades": 3540,
+      "mean_return": 0.007150056012971505,
+      "median_return": -0.000783631141242136,
+      "positive_ratio": 0.4906779661016949,
+      "daily_mean_return": 0.0071500560129715,
+      "daily_positive_ratio": 0.5677966101694916,
+      "best_daily_return": 0.27049300320803626,
+      "worst_daily_return": -0.06740198987595443,
+      "avg_candidates_per_date": 30,
+      "source": "joinquant_jq_quality_profit_liquidity_strategy_v1",
+      "note": "真实 JoinQuant valuation/indicator/OHLCV 策略级事件回测；不含虚构绩效。"
+    },
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "horizon": 10,
+      "sample_dates": 118,
+      "sample_trades": 3540,
+      "mean_return": 0.014484007086717895,
+      "median_return": 0.0010313404153183825,
+      "positive_ratio": 0.5064971751412429,
+      "daily_mean_return": 0.014484007086717895,
+      "daily_positive_ratio": 0.5423728813559322,
+      "best_daily_return": 0.27628865653077667,
+      "worst_daily_return": -0.08997736105120197,
+      "avg_candidates_per_date": 30,
+      "source": "joinquant_jq_quality_profit_liquidity_strategy_v1",
+      "note": "真实 JoinQuant valuation/indicator/OHLCV 策略级事件回测；不含虚构绩效。"
+    },
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "horizon": 20,
+      "sample_dates": 118,
+      "sample_trades": 3540,
+      "mean_return": 0.02971141523209036,
+      "median_return": 0.001838589242023625,
+      "positive_ratio": 0.5096045197740113,
+      "daily_mean_return": 0.029711415232090324,
+      "daily_positive_ratio": 0.6016949152542372,
+      "best_daily_return": 0.24377934031611942,
+      "worst_daily_return": -0.08437274004874087,
+      "avg_candidates_per_date": 30,
+      "source": "joinquant_jq_quality_profit_liquidity_strategy_v1",
+      "note": "真实 JoinQuant valuation/indicator/OHLCV 策略级事件回测；不含虚构绩效。"
+    }
+  ],
+  "diagnostics_tail": [
+    {
+      "date": "2026-01-12",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-01-19",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-01-26",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-02-02",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-02-09",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-02-24",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-03",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-10",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-17",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-24",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-31",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-08",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-15",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-22",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-29",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-11",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-18",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-25",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-06-01",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    },
+    {
+      "date": "2026-06-08",
+      "universe": 300,
+      "scorable": 300,
+      "selected": 30
+    }
+  ],
+  "candidate_preview": [
+    {
+      "date": "2024-01-02",
+      "code": "600900.XSHG",
+      "strategy_score": 0.9865,
+      "profit_growth_jq": 0.8608,
+      "quality_growth_jq": 0.8874553805774278,
+      "liquidity_quality_jq": 0.8841115309560885
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300274.XSHE",
+      "strategy_score": 0.973,
+      "profit_growth_jq": 0.8929999999999999,
+      "quality_growth_jq": 0.851289501312336,
+      "liquidity_quality_jq": 0.8098400184115913
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000568.XSHE",
+      "strategy_score": 0.9698333333333333,
+      "profit_growth_jq": 0.8512666666666666,
+      "quality_growth_jq": 0.906620472440945,
+      "liquidity_quality_jq": 0.7919608905250649
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600809.XSHG",
+      "strategy_score": 0.954,
+      "profit_growth_jq": 0.8036666666666666,
+      "quality_growth_jq": 0.8630314960629921,
+      "liquidity_quality_jq": 0.8074868718956087
+    },
+    {
+      "date": "2024-01-02",
+      "code": "002027.XSHE",
+      "strategy_score": 0.9219999999999999,
+      "profit_growth_jq": 0.7587333333333334,
+      "quality_growth_jq": 0.9115485564304462,
+      "liquidity_quality_jq": 0.7513827733784146
+    },
+    {
+      "date": "2024-01-02",
+      "code": "002594.XSHE",
+      "strategy_score": 0.9205000000000001,
+      "profit_growth_jq": 0.8752666666666666,
+      "quality_growth_jq": 0.7065656167979002,
+      "liquidity_quality_jq": 0.7716911887295931
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300308.XSHE",
+      "strategy_score": 0.9175,
+      "profit_growth_jq": 0.7902666666666667,
+      "quality_growth_jq": 0.7720215223097114,
+      "liquidity_quality_jq": 0.7905545961507069
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600519.XSHG",
+      "strategy_score": 0.9121666666666666,
+      "profit_growth_jq": 0.7829333333333333,
+      "quality_growth_jq": 0.864776902887139,
+      "liquidity_quality_jq": 0.7284806188006382
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000858.XSHE",
+      "strategy_score": 0.9076666666666667,
+      "profit_growth_jq": 0.7707333333333333,
+      "quality_growth_jq": 0.8106383202099738,
+      "liquidity_quality_jq": 0.7682291953412866
+    },
+    {
+      "date": "2024-01-02",
+      "code": "002371.XSHE",
+      "strategy_score": 0.9018333333333334,
+      "profit_growth_jq": 0.7694666666666667,
+      "quality_growth_jq": 0.7339532808398951,
+      "liquidity_quality_jq": 0.8076073206671172
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300760.XSHE",
+      "strategy_score": 0.8968333333333334,
+      "profit_growth_jq": 0.7892000000000001,
+      "quality_growth_jq": 0.8517853018372703,
+      "liquidity_quality_jq": 0.6952191693210016
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000596.XSHE",
+      "strategy_score": 0.8955000000000001,
+      "profit_growth_jq": 0.8225333333333334,
+      "quality_growth_jq": 0.8306178477690289,
+      "liquidity_quality_jq": 0.6837148297963551
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601111.XSHG",
+      "strategy_score": 0.8896666666666667,
+      "profit_growth_jq": 0.8563333333333335,
+      "quality_growth_jq": 0.7383448818897638,
+      "liquidity_quality_jq": 0.6849849179590927
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300896.XSHE",
+      "strategy_score": 0.8830000000000001,
+      "profit_growth_jq": 0.7846,
+      "quality_growth_jq": 0.8678401574803151,
+      "liquidity_quality_jq": 0.6701765821178585
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600436.XSHG",
+      "strategy_score": 0.8815000000000001,
+      "profit_growth_jq": 0.7752666666666668,
+      "quality_growth_jq": 0.8222766404199476,
+      "liquidity_quality_jq": 0.6945951899622872
+    },
+    {
+      "date": "2024-01-02",
+      "code": "688036.XSHG",
+      "strategy_score": 0.8643333333333333,
+      "profit_growth_jq": 0.9207333333333333,
+      "quality_growth_jq": 0.7933538057742783,
+      "liquidity_quality_jq": 0.6114870242620544
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600150.XSHG",
+      "strategy_score": 0.8638333333333333,
+      "profit_growth_jq": 0.7878,
+      "quality_growth_jq": 0.6148217847769029,
+      "liquidity_quality_jq": 0.8978557651213076
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300015.XSHE",
+      "strategy_score": 0.8626666666666667,
+      "profit_growth_jq": 0.7212,
+      "quality_growth_jq": 0.8477364829396326,
+      "liquidity_quality_jq": 0.6930889134584666
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300316.XSHE",
+      "strategy_score": 0.8611666666666666,
+      "profit_growth_jq": 0.8870666666666666,
+      "quality_growth_jq": 0.8948687664041997,
+      "liquidity_quality_jq": 0.5743179157335574
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300782.XSHE",
+      "strategy_score": 0.8568333333333333,
+      "profit_growth_jq": 0.8749333333333333,
+      "quality_growth_jq": 0.8684141732283465,
+      "liquidity_quality_jq": 0.5804530488349955
+    },
+    {
+      "date": "2024-01-02",
+      "code": "002304.XSHE",
+      "strategy_score": 0.849,
+      "profit_growth_jq": 0.7036,
+      "quality_growth_jq": 0.7524682414698163,
+      "liquidity_quality_jq": 0.7234513264908586
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600029.XSHG",
+      "strategy_score": 0.8441666666666666,
+      "profit_growth_jq": 0.846,
+      "quality_growth_jq": 0.7359645669291339,
+      "liquidity_quality_jq": 0.6250567478873306
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000333.XSHE",
+      "strategy_score": 0.841,
+      "profit_growth_jq": 0.7048,
+      "quality_growth_jq": 0.6465564304461943,
+      "liquidity_quality_jq": 0.8800367237671997
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300124.XSHE",
+      "strategy_score": 0.8401666666666667,
+      "profit_growth_jq": 0.7084666666666667,
+      "quality_growth_jq": 0.7480472440944882,
+      "liquidity_quality_jq": 0.695302279096559
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000661.XSHE",
+      "strategy_score": 0.8398333333333333,
+      "profit_growth_jq": 0.7733333333333334,
+      "quality_growth_jq": 0.8416477690288714,
+      "liquidity_quality_jq": 0.6271508855863455
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601888.XSHG",
+      "strategy_score": 0.8391666666666666,
+      "profit_growth_jq": 0.7429333333333333,
+      "quality_growth_jq": 0.618530971128609,
+      "liquidity_quality_jq": 0.8167084055977594
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300122.XSHE",
+      "strategy_score": 0.8388333333333334,
+      "profit_growth_jq": 0.7929999999999999,
+      "quality_growth_jq": 0.7819401574803151,
+      "liquidity_quality_jq": 0.6220849783808582
+    },
+    {
+      "date": "2024-01-02",
+      "code": "603369.XSHG",
+      "strategy_score": 0.8313333333333334,
+      "profit_growth_jq": 0.7674,
+      "quality_growth_jq": 0.809974278215223,
+      "liquidity_quality_jq": 0.6290219183871002
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600887.XSHG",
+      "strategy_score": 0.8166666666666667,
+      "profit_growth_jq": 0.7133333333333334,
+      "quality_growth_jq": 0.6639916010498688,
+      "liquidity_quality_jq": 0.7273330671092757
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600754.XSHG",
+      "strategy_score": 0.8151666666666666,
+      "profit_growth_jq": 0.7943333333333333,
+      "quality_growth_jq": 0.6815782152230971,
+      "liquidity_quality_jq": 0.6327614893570889
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600900.XSHG",
+      "strategy_score": 0.9873333333333334,
+      "profit_growth_jq": 0.8608,
+      "quality_growth_jq": 0.8874553805774278,
+      "liquidity_quality_jq": 0.8911347958969797
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300274.XSHE",
+      "strategy_score": 0.9755,
+      "profit_growth_jq": 0.8929999999999999,
+      "quality_growth_jq": 0.851289501312336,
+      "liquidity_quality_jq": 0.8348647092989336
+    },
+    {
+      "date": "2024-01-09",
+      "code": "000568.XSHE",
+      "strategy_score": 0.959,
+      "profit_growth_jq": 0.8512666666666666,
+      "quality_growth_jq": 0.906620472440945,
+      "liquidity_quality_jq": 0.7507998224208777
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600809.XSHG",
+      "strategy_score": 0.944,
+      "profit_growth_jq": 0.8036666666666666,
+      "quality_growth_jq": 0.8630314960629921,
+      "liquidity_quality_jq": 0.7594937806074962
+    },
+    {
+      "date": "2024-01-09",
+      "code": "002594.XSHE",
+      "strategy_score": 0.9263333333333333,
+      "profit_growth_jq": 0.8752666666666666,
+      "quality_growth_jq": 0.7065656167979002,
+      "liquidity_quality_jq": 0.779968181168992
+    },
+    {
+      "date": "2024-01-09",
+      "code": "002027.XSHE",
+      "strategy_score": 0.9161666666666666,
+      "profit_growth_jq": 0.7587333333333334,
+      "quality_growth_jq": 0.9115485564304462,
+      "liquidity_quality_jq": 0.7368018021801312
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300308.XSHE",
+      "strategy_score": 0.9099999999999999,
+      "profit_growth_jq": 0.7902666666666667,
+      "quality_growth_jq": 0.7720215223097114,
+      "liquidity_quality_jq": 0.7528749786389332
+    },
+    {
+      "date": "2024-01-09",
+      "code": "002371.XSHE",
+      "strategy_score": 0.9035000000000001,
+      "profit_growth_jq": 0.7694666666666667,
+      "quality_growth_jq": 0.7339532808398951,
+      "liquidity_quality_jq": 0.8070268429231597
+    },
+    {
+      "date": "2024-01-09",
+      "code": "000858.XSHE",
+      "strategy_score": 0.9018333333333335,
+      "profit_growth_jq": 0.7707333333333333,
+      "quality_growth_jq": 0.8106383202099738,
+      "liquidity_quality_jq": 0.7464068512212635
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600519.XSHG",
+      "strategy_score": 0.8979999999999999,
+      "profit_growth_jq": 0.7829333333333333,
+      "quality_growth_jq": 0.864776902887139,
+      "liquidity_quality_jq": 0.6974776242473423
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300316.XSHE",
+      "strategy_score": 0.892,
+      "profit_growth_jq": 0.8870666666666666,
+      "quality_growth_jq": 0.8948687664041997,
+      "liquidity_quality_jq": 0.6172550620161364
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300760.XSHE",
+      "strategy_score": 0.8901666666666667,
+      "profit_growth_jq": 0.7892000000000001,
+      "quality_growth_jq": 0.8517853018372703,
+      "liquidity_quality_jq": 0.690111224901286
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601111.XSHG",
+      "strategy_score": 0.8863333333333334,
+      "profit_growth_jq": 0.8563333333333335,
+      "quality_growth_jq": 0.7383448818897638,
+      "liquidity_quality_jq": 0.6879781109388227
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600436.XSHG",
+      "strategy_score": 0.8831666666666667,
+      "profit_growth_jq": 0.7752666666666668,
+      "quality_growth_jq": 0.8222766404199476,
+      "liquidity_quality_jq": 0.6958588523340842
+    },
+    {
+      "date": "2024-01-09",
+      "code": "000596.XSHE",
+      "strategy_score": 0.8821666666666668,
+      "profit_growth_jq": 0.8225333333333334,
+      "quality_growth_jq": 0.8306178477690289,
+      "liquidity_quality_jq": 0.667354207042617
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300015.XSHE",
+      "strategy_score": 0.876,
+      "profit_growth_jq": 0.7212,
+      "quality_growth_jq": 0.8477364829396326,
+      "liquidity_quality_jq": 0.7183041862690906
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300122.XSHE",
+      "strategy_score": 0.8680000000000001,
+      "profit_growth_jq": 0.7929999999999999,
+      "quality_growth_jq": 0.7819401574803151,
+      "liquidity_quality_jq": 0.6700272345184027
+    },
+    {
+      "date": "2024-01-09",
+      "code": "688036.XSHG",
+      "strategy_score": 0.8668333333333333,
+      "profit_growth_jq": 0.9207333333333333,
+      "quality_growth_jq": 0.7933538057742783,
+      "liquidity_quality_jq": 0.6096751987944408
+    },
+    {
+      "date": "2024-01-09",
+      "code": "002304.XSHE",
+      "strategy_score": 0.8664999999999999,
+      "profit_growth_jq": 0.7036,
+      "quality_growth_jq": 0.7524682414698163,
+      "liquidity_quality_jq": 0.7541431683757732
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300782.XSHE",
+      "strategy_score": 0.861,
+      "profit_growth_jq": 0.8749333333333333,
+      "quality_growth_jq": 0.8684141732283465,
+      "liquidity_quality_jq": 0.5801902468783061
+    }
+  ]
+}

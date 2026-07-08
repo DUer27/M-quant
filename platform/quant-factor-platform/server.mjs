@@ -29,6 +29,10 @@ const capitalFactorSummaryPath =
   '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/capital-flow-factors/yiwan-capital-factor-summary.json';
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
 const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
+const strictFactorAuditPath =
+  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/factors/joinquant/m_quant_strict_factor_audit_20260708.json';
+const jqQualityProfitLiquidityBacktestScriptPath =
+  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/sources/joinquant/scripts/m_quant_jq_quality_profit_liquidity_strategy_backtest.py';
 const primaryStrategyHorizons = [5, 10, 20];
 
 const contentTypes = {
@@ -223,6 +227,72 @@ const indicatorFactorDefinitions = [
     requiredFields: ['ma5', 'ma13', 'ma20', 'ma60', 'mavol5', 'mavol10', 'stockk', 'stockd', 'stockj', 'macd', 'diff', 'dea', 'huolipan', 'taolaopan'],
     signal: '综合趋势、量能、短线动能、MACD、筹码和日内结构，同时扣除高拥挤风险。',
     usage: '可作为第一版股票池排序因子，后续必须用历史样本验证IC和分组收益。',
+  },
+  {
+    category: 'fundamental',
+    dataSource: 'joinquant valuation/indicator + OHLCV',
+    direction: 'positive',
+    formula: 'score = 低PE + 低PB + 低PS + 合理换手 + 市值稳定性',
+    id: 'valuation_safety_jq',
+    name: '估值安全垫_JQ',
+    requiredFields: ['valuation.pe_ratio', 'valuation.pb_ratio', 'valuation.ps_ratio', 'valuation.turnover_ratio', 'valuation.market_cap'],
+    signal: '估值越便宜、换手不过热且市值稳定性越好，估值安全垫越强。',
+    usage: '用于过滤趋势策略中的高估拥挤票，适合和质量成长、量价确认共同进入策略。',
+  },
+  {
+    category: 'fundamental',
+    dataSource: 'joinquant indicator',
+    direction: 'positive',
+    formula: 'score = ROE + ROA + 毛利率 + 净利率 + 营收同比 + 净利同比',
+    id: 'quality_growth_jq',
+    name: '质量成长_JQ',
+    requiredFields: ['indicator.roe', 'indicator.roa', 'indicator.gross_profit_margin', 'indicator.net_profit_margin', 'indicator.inc_total_revenue_year_on_year', 'indicator.inc_net_profit_year_on_year'],
+    signal: '盈利质量和收入/利润成长同时改善时分数更高。',
+    usage: '作为核心基本面确认因子，优先参与中长周期策略组合。',
+  },
+  {
+    category: 'fundamental',
+    dataSource: 'joinquant indicator',
+    direction: 'positive',
+    formula: 'score = 净利同比 + 营收同比 + EPS + ROE + 经营现金流收入比',
+    id: 'profit_growth_jq',
+    name: '利润增长_JQ',
+    requiredFields: ['indicator.inc_net_profit_year_on_year', 'indicator.inc_total_revenue_year_on_year', 'indicator.eps', 'indicator.roe', 'indicator.ocf_to_revenue'],
+    signal: '利润扩张、收入配合、EPS和ROE共同走强时，盈利增长确认度更高。',
+    usage: '当前优先级最高的基本面进攻因子之一，用于构建质量成长策略路线。',
+  },
+  {
+    category: 'liquidity',
+    dataSource: 'joinquant OHLCV/valuation',
+    direction: 'positive',
+    formula: 'score = 成交额水平 + 成交额稳定性 + 合理换手 + 合理量比 + 市值承载力',
+    id: 'liquidity_quality_jq',
+    name: '流动性质量_JQ',
+    requiredFields: ['money', 'volume', 'valuation.turnover_ratio', 'valuation.market_cap'],
+    signal: '成交额足、稳定性好、换手和量比不过热时，真实可交易性更强。',
+    usage: '用于确认策略可执行性和降低冲击成本，进入正式策略前必须保留。',
+  },
+  {
+    category: 'risk',
+    dataSource: 'joinquant OHLCV',
+    direction: 'positive',
+    formula: 'score = 低20日波动 + 低60日波动 + 低回撤 + 成交额稳定 + 流动性',
+    id: 'low_volatility_quality_jq',
+    name: '低波动质量_JQ',
+    requiredFields: ['close', 'money', 'stock_return'],
+    signal: '波动和回撤越低、交易越稳定，防守质量越高。',
+    usage: '用于低波动/防守策略路线，也可作为高波动环境下的风险过滤。',
+  },
+  {
+    category: 'risk',
+    dataSource: 'joinquant OHLCV/index return',
+    direction: 'negative',
+    formula: 'risk = Beta60 + 60日波动 + 60日回撤 + 高换手',
+    id: 'market_sensitivity_risk_jq',
+    name: '市场敏感风险_JQ',
+    requiredFields: ['stock_return', 'index_return', 'valuation.turnover_ratio'],
+    signal: 'Beta、波动、回撤和换手越高，市场敏感风险越高。',
+    usage: '风险因子，高分不代表买入；用于控制组合对市场冲击的暴露。',
   },
   {
     category: 'capital_flow',
@@ -2384,6 +2454,154 @@ function readImportedBacktestResults() {
   return readJsonFile(importedBacktestResultsPath, []);
 }
 
+function isStrategyBacktestRecord(result) {
+  return result?.result_type === 'strategy_backtest'
+    || result?.result_type === 'strategy_regime_backtest'
+    || result?.result_type === 'strategy_size_backtest'
+    || result?.result_type === 'strategy_regime_size_backtest'
+    || result?.result_type === 'trading_backtest'
+    || result?.result_type === 'strategy_trading_backtest'
+    || Array.isArray(result?.summary) && result.summary.some((item) => item?.result_type === 'strategy_backtest'
+      || item?.result_type === 'strategy_regime_backtest'
+      || item?.result_type === 'strategy_size_backtest'
+      || item?.result_type === 'strategy_regime_size_backtest');
+}
+
+function readImportedFactorResults() {
+  return readImportedBacktestResults().filter((result) => !isStrategyBacktestRecord(result));
+}
+
+function readImportedStrategyResults() {
+  return readImportedBacktestResults().filter(isStrategyBacktestRecord);
+}
+
+function readStrictFactorAudit() {
+  return readJsonFile(strictFactorAuditPath, null);
+}
+
+function flattenStrategyResultRecords(results = readImportedStrategyResults()) {
+  return results.flatMap((result) => {
+    if (Array.isArray(result?.summary)) {
+      return result.summary
+        .filter((item) => item?.result_type === 'strategy_backtest'
+          || item?.result_type === 'strategy_regime_backtest'
+          || item?.result_type === 'strategy_size_backtest'
+          || item?.result_type === 'strategy_regime_size_backtest')
+        .map((item) => ({
+          ...item,
+          importedAt: result.importedAt,
+          packetCrossCounts: result.cross_counts,
+          packetSample: result.sample,
+          source: item.source || result.source,
+          strategy_id: item.strategy_id || result.strategy_id,
+          strategy_name: item.strategy_name || result.strategy_name,
+        }));
+    }
+
+    if (result?.result_type === 'trading_backtest' || result?.result_type === 'strategy_trading_backtest') {
+      return [{
+        ...result,
+        horizon: result.horizon || '交易回测',
+        mean_return: result.strategy_return,
+        daily_mean_return: result.strategy_annual_return,
+        daily_positive_ratio: result.daily_win_rate,
+        sample_trades: result.trade_count,
+        source: result.source || 'joinquant_trading_backtest',
+      }];
+    }
+
+    return [result];
+  });
+}
+
+function strategyResultId(result) {
+  return result.strategy_id || result.strategyId || result.name || 'unknown_strategy';
+}
+
+function strategyPrimaryScore(result) {
+  const meanReturn = Number(result.daily_mean_return ?? result.mean_return);
+  const positiveRatio = Number(result.daily_positive_ratio ?? result.positive_ratio);
+  const sampleDates = toNumber(result.sample_dates, 0);
+  return (
+    (sampleDates >= 20 ? 100 : 0)
+    + (Number.isFinite(meanReturn) ? meanReturn * 100 : -100)
+    + (Number.isFinite(positiveRatio) ? positiveRatio : 0)
+    + Math.min(sampleDates, 240) / 240
+  );
+}
+
+function summarizeStrategyResultsById() {
+  return flattenStrategyResultRecords().reduce((groups, result) => {
+    const strategyId = strategyResultId(result);
+    const current = groups[strategyId] || {
+      all: [],
+      bestPrimary: null,
+      historicalCount: 0,
+      strategyId,
+    };
+    const sampleDates = toNumber(result.sample_dates, 0);
+    current.all.push(result);
+    if (sampleDates >= 20) current.historicalCount += 1;
+    if (!current.bestPrimary || strategyPrimaryScore(result) > strategyPrimaryScore(current.bestPrimary)) {
+      current.bestPrimary = result;
+    }
+    groups[strategyId] = current;
+    return groups;
+  }, {});
+}
+
+function buildStrategyValidation(stats, label = '策略') {
+  const primaryResults = (stats?.all || [])
+    .filter((result) => result.result_type === 'strategy_backtest')
+    .filter((result) => primaryStrategyHorizons.includes(toNumber(result.horizon, 0)));
+  const bestResult = primaryResults
+    .sort((left, right) => strategyPrimaryScore(right) - strategyPrimaryScore(left))[0] || null;
+  const meanReturn = Number(bestResult?.daily_mean_return ?? bestResult?.mean_return);
+  const positiveRatio = Number(bestResult?.daily_positive_ratio ?? bestResult?.positive_ratio);
+  const sampleDates = toNumber(bestResult?.sample_dates, 0);
+  const validated = sampleDates >= 20
+    && Number.isFinite(meanReturn)
+    && meanReturn > 0
+    && Number.isFinite(positiveRatio)
+    && positiveRatio >= 0.5;
+  const evidence = bestResult
+    ? `已导入 ${stats.all.length} 条真实${label}结果；当前最佳 ${bestResult.horizon}日，平均收益 ${(meanReturn * 100).toFixed(2)}%，日胜率 ${(positiveRatio * 100).toFixed(2)}%，样本 ${sampleDates} 日。`
+    : `尚未导入${label}级真实回测结果。`;
+
+  return {
+    bestResult,
+    evidence,
+    meanReturn,
+    positiveRatio,
+    sampleDates,
+    validated,
+  };
+}
+
+function buildLayeredStrategyValidation(stats, label = '策略') {
+  const layeredResults = (stats?.all || [])
+    .filter((result) => result.result_type === 'strategy_regime_size_backtest')
+    .filter((result) => primaryStrategyHorizons.includes(toNumber(result.horizon, 0)));
+  const layerKeys = new Set(layeredResults
+    .filter((result) => result.market_regime && result.market_cap_bucket)
+    .map((result) => `${result.market_regime}|${result.market_cap_bucket}`));
+  const horizons = new Set(layeredResults.map((result) => toNumber(result.horizon, 0)));
+  const bestResult = layeredResults
+    .sort((left, right) => strategyPrimaryScore(right) - strategyPrimaryScore(left))[0] || null;
+  const validated = layerKeys.size >= 9 && primaryStrategyHorizons.every((horizon) => horizons.has(horizon));
+  const evidence = validated
+    ? `已完成 ${layerKeys.size} 个高/中/低波动 × 大/中/小市值交叉层，覆盖 ${Array.from(horizons).sort((a, b) => a - b).join('/')} 日周期。`
+    : `尚未完成${label}的高/中/低波动 × 大/中/小市值交叉分层。`;
+
+  return {
+    bestResult,
+    evidence,
+    layerCount: layerKeys.size,
+    layeredResults,
+    validated,
+  };
+}
+
 function readPrimaryFactorRows() {
   return readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
 }
@@ -2442,6 +2660,8 @@ function buildBacktestResearchStatus() {
   const uniqueStocks = new Set(rows.map((row) => row.stock_code || row.code).filter(Boolean));
   const exportRows = buildJoinQuantFactorRows();
   const importedResults = readImportedBacktestResults();
+  const importedFactorResults = readImportedFactorResults();
+  const importedStrategyResults = readImportedStrategyResults();
 
   const canRunLocalValidatedBacktest = uniqueDates.size >= 60;
 
@@ -2459,6 +2679,8 @@ function buildBacktestResearchStatus() {
       exportableRows: exportRows.length,
       exportableFactors: exportableBacktestFactors.length,
       importedResultCount: importedResults.length,
+      importedFactorResultCount: importedFactorResults.length,
+      importedStrategyResultCount: importedStrategyResults.length,
       localStatus: canRunLocalValidatedBacktest ? 'ready_for_local_factor_test' : 'blocked',
       externalStatus: 'joinquant_ready',
       requiredTradingDays: 60,
@@ -2703,7 +2925,7 @@ function actionFromResearchEntry(entry, source) {
 }
 
 function factorBacktestProfile(factorId, role = 'signal') {
-  const importedResults = readImportedBacktestResults().filter((result) => factorResultId(result) === factorId);
+  const importedResults = readImportedFactorResults().filter((result) => factorResultId(result) === factorId);
   const primaryResults = importedResults.filter(isPrimaryHorizonResult);
   const referenceResults = importedResults.filter((result) => toNumber(result.horizon, 0) === 1);
   const bestPrimary = chooseBestPrimaryHorizon(importedResults);
@@ -2769,7 +2991,7 @@ function buildResearchPipeline() {
   const rows = readBacktestFactorRows();
   const summary = readCombinedFactorSummary();
   const availability = summary.factor_meta?.availability || {};
-  const importedResults = readImportedBacktestResults();
+  const importedResults = readImportedFactorResults();
   const resultStats = summarizeImportedResults(importedResults);
   const definitionByCanonicalId = indicatorFactorDefinitions.reduce((map, definition) => {
     map[canonicalFactorId(definition.id)] = definition;
@@ -3190,15 +3412,177 @@ function buildLiveStrategySignals() {
     strategyFactor('flow_vs_ma', '资金环境确认', null),
     strategyFactor('intraday_ap_slope', '日内资金确认', null),
   ];
+  const strictAudit = readStrictFactorAudit();
+  const strictAuditRoute = strictAudit?.strategyRoutes?.find((route) => route.strategyId === 'jq_quality_profit_liquidity_v1');
+  const jqQualityRouteFactors = [
+    strategyFactor('profit_growth_jq', '进攻核心', 0.40),
+    strategyFactor('quality_growth_jq', '质量确认', 0.35),
+    strategyFactor('liquidity_quality_jq', '可交易性过滤', 0.25),
+  ];
+  const jqBlockedFactors = strictAuditRoute?.blockedFactors || [];
 
   const strategyCandidates = [
     ...entryCandidates.slice(0, 25),
     ...capitalCandidates.slice(0, 15),
   ];
+  const strategyResultStats = summarizeStrategyResultsById();
+  const coreStrategyStats = strategyResultStats.core_volume_price_trend_v1;
+  const coreValidation = buildStrategyValidation(coreStrategyStats, '策略');
+  const coreLayeredValidation = buildLayeredStrategyValidation(coreStrategyStats, '核心量价趋势策略');
+  const coreStrategyValidated = coreValidation.validated && coreLayeredValidation.validated;
+  const coreStrategyEvidence = coreValidation.bestResult
+    ? coreValidation.evidence.replace('真实策略结果；', '真实策略结果；正式候选只采用未分层整体回测，')
+    : coreValidation.evidence;
+  const jqQualityStrategyStats = strategyResultStats.jq_quality_profit_liquidity_v1;
+  const jqQualityValidation = buildStrategyValidation(jqQualityStrategyStats, '策略');
+  const jqQualityLayeredValidation = buildLayeredStrategyValidation(jqQualityStrategyStats, 'JQ质量利润流动性策略');
+  const jqQualityStrategyValidated = jqQualityValidation.validated && jqQualityLayeredValidation.validated;
+  const capitalStrategyStats = strategyResultStats.capital_follow_v0;
+  const capitalValidation = buildStrategyValidation(capitalStrategyStats, '策略');
+  const capitalLayeredValidation = buildLayeredStrategyValidation(capitalStrategyStats, '资金跟随策略');
+  const capitalStrategyValidated = capitalValidation.validated && capitalLayeredValidation.validated;
+  const klineStrategyStats = strategyResultStats.kline_assisted_confirmation;
+  const klineValidation = buildStrategyValidation(klineStrategyStats, '策略');
+  const klineLayeredValidation = buildLayeredStrategyValidation(klineStrategyStats, 'K线辅助确认策略');
+  const klineStrategyValidated = klineValidation.validated && klineLayeredValidation.validated;
+  const marketRegimeStats = strategyResultStats.market_capital_regime_position;
+  const marketRegimeValidation = buildStrategyValidation(marketRegimeStats, '仓位模块');
+  const marketRegimeTested = Boolean(marketRegimeValidation.bestResult);
+  const formalStrategies = [
+    ...(coreStrategyValidated
+      ? [
+      {
+        id: 'core_volume_price_trend_v1',
+        name: '核心量价趋势策略 v1',
+        pool: 'formal_candidate',
+        status: 'real_strategy_backtested',
+        validationState: `${coreStrategyEvidence} ${coreLayeredValidation.evidence} 口径为 JoinQuant OHLCV 历史重建，非 Yiwan 全字段等价复刻。`,
+        role: '已实测正式候选',
+        objective: '用趋势质量确认方向，用量价确认验证成交质量，再用拥挤、背离、过伸做硬过滤。',
+        dataBasis: `JoinQuant 策略级结果 ${coreStrategyStats.all.length} 条；技术截面 ${coreRows.length} 条`,
+        factorState: coreRouteFactors,
+        rankingFormula: '量价确认 + 趋势确认 + 技术综合 + K线辅助 - 拥挤/背离/过伸风险；以 5/10/20 主周期真实结果为准。',
+        entryRules: [
+          'trend_alignment >= 0.60',
+          'volume_price_confirmation >= 0.60',
+          'crowding_risk <= 0.55',
+          'volume_price_divergence_risk <= 0.45',
+          'trend_extension_risk <= 0.75 且 crowding_alert_count <= 2',
+        ],
+        riskFilters: [
+          '仅承认 JoinQuant 已回填策略结果，不用因子结果替代策略收益',
+          'OHLCV 重建不包含 Yiwan 暗盘/筹码原字段',
+          '正式实盘前继续做样本外、交易成本、换手和回撤审计',
+        ],
+        portfolioRules: ['候选池排序前30只', '5日调仓脚本已生成', '当前只作为正式候选，不等于实盘批准'],
+        nextAction: '继续补策略交易回测净值、换手、最大回撤和样本外结果；若回撤/成本通过，再升级为正式策略。',
+        candidateCount: entryCandidates.length,
+        computedSignalCount: coreRows.length,
+        exportStatus: '已有真实策略级结果，仍需交易成本和样本外审计',
+      },
+      ]
+      : []),
+    ...(capitalStrategyValidated
+      ? [
+        {
+          id: 'capital_follow_v0',
+          name: '资金跟随策略 v0',
+          pool: 'formal_candidate',
+          status: 'real_strategy_backtested',
+          validationState: `${capitalValidation.evidence} ${capitalLayeredValidation.evidence} 口径为 JoinQuant money_flow/OHLCV 事件回测，未复刻 Yiwan 暗盘字段。`,
+          role: '已实测正式候选',
+          objective: '用主力资金净流入、超大/大单同步、资金持续性确认候选，并过滤过热资金。',
+          dataBasis: `JoinQuant 策略级结果 ${capitalStrategyStats.all.length} 条；候选样本 ${capitalValidation.bestResult?.packetSample?.candidate_rows || 0} 条`,
+          factorState: capitalRouteFactors,
+          rankingFormula: '资金跟随 + 主力一致 + 大单吸筹 + 资金持续性 - 资金过热；以 5/10/20 日真实策略结果为准。',
+          entryRules: [
+            'capital_follow_signal >= 0.65',
+            'main_force_alignment 较强',
+            'active_large_order_accumulation 较强',
+            'capital_overheat_risk 不过热',
+          ],
+          riskFilters: [
+            '只承认 JoinQuant money_flow/OHLCV 已回填结果',
+            '未使用 Yiwan 暗盘字段，不把代理口径说成原站等价',
+            '正式实盘前继续做交易成本、换手、回撤和样本外审计',
+          ],
+          portfolioRules: ['候选池排序前30只', '5/10/20 日均已跑策略级事件回测', '当前只作为正式候选，不等于实盘批准'],
+          nextAction: '继续补交易净值、成本敏感性、市值/波动分层和样本外审计。',
+          candidateCount: capitalValidation.bestResult?.packetSample?.candidate_rows || capitalCandidates.length,
+          computedSignalCount: capitalValidation.bestResult?.packetSample?.factor_rows || capitalSignalRows.length,
+          exportStatus: '已有真实策略级结果，仍需交易成本和样本外审计',
+        },
+      ]
+      : []),
+    ...(klineStrategyValidated
+      ? [
+        {
+          id: 'kline_assisted_confirmation',
+          name: 'K线辅助确认策略',
+          pool: 'formal_candidate',
+          status: 'real_strategy_backtested',
+          validationState: `${klineValidation.evidence} ${klineLayeredValidation.evidence} 口径为 JoinQuant OHLCV 情绪系数加权K线事件回测，未使用研报不可得字段。`,
+          role: '已实测辅助候选',
+          objective: '用单根K线事件、收盘位置、上下影线、趋势背景和240日量能情绪系数做入场确认。',
+          dataBasis: `JoinQuant 策略级结果 ${klineStrategyStats.all.length} 条；候选样本 ${klineValidation.bestResult?.packetSample?.candidate_rows || 0} 条`,
+          factorState: klineRouteFactors,
+          rankingFormula: 'K线事件 + 蜡烛质量 + 趋势背景 + 240日情绪系数 - 派发风险；以 5/10/20 日真实策略结果为准。',
+          entryRules: [
+            'weighted_kline_score >= 0.62',
+            'trend_context >= 0.45',
+            'distribution_risk <= 0.62',
+            '每期取策略分数前30只',
+          ],
+          riskFilters: [
+            '只承认 JoinQuant OHLCV 已回填结果',
+            '不复制研报原始收益，不展示未实测绩效',
+            'K线更适合作为确认/过滤模块，独立实盘前还需交易成本和样本外检验',
+          ],
+          portfolioRules: ['候选池排序前30只', '已完成 5/10/20 日策略级事件回测', '优先和核心量价趋势做交集或加权确认'],
+          nextAction: '继续测试与核心量价趋势、资金跟随策略的组合效果，补交易净值和回撤。',
+          candidateCount: klineValidation.bestResult?.packetSample?.candidate_rows || klineRows.length,
+          computedSignalCount: klineValidation.bestResult?.packetSample?.factor_rows || coreRows.length,
+          exportStatus: '已有真实策略级结果，建议作为辅助确认模块继续组合回测',
+        },
+      ]
+      : []),
+    ...(jqQualityStrategyValidated
+      ? [
+        {
+          id: 'jq_quality_profit_liquidity_v1',
+          name: 'JQ质量利润流动性策略 v1',
+          pool: 'formal_candidate',
+          status: 'real_strategy_backtested',
+          validationState: `${jqQualityValidation.evidence} ${jqQualityLayeredValidation.evidence} 口径为 JoinQuant valuation/indicator/OHLCV 事件回测，尚未包含交易成本、换手和最大回撤。`,
+          role: '已实测正式候选',
+          objective: '用利润增长做进攻核心，用质量成长确认基本面质量，用流动性质量约束可交易性。',
+          dataBasis: `JoinQuant 策略级结果 ${jqQualityStrategyStats.all.length} 条；严格审计入选 ${strictAudit?.counts.selectedFactors || 3} 个因子`,
+          factorState: jqQualityRouteFactors,
+          rankingFormula: '0.40*利润增长_JQ(20日) + 0.35*质量成长_JQ(20日) + 0.25*流动性质量_JQ(20日)',
+          entryRules: [
+            'profit_growth_jq 使用 20日最佳周期',
+            'quality_growth_jq 使用 20日最佳周期',
+            'liquidity_quality_jq 使用 20日最佳周期',
+            '组合按策略分数取每期前30只',
+          ],
+          riskFilters: [
+            '仅承认 JoinQuant 已回填策略结果，不用单因子结果替代策略收益',
+            '当前结果为事件回测，不等同完整交易净值回测',
+            '正式实盘前继续做交易成本、换手、最大回撤和样本外审计',
+          ],
+          portfolioRules: ['候选池排序前30只', '5/10/20 日均已跑策略级事件回测', '当前只作为正式候选，不等于实盘批准'],
+          nextAction: '继续补完整交易回测净值、成本敏感性、市值/波动分层和样本外结果。',
+          candidateCount: jqQualityValidation.bestResult?.packetSample?.candidate_rows || 0,
+          computedSignalCount: jqQualityValidation.bestResult?.packetSample?.factor_rows || strictAudit?.counts.selectedFactors || 0,
+          exportStatus: '已有真实策略级结果，仍需交易成本和样本外审计',
+        },
+      ]
+      : []),
+  ];
 
   return {
     generatedAt: new Date().toISOString(),
-    dataPolicy: '策略工作台只使用本地真实截面因子；1日结果只作参考，5/10/20 日真实回测结果用于选择因子最佳周期。',
+    dataPolicy: '策略工作台只使用本地真实截面因子；1日结果只作参考，5/10/20 日真实回测结果用于选择因子最佳周期；完整策略回测默认必须包含大/中/小市值与高/中/低波动交叉分层。',
     source: {
       file: [
         primarySummary.source_file || researchFactorResultsPath,
@@ -3210,11 +3594,17 @@ function buildLiveStrategySignals() {
       rows: coreRows.length + capitalSignalRows.length,
     },
     metrics: {
-      draftStrategies: 4,
-      executableStrategies: 1,
-      formalStrategies: 0,
-      partialStrategies: 2,
-      blockedStrategies: 1,
+      draftStrategies: 5,
+      executableStrategies: [
+        coreStrategyValidated,
+        capitalStrategyValidated,
+        jqQualityStrategyValidated,
+        klineStrategyValidated,
+        marketRegimeTested,
+      ].filter(Boolean).length,
+      formalStrategies: formalStrategies.length,
+      partialStrategies: [!capitalStrategyValidated, !klineStrategyValidated, !marketRegimeTested].filter(Boolean).length,
+      blockedStrategies: coreStrategyValidated ? 0 : 1,
       entryCandidates: entryCandidates.length,
       observationCandidates: observationCandidates.length,
       capitalCandidates: capitalCandidates.length,
@@ -3227,8 +3617,10 @@ function buildLiveStrategySignals() {
         id: 'core_volume_price_trend_v1',
         name: '核心量价趋势策略 v1',
         pool: 'draft',
-        status: 'real_signal_computed',
-        validationState: '因子有真实截面值，策略组合尚未完成历史回测',
+        status: coreStrategyValidated ? 'real_strategy_backtested' : 'real_signal_computed',
+        validationState: coreStrategyValidated
+          ? `${coreStrategyEvidence} 仍保留在草案池中，方便继续导出分层/交易脚本。`
+          : '因子有真实截面值，策略组合尚未完成历史回测',
         role: '当前主策略',
         objective: '用趋势质量确认方向，用量价确认验证成交质量，再用拥挤、背离、过伸做硬过滤。',
         dataBasis: `技术截面 ${coreRows.length} 条；最新日期 ${dateOnly(primaryRows[0]?.stock_date || primaryRows[0]?.date) || '-'}`,
@@ -3246,8 +3638,10 @@ function buildLiveStrategySignals() {
           'trend_extension_risk > 0.90 不追高',
           '拥挤和背离优先级高于单日涨幅',
         ],
-        portfolioRules: ['候选池先取排序前20-50只', '1日只作参考，正式入选看5/10/20最佳周期', '正式仓位必须等待策略级组合回测确认'],
-        nextAction: '先按因子最佳周期组合回测核心量价路线，再决定是否进入正式策略池。',
+        portfolioRules: ['候选池先取排序前20-50只', '1日只作参考，正式入选看5/10/20最佳周期', '策略收益只认 JoinQuant 真实回填'],
+        nextAction: coreStrategyValidated
+          ? '继续跑交易回测、样本外和成本敏感性；当前可作为正式候选，不直接实盘。'
+          : '先按因子最佳周期组合回测核心量价路线，再决定是否进入正式策略池。',
         candidateCount: entryCandidates.length,
         computedSignalCount: coreRows.length,
         exportStatus: '因子可导出；策略收益未验证',
@@ -3256,13 +3650,19 @@ function buildLiveStrategySignals() {
         id: 'capital_follow_v0',
         name: '资金跟随策略 v0',
         pool: 'draft',
-        status: 'candidate_module',
-        validationState: '资金因子已由真实日期批次计算，策略尚未实测',
+        status: capitalStrategyValidated ? 'real_strategy_backtested' : 'candidate_module',
+        validationState: capitalStrategyValidated
+          ? `${capitalValidation.evidence} 仍保留在草案池中，方便继续导出分层/交易脚本。`
+          : '资金因子已由真实日期批次计算，策略尚未实测',
         role: '候选策略模块',
         objective: '捕捉主力/暗盘资金同步流入且未过热的股票，作为量价策略之外的资金确认模块。',
-        dataBasis: `资金截面 ${capitalSignalRows.length} 条；日期 ${Array.from(new Set(capitalRows.map((row) => dateOnly(row.stock_date || row.date)))).filter(Boolean).join(', ') || '-'}`,
+        dataBasis: capitalStrategyValidated
+          ? `JoinQuant money_flow/OHLCV 策略实测 ${capitalStrategyStats.all.length} 条；候选样本 ${capitalValidation.bestResult?.packetSample?.candidate_rows || 0} 条`
+          : `资金截面 ${capitalSignalRows.length} 条；日期 ${Array.from(new Set(capitalRows.map((row) => dateOnly(row.stock_date || row.date)))).filter(Boolean).join(', ') || '-'}`,
         factorState: capitalRouteFactors,
-        rankingFormula: '资金因子当前缺少 5/10/20 回测周期，先保留真实资金逻辑；补齐后再选择最佳周期。',
+        rankingFormula: capitalStrategyValidated
+          ? '资金跟随 + 主力一致 + 大单吸筹 + 资金持续性 - 资金过热；以 5/10/20 日真实策略结果为准。'
+          : '资金因子当前缺少 5/10/20 回测周期，先保留真实资金逻辑；补齐后再选择最佳周期。',
         entryRules: [
           'capital_follow_signal >= 0.65',
           'active_ap_accumulation >= 0.60',
@@ -3272,49 +3672,112 @@ function buildLiveStrategySignals() {
         riskFilters: [
           'capital_overheat_risk > 0.70 过滤',
           '只有单一资金来源时不作为主信号',
-          '资金日期和技术日期不一致时先独立复测，不强行合成',
+          capitalStrategyValidated
+            ? '已完成独立 JoinQuant money_flow 实测；仍需交易成本、换手和样本外审计'
+            : '资金日期和技术日期不一致时先独立复测，不强行合成',
         ],
-        portfolioRules: ['先作为独立候选池测试', '确认 5/10/20 最佳周期后再和核心量价趋势做交集或加权并集', '资金因子至少补 20-60 个交易日后进入正式组合回测'],
-        nextAction: '继续按日期批量采集资金页，优先补齐连续 20 个交易日，再测资金跟随因子的未来收益。',
-        candidateCount: capitalCandidates.length,
-        computedSignalCount: capitalSignalRows.length,
-        exportStatus: '因子可导出；策略收益未验证',
+        portfolioRules: capitalStrategyValidated
+          ? ['候选池排序前30只', '已完成 5/10/20 日策略级事件回测', '下一步和核心量价趋势做交集/加权组合测试']
+          : ['先作为独立候选池测试', '确认 5/10/20 最佳周期后再和核心量价趋势做交集或加权并集', '资金因子至少补 20-60 个交易日后进入正式组合回测'],
+        nextAction: capitalStrategyValidated
+          ? '继续补交易净值、交易成本、换手、回撤、市值/波动分层和样本外审计。'
+          : '继续按日期批量采集资金页，优先补齐连续 20 个交易日，再测资金跟随因子的未来收益。',
+        candidateCount: capitalValidation.bestResult?.packetSample?.candidate_rows || capitalCandidates.length,
+        computedSignalCount: capitalValidation.bestResult?.packetSample?.factor_rows || capitalSignalRows.length,
+        exportStatus: capitalStrategyValidated ? '已有真实策略级结果，仍需交易成本和样本外审计' : '因子可导出；策略收益未验证',
+      },
+      {
+        id: 'jq_quality_profit_liquidity_v1',
+        name: 'JQ质量利润流动性策略 v1',
+        pool: 'draft',
+        status: jqQualityStrategyValidated ? 'real_strategy_backtested' : strictAuditRoute?.status || 'ready_for_joinquant_strategy_backtest',
+        validationState: jqQualityStrategyValidated
+          ? `${jqQualityValidation.evidence} 仍保留在草案池中，方便继续导出交易回测和分层脚本。`
+          : '由真实 JoinQuant 因子实测筛出，尚未完成策略级回测；不得展示策略收益。',
+        role: '新增关键决策策略路线',
+        objective: '用利润增长做进攻核心，用质量成长确认基本面质量，用流动性质量约束可交易性。',
+        dataBasis: strictAudit
+          ? `严格审计 ${strictAudit.counts.auditedFactors} 个因子；入选 ${strictAudit.counts.selectedFactors} 个；来源 ${strictAudit.source}${jqQualityStrategyStats?.all?.length ? `；策略实测 ${jqQualityStrategyStats.all.length} 条` : ''}`
+          : '等待严格审计文件',
+        factorState: jqQualityRouteFactors,
+        rankingFormula: '0.40*利润增长_JQ(20日) + 0.35*质量成长_JQ(20日) + 0.25*流动性质量_JQ(20日)',
+        entryRules: [
+          'profit_growth_jq 必须通过重点候选筛选',
+          'quality_growth_jq 必须通过重点候选筛选',
+          'liquidity_quality_jq 必须通过重点候选筛选',
+          '估值安全垫、低波动质量、市敏风险当前不进入主排序，只作为观察或风控备选',
+        ],
+        riskFilters: [
+          ...jqBlockedFactors.map((factor) => `${factor.name}：${factor.decision}，${factor.reason}`),
+          jqQualityStrategyValidated
+            ? '已有策略级事件回测，但进入正式实盘前仍需交易成本、换手、最大回撤和样本外审计'
+            : '没有策略级 JoinQuant 回测前，不进入正式策略池',
+        ],
+        portfolioRules: jqQualityStrategyValidated
+          ? ['候选池排序前30只', '已完成 5/10/20 日策略级事件回测', '下一步跑交易净值、成本和回撤']
+          : ['建议先在 JoinQuant 重建 valuation/indicator/OHLCV 因子表', '按 5/10/20 日做策略事件检验', '通过后再跑交易回测、成本和回撤'],
+        nextAction: jqQualityStrategyValidated
+          ? '继续补完整交易回测净值、交易成本、换手、最大回撤、市值/波动分层和样本外结果。'
+          : strictAuditRoute?.nextAction || '生成 JoinQuant 重建脚本并跑策略级实测。',
+        candidateCount: jqQualityValidation.bestResult?.packetSample?.candidate_rows || 0,
+        computedSignalCount: jqQualityValidation.bestResult?.packetSample?.factor_rows || strictAudit?.counts.selectedFactors || 0,
+        exportable: false,
+        specialBacktestScriptEndpoint: '/strategy-api/joinquant-jq-quality-profit-liquidity-backtest-script.py',
+        exportStatus: jqQualityStrategyValidated
+          ? '已有真实策略级结果，仍需交易成本和样本外审计'
+          : '路线已生成；等待 JoinQuant 策略级实测',
       },
       {
         id: 'kline_assisted_confirmation',
         name: 'K线辅助确认策略',
         pool: 'draft',
-        status: 'partial_real_data',
-        validationState: '单根K线分数已计算，完整情绪加权K线仍缺 240 日价量历史',
+        status: klineStrategyValidated ? 'real_strategy_backtested' : 'partial_real_data',
+        validationState: klineStrategyValidated
+          ? `${klineValidation.evidence} 已完成 240 日量能情绪系数加权K线实测。`
+          : '单根K线分数已计算，完整情绪加权K线仍缺 240 日价量历史',
         role: '辅助确认',
         objective: '把华福研报的单根K线评分作为入池解释和边际加分，不单独替代趋势与量价。',
-        dataBasis: `kline_event_score 已在 ${coreRows.length} 条技术截面中计算；正分样本 ${klineRows.length} 条`,
+        dataBasis: klineStrategyValidated
+          ? `JoinQuant OHLCV 情绪加权K线实测 ${klineStrategyStats.all.length} 条；候选样本 ${klineValidation.bestResult?.packetSample?.candidate_rows || 0} 条`
+          : `kline_event_score 已在 ${coreRows.length} 条技术截面中计算；正分样本 ${klineRows.length} 条`,
         factorState: klineRouteFactors,
-        rankingFormula: 'K线评分按 5/10/20 最佳周期作为辅助项；当前不单独生成主策略排序',
+        rankingFormula: klineStrategyValidated
+          ? 'K线事件 + 蜡烛质量 + 趋势背景 + 240日情绪系数 - 派发风险；以 5/10/20 日真实策略结果为准。'
+          : 'K线评分按 5/10/20 最佳周期作为辅助项；当前不单独生成主策略排序',
         entryRules: [
-          'kline_event_score > 0 时可为核心策略加分',
-          '风险观察样本即使K线为正也不直接入场',
-          'PDF未给明确分数的形态只识别不计分',
+          klineStrategyValidated ? 'weighted_kline_score >= 0.62' : 'kline_event_score > 0 时可为核心策略加分',
+          klineStrategyValidated ? 'trend_context >= 0.45' : '风险观察样本即使K线为正也不直接入场',
+          klineStrategyValidated ? 'distribution_risk <= 0.62，每期取前30只' : 'PDF未给明确分数的形态只识别不计分',
         ],
         riskFilters: [
-          '缺少 240 日成交量历史时不计算 emotion_weighted_kline_score',
+          klineStrategyValidated
+            ? '已使用 JoinQuant 真实240日 volume/money 计算情绪系数'
+            : '缺少 240 日成交量历史时不计算 emotion_weighted_kline_score',
           '不复制研报原始收益，不展示未实测绩效',
         ],
-        portfolioRules: ['辅助核心量价趋势，不独立建仓', '等价量共振历史补齐后再升级为情绪加权K线策略'],
-        nextAction: '补 240 日 OHLCV 与未来收益标签，复现情绪系数加权K线后再评估是否独立成策略。',
-        candidateCount: klineRows.length,
-        computedSignalCount: coreRows.length,
-        exportStatus: '单根K线可观察；完整策略待数据',
+        portfolioRules: klineStrategyValidated
+          ? ['候选池排序前30只', '可作为独立候选观察，但优先辅助核心量价趋势', '下一步做组合交集和交易成本审计']
+          : ['辅助核心量价趋势，不独立建仓', '等价量共振历史补齐后再升级为情绪加权K线策略'],
+        nextAction: klineStrategyValidated
+          ? '继续测试与核心量价趋势、资金跟随策略的组合效果，补交易净值、回撤和成本。'
+          : '补 240 日 OHLCV 与未来收益标签，复现情绪系数加权K线后再评估是否独立成策略。',
+        candidateCount: klineValidation.bestResult?.packetSample?.candidate_rows || klineRows.length,
+        computedSignalCount: klineValidation.bestResult?.packetSample?.factor_rows || coreRows.length,
+        exportStatus: klineStrategyValidated ? '已有真实策略级结果，建议作为辅助确认模块继续组合回测' : '单根K线可观察；完整策略待数据',
       },
       {
         id: 'market_capital_regime_position',
         name: '市场资金状态仓位模块',
         pool: 'draft',
-        status: latestRegime ? 'market_state_only' : 'requires_more_data',
-        validationState: latestRegime ? '市场层资金状态已计算，不能替代个股选股回测' : '等待大盘资金数据',
+        status: marketRegimeTested ? 'real_position_overlay_backtested' : (latestRegime ? 'market_state_only' : 'requires_more_data'),
+        validationState: marketRegimeTested
+          ? `${marketRegimeValidation.evidence} 这是沪深300指数仓位开关实测，不能替代个股选股回测。`
+          : (latestRegime ? '市场层资金状态已计算，不能替代个股选股回测' : '等待大盘资金数据'),
         role: '仓位开关',
         objective: '用市场资金环境决定策略是否放大、正常、降仓或暂停，不负责个股排序。',
-        dataBasis: latestRegime
+        dataBasis: marketRegimeTested
+          ? `JoinQuant 沪深300 OHLCV 仓位实测 ${marketRegimeStats.all.length} 条；市场样本 ${marketRegimeValidation.bestResult?.packetSample?.market_rows || 0} 日`
+          : latestRegime
           ? `市场状态 ${capitalRegimes.length} 日；最新 ${latestRegime.date}，market_capital_regime=${Number(latestRegime.market_capital_regime).toFixed(3)}`
           : '暂无可用市场资金状态',
         factorState: marketRouteFactors,
@@ -3324,28 +3787,37 @@ function buildLiveStrategySignals() {
           '0.35 <= market_capital_regime < 0.65：正常观察',
           'market_capital_regime < 0.35：降仓或暂停新增',
         ],
-        riskFilters: ['只有 3 日市场状态，暂不做长期阈值结论', '不能把市场状态当作个股超额收益验证'],
-        portfolioRules: ['作为策略组合仓位乘数', '正式参数等待更长市场历史回测'],
-        nextAction: '持续采集市场资金状态，和核心策略候选收益一起回测仓位乘数效果。',
+        riskFilters: marketRegimeTested
+          ? ['这是指数仓位叠加实测，不是个股alpha', '高/中/低波动分层已回填，但需继续叠加到具体选股策略净值上验证']
+          : ['只有 3 日市场状态，暂不做长期阈值结论', '不能把市场状态当作个股超额收益验证'],
+        portfolioRules: ['作为策略组合仓位乘数', marketRegimeTested ? '已完成沪深300指数仓位开关事件回测' : '正式参数等待更长市场历史回测'],
+        nextAction: marketRegimeTested
+          ? '下一步把仓位乘数叠加到核心量价、资金跟随、K线辅助的真实候选组合上，跑交易净值。'
+          : '持续采集市场资金状态，和核心策略候选收益一起回测仓位乘数效果。',
         candidateCount: 0,
-        computedSignalCount: capitalRegimes.length,
-        exportStatus: '市场状态已计算；仓位效果待验证',
+        computedSignalCount: marketRegimeValidation.bestResult?.packetSample?.market_rows || capitalRegimes.length,
+        exportStatus: marketRegimeTested ? '已有真实指数仓位模块结果；等待叠加个股策略净值' : '市场状态已计算；仓位效果待验证',
       },
     ],
     formalPolicy: {
-      status: 'empty',
+      status: formalStrategies.length ? 'has_formal_candidates' : 'empty',
       title: '正式策略池只接收已完成策略级回测的组合',
-      description: '当前项目内还没有策略级历史回测结果，因此不把任何草案策略提升为正式策略。',
+      description: formalStrategies.length
+        ? '当前已有策略级真实回测结果，满足最低正式候选门槛；仍需交易成本、回撤和样本外审计。'
+        : '当前项目内还没有策略级历史回测结果，因此不把任何草案策略提升为正式策略。',
       requiredEvidence: [
         '策略组合在历史区间完成回测，不只看单因子截面值',
         '因子周期路线必须从 5/10/20 日中选择，1日只作参考',
+        '默认必须完成大/中/小市值分层、高/中/低波动分层，以及 9 个市值×波动交叉层',
         '至少包含未来收益、分组收益或组合净值曲线',
         '记录回撤、换手、交易成本、样本交易日和股票池口径',
         '通过后再写入正式策略池，作为可复用决策策略',
       ],
-      nextAction: '先回测核心量价趋势策略 v1；通过后再把它从草案池提升到正式策略池。',
+      nextAction: formalStrategies.length
+        ? '优先补核心策略的交易回测净值、最大回撤、换手和样本外结果。'
+        : '先回测核心量价趋势策略 v1；通过后再把它从草案池提升到正式策略池。',
     },
-    formalStrategies: [],
+    formalStrategies,
     candidates: strategyCandidates.slice(0, 50).map((row) => ({
       action: row.action,
       actionTone: row.actionTone,
@@ -3376,8 +3848,12 @@ function buildLiveStrategySignals() {
     unavailable: [
       {
         id: 'validated_strategy_performance',
-        reason: '当前只有真实截面信号，没有策略级未来收益、回撤、换手和分组收益。',
-        nextAction: '把每个策略的候选名单按日期导出到 JoinQuant 或补齐本地历史行情后逐个回测。',
+        reason: coreStrategyValidated
+          ? '核心量价趋势已有策略级收益结果，但仍缺完整交易净值、换手、最大回撤和成本敏感性。'
+          : '当前只有真实截面信号，没有策略级未来收益、回撤、换手和分组收益。',
+        nextAction: coreStrategyValidated
+          ? '继续用 JoinQuant 策略回测脚本跑交易净值和成本版本，再回填。'
+          : '把每个策略的候选名单按日期导出到 JoinQuant 或补齐本地历史行情后逐个回测。',
       },
       {
         id: 'multi_day_capital_history',
@@ -3597,6 +4073,17 @@ async function handleApi(req, res, pathname) {
     sendText(
       res,
       `m-quant-strategy-${safeFilename(strategyId)}-joinquant-trading-backtest.py`,
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-jq-quality-profit-liquidity-backtest-script.py') {
+    const script = readFileSync(jqQualityProfitLiquidityBacktestScriptPath, 'utf8');
+    sendText(
+      res,
+      'm-quant-jq-quality-profit-liquidity-strategy-backtest.py',
       script,
       'text/x-python; charset=utf-8',
     );

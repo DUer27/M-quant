@@ -1,0 +1,706 @@
+{
+  "result_type": "strategy_backtest",
+  "strategy_id": "kline_assisted_confirmation",
+  "strategy_name": "K线辅助确认策略",
+  "source": "joinquant_emotion_weighted_kline_ohlcv_v1",
+  "data_policy": "真实 JoinQuant OHLCV 计算；240日量能情绪系数来自 volume/money rolling 240；未生成任何虚构收益。",
+  "config": {
+    "index_code": "000300.XSHG",
+    "price_start": "2022-01-01",
+    "factor_start": "2024-01-01",
+    "end_limit": "2026-07-07",
+    "horizons": [
+      5,
+      10,
+      20
+    ],
+    "factor_day_step": 5,
+    "top_n": 30
+  },
+  "sample": {
+    "factor_rows": 35400,
+    "candidate_rows": 3341,
+    "test_dates": 118,
+    "selected_dates": 118
+  },
+  "summary": [
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "horizon": 5,
+      "sample_dates": 118,
+      "sample_trades": 3341,
+      "mean_return": 0.004423840946178232,
+      "median_return": -0.001280409731113874,
+      "positive_ratio": 0.48278958395689914,
+      "daily_mean_return": 0.004706469145857198,
+      "daily_positive_ratio": 0.5508474576271186,
+      "best_daily_return": 0.20672044511362628,
+      "worst_daily_return": -0.1089080642867818,
+      "avg_candidates_per_date": 28.3135593220339,
+      "source": "joinquant_emotion_weighted_kline_ohlcv_v1",
+      "note": "真实 JoinQuant OHLCV 的情绪系数加权K线事件回测；未使用研报不可得字段；不含虚构绩效。"
+    },
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "horizon": 10,
+      "sample_dates": 118,
+      "sample_trades": 3340,
+      "mean_return": 0.008234674216545088,
+      "median_return": -0.001490524838008156,
+      "positive_ratio": 0.4847305389221557,
+      "daily_mean_return": 0.009365940676429926,
+      "daily_positive_ratio": 0.576271186440678,
+      "best_daily_return": 0.21278958389873512,
+      "worst_daily_return": -0.09609812129964208,
+      "avg_candidates_per_date": 28.305084745762713,
+      "source": "joinquant_emotion_weighted_kline_ohlcv_v1",
+      "note": "真实 JoinQuant OHLCV 的情绪系数加权K线事件回测；未使用研报不可得字段；不含虚构绩效。"
+    },
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "horizon": 20,
+      "sample_dates": 118,
+      "sample_trades": 3340,
+      "mean_return": 0.02021054136623878,
+      "median_return": 0.0017003195763989343,
+      "positive_ratio": 0.505688622754491,
+      "daily_mean_return": 0.022485305165683395,
+      "daily_positive_ratio": 0.559322033898305,
+      "best_daily_return": 0.2737468960616169,
+      "worst_daily_return": -0.09756422719821685,
+      "avg_candidates_per_date": 28.305084745762713,
+      "source": "joinquant_emotion_weighted_kline_ohlcv_v1",
+      "note": "真实 JoinQuant OHLCV 的情绪系数加权K线事件回测；未使用研报不可得字段；不含虚构绩效。"
+    }
+  ],
+  "diagnostics_tail": [
+    {
+      "date": "2026-01-12",
+      "universe": 300,
+      "after_entry_rules": 85,
+      "selected": 30
+    },
+    {
+      "date": "2026-01-19",
+      "universe": 300,
+      "after_entry_rules": 57,
+      "selected": 30
+    },
+    {
+      "date": "2026-01-26",
+      "universe": 300,
+      "after_entry_rules": 46,
+      "selected": 30
+    },
+    {
+      "date": "2026-02-02",
+      "universe": 300,
+      "after_entry_rules": 17,
+      "selected": 17
+    },
+    {
+      "date": "2026-02-09",
+      "universe": 300,
+      "after_entry_rules": 58,
+      "selected": 30
+    },
+    {
+      "date": "2026-02-24",
+      "universe": 300,
+      "after_entry_rules": 64,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-03",
+      "universe": 300,
+      "after_entry_rules": 26,
+      "selected": 26
+    },
+    {
+      "date": "2026-03-10",
+      "universe": 300,
+      "after_entry_rules": 61,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-17",
+      "universe": 300,
+      "after_entry_rules": 17,
+      "selected": 17
+    },
+    {
+      "date": "2026-03-24",
+      "universe": 300,
+      "after_entry_rules": 60,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-31",
+      "universe": 300,
+      "after_entry_rules": 9,
+      "selected": 9
+    },
+    {
+      "date": "2026-04-08",
+      "universe": 300,
+      "after_entry_rules": 56,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-15",
+      "universe": 300,
+      "after_entry_rules": 26,
+      "selected": 26
+    },
+    {
+      "date": "2026-04-22",
+      "universe": 300,
+      "after_entry_rules": 62,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-29",
+      "universe": 300,
+      "after_entry_rules": 71,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-11",
+      "universe": 300,
+      "after_entry_rules": 71,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-18",
+      "universe": 300,
+      "after_entry_rules": 42,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-25",
+      "universe": 300,
+      "after_entry_rules": 47,
+      "selected": 30
+    },
+    {
+      "date": "2026-06-01",
+      "universe": 300,
+      "after_entry_rules": 42,
+      "selected": 30
+    },
+    {
+      "date": "2026-06-08",
+      "universe": 300,
+      "after_entry_rules": 22,
+      "selected": 22
+    }
+  ],
+  "candidate_preview": [
+    {
+      "date": "2024-01-02",
+      "code": "000983.XSHE",
+      "strategy_score": 0.7610526315789474,
+      "weighted_kline_score": 0.7854842857142856,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.9195000000000001,
+      "trend_context": 1,
+      "distribution_risk": 0.03900000000000014
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601225.XSHG",
+      "strategy_score": 0.72,
+      "weighted_kline_score": 0.7808747692307686,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8683333333333334,
+      "trend_context": 1,
+      "distribution_risk": 0.033600000000000664
+    },
+    {
+      "date": "2024-01-02",
+      "code": "003816.XSHE",
+      "strategy_score": 0.7184210526315788,
+      "weighted_kline_score": 0.7765233333333331,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.899,
+      "trend_context": 1,
+      "distribution_risk": 0.04550000000000017
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600025.XSHG",
+      "strategy_score": 0.7136842105263158,
+      "weighted_kline_score": 0.9316600000000003,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.7621666666666668,
+      "trend_context": 1,
+      "distribution_risk": 0.010499999999999784
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000100.XSHE",
+      "strategy_score": 0.7026315789473685,
+      "weighted_kline_score": 0.9081875000000013,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.8019999999999999,
+      "trend_context": 1,
+      "distribution_risk": 0.03412499999999924
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601088.XSHG",
+      "strategy_score": 0.6742105263157895,
+      "weighted_kline_score": 0.7677500000000002,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.9286666666666668,
+      "trend_context": 1,
+      "distribution_risk": 0.058499999999999754
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600023.XSHG",
+      "strategy_score": 0.6489473684210526,
+      "weighted_kline_score": 0.8890752941176469,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.8968333333333333,
+      "trend_context": 0.9,
+      "distribution_risk": 0.05620588235294143
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601898.XSHG",
+      "strategy_score": 0.6426315789473684,
+      "weighted_kline_score": 0.7633685714285715,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.883,
+      "trend_context": 1,
+      "distribution_risk": 0.055714285714285494
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600085.XSHG",
+      "strategy_score": 0.6205263157894736,
+      "weighted_kline_score": 0.7732820155038762,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.7413333333333334,
+      "trend_context": 1,
+      "distribution_risk": 0.023279069767441627
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600900.XSHG",
+      "strategy_score": 0.6157894736842106,
+      "weighted_kline_score": 0.7569000000000009,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.829,
+      "trend_context": 1,
+      "distribution_risk": 0.051999999999999116
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600795.XSHG",
+      "strategy_score": 0.5763157894736842,
+      "weighted_kline_score": 0.7490088235294121,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8561666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.0642352941176466
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600011.XSHG",
+      "strategy_score": 0.5076315789473684,
+      "weighted_kline_score": 0.74867705882353,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.763,
+      "trend_context": 0.9,
+      "distribution_risk": 0.024088235294117143
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000999.XSHE",
+      "strategy_score": 0.49815789473684213,
+      "weighted_kline_score": 0.7306800552486186,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8241666666666667,
+      "trend_context": 0.9,
+      "distribution_risk": 0.05580662983425434
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600674.XSHG",
+      "strategy_score": 0.45789473684210535,
+      "weighted_kline_score": 0.7157580000000006,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8981666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.1091999999999995
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600886.XSHG",
+      "strategy_score": 0.41052631578947363,
+      "weighted_kline_score": 0.7150911111111107,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8073333333333335,
+      "trend_context": 1,
+      "distribution_risk": 0.09100000000000036
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300760.XSHE",
+      "strategy_score": 0.3955263157894737,
+      "weighted_kline_score": 0.7205334246575341,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.5743333333333334,
+      "trend_context": 0.9,
+      "distribution_risk": 0.02671232876712351
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601288.XSHG",
+      "strategy_score": 0.39236842105263153,
+      "weighted_kline_score": 0.7196249999999985,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.6831666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.06825000000000152
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601985.XSHG",
+      "strategy_score": 0.3773684210526316,
+      "weighted_kline_score": 0.7097531999999991,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8191666666666666,
+      "trend_context": 1,
+      "distribution_risk": 0.09828000000000081
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600188.XSHG",
+      "strategy_score": 0.3726315789473683,
+      "weighted_kline_score": 0.6954435294117645,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.9345,
+      "trend_context": 0.65,
+      "distribution_risk": 0.05620588235294143
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601699.XSHG",
+      "strategy_score": 0.3473684210526316,
+      "weighted_kline_score": 0.7139511235955065,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.6581666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.06441573033707779
+    },
+    {
+      "date": "2024-01-02",
+      "code": "002001.XSHE",
+      "strategy_score": 0.3402631578947368,
+      "weighted_kline_score": 0.7114394999999999,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.7484999999999999,
+      "trend_context": 0.9,
+      "distribution_risk": 0.061425000000000125
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000408.XSHE",
+      "strategy_score": 0.33157894736842103,
+      "weighted_kline_score": 0.7068483333333336,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.7756666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.09424999999999974
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601919.XSHG",
+      "strategy_score": 0.32210526315789473,
+      "weighted_kline_score": 0.6628266666666667,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.9575,
+      "trend_context": 1,
+      "distribution_risk": 0.28350000000000003
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601006.XSHG",
+      "strategy_score": 0.30552631578947376,
+      "weighted_kline_score": 0.6897333333333333,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.9136666666666666,
+      "trend_context": 0.7999999999999999,
+      "distribution_risk": 0.091
+    },
+    {
+      "date": "2024-01-02",
+      "code": "603392.XSHG",
+      "strategy_score": 0.256578947368421,
+      "weighted_kline_score": 0.6321019560878247,
+      "kline_event_score": -1,
+      "emotion_coefficient_240d": 0.984,
+      "trend_context": 0.9,
+      "distribution_risk": 0.06429940119760451
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000425.XSHE",
+      "strategy_score": 0.21710526315789475,
+      "weighted_kline_score": 0.6832211111111107,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.6896666666666667,
+      "trend_context": 0.75,
+      "distribution_risk": 0.04550000000000046
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601899.XSHG",
+      "strategy_score": 0.21000000000000002,
+      "weighted_kline_score": 0.6963487999999999,
+      "kline_event_score": 1,
+      "emotion_coefficient_240d": 0.5836666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.3217200000000001
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600362.XSHG",
+      "strategy_score": 0.18868421052631576,
+      "weighted_kline_score": 0.6739159999999997,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8104999999999999,
+      "trend_context": 0.75,
+      "distribution_risk": 0.08190000000000025
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000157.XSHE",
+      "strategy_score": 0.18710526315789475,
+      "weighted_kline_score": 0.6890847058823533,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.6626666666666667,
+      "trend_context": 0.85,
+      "distribution_risk": 0.06423529411764681
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000725.XSHE",
+      "strategy_score": 0.10499999999999997,
+      "weighted_kline_score": 0.6347566666666656,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.7073333333333334,
+      "trend_context": 0.75,
+      "distribution_risk": 0.04550000000000101
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601006.XSHG",
+      "strategy_score": 0.7398113207547169,
+      "weighted_kline_score": 0.7972744444444445,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.9468333333333333,
+      "trend_context": 1,
+      "distribution_risk": 0
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600886.XSHG",
+      "strategy_score": 0.7171698113207547,
+      "weighted_kline_score": 0.9255618518518508,
+      "kline_event_score": 4,
+      "emotion_coefficient_240d": 0.6361666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600023.XSHG",
+      "strategy_score": 0.7024528301886791,
+      "weighted_kline_score": 0.9136790909090893,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.7041666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.024818181818183422
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601818.XSHG",
+      "strategy_score": 0.66,
+      "weighted_kline_score": 0.8536333333333344,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.7716666666666667,
+      "trend_context": 0.85,
+      "distribution_risk": 0
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600188.XSHG",
+      "strategy_score": 0.650377358490566,
+      "weighted_kline_score": 0.7510489552238804,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8396666666666668,
+      "trend_context": 1,
+      "distribution_risk": 0.0203731343283585
+    },
+    {
+      "date": "2024-01-09",
+      "code": "002460.XSHE",
+      "strategy_score": 0.6345283018867925,
+      "weighted_kline_score": 0.8705061306532665,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.9373333333333334,
+      "trend_context": 0.65,
+      "distribution_risk": 0.030180904522612878
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300896.XSHE",
+      "strategy_score": 0.6339622641509434,
+      "weighted_kline_score": 0.8428384414864114,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.9851666666666665,
+      "trend_context": 0.45,
+      "distribution_risk": 0.014535773710482649
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601288.XSHG",
+      "strategy_score": 0.6266037735849056,
+      "weighted_kline_score": 0.8731739999999985,
+      "kline_event_score": 0.5,
+      "emotion_coefficient_240d": 0.7618333333333335,
+      "trend_context": 1,
+      "distribution_risk": 0.05460000000000146
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600015.XSHG",
+      "strategy_score": 0.6141509433962263,
+      "weighted_kline_score": 0.8952975000000007,
+      "kline_event_score": 2.5,
+      "emotion_coefficient_240d": 0.5898333333333333,
+      "trend_context": 1,
+      "distribution_risk": 0.03412499999999924
+    },
+    {
+      "date": "2024-01-09",
+      "code": "003816.XSHE",
+      "strategy_score": 0.580188679245283,
+      "weighted_kline_score": 0.745206153846154,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.8926666666666666,
+      "trend_context": 1,
+      "distribution_risk": 0.041999999999999926
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600018.XSHG",
+      "strategy_score": 0.5756603773584905,
+      "weighted_kline_score": 0.7436200000000005,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.7505000000000002,
+      "trend_context": 1,
+      "distribution_risk": 0.019499999999999625
+    },
+    {
+      "date": "2024-01-09",
+      "code": "000895.XSHE",
+      "strategy_score": 0.5473584905660378,
+      "weighted_kline_score": 0.8413208108108119,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.4818333333333334,
+      "trend_context": 1,
+      "distribution_risk": 0.022135135135135913
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600795.XSHG",
+      "strategy_score": 0.5371698113207547,
+      "weighted_kline_score": 0.8483675000000002,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.5163333333333333,
+      "trend_context": 1,
+      "distribution_risk": 0.03412499999999924
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601088.XSHG",
+      "strategy_score": 0.5337735849056603,
+      "weighted_kline_score": 0.7294612195121952,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.7606666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.029963414634146285
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601328.XSHG",
+      "strategy_score": 0.5252830188679245,
+      "weighted_kline_score": 0.8562875000000008,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.6153333333333333,
+      "trend_context": 0.85,
+      "distribution_risk": 0.03412499999999924
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601225.XSHG",
+      "strategy_score": 0.5009433962264151,
+      "weighted_kline_score": 0.7224324999999986,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.7979999999999999,
+      "trend_context": 1,
+      "distribution_risk": 0.04387500000000148
+    },
+    {
+      "date": "2024-01-09",
+      "code": "300763.XSHE",
+      "strategy_score": 0.49754716981132086,
+      "weighted_kline_score": 0.8214627539062502,
+      "kline_event_score": 2,
+      "emotion_coefficient_240d": 0.9818333333333333,
+      "trend_context": 0.65,
+      "distribution_risk": 0.07651464843749979
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600900.XSHG",
+      "strategy_score": 0.4771698113207547,
+      "weighted_kline_score": 0.70723,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.9015,
+      "trend_context": 1,
+      "distribution_risk": 0.06066666666666816
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601985.XSHG",
+      "strategy_score": 0.45679245283018866,
+      "weighted_kline_score": 0.7142921052631579,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.7951666666666667,
+      "trend_context": 1,
+      "distribution_risk": 0.057473684210526246
+    },
+    {
+      "date": "2024-01-09",
+      "code": "002001.XSHE",
+      "strategy_score": 0.4341509433962264,
+      "weighted_kline_score": 0.6971957142857138,
+      "kline_event_score": 0,
+      "emotion_coefficient_240d": 0.6431666666666667,
+      "trend_context": 0.9,
+      "distribution_risk": 0.01671428571428634
+    }
+  ]
+}

@@ -1,0 +1,723 @@
+{
+  "result_type": "strategy_backtest",
+  "strategy_id": "capital_follow_v0",
+  "strategy_name": "资金跟随策略 v0",
+  "source": "joinquant_money_flow_capital_follow_v0",
+  "data_policy": "真实 JoinQuant money_flow、OHLCV、valuation 计算；未生成任何虚构收益；未复刻 Yiwan 暗盘字段。",
+  "config": {
+    "index_code": "000300.XSHG",
+    "price_start": "2022-12-01",
+    "factor_start": "2024-01-01",
+    "end_limit": "2026-07-07",
+    "horizons": [
+      5,
+      10,
+      20
+    ],
+    "factor_day_step": 5,
+    "top_n": 30,
+    "factor_weights": {
+      "capital_follow_signal": 0.4,
+      "active_large_order_accumulation": 0.25,
+      "main_force_alignment": 0.2,
+      "capital_persistence_5d": 0.15,
+      "capital_overheat_risk": -0.25
+    },
+    "money_flow_fields": [
+      "net_amount_main",
+      "net_pct_main",
+      "net_amount_xl",
+      "net_pct_xl",
+      "net_amount_l",
+      "net_pct_l",
+      "net_amount_s",
+      "net_pct_s"
+    ]
+  },
+  "sample": {
+    "factor_rows": 35400,
+    "candidate_rows": 3540,
+    "test_dates": 118,
+    "selected_dates": 118
+  },
+  "summary": [
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "capital_follow_v0",
+      "strategy_name": "资金跟随策略 v0",
+      "horizon": 5,
+      "sample_dates": 118,
+      "sample_trades": 3540,
+      "mean_return": 0.0020963322877211262,
+      "median_return": -0.001566589017867992,
+      "positive_ratio": 0.4703389830508475,
+      "daily_mean_return": 0.0020963322877211193,
+      "daily_positive_ratio": 0.5338983050847458,
+      "best_daily_return": 0.22087604957387683,
+      "worst_daily_return": -0.05168077117907024,
+      "avg_candidates_per_date": 30,
+      "source": "joinquant_money_flow_capital_follow_v0",
+      "note": "真实 JoinQuant money_flow/OHLCV/valuation 资金跟随事件回测；未复刻 Yiwan 暗盘字段；不含虚构绩效。"
+    },
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "capital_follow_v0",
+      "strategy_name": "资金跟随策略 v0",
+      "horizon": 10,
+      "sample_dates": 118,
+      "sample_trades": 3540,
+      "mean_return": 0.0050844425190283695,
+      "median_return": -0.0015318287353716098,
+      "positive_ratio": 0.47994350282485876,
+      "daily_mean_return": 0.005084442519028369,
+      "daily_positive_ratio": 0.5254237288135594,
+      "best_daily_return": 0.27577847048362075,
+      "worst_daily_return": -0.08635888145303856,
+      "avg_candidates_per_date": 30,
+      "source": "joinquant_money_flow_capital_follow_v0",
+      "note": "真实 JoinQuant money_flow/OHLCV/valuation 资金跟随事件回测；未复刻 Yiwan 暗盘字段；不含虚构绩效。"
+    },
+    {
+      "result_type": "strategy_backtest",
+      "strategy_id": "capital_follow_v0",
+      "strategy_name": "资金跟随策略 v0",
+      "horizon": 20,
+      "sample_dates": 118,
+      "sample_trades": 3540,
+      "mean_return": 0.01267018115990913,
+      "median_return": 0.0000833750208437678,
+      "positive_ratio": 0.5,
+      "daily_mean_return": 0.012670181159909095,
+      "daily_positive_ratio": 0.5932203389830508,
+      "best_daily_return": 0.2850306952261595,
+      "worst_daily_return": -0.06878540641181428,
+      "avg_candidates_per_date": 30,
+      "source": "joinquant_money_flow_capital_follow_v0",
+      "note": "真实 JoinQuant money_flow/OHLCV/valuation 资金跟随事件回测；未复刻 Yiwan 暗盘字段；不含虚构绩效。"
+    }
+  ],
+  "diagnostics_tail": [
+    {
+      "date": "2026-01-12",
+      "universe": 300,
+      "after_entry_rules": 70,
+      "selected": 30
+    },
+    {
+      "date": "2026-01-19",
+      "universe": 300,
+      "after_entry_rules": 80,
+      "selected": 30
+    },
+    {
+      "date": "2026-01-26",
+      "universe": 300,
+      "after_entry_rules": 95,
+      "selected": 30
+    },
+    {
+      "date": "2026-02-02",
+      "universe": 300,
+      "after_entry_rules": 74,
+      "selected": 30
+    },
+    {
+      "date": "2026-02-09",
+      "universe": 300,
+      "after_entry_rules": 70,
+      "selected": 30
+    },
+    {
+      "date": "2026-02-24",
+      "universe": 300,
+      "after_entry_rules": 72,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-03",
+      "universe": 300,
+      "after_entry_rules": 51,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-10",
+      "universe": 300,
+      "after_entry_rules": 76,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-17",
+      "universe": 300,
+      "after_entry_rules": 69,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-24",
+      "universe": 300,
+      "after_entry_rules": 67,
+      "selected": 30
+    },
+    {
+      "date": "2026-03-31",
+      "universe": 300,
+      "after_entry_rules": 57,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-08",
+      "universe": 300,
+      "after_entry_rules": 73,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-15",
+      "universe": 300,
+      "after_entry_rules": 87,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-22",
+      "universe": 300,
+      "after_entry_rules": 70,
+      "selected": 30
+    },
+    {
+      "date": "2026-04-29",
+      "universe": 300,
+      "after_entry_rules": 77,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-11",
+      "universe": 300,
+      "after_entry_rules": 69,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-18",
+      "universe": 300,
+      "after_entry_rules": 58,
+      "selected": 30
+    },
+    {
+      "date": "2026-05-25",
+      "universe": 300,
+      "after_entry_rules": 77,
+      "selected": 30
+    },
+    {
+      "date": "2026-06-01",
+      "universe": 300,
+      "after_entry_rules": 71,
+      "selected": 30
+    },
+    {
+      "date": "2026-06-08",
+      "universe": 300,
+      "after_entry_rules": 62,
+      "selected": 30
+    }
+  ],
+  "candidate_preview": [
+    {
+      "date": "2024-01-02",
+      "code": "600039.XSHG",
+      "strategy_score": 1.1158333333333332,
+      "capital_follow_signal": 0.8571860000000001,
+      "active_large_order_accumulation": 0.9229333333333334,
+      "main_force_alignment": 0.9790666666666668,
+      "capital_persistence_5d": 0.92825,
+      "capital_overheat_risk": 0.4090666666666667
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600406.XSHG",
+      "strategy_score": 1.1141666666666665,
+      "capital_follow_signal": 0.8740993333333333,
+      "active_large_order_accumulation": 0.8810000000000001,
+      "main_force_alignment": 0.9992,
+      "capital_persistence_5d": 0.9707499999999999,
+      "capital_overheat_risk": 0.4499333333333334
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000069.XSHE",
+      "strategy_score": 0.9708333333333333,
+      "capital_follow_signal": 0.7962193333333334,
+      "active_large_order_accumulation": 0.7598666666666667,
+      "main_force_alignment": 0.9753333333333333,
+      "capital_persistence_5d": 0.9494166666666667,
+      "capital_overheat_risk": 0.3718
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600029.XSHG",
+      "strategy_score": 0.9708333333333333,
+      "capital_follow_signal": 0.823796,
+      "active_large_order_accumulation": 0.8772,
+      "main_force_alignment": 0.9545333333333333,
+      "capital_persistence_5d": 0.92675,
+      "capital_overheat_risk": 0.5161
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600050.XSHG",
+      "strategy_score": 0.9441666666666666,
+      "capital_follow_signal": 0.8228286666666668,
+      "active_large_order_accumulation": 0.9253333333333333,
+      "main_force_alignment": 0.9645,
+      "capital_persistence_5d": 0.8750833333333332,
+      "capital_overheat_risk": 0.5913333333333334
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600000.XSHG",
+      "strategy_score": 0.9341666666666668,
+      "capital_follow_signal": 0.7873286666666667,
+      "active_large_order_accumulation": 0.7725333333333333,
+      "main_force_alignment": 0.9860666666666666,
+      "capital_persistence_5d": 0.8404166666666666,
+      "capital_overheat_risk": 0.3458
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601100.XSHG",
+      "strategy_score": 0.9341666666666666,
+      "capital_follow_signal": 0.8119313333333332,
+      "active_large_order_accumulation": 0.9137333333333333,
+      "main_force_alignment": 0.9993333333333334,
+      "capital_persistence_5d": 0.8977499999999999,
+      "capital_overheat_risk": 0.7439333333333334
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601669.XSHG",
+      "strategy_score": 0.9199999999999999,
+      "capital_follow_signal": 0.7929446666666667,
+      "active_large_order_accumulation": 0.8957666666666667,
+      "main_force_alignment": 0.7932,
+      "capital_persistence_5d": 0.8434166666666666,
+      "capital_overheat_risk": 0.41636666666666666
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600028.XSHG",
+      "strategy_score": 0.9108333333333334,
+      "capital_follow_signal": 0.8098800000000002,
+      "active_large_order_accumulation": 0.8195,
+      "main_force_alignment": 0.9854,
+      "capital_persistence_5d": 0.8765833333333333,
+      "capital_overheat_risk": 0.5383333333333333
+    },
+    {
+      "date": "2024-01-02",
+      "code": "002415.XSHE",
+      "strategy_score": 0.9075,
+      "capital_follow_signal": 0.79089,
+      "active_large_order_accumulation": 0.716,
+      "main_force_alignment": 0.9589333333333333,
+      "capital_persistence_5d": 0.98725,
+      "capital_overheat_risk": 0.3626
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601939.XSHG",
+      "strategy_score": 0.8925000000000001,
+      "capital_follow_signal": 0.8141120000000001,
+      "active_large_order_accumulation": 0.7686999999999999,
+      "main_force_alignment": 0.9693333333333333,
+      "capital_persistence_5d": 0.9882500000000001,
+      "capital_overheat_risk": 0.5370666666666667
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601111.XSHG",
+      "strategy_score": 0.89,
+      "capital_follow_signal": 0.7920653333333335,
+      "active_large_order_accumulation": 0.8934333333333334,
+      "main_force_alignment": 0.9839333333333333,
+      "capital_persistence_5d": 0.8029166666666666,
+      "capital_overheat_risk": 0.581
+    },
+    {
+      "date": "2024-01-02",
+      "code": "601985.XSHG",
+      "strategy_score": 0.8891666666666667,
+      "capital_follow_signal": 0.8015033333333333,
+      "active_large_order_accumulation": 0.835,
+      "main_force_alignment": 0.9657333333333333,
+      "capital_persistence_5d": 0.9730833333333333,
+      "capital_overheat_risk": 0.6455000000000001
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600023.XSHG",
+      "strategy_score": 0.8658333333333335,
+      "capital_follow_signal": 0.7883753333333334,
+      "active_large_order_accumulation": 0.8695333333333333,
+      "main_force_alignment": 0.9728,
+      "capital_persistence_5d": 0.96775,
+      "capital_overheat_risk": 0.7240666666666667
+    },
+    {
+      "date": "2024-01-02",
+      "code": "300454.XSHE",
+      "strategy_score": 0.8608333333333333,
+      "capital_follow_signal": 0.7914233333333333,
+      "active_large_order_accumulation": 0.8557333333333335,
+      "main_force_alignment": 0.9502666666666666,
+      "capital_persistence_5d": 0.8755833333333333,
+      "capital_overheat_risk": 0.4908666666666667
+    },
+    {
+      "date": "2024-01-02",
+      "code": "002916.XSHE",
+      "strategy_score": 0.8366666666666667,
+      "capital_follow_signal": 0.7728,
+      "active_large_order_accumulation": 0.7777333333333334,
+      "main_force_alignment": 0.9412666666666667,
+      "capital_persistence_5d": 0.8645833333333334,
+      "capital_overheat_risk": 0.37603333333333333
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000301.XSHE",
+      "strategy_score": 0.8300000000000001,
+      "capital_follow_signal": 0.7756686666666668,
+      "active_large_order_accumulation": 0.6344666666666667,
+      "main_force_alignment": 0.9584666666666667,
+      "capital_persistence_5d": 0.9402499999999999,
+      "capital_overheat_risk": 0.35746666666666665
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600905.XSHG",
+      "strategy_score": 0.8116666666666668,
+      "capital_follow_signal": 0.7746020000000001,
+      "active_large_order_accumulation": 0.7850666666666666,
+      "main_force_alignment": 0.9086666666666667,
+      "capital_persistence_5d": 0.9160833333333334,
+      "capital_overheat_risk": 0.45386666666666675
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600150.XSHG",
+      "strategy_score": 0.7933333333333333,
+      "capital_follow_signal": 0.7640606666666667,
+      "active_large_order_accumulation": 0.858,
+      "main_force_alignment": 0.9914666666666667,
+      "capital_persistence_5d": 0.8364166666666666,
+      "capital_overheat_risk": 0.7194666666666667
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600845.XSHG",
+      "strategy_score": 0.78,
+      "capital_follow_signal": 0.7531946666666667,
+      "active_large_order_accumulation": 0.7032999999999999,
+      "main_force_alignment": 0.9182,
+      "capital_persistence_5d": 0.7967500000000001,
+      "capital_overheat_risk": 0.183
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600570.XSHG",
+      "strategy_score": 0.7491666666666668,
+      "capital_follow_signal": 0.7597320000000001,
+      "active_large_order_accumulation": 0.8284666666666667,
+      "main_force_alignment": 0.9432666666666667,
+      "capital_persistence_5d": 0.7505833333333333,
+      "capital_overheat_risk": 0.48163333333333336
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600900.XSHG",
+      "strategy_score": 0.7150000000000001,
+      "capital_follow_signal": 0.7213606666666667,
+      "active_large_order_accumulation": 0.8102666666666667,
+      "main_force_alignment": 0.7603333333333333,
+      "capital_persistence_5d": 0.8675833333333333,
+      "capital_overheat_risk": 0.4516
+    },
+    {
+      "date": "2024-01-02",
+      "code": "603260.XSHG",
+      "strategy_score": 0.7108333333333334,
+      "capital_follow_signal": 0.7565799999999999,
+      "active_large_order_accumulation": 0.9166333333333333,
+      "main_force_alignment": 0.8173999999999999,
+      "capital_persistence_5d": 0.8474166666666667,
+      "capital_overheat_risk": 0.7427333333333334
+    },
+    {
+      "date": "2024-01-02",
+      "code": "603288.XSHG",
+      "strategy_score": 0.7108333333333333,
+      "capital_follow_signal": 0.7138813333333334,
+      "active_large_order_accumulation": 0.7698333333333334,
+      "main_force_alignment": 0.7612,
+      "capital_persistence_5d": 0.7440833333333333,
+      "capital_overheat_risk": 0.2132
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600233.XSHG",
+      "strategy_score": 0.7083333333333335,
+      "capital_follow_signal": 0.7265613333333334,
+      "active_large_order_accumulation": 0.6893,
+      "main_force_alignment": 0.7638666666666667,
+      "capital_persistence_5d": 0.9007499999999999,
+      "capital_overheat_risk": 0.402
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000338.XSHE",
+      "strategy_score": 0.6858333333333334,
+      "capital_follow_signal": 0.7263806666666666,
+      "active_large_order_accumulation": 0.8649666666666667,
+      "main_force_alignment": 0.9821333333333333,
+      "capital_persistence_5d": 0.7136666666666667,
+      "capital_overheat_risk": 0.7526
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600011.XSHG",
+      "strategy_score": 0.6516666666666666,
+      "capital_follow_signal": 0.73662,
+      "active_large_order_accumulation": 0.8561000000000001,
+      "main_force_alignment": 0.9435,
+      "capital_persistence_5d": 0.7980833333333334,
+      "capital_overheat_risk": 0.7602666666666668
+    },
+    {
+      "date": "2024-01-02",
+      "code": "600019.XSHG",
+      "strategy_score": 0.6475,
+      "capital_follow_signal": 0.6986833333333334,
+      "active_large_order_accumulation": 0.8071999999999999,
+      "main_force_alignment": 0.7587333333333334,
+      "capital_persistence_5d": 0.8500833333333333,
+      "capital_overheat_risk": 0.4718
+    },
+    {
+      "date": "2024-01-02",
+      "code": "603195.XSHG",
+      "strategy_score": 0.645,
+      "capital_follow_signal": 0.6366173333333334,
+      "active_large_order_accumulation": 0.7872000000000001,
+      "main_force_alignment": 0.9725333333333334,
+      "capital_persistence_5d": 0.3245,
+      "capital_overheat_risk": 0.3232666666666667
+    },
+    {
+      "date": "2024-01-02",
+      "code": "000166.XSHE",
+      "strategy_score": 0.6066666666666667,
+      "capital_follow_signal": 0.6704126666666668,
+      "active_large_order_accumulation": 0.6712,
+      "main_force_alignment": 0.9088666666666667,
+      "capital_persistence_5d": 0.6645833333333333,
+      "capital_overheat_risk": 0.31766666666666665
+    },
+    {
+      "date": "2024-01-09",
+      "code": "000333.XSHE",
+      "strategy_score": 1.101923076923077,
+      "capital_follow_signal": 0.8946913333333334,
+      "active_large_order_accumulation": 0.9611333333333333,
+      "main_force_alignment": 0.9923666666666666,
+      "capital_persistence_5d": 0.9749166666666667,
+      "capital_overheat_risk": 0.4741333333333334
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601398.XSHG",
+      "strategy_score": 1.0961538461538463,
+      "capital_follow_signal": 0.8473546666666667,
+      "active_large_order_accumulation": 0.8450333333333333,
+      "main_force_alignment": 0.9526666666666667,
+      "capital_persistence_5d": 0.9574166666666666,
+      "capital_overheat_risk": 0.31123333333333336
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601988.XSHG",
+      "strategy_score": 1.044871794871795,
+      "capital_follow_signal": 0.8152093333333333,
+      "active_large_order_accumulation": 0.7884333333333333,
+      "main_force_alignment": 0.9677333333333333,
+      "capital_persistence_5d": 0.90975,
+      "capital_overheat_risk": 0.26526666666666665
+    },
+    {
+      "date": "2024-01-09",
+      "code": "002027.XSHE",
+      "strategy_score": 1.035897435897436,
+      "capital_follow_signal": 0.8502473333333334,
+      "active_large_order_accumulation": 0.8158666666666666,
+      "main_force_alignment": 0.9346,
+      "capital_persistence_5d": 0.9862500000000001,
+      "capital_overheat_risk": 0.369
+    },
+    {
+      "date": "2024-01-09",
+      "code": "603260.XSHG",
+      "strategy_score": 1.0326923076923076,
+      "capital_follow_signal": 0.8162646666666667,
+      "active_large_order_accumulation": 0.8100666666666667,
+      "main_force_alignment": 0.9916,
+      "capital_persistence_5d": 0.9379166666666666,
+      "capital_overheat_risk": 0.4244
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601658.XSHG",
+      "strategy_score": 0.9826923076923078,
+      "capital_follow_signal": 0.8243779999999999,
+      "active_large_order_accumulation": 0.8693333333333333,
+      "main_force_alignment": 0.7967,
+      "capital_persistence_5d": 0.9194166666666667,
+      "capital_overheat_risk": 0.3687333333333333
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600039.XSHG",
+      "strategy_score": 0.9717948717948718,
+      "capital_follow_signal": 0.7795620000000001,
+      "active_large_order_accumulation": 0.772,
+      "main_force_alignment": 0.9873333333333333,
+      "capital_persistence_5d": 0.9070833333333332,
+      "capital_overheat_risk": 0.3593333333333333
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600089.XSHG",
+      "strategy_score": 0.9314102564102564,
+      "capital_follow_signal": 0.8006886666666668,
+      "active_large_order_accumulation": 0.9102,
+      "main_force_alignment": 0.9842,
+      "capital_persistence_5d": 0.8935833333333333,
+      "capital_overheat_risk": 0.6977333333333333
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600519.XSHG",
+      "strategy_score": 0.9307692307692308,
+      "capital_follow_signal": 0.7912786666666667,
+      "active_large_order_accumulation": 0.8229333333333334,
+      "main_force_alignment": 0.7598666666666667,
+      "capital_persistence_5d": 0.8871666666666667,
+      "capital_overheat_risk": 0.28673333333333334
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601838.XSHG",
+      "strategy_score": 0.9301282051282052,
+      "capital_follow_signal": 0.7914539999999999,
+      "active_large_order_accumulation": 0.8815333333333333,
+      "main_force_alignment": 0.9874,
+      "capital_persistence_5d": 0.9272499999999999,
+      "capital_overheat_risk": 0.7383666666666666
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601766.XSHG",
+      "strategy_score": 0.9044871794871796,
+      "capital_follow_signal": 0.7872133333333335,
+      "active_large_order_accumulation": 0.8522666666666668,
+      "main_force_alignment": 0.9629333333333333,
+      "capital_persistence_5d": 0.8381666666666667,
+      "capital_overheat_risk": 0.5230666666666667
+    },
+    {
+      "date": "2024-01-09",
+      "code": "603806.XSHG",
+      "strategy_score": 0.8801282051282051,
+      "capital_follow_signal": 0.7823553333333334,
+      "active_large_order_accumulation": 0.8390666666666667,
+      "main_force_alignment": 0.9806666666666667,
+      "capital_persistence_5d": 0.9684166666666667,
+      "capital_overheat_risk": 0.7462
+    },
+    {
+      "date": "2024-01-09",
+      "code": "002603.XSHE",
+      "strategy_score": 0.8775641025641027,
+      "capital_follow_signal": 0.7728293333333334,
+      "active_large_order_accumulation": 0.8432666666666667,
+      "main_force_alignment": 0.932,
+      "capital_persistence_5d": 0.8183333333333334,
+      "capital_overheat_risk": 0.41300000000000003
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601898.XSHG",
+      "strategy_score": 0.858974358974359,
+      "capital_follow_signal": 0.7840626666666667,
+      "active_large_order_accumulation": 0.8106,
+      "main_force_alignment": 0.9531333333333334,
+      "capital_persistence_5d": 0.9550833333333333,
+      "capital_overheat_risk": 0.6065666666666667
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600028.XSHG",
+      "strategy_score": 0.8576923076923078,
+      "capital_follow_signal": 0.7480753333333334,
+      "active_large_order_accumulation": 0.8028,
+      "main_force_alignment": 0.7166,
+      "capital_persistence_5d": 0.9620833333333333,
+      "capital_overheat_risk": 0.2586333333333333
+    },
+    {
+      "date": "2024-01-09",
+      "code": "603993.XSHG",
+      "strategy_score": 0.8423076923076922,
+      "capital_follow_signal": 0.7909906666666668,
+      "active_large_order_accumulation": 0.8082666666666667,
+      "main_force_alignment": 0.9636666666666667,
+      "capital_persistence_5d": 0.9068333333333334,
+      "capital_overheat_risk": 0.6515333333333333
+    },
+    {
+      "date": "2024-01-09",
+      "code": "000425.XSHE",
+      "strategy_score": 0.8416666666666666,
+      "capital_follow_signal": 0.7770673333333333,
+      "active_large_order_accumulation": 0.8421333333333334,
+      "main_force_alignment": 0.9301666666666667,
+      "capital_persistence_5d": 0.7584166666666666,
+      "capital_overheat_risk": 0.4378666666666667
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601985.XSHG",
+      "strategy_score": 0.8275641025641026,
+      "capital_follow_signal": 0.7869313333333335,
+      "active_large_order_accumulation": 0.751,
+      "main_force_alignment": 0.9594,
+      "capital_persistence_5d": 0.9930833333333333,
+      "capital_overheat_risk": 0.5614666666666666
+    },
+    {
+      "date": "2024-01-09",
+      "code": "600000.XSHG",
+      "strategy_score": 0.8153846153846154,
+      "capital_follow_signal": 0.7643660000000001,
+      "active_large_order_accumulation": 0.7686666666666667,
+      "main_force_alignment": 0.9635333333333334,
+      "capital_persistence_5d": 0.8170833333333334,
+      "capital_overheat_risk": 0.4497333333333334
+    },
+    {
+      "date": "2024-01-09",
+      "code": "601728.XSHG",
+      "strategy_score": 0.8141025641025641,
+      "capital_follow_signal": 0.7413386666666668,
+      "active_large_order_accumulation": 0.8055333333333334,
+      "main_force_alignment": 0.9798,
+      "capital_persistence_5d": 0.7010000000000001,
+      "capital_overheat_risk": 0.4292
+    }
+  ]
+}
