@@ -20,10 +20,11 @@
         <nav class="nav">
           <button class="active" data-view-target="dashboard">总览</button>
           <button data-view-target="factor-library">因子库</button>
-          <button data-view-target="strategy-library">策略集</button>
+          <button data-view-target="strategy-library">策略池</button>
           <button data-view-target="research-pipeline">研究流水线</button>
           <button data-view-target="backtest-center">回测中心</button>
           <button data-view-target="validated-results">实测结果</button>
+          <button data-view-target="strategy-results">策略实测</button>
           <button data-view-target="dashboard">风控监控</button>
           <button data-view-target="dashboard">系统配置</button>
         </nav>
@@ -278,57 +279,77 @@
         </div>
 
         <div id="strategy-library-view" class="view">
-          <section class="metrics-grid" aria-label="策略集指标">
+          <section class="metrics-grid" aria-label="策略池指标">
             <article class="metric">
-              <span>入池候选</span>
+              <span>草案策略</span>
               <strong id="strategy-strong-count">-</strong>
-              <small>核心策略通过</small>
+              <small>待复测方案</small>
             </article>
             <article class="metric">
-              <span>低仓观察</span>
+              <span>核心入池</span>
               <strong id="strategy-observation-count">-</strong>
-              <small>等待二次确认</small>
+              <small>量价趋势通过</small>
             </article>
             <article class="metric">
-              <span>部分可用</span>
+              <span>资金候选</span>
               <strong id="strategy-partial-count">-</strong>
-              <small>规则未完全闭环</small>
+              <small>待策略复测</small>
             </article>
             <article class="metric">
-              <span>待数据策略</span>
+              <span>正式策略</span>
               <strong id="strategy-blocked-count">-</strong>
-              <small>缺资金/历史字段</small>
+              <small>已回测通过</small>
             </article>
           </section>
 
           <section class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Live Strategy Signals</p>
-                <h2>策略工作台</h2>
+                <p class="eyebrow">Draft Strategy Pool</p>
+                <h2>策略草案池</h2>
+              </div>
+              <div class="draft-strategy-tools">
+                <input id="draft-strategy-search" type="search" placeholder="搜索草案" aria-label="搜索草案策略" />
+                <select id="draft-strategy-jump" aria-label="跳转草案策略">
+                  <option value="">全部草案</option>
+                </select>
+                <button id="draft-strategy-toggle" type="button">展开全部</button>
               </div>
             </div>
             <div class="library-source" id="strategy-source-file">策略数据源等待加载</div>
             <div id="strategy-live-list" class="strategy-list"></div>
+            <div id="draft-strategy-pagination" class="pagination compact"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Validated Strategy Pool</p>
+                <h2>正式策略池</h2>
+              </div>
+            </div>
+            <div class="library-source" id="formal-strategy-policy">正式策略池等待加载</div>
+            <div id="formal-strategy-list" class="status-list"></div>
           </section>
 
           <section class="panel">
             <div class="panel-head">
               <div>
                 <p class="eyebrow">Decision Candidates</p>
-                <h2>真实策略候选</h2>
+                <h2>草案候选明细</h2>
               </div>
             </div>
             <table>
               <thead>
                 <tr>
+                  <th>策略/日期</th>
                   <th>股票</th>
                   <th>决策分</th>
-                  <th>趋势</th>
-                  <th>量价</th>
-                  <th>拥挤</th>
-                  <th>背离</th>
-                  <th>警报</th>
+                  <th>趋势/资金</th>
+                  <th>量价/吸筹</th>
+                  <th>拥挤/过热</th>
+                  <th>背离/持续</th>
+                  <th>警报/来源</th>
                   <th>动作</th>
                   <th>仓位</th>
                   <th>原因</th>
@@ -603,6 +624,66 @@
               </table>
             </div>
             <div id="backtest-result-notes" class="result-notes"></div>
+          </section>
+        </div>
+
+        <div id="strategy-results-view" class="view">
+          <section class="metrics-grid" aria-label="策略实测摘要">
+            <article class="metric">
+              <span>策略结果</span>
+              <strong id="strategy-result-count">-</strong>
+              <small>真实回填记录</small>
+            </article>
+            <article class="metric">
+              <span>覆盖策略</span>
+              <strong id="strategy-result-strategy-count">-</strong>
+              <small>已产生结果的策略</small>
+            </article>
+            <article class="metric">
+              <span>样本交易</span>
+              <strong id="strategy-result-trade-count">-</strong>
+              <small>候选/成交样本</small>
+            </article>
+            <article class="metric">
+              <span>最佳周期</span>
+              <strong id="strategy-result-best-horizon">-</strong>
+              <small>按平均收益观察</small>
+            </article>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Strategy Results</p>
+                <h2>策略实测结果</h2>
+              </div>
+		            </div>
+		            <div id="strategy-result-directory" class="factor-directory" aria-label="策略实测目录"></div>
+		            <div id="strategy-result-regime-filter" class="strategy-regime-filter" aria-label="策略实测市场状态筛选"></div>
+		            <div id="strategy-result-size-filter" class="strategy-regime-filter" aria-label="策略实测市值分层筛选"></div>
+		            <div id="strategy-result-summary" class="result-summary-grid"></div>
+            <div class="table-scroll result-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+		                    <th>策略</th>
+		                    <th>周期</th>
+		                    <th>市场状态</th>
+		                    <th>市值层</th>
+		                    <th>样本</th>
+	                    <th>平均收益</th>
+                    <th>日均收益</th>
+                    <th>正向占比</th>
+                    <th>最好/最差日</th>
+                    <th>候选数</th>
+                    <th>来源</th>
+                    <th>判断</th>
+                  </tr>
+                </thead>
+                <tbody id="strategy-result-table"></tbody>
+              </table>
+            </div>
+            <div id="strategy-result-notes" class="result-notes"></div>
           </section>
         </div>
       </main>
