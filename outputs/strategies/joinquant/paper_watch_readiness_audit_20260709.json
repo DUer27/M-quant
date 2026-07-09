@@ -1,6 +1,6 @@
 {
   "source": "joinquant_paper_watch_readiness_audit",
-  "generated_at": "2026-07-09T15:07:33",
+  "generated_at": "2026-07-09T15:18:38",
   "input": {
     "maturity_audit": "outputs/strategies/joinquant/strategy_maturity_audit_20260709.json",
     "imported_backtests": "platform/quant-factor-platform/data/imported-backtest-results.json"
@@ -16,7 +16,7 @@
     "min_avg_selected_count": 10,
     "max_recency_days": 180
   },
-  "route_count": 9,
+  "route_count": 10,
   "recommended_route_count": 2,
   "recommended_routes": [
     {
@@ -39,30 +39,30 @@
       "paper_scope": "仅限 高波动，不得扩展到未通过分层。"
     },
     {
-      "strategy_id": "kline_assisted_confirmation",
-      "strategy_name": "K线辅助确认策略",
-      "layer": "低波动",
-      "market_regime": "low_volatility",
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "strategy_name": "市场状态切换策略 v1",
+      "layer": "高低波动切换",
+      "market_regime": "adaptive_high_low_volatility",
       "market_cap_bucket": null,
-      "sample_dates": 31,
-      "strategy_return": 0.3563799970244368,
+      "sample_dates": 70,
+      "strategy_return": 0.8328872072774001,
       "annual_return": null,
-      "max_drawdown": -0.04105313516809139,
-      "sharpe": 1.8620972822480988,
-      "win_rate": 0.6451612903225806,
-      "avg_selected_count": 28.548387096774192,
-      "readiness_decision": "conditional_paper_watch",
-      "readiness_reason": "硬门槛、成本压力和前后半段通过，但近期未触发该分层，只能等环境出现后观察。",
-      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
-      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
-      "paper_scope": "仅限 低波动，不得扩展到未通过分层。"
+      "max_drawdown": -0.09068798084469964,
+      "sharpe": 1.8039399491070465,
+      "win_rate": 0.6285714285714286,
+      "avg_selected_count": 29.357142857142858,
+      "readiness_decision": "ready_controlled_paper_watch",
+      "readiness_reason": "硬门槛、成本压力、前后半段和近期触发均通过。",
+      "source": "derived_from_joinquant_real_trading_curves",
+      "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。",
+      "paper_scope": "仅限 高低波动切换，不得扩展到未通过分层。"
     }
   ],
   "decision_counts": {
     "not_ready": 3,
     "conditional_recheck_required": 3,
     "conditional_paper_watch": 2,
-    "ready_controlled_paper_watch": 1
+    "ready_controlled_paper_watch": 2
   },
   "routes": [
     {
@@ -1261,6 +1261,139 @@
       },
       "source": "joinquant_money_flow_kline_confirmation_v0_trading_simulation_v1",
       "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "strategy_name": "市场状态切换策略 v1",
+      "allowed_layer": "高低波动切换",
+      "allowed_market_regime": "adaptive_high_low_volatility",
+      "allowed_market_cap_bucket": null,
+      "decision": "ready_controlled_paper_watch",
+      "decision_reason": "硬门槛、成本压力、前后半段和近期触发均通过。",
+      "checks": [
+        {
+          "name": "periods",
+          "passed": true,
+          "detail": "70 >= 30"
+        },
+        {
+          "name": "strategy_return",
+          "passed": true,
+          "detail": "0.8329 >= 0.2000"
+        },
+        {
+          "name": "max_drawdown",
+          "passed": true,
+          "detail": "-0.0907 >= -0.1500"
+        },
+        {
+          "name": "sharpe",
+          "passed": true,
+          "detail": "1.8039 >= 1.2000"
+        },
+        {
+          "name": "win_rate",
+          "passed": true,
+          "detail": "0.6286 >= 0.5200"
+        },
+        {
+          "name": "stress_1_5_return",
+          "passed": true,
+          "detail": "0.7403 > 0"
+        },
+        {
+          "name": "avg_selected_count",
+          "passed": true,
+          "detail": "29.36 >= 10"
+        },
+        {
+          "name": "first_half_positive",
+          "passed": true,
+          "detail": "0.2533 > 0"
+        },
+        {
+          "name": "second_half_positive",
+          "passed": true,
+          "detail": "0.4625 > 0"
+        },
+        {
+          "name": "recent_layer_activity",
+          "passed": true,
+          "detail": "31 <= 180 days"
+        }
+      ],
+      "baseline": {
+        "periods": 70,
+        "first_date": "2024-01-02",
+        "last_date": "2026-06-08",
+        "strategy_return": 0.8328872072774001,
+        "max_drawdown": -0.09068798084469964,
+        "sharpe": 1.8039399491070465,
+        "win_rate": 0.6285714285714286,
+        "avg_turnover": 0.8772108843537422,
+        "avg_selected_count": 29.357142857142858
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "periods": 70,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.8328872072774001,
+          "max_drawdown": -0.09068798084469964,
+          "sharpe": 1.8039399491070465,
+          "win_rate": 0.6285714285714286,
+          "avg_turnover": 0.8772108843537422,
+          "avg_selected_count": 29.357142857142858
+        },
+        "cost_1_5x": {
+          "periods": 70,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.740272577116855,
+          "max_drawdown": -0.09106567934017629,
+          "sharpe": 1.6587421214877274,
+          "win_rate": 0.5571428571428572,
+          "avg_turnover": 0.8772108843537422,
+          "avg_selected_count": 29.357142857142858
+        },
+        "cost_2_0x": {
+          "periods": 70,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.6522402239796012,
+          "max_drawdown": -0.09144330076898588,
+          "sharpe": 1.5133596959153621,
+          "win_rate": 0.5571428571428572,
+          "avg_turnover": 0.8772108843537422,
+          "avg_selected_count": 29.357142857142858
+        }
+      },
+      "split": {
+        "first_half": {
+          "periods": 35,
+          "first_date": "2024-01-02",
+          "last_date": "2024-11-25",
+          "strategy_return": 0.25329844288666226,
+          "max_drawdown": -0.09068798084469964,
+          "sharpe": 1.19900467022467,
+          "win_rate": 0.5428571428571428,
+          "avg_turnover": 0.8725170068027214,
+          "avg_selected_count": 28.714285714285715
+        },
+        "second_half": {
+          "periods": 35,
+          "first_date": "2024-12-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.46245071768843693,
+          "max_drawdown": -0.06903764432911763,
+          "sharpe": 2.765705168951664,
+          "win_rate": 0.7142857142857143,
+          "avg_turnover": 0.8819047619047626,
+          "avg_selected_count": 30.0
+        }
+      },
+      "source": "derived_from_joinquant_real_trading_curves",
+      "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。"
     }
   ]
 }

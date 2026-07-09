@@ -40,6 +40,18 @@ def build_route_config(route: dict) -> dict:
     sample_dates = int(route.get("sample_dates") or 0)
     win_rate = float(route.get("win_rate") or 0)
     layer = route.get("layer") or "-"
+    is_adaptive = route.get("market_regime") == "adaptive_high_low_volatility"
+    entry_gate = [
+        "高波动环境使用 JQ质量利润流动性策略 v1",
+        "低波动环境使用 K线辅助确认策略",
+        "中波动环境空仓/观察，不强行开仓",
+        "只使用已导入 JoinQuant 真实曲线验证过的组件策略和市场状态",
+    ] if is_adaptive else [
+        f"只在 {layer} 层开仓",
+        "只使用原策略交易包生成的候选池和排序分数",
+        "不得使用未通过 maturity audit 的市场波动/市值层",
+        "若当期候选少于 10 只，记录信号但不开新仓",
+    ]
 
     return {
         "strategy_id": route.get("strategy_id"),
@@ -49,12 +61,7 @@ def build_route_config(route: dict) -> dict:
         "allowed_layer": layer,
         "rebalance_days": 5,
         "position_mode": "equal_weight_top_30_or_available",
-        "entry_gate": [
-            f"只在 {layer} 层开仓",
-            "只使用原策略交易包生成的候选池和排序分数",
-            "不得使用未通过 maturity audit 的市场波动/市值层",
-            "若当期候选少于 10 只，记录信号但不开新仓",
-        ],
+        "entry_gate": entry_gate,
         "paper_watch_baseline": {
             "sample_dates": sample_dates,
             "strategy_return": strategy_return,
@@ -77,8 +84,8 @@ def build_route_config(route: dict) -> dict:
             },
             {
                 "rule": "layer_violation",
-                "trigger": "市场波动层或市值层不等于 allowed_layer",
-                "meaning": "不满足受控路线，禁止开仓。",
+                "trigger": "市场状态不满足执行配置",
+                "meaning": "不满足受控路线，禁止开仓；切换策略在中波动默认空仓。",
             },
         ],
         "daily_observation_fields": [

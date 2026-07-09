@@ -14,6 +14,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]
 DATA_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-backtest-results.json"
 MATURITY_AUDIT_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "strategy_maturity_audit_20260709.json"
+DERIVED_SWITCH_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "regime_switch_quality_kline_v1_20260709.json"
 RESULT_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "paper_watch_readiness_audit_20260709.json"
 DOC_PATH = ROOT / "outputs" / "_docs" / "paper-watch-readiness-audit-20260709.md"
 TODAY = pd.Timestamp("2026-07-09")
@@ -44,7 +45,7 @@ def normalize_layer_value(value):
 def load_controlled_routes() -> list[dict]:
     maturity = json.loads(MATURITY_AUDIT_PATH.read_text(encoding="utf-8"))
     routes = maturity.get("controlled_routes", [])
-    return [
+    controlled = [
         {
             "strategy_id": route.get("strategy_id"),
             "strategy_name": route.get("strategy_name"),
@@ -56,6 +57,23 @@ def load_controlled_routes() -> list[dict]:
         }
         for route in routes
     ]
+    if DERIVED_SWITCH_PATH.exists():
+        derived = json.loads(DERIVED_SWITCH_PATH.read_text(encoding="utf-8"))
+        controlled.append({
+            "strategy_id": derived.get("strategy_id"),
+            "strategy_name": derived.get("strategy_name"),
+            "allowed_layer": "高低波动切换",
+            "allowed_market_regime": "adaptive_high_low_volatility",
+            "allowed_market_cap_bucket": None,
+            "embedded_result": {
+                "strategy_id": derived.get("strategy_id"),
+                "strategy_name": derived.get("strategy_name"),
+                "source": derived.get("source"),
+                "data_policy": derived.get("data_policy"),
+                "net_value_curve": derived.get("net_value_curve", []),
+            },
+        })
+    return controlled
 
 
 def max_drawdown(equity: pd.Series) -> float | None:
@@ -176,7 +194,7 @@ def classify_route(route: dict, trading_result: dict | None, metrics: dict, stre
 
 
 def audit_route(results: list[dict], route: dict) -> dict:
-    trading_result = match_trading_result(results, route)
+    trading_result = route.get("embedded_result") or match_trading_result(results, route)
     curve = trading_result.get("net_value_curve", []) if trading_result else []
     metrics = calc_curve_metrics(curve, cost_multiplier=1.0)
     stress = {
