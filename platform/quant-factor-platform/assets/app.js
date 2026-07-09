@@ -256,21 +256,30 @@ function renderRisk(risks) {
 function renderPaperWatchRoutes(pack) {
   if (!elements.paperWatchList) return;
   const routes = Array.isArray(pack.routes) ? pack.routes : [];
-  const ready = pack.status === 'ready_for_controlled_paper_watch' && pack.executionStatus === 'ready';
+  const counts = pack.readinessCounts || {};
+  const ready = pack.readinessStatus === 'ready_controlled_paper_watch';
+  const conditional = pack.readinessStatus === 'conditional_paper_watch';
   if (elements.paperWatchStatus) {
-    elements.paperWatchStatus.textContent = ready
-      ? `${routes.length}条受控路线`
+    elements.paperWatchStatus.textContent = ready || conditional
+      ? `${counts.ready_controlled_paper_watch || 0}就绪/${counts.conditional_paper_watch || 0}条件`
       : '未就绪';
-    elements.paperWatchStatus.className = `tag ${ready ? 'good' : 'pending'}`;
+    elements.paperWatchStatus.className = `tag ${ready ? 'good' : conditional ? 'pending' : 'watch'}`;
   }
   elements.paperWatchList.innerHTML = routes.length
     ? routes.map((route) => {
       const execution = route.execution || {};
+      const readiness = route.readiness || {};
+      const failedChecks = (readiness.checks || []).filter((item) => !item.passed);
+      const readinessTone = readiness.decision === 'ready_controlled_paper_watch'
+        ? 'good'
+        : readiness.decision === 'not_ready'
+          ? 'watch'
+          : 'pending';
       return `
         <article class="paper-watch-item">
           <div>
             <strong>${escapeHtml(route.strategy_name || route.strategy_id)}</strong>
-            <span>${escapeHtml(route.layer || '-')}</span>
+            <span class="tag ${readinessTone}">${escapeHtml(readiness.decision || route.layer || '-')}</span>
           </div>
           <div class="paper-watch-metrics">
             <span>收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>
@@ -278,11 +287,21 @@ function renderPaperWatchRoutes(pack) {
             <span>Sharpe ${Number(route.sharpe || 0).toFixed(2)}</span>
           </div>
           <p>${escapeHtml(route.paper_scope || '')}</p>
+          ${readiness.decision_reason ? `<p>${escapeHtml(readiness.decision_reason)}</p>` : ''}
           <details class="compact-details">
-            <summary>执行规则</summary>
+            <summary>执行与审计规则</summary>
             <div class="paper-watch-rules">
               <strong>开仓边界</strong>
               ${renderTextList(execution.entry_gate || [])}
+              <strong>就绪检查</strong>
+              ${renderTextList(failedChecks.length
+                ? failedChecks.map((item) => `${item.name}: ${item.detail}`)
+                : ['当前无硬失败项'])}
+              <strong>成本压力</strong>
+              ${renderTextList(readiness.cost_stress ? [
+                `1.5x成本收益 ${formatPercent(readiness.cost_stress.cost_1_5x?.strategy_return, 2)}`,
+                `2.0x成本收益 ${formatPercent(readiness.cost_stress.cost_2_0x?.strategy_return, 2)}`,
+              ] : [])}
               <strong>暂停规则</strong>
               ${renderTextList((execution.pause_rules || []).map((item) => item.meaning || item.rule))}
             </div>
@@ -2197,7 +2216,7 @@ async function boot() {
   }
 }
 
-elements.savePreferences.addEventListener('click', async () => {
+elements.savePreferences?.addEventListener('click', async () => {
   try {
     await request('/api/preferences', {
       body: JSON.stringify(getPreferencePayload()),
@@ -2210,7 +2229,7 @@ elements.savePreferences.addEventListener('click', async () => {
   }
 });
 
-elements.runBacktest.addEventListener('click', async () => {
+elements.runBacktest?.addEventListener('click', async () => {
   try {
     const result = await request('/backtest-api/run', {
       body: JSON.stringify(getPreferencePayload()),
@@ -2225,13 +2244,13 @@ elements.runBacktest.addEventListener('click', async () => {
   }
 });
 
-elements.draftStrategySearch.addEventListener('input', () => {
+elements.draftStrategySearch?.addEventListener('input', () => {
   draftStrategyQuery = elements.draftStrategySearch.value;
   draftStrategyPage = 1;
   if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
 });
 
-elements.draftStrategyJump.addEventListener('change', () => {
+elements.draftStrategyJump?.addEventListener('change', () => {
   const strategyId = elements.draftStrategyJump.value;
   const strategy = (currentStrategySignalPack?.strategies || []).find((item) => item.id === strategyId);
   draftStrategyQuery = strategy ? strategy.name : '';
@@ -2241,20 +2260,20 @@ elements.draftStrategyJump.addEventListener('change', () => {
   if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
 });
 
-elements.draftStrategyToggle.addEventListener('click', () => {
+elements.draftStrategyToggle?.addEventListener('click', () => {
   draftStrategyExpanded = !draftStrategyExpanded;
   draftStrategyPage = 1;
   if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
 });
 
-elements.draftStrategyPagination.addEventListener('click', (event) => {
+elements.draftStrategyPagination?.addEventListener('click', (event) => {
   const action = event.target?.dataset?.draftPage;
   if (!action || !currentStrategySignalPack) return;
   draftStrategyPage += action === 'next' ? 1 : -1;
   renderDraftStrategies(currentStrategySignalPack);
 });
 
-elements.strategyLiveList.addEventListener('click', (event) => {
+elements.strategyLiveList?.addEventListener('click', (event) => {
   const downloadButton = event.target.closest('[data-strategy-download]');
   if (downloadButton) {
     window.location.href = downloadButton.dataset.strategyDownload;
@@ -2278,15 +2297,15 @@ elements.strategyLiveList.addEventListener('click', (event) => {
   button.classList.toggle('active', shouldOpen);
 });
 
-elements.downloadJoinquantCsv.addEventListener('click', () => {
+elements.downloadJoinquantCsv?.addEventListener('click', () => {
   window.location.href = '/backtest-api/joinquant-factor-export.csv';
 });
 
-elements.downloadJoinquantFactorScript.addEventListener('click', () => {
+elements.downloadJoinquantFactorScript?.addEventListener('click', () => {
   window.location.href = '/backtest-api/joinquant-factor-test-script.py';
 });
 
-elements.refreshBacktestCenter.addEventListener('click', async () => {
+elements.refreshBacktestCenter?.addEventListener('click', async () => {
   try {
     renderBacktestCenter(await request('/backtest-api/research-status'));
     elements.backtestImportMessage.textContent = '复测中心状态已刷新';
@@ -2297,7 +2316,7 @@ elements.refreshBacktestCenter.addEventListener('click', async () => {
   }
 });
 
-elements.importBacktestResult.addEventListener('click', async () => {
+elements.importBacktestResult?.addEventListener('click', async () => {
   try {
     const payload = JSON.parse(elements.backtestResultJson.value || '{}');
     const response = await request('/backtest-api/import-results', {
@@ -2314,7 +2333,7 @@ elements.importBacktestResult.addEventListener('click', async () => {
   }
 });
 
-elements.askResearchAssistant.addEventListener('click', async () => {
+elements.askResearchAssistant?.addEventListener('click', async () => {
   const message = elements.researchAssistantInput.value.trim();
   const factorId = elements.researchAssistantFactor.value || activeResearchFactor || '';
   if (!message && !factorId) {
