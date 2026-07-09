@@ -401,6 +401,45 @@ function renderTradeabilityReviewTaskPack(pack) {
   `;
 }
 
+function renderCoreMediumSmallPromotionTaskPack(pack) {
+  if (!pack) return '';
+  const target = pack.target || {};
+  const baseline = target.baseline || {};
+  const gate = pack.pass_gate || {};
+  const script = pack.joinquant_script || {};
+  const steps = Array.isArray(pack.steps) ? pack.steps : [];
+  return `
+    <div class="paper-watch-note">
+      <strong>核心量价中波动小市值晋级复核</strong>
+      <span class="tag pending">${escapeHtml(pack.status || 'waiting')}</span>
+      <p>
+        ${escapeHtml(target.strategy_name || target.strategy_id || '-')}：
+        ${escapeHtml(target.layer || '中波动/小市值')}，
+        历史收益 ${formatPercent(baseline.strategy_return, 2)}，
+        回撤 ${formatPercent(baseline.max_drawdown, 2)}，
+        Sharpe ${formatNumber(baseline.sharpe, 2)}。
+      </p>
+      <p>
+        通过门槛：source=${escapeHtml(gate.required_source || '-')}，
+        decision=${escapeHtml(gate.required_decision || '-')}，
+        市场状态 ${escapeHtml(gate.required_market_regime || '-')}，
+        入选不少于 ${escapeHtml(gate.min_selected_count ?? 10)} 只。
+      </p>
+      <div class="inline-actions">
+        ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载核心量价复核脚本</a>` : ''}
+      </div>
+      <details class="compact-details">
+        <summary>查看晋级步骤</summary>
+        <div class="paper-watch-rules">
+          ${renderTextList(steps)}
+          <strong>数据原则</strong>
+          ${renderTextList([pack.data_policy || '只生成复核任务，不生成结果。'])}
+        </div>
+      </details>
+    </div>
+  `;
+}
+
 function renderPaperWatchRoutes(pack) {
   if (!elements.paperWatchList) return;
   const routes = Array.isArray(pack.routes) ? pack.routes : [];
@@ -456,6 +495,7 @@ function renderPaperWatchRoutes(pack) {
         </div>
       ` : ''}
       ${renderTradeabilityReviewTaskPack(pack.tradeabilityReviewTaskPack)}
+      ${renderCoreMediumSmallPromotionTaskPack(pack.coreMediumSmallPromotionTaskPack)}
       ${renderMaturityMatrix(pack.maturityMatrix)}
       ${pack.operationsPack ? `
         <div class="paper-watch-note">

@@ -46,9 +46,11 @@ const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'p
 const paperWatchOperationsPackPath = outputPath('paper-watch', 'results', 'paper_watch_operations_pack_20260709.json');
 const strategyMaturityMatrixPath = outputPath('paper-watch', 'results', 'strategy_maturity_matrix_20260710.json');
 const tradeabilityReviewTaskPackPath = outputPath('paper-watch', 'results', 'tradeability_review_task_pack_20260710.json');
+const coreMediumSmallPromotionTaskPackPath = outputPath('paper-watch', 'results', 'core_medium_small_promotion_task_pack_20260710.json');
 const paperWatchDerivedScriptPaths = [
   outputPath('paper-watch', 'scripts', 'build_paper_watch_operations_pack.py'),
   outputPath('paper-watch', 'scripts', 'audit_independent_sleeve_candidates.py'),
+  outputPath('paper-watch', 'scripts', 'build_core_medium_small_promotion_task_pack.py'),
   outputPath('paper-watch', 'scripts', 'build_strategy_maturity_matrix.py'),
   outputPath('paper-watch', 'scripts', 'build_tradeability_review_task_pack.py'),
 ];
@@ -58,6 +60,7 @@ const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'resu
 const akshareRegimeSwitchPaperWatchPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_paper_watch_strategy_20260709.json');
 const akshareRegimeSwitchRobustnessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_robustness_audit_20260709.json');
 const akshareLatestSignalTradeabilityReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_latest_signal_tradeability_review_20260709.py');
+const coreMediumSmallLatestSignalReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_core_medium_small_latest_signal_review_20260710.py');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -940,6 +943,7 @@ function buildPaperWatchRoutes() {
   const akshareRegimeSwitchRobustness = readJsonFile(akshareRegimeSwitchRobustnessAuditPath, null);
   const strategyMaturityMatrix = readJsonFile(strategyMaturityMatrixPath, null);
   const tradeabilityReviewTaskPack = readJsonFile(tradeabilityReviewTaskPackPath, null);
+  const coreMediumSmallPromotionTaskPack = readJsonFile(coreMediumSmallPromotionTaskPackPath, null);
   const tradeabilityReviews = readImportedTradeabilityReviews();
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
@@ -1068,6 +1072,7 @@ function buildPaperWatchRoutes() {
       : null,
     maturityMatrix: strategyMaturityMatrix,
     tradeabilityReviewTaskPack,
+    coreMediumSmallPromotionTaskPack,
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
     readinessCounts: recommendedReadinessCounts,
     readinessDecisionCounts: readinessCounts,
@@ -5241,6 +5246,17 @@ async function handleApi(req, res, pathname) {
     sendText(
       res,
       'm-quant-akshare-latest-signal-tradeability-review-20260709.py',
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-core-medium-small-latest-signal-review.py') {
+    const script = readFileSync(coreMediumSmallLatestSignalReviewScriptPath, 'utf8');
+    sendText(
+      res,
+      'm-quant-core-medium-small-latest-signal-review-20260710.py',
       script,
       'text/x-python; charset=utf-8',
     );
