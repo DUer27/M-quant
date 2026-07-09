@@ -4,6 +4,19 @@
 
 ## 2026-07-10
 
+### Add conditional operations-pack promotion gate
+- 模拟观察运行包接入 `核心量价趋势策略 v1 / 中波动/小市值` 条件晋级逻辑。
+- 只有导入真实 JoinQuant 最新信号复核，且满足以下门槛时，才会写入 `jq_medium_vol_small_cap_core` 资金袖并计入 `2/2`：
+  - `decision=promotion_signal_ready`
+  - `market_regime=medium_volatility`
+  - `target_market_regime=medium_volatility`
+  - `target_market_cap_bucket=small_cap`
+  - `selected_count>=10`
+- 独立资金袖审计和成熟策略矩阵已识别核心信号复核导入数量，避免把候选路线提前包装成成熟策略。
+- 当前真实状态仍为 `1 / 2`：尚未导入核心量价中波动/小市值最新信号复核 JSON。
+- Data honesty note: 本次只增加晋级门禁和派生包联动；没有导入假数据，没有生成收益、净值、成交、持仓或晋级结论。
+- Detail log: `logs/2026-07-10-conditional-operations-promotion-gate.md`
+
 ### Add core medium-small signal review import gate
 - 新增核心量价中波动/小市值最新信号复核导入库：
   - `platform/quant-factor-platform/data/imported-core-medium-small-signal-reviews.json`

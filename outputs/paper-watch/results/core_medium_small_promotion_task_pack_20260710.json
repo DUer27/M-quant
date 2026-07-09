@@ -1,6 +1,6 @@
 {
   "source": "m_quant_core_medium_small_promotion_task_pack",
-  "generated_at": "2026-07-10T02:48:31",
+  "generated_at": "2026-07-10T02:59:42",
   "status": "waiting_for_joinquant_latest_signal_review",
   "data_policy": "只生成 JoinQuant 最新信号复核任务；不生成收益、净值、成交、持仓、交易可行性或模拟盘结果。",
   "imported_review_count": 0,
@@ -36,6 +36,12 @@
     "required_market_cap_bucket": "small_cap",
     "min_selected_count": 10,
     "after_pass_next_action": "再写入模拟观察运行包；写入前仍不计入 2/2 成熟策略目标。"
+  },
+  "operations_pack_promotion": {
+    "promoted": false,
+    "sleeve_id": null,
+    "can_start_observation": false,
+    "operational_status": null
   },
   "joinquant_script": {
     "path": "outputs/sources/joinquant/scripts/m_quant_core_medium_small_latest_signal_review_20260710.py",

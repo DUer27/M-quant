@@ -23,9 +23,14 @@ AK_SWITCH_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "akshare
 AK_ROBUSTNESS_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "akshare_regime_switch_robustness_audit_20260709.json"
 AK_LATEST_SIGNAL_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "akshare_paper_watch_latest_signal_20260709.json"
 TRADEABILITY_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-tradeability-reviews.json"
+JQ_MATURITY_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "strategy_maturity_audit_20260709.json"
+CORE_SIGNAL_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-core-medium-small-signal-reviews.json"
 
 RESULT_PATH = RESULTS_DIR / "paper_watch_operations_pack_20260709.json"
 DOC_PATH = DOCS_DIR / "paper-watch-operations-pack-20260709.md"
+
+CORE_SLEEVE_ID = "jq_medium_vol_small_cap_core"
+CORE_STRATEGY_ID = "core_volume_price_trend_v1"
 
 
 def load_json(path: Path, fallback):
@@ -46,6 +51,26 @@ def latest_tradeability_review(reviews: list[dict], strategy_id: str, signal_dat
         if item.get("strategy_id") == strategy_id and item.get("signal_date") == signal_date
     ]
     return sorted(matches, key=lambda item: item.get("importedAt", ""), reverse=True)[0] if matches else None
+
+
+def latest_core_signal_review(reviews: list[dict]) -> dict | None:
+    matches = [
+        item for item in reviews
+        if item.get("strategy_id") == CORE_STRATEGY_ID and item.get("sleeve_id") == CORE_SLEEVE_ID
+    ]
+    return sorted(matches, key=lambda item: item.get("importedAt", ""), reverse=True)[0] if matches else None
+
+
+def core_medium_small_baseline(maturity: dict) -> dict | None:
+    return next(
+        (
+            route for route in maturity.get("controlled_routes", [])
+            if route.get("strategy_id") == CORE_STRATEGY_ID
+            and route.get("market_regime") == "medium_volatility"
+            and route.get("market_cap_bucket") == "small_cap"
+        ),
+        None,
+    )
 
 
 def jq_controller_route(independence: dict, execution_pack: dict) -> dict:
@@ -155,10 +180,72 @@ def akshare_switch_route(switch: dict, robustness: dict, latest_signal: dict, re
     }
 
 
+def core_medium_small_route(maturity: dict, reviews: list[dict]) -> dict | None:
+    baseline = core_medium_small_baseline(maturity)
+    review = latest_core_signal_review(reviews)
+    if not baseline or not review:
+        return None
+
+    review_ready = (
+        review.get("decision") == "promotion_signal_ready"
+        and review.get("market_regime") == "medium_volatility"
+        and review.get("target_market_regime") == "medium_volatility"
+        and review.get("target_market_cap_bucket") == "small_cap"
+        and int(review.get("selected_count") or 0) >= 10
+    )
+    blocked = [] if review_ready else [
+        "已导入核心量价中波动/小市值最新信号复核，但未达到 promotion_signal_ready 门槛。",
+    ]
+    latest_records = review.get("records") if isinstance(review.get("records"), list) else []
+    return {
+        "sleeve_id": CORE_SLEEVE_ID,
+        "strategy_id": CORE_STRATEGY_ID,
+        "strategy_name": baseline.get("strategy_name") or "核心量价趋势策略 v1",
+        "evidence_system": "JoinQuant historical route + imported latest signal review",
+        "operational_status": "ready_for_controlled_paper_watch" if review_ready else "blocked_by_latest_signal_review",
+        "can_start_observation": review_ready,
+        "blocked_reasons": blocked,
+        "role": "mutually_exclusive_medium_volatility_small_cap_sleeve",
+        "scope": "仅限 medium_volatility / small_cap；与主控制器中波动空仓逻辑互斥，不可扩展到其他分层。",
+        "baseline": {
+            "sample_dates": baseline.get("sample_dates"),
+            "strategy_return": baseline.get("strategy_return"),
+            "annual_return": baseline.get("annual_return"),
+            "max_drawdown": baseline.get("max_drawdown"),
+            "sharpe": baseline.get("sharpe"),
+            "win_rate": baseline.get("win_rate"),
+        },
+        "entry_gate": [
+            "market_regime 必须为 medium_volatility。",
+            "market_cap_bucket 必须为 small_cap。",
+            "最新 JoinQuant 复核 decision 必须为 promotion_signal_ready。",
+            "selected_count 必须不少于 10。",
+            "若主控制器同时发出高/低波动信号，本资金袖不得开仓。",
+        ],
+        "pause_rules": [
+            "最新复核不是 promotion_signal_ready 时，paper_action 只能 record_only。",
+            "selected_count 低于 10 时暂停新开仓。",
+            "市场状态离开 medium_volatility 时暂停新开仓并进入退出观察。",
+        ],
+        "latest_signal": {
+            "signal_date": review.get("signal_date"),
+            "market_regime": review.get("market_regime"),
+            "target_market_regime": review.get("target_market_regime"),
+            "target_market_cap_bucket": review.get("target_market_cap_bucket"),
+            "action": "paper_watch_open_allowed" if review_ready else "record_only",
+            "candidate_count": review.get("target_candidate_count"),
+            "selected_count": review.get("selected_count"),
+            "selected_codes": [item.get("code") for item in latest_records],
+        },
+        "latest_signal_review": review,
+        "data_policy": baseline.get("data_policy"),
+    }
+
+
 def ledger_template() -> list[dict]:
     fields = [
         ("date", "观察日期，YYYY-MM-DD。"),
-        ("sleeve_id", "资金袖：jq_controller / akshare_local_switch。"),
+        ("sleeve_id", "资金袖：jq_controller / jq_medium_vol_small_cap_core / akshare_local_switch。"),
         ("strategy_id", "策略ID。"),
         ("signal_state", "ready / blocked / record_only / paused。"),
         ("gate_status", "准入门槛状态，必须来自运行包。"),
@@ -261,11 +348,16 @@ def main() -> int:
     ak_robustness = load_json(AK_ROBUSTNESS_PATH, {})
     ak_signal = load_json(AK_LATEST_SIGNAL_PATH, {})
     reviews = load_json(TRADEABILITY_REVIEWS_PATH, [])
+    maturity = load_json(JQ_MATURITY_PATH, {})
+    core_signal_reviews = load_json(CORE_SIGNAL_REVIEWS_PATH, [])
+    core_route = core_medium_small_route(maturity, core_signal_reviews)
 
     capital_sleeves = [
         jq_controller_route(independence, jq_execution),
         akshare_switch_route(ak_switch, ak_robustness, ak_signal, reviews),
     ]
+    if core_route:
+        capital_sleeves.insert(1, core_route)
     monitors = [item for item in [jq_component_monitor(independence)] if item]
     ready_count = sum(1 for item in capital_sleeves if item.get("can_start_observation"))
     pack = {
@@ -284,6 +376,7 @@ def main() -> int:
             "每个 sleeve_id 独立记录，不得把组件监控路线当作第二资金袖。",
             "planned_weight 只能在 can_start_observation=true 时大于 0。",
             "AkShare 本地信号缺 JoinQuant 交易复核时只能 record_only。",
+            "核心量价中波动小市值资金袖只有在 JoinQuant 最新信号复核 ready 后才允许 planned_weight 大于 0。",
             "任何暂停规则触发后，paper_action 只能是 pause_new_entry 或 close_only。",
         ],
     }

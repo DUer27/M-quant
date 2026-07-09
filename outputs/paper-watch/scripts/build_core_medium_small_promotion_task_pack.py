@@ -19,6 +19,7 @@ DOCS_DIR = ROOT / "outputs" / "_docs"
 CANDIDATE_AUDIT_PATH = RESULTS_DIR / "independent_sleeve_candidate_audit_20260710.json"
 SCRIPT_PATH = ROOT / "outputs" / "sources" / "joinquant" / "scripts" / "m_quant_core_medium_small_latest_signal_review_20260710.py"
 IMPORTED_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-core-medium-small-signal-reviews.json"
+OPERATIONS_PATH = RESULTS_DIR / "paper_watch_operations_pack_20260709.json"
 RESULT_PATH = RESULTS_DIR / "core_medium_small_promotion_task_pack_20260710.json"
 DOC_PATH = DOCS_DIR / "core-medium-small-promotion-task-pack-20260710.md"
 
@@ -41,6 +42,7 @@ def pct(value) -> str:
 def build_pack() -> dict:
     audit = read_json(CANDIDATE_AUDIT_PATH, {})
     imported_reviews = read_json(IMPORTED_REVIEWS_PATH, [])
+    operations = read_json(OPERATIONS_PATH, {})
     candidate = next(
         (item for item in audit.get("candidates", []) if item.get("strategy_id") == STRATEGY_ID),
         {},
@@ -50,7 +52,16 @@ def build_pack() -> dict:
         if item.get("strategy_id") == STRATEGY_ID and item.get("sleeve_id") == SLEEVE_ID
     ]
     latest_review = sorted(matching_reviews, key=lambda item: item.get("importedAt", ""), reverse=True)[0] if matching_reviews else None
-    if latest_review and latest_review.get("decision") == "promotion_signal_ready":
+    promoted_sleeve = next(
+        (
+            item for item in operations.get("capital_sleeves", [])
+            if item.get("sleeve_id") == SLEEVE_ID and item.get("can_start_observation")
+        ),
+        None,
+    )
+    if promoted_sleeve:
+        status = "promoted_to_operations_pack"
+    elif latest_review and latest_review.get("decision") == "promotion_signal_ready":
         status = "signal_ready_imported_waiting_for_operations_pack_promotion"
     elif latest_review:
         status = "signal_not_ready_imported"
@@ -84,6 +95,12 @@ def build_pack() -> dict:
             "required_market_cap_bucket": "small_cap",
             "min_selected_count": 10,
             "after_pass_next_action": "再写入模拟观察运行包；写入前仍不计入 2/2 成熟策略目标。",
+        },
+        "operations_pack_promotion": {
+            "promoted": bool(promoted_sleeve),
+            "sleeve_id": promoted_sleeve.get("sleeve_id") if promoted_sleeve else None,
+            "can_start_observation": promoted_sleeve.get("can_start_observation") if promoted_sleeve else False,
+            "operational_status": promoted_sleeve.get("operational_status") if promoted_sleeve else None,
         },
         "joinquant_script": {
             "path": str(SCRIPT_PATH.relative_to(ROOT)),

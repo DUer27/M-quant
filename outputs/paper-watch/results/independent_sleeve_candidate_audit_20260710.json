@@ -1,6 +1,6 @@
 {
   "source": "m_quant_independent_sleeve_candidate_audit",
-  "generated_at": "2026-07-10T02:38:03",
+  "generated_at": "2026-07-10T02:59:31",
   "data_policy": "只读取已审计 JoinQuant、AkShare 与用户导入复核文件；不生成收益、净值、成交、持仓或交易可行性结论。",
   "target_independent_sleeves": 2,
   "eligible_independent_sleeve_count": 1,
@@ -8,7 +8,7 @@
   "goal_status": "not_met",
   "blocking_summary": [
     "当前独立可观察资金袖为 1 个，距离目标 2 个还差 1 个。",
-    "尚未导入任何 JoinQuant 交易可行性复核 JSON。"
+    "尚未导入任何 JoinQuant 最新信号复核 JSON。"
   ],
   "candidates": [
     {
@@ -31,6 +31,7 @@
       },
       "blocked_reasons": [],
       "required_next_evidence": [],
+      "latest_review_decision": null,
       "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。"
     },
     {
@@ -57,6 +58,7 @@
       "required_next_evidence": [
         "导入通过严格校验的 JoinQuant 最新信号交易可行性复核 JSON。"
       ],
+      "latest_review_decision": null,
       "data_policy": "只组合 AkShare 本地真实 OHLCV 已生成的执行组件 trade_records；不新增收益、不扩展未审计分层、不伪造交易状态。"
     },
     {

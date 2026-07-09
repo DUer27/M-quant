@@ -1,6 +1,6 @@
 # 模拟观察运行包
 
-- 生成时间：2026-07-10T02:10:11
+- 生成时间：2026-07-10T02:59:14
 - 状态：`ready_with_blockers`
 - 数据原则：只读取已审计 JoinQuant 曲线、AkShare 本地 OHLCV 策略与已导入交易复核；不生成收益、净值、成交或持仓。
 - 可观察资金袖：1 / 2
@@ -31,7 +31,7 @@
 ## 每日账本字段
 
 - `date`：观察日期，YYYY-MM-DD。
-- `sleeve_id`：资金袖：jq_controller / akshare_local_switch。
+- `sleeve_id`：资金袖：jq_controller / jq_medium_vol_small_cap_core / akshare_local_switch。
 - `strategy_id`：策略ID。
 - `signal_state`：ready / blocked / record_only / paused。
 - `gate_status`：准入门槛状态，必须来自运行包。
