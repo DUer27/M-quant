@@ -30,6 +30,7 @@ const capitalFactorResultsPath = outputPath('capital-flow-factors', 'yiwan-capit
 const capitalFactorSummaryPath = outputPath('capital-flow-factors', 'yiwan-capital-factor-summary.json');
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
 const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
+const importedTradeabilityReviewsPath = join(dataDir, 'imported-tradeability-reviews.json');
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
@@ -50,6 +51,7 @@ const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scri
 const akshareCandidateReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_ohlcv_candidate_review.py');
 const joinquantFactorTestScriptPath = outputPath('joinquant', 'm_quant_joinquant_factor_test.py');
 const primaryStrategyHorizons = [5, 10, 20];
+const akshareLatestSignalTradeabilityReviewSource = 'joinquant_akshare_latest_signal_tradeability_review';
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -910,6 +912,7 @@ function buildPaperWatchRoutes() {
   const akshareReadinessAudit = readJsonFile(aksharePaperWatchReadinessAuditPath, {});
   const akshareExecutionPack = readJsonFile(aksharePaperWatchExecutionPackPath, {});
   const akshareLatestSignal = readJsonFile(aksharePaperWatchLatestSignalPath, {});
+  const tradeabilityReviews = readImportedTradeabilityReviews();
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
     : [];
@@ -959,12 +962,19 @@ function buildPaperWatchRoutes() {
     evidence_system: route.evidence_system || 'JoinQuant',
     execution: executionByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
     readiness: readinessByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
-  })).concat(akshareRoutes.map((route) => ({
-    ...route,
-    execution: akshareExecutionByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
-    readiness: akshareReadinessByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || route,
-    signal: akshareSignalByRoute.get(`${route.strategy_id || ''}::${route.market_regime || ''}::${route.liquidity_bucket || ''}`) || null,
-  })));
+  })).concat(akshareRoutes.map((route) => {
+    const signal = akshareSignalByRoute.get(`${route.strategy_id || ''}::${route.market_regime || ''}::${route.liquidity_bucket || ''}`) || null;
+    const tradeabilityReview = signal
+      ? latestTradeabilityReviewFor(tradeabilityReviews, route.strategy_id, signal.signal_date)
+      : null;
+    return {
+      ...route,
+      execution: akshareExecutionByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
+      readiness: akshareReadinessByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || route,
+      signal,
+      tradeability_review: tradeabilityReview,
+    };
+  }));
   const readinessCounts = readinessAudit.decision_counts || {};
   const akshareReadinessCounts = akshareReadinessAudit.decision_counts || {};
   const recommendedReadinessCounts = enrichedRoutes.reduce((acc, route) => {
@@ -995,6 +1005,11 @@ function buildPaperWatchRoutes() {
       executionStatus: akshareExecutionPack.status || 'not_ready',
       latestSignalDate: akshareLatestSignal.signal_date || '',
       latestSignalOpenAllowedCount: Number(akshareLatestSignal.open_allowed_count || 0),
+      latestTradeabilityReview: latestTradeabilityReviewFor(
+        tradeabilityReviews,
+        'ak_mean_reversion_quality_combo',
+        akshareLatestSignal.signal_date || '',
+      ),
       paperWatchRouteCount: Number(akshareExecutionPack.paper_watch_route_count || 0),
       recommendedRouteCount: Number(akshareReadinessAudit.recommended_route_count || akshareRecommendedRoutes.length || 0),
       tradeabilityReviewScriptEndpoint: '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py',
@@ -2844,6 +2859,54 @@ function readImportedBacktestResults() {
   return readJsonFile(importedBacktestResultsPath, []);
 }
 
+function readImportedTradeabilityReviews() {
+  return readJsonFile(importedTradeabilityReviewsPath, []);
+}
+
+function isTradeabilityReviewPayload(payload) {
+  return payload?.source === akshareLatestSignalTradeabilityReviewSource
+    || payload?.result_type === 'tradeability_review';
+}
+
+function normalizeTradeabilityReview(payload, importedAt) {
+  if (payload?.source !== akshareLatestSignalTradeabilityReviewSource) {
+    throw new Error('交易可行性复核 source 不匹配，不能导入。');
+  }
+  if (!payload.strategy_id || !payload.signal_date || !payload.decision) {
+    throw new Error('交易可行性复核缺少 strategy_id、signal_date 或 decision。');
+  }
+  if (!Array.isArray(payload.records) || payload.records.length === 0) {
+    throw new Error('交易可行性复核必须包含 JoinQuant 输出的 records 明细。');
+  }
+
+  const candidateCount = Number(payload.candidate_count ?? payload.records.length);
+  const tradableCount = Number(payload.tradable_count ?? payload.records.filter((row) => row?.tradable).length);
+  if (!Number.isFinite(candidateCount) || !Number.isFinite(tradableCount)) {
+    throw new Error('交易可行性复核 candidate_count 或 tradable_count 非法。');
+  }
+
+  const allowedDecisions = new Set(['tradeability_review_passed', 'tradeability_review_failed']);
+  if (!allowedDecisions.has(payload.decision)) {
+    throw new Error('交易可行性复核 decision 必须为 passed 或 failed。');
+  }
+
+  return {
+    ...payload,
+    result_type: 'tradeability_review',
+    candidate_count: candidateCount,
+    tradable_count: tradableCount,
+    blocked_count: Number(payload.blocked_count ?? candidateCount - tradableCount),
+    importedAt,
+    source: akshareLatestSignalTradeabilityReviewSource,
+  };
+}
+
+function latestTradeabilityReviewFor(reviews, strategyId, signalDate) {
+  return reviews
+    .filter((review) => review?.strategy_id === strategyId && review?.signal_date === signalDate)
+    .sort((left, right) => String(right.importedAt || '').localeCompare(String(left.importedAt || '')))[0] || null;
+}
+
 function readAkshareLocalBacktestRecords() {
   const pack = readJsonFile(akshareOhlcvBacktestPath, null);
   if (!pack) return [];
@@ -4528,6 +4591,14 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/strategy-api/tradeability-reviews') {
+    sendJson(res, {
+      dataPolicy: '只展示用户从 JoinQuant 真实研究环境导入的交易可行性复核结果；不生成收益或回测绩效。',
+      records: readImportedTradeabilityReviews(),
+    });
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/factor-api/factors') {
     sendJson(res, [
       ...state.factors.map(enrichFactor),
@@ -4823,6 +4894,19 @@ async function handleApi(req, res, pathname) {
   if (req.method === 'POST' && pathname === '/backtest-api/import-results') {
     const body = await readJsonBody(req);
     const importedAt = new Date().toISOString();
+    if (isTradeabilityReviewPayload(body)) {
+      const nextItem = normalizeTradeabilityReview(body, importedAt);
+      const nextReviews = [nextItem, ...readImportedTradeabilityReviews()].slice(0, 100);
+      writeFileSync(importedTradeabilityReviewsPath, `${JSON.stringify(nextReviews, null, 2)}\n`);
+      sendJson(res, {
+        message: `交易可行性复核已导入：${nextItem.tradable_count}/${nextItem.candidate_count} 可交易，结论 ${nextItem.decision}。`,
+        result: nextItem,
+        importedCount: 1,
+        results: nextReviews,
+      }, 201);
+      return true;
+    }
+
     const rawItems = Array.isArray(body)
       ? body
       : Array.isArray(body.records)
