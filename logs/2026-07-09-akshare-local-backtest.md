@@ -136,3 +136,10 @@
 - 组合策略结果：70 期，收益 83.29%，最大回撤 -9.07%，Sharpe 1.80，平均入选 29.36 只；1.5x 成本压力收益 74.03%，2.0x 成本压力收益 65.22%。
 - 重新审计后：2 条 `ready_controlled_paper_watch`、2 条 `conditional_paper_watch`、3 条 `conditional_recheck_required`、3 条 `not_ready`。
 - 当前平台总览已验证显示 `2就绪/0条件`：`JQ质量利润流动性策略 v1 - 高波动` 与 `市场状态切换策略 v1 - 高低波动切换`。
+
+## 追加：模拟观察独立性审计
+
+- 新增 `outputs/strategies/joinquant/audit_paper_watch_independence.py`。
+- 生成 `paper_watch_independence_audit_20260709.json` 和 `paper-watch-independence-audit-20260709.md`。
+- 结论：当前 2 条 ready 推荐路线共享 `JQ质量利润流动性策略 v1` 高波动组件，不能作为两笔独立资金同时满仓；独立资金袖数量为 1。
+- 运用建议：以 `市场状态切换策略 v1` 作为组合控制器；`JQ质量利润流动性策略 v1 - 高波动` 作为组件监控/备选。平台总览已接入独立性提示和重叠警告。

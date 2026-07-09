@@ -1189,6 +1189,27 @@ td small {
   padding: 12px;
 }
 
+.paper-watch-note {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.24);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.paper-watch-note strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.paper-watch-note span,
+.paper-watch-note p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+
 .paper-watch-item div:first-child {
   align-items: center;
   display: flex;

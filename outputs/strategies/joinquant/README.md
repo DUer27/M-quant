@@ -28,6 +28,8 @@ strategy_core_volume_trend_v1_large_cap_high_vol_20240101_20260701.json
 - `paper_watch_readiness_audit_20260709.json`：模拟观察就绪审计结果。
 - `build_regime_switch_quality_kline_strategy.py`：用已导入 JoinQuant 真实曲线构建高/低波动切换组合。
 - `regime_switch_quality_kline_v1_20260709.json`：市场状态切换策略结果。
+- `audit_paper_watch_independence.py`：审计推荐模拟观察路线之间的组件重叠和资金袖独立性。
+- `paper_watch_independence_audit_20260709.json`：模拟观察独立性审计结果。
 
 当前首批只允许两条路线进入模拟观察：
 
@@ -49,3 +51,5 @@ strategy_core_volume_trend_v1_large_cap_high_vol_20240101_20260701.json
 旧的高波动/中市值 JQ 路线不再作为模拟观察推荐路线，仅保留在审计结果中作为未通过样本数量门槛的历史候选。
 
 `市场状态切换策略 v1` 是真实曲线组合策略，不是单次 JoinQuant 原生回测；其收益来自已导入 JoinQuant 组件曲线的单期 `gross_return/cost/turnover` 重算，中波动环境默认空仓/观察。
+
+独立性审计结论：当前虽有 2 条 `ready_controlled_paper_watch` 推荐路线，但它们共享 `JQ质量利润流动性策略 v1` 高波动组件，所以只能算 1 个独立资金袖。模拟盘应以 `市场状态切换策略 v1` 作为组合控制器，`JQ质量利润流动性策略 v1 - 高波动` 作为组件监控或备选，不应在高波动环境下两者同时满仓。
