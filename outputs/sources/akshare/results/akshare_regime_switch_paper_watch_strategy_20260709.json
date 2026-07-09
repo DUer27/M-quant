@@ -1,0 +1,485 @@
+{
+  "source": "akshare_local_regime_switch_paper_watch_strategy",
+  "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+  "strategy_name": "AkShare本地高低波动切换策略 v1",
+  "generated_at": "2026-07-09T19:48:49",
+  "inputs": {
+    "validation": "outputs/sources/akshare/results/akshare_strategy_candidate_validation.json",
+    "execution_pack": "outputs/sources/akshare/results/akshare_paper_watch_execution_pack_20260709.json"
+  },
+  "data_policy": "只组合 AkShare 本地真实 OHLCV 已生成的执行组件 trade_records；不新增收益、不扩展未审计分层、不伪造交易状态。",
+  "decision": "ready_local_switch_paper_watch",
+  "decision_reason": "低波动主观察与高波动备选均来自已审计执行包，组合后通过样本、收益、回撤、Sharpe、成本压力和近期触发门槛。",
+  "gates": {
+    "min_trades": 50,
+    "min_strategy_return": 0.3,
+    "min_sharpe": 1.3,
+    "max_drawdown_floor": -0.15,
+    "min_positive_trade_ratio": 0.55,
+    "min_avg_stock_count": 15,
+    "min_stress_1_5_return": 0.0,
+    "min_stress_2_0_return": 0.0,
+    "min_component_count": 2,
+    "min_recent_trades": 5
+  },
+  "checks": [
+    {
+      "name": "sample_trades",
+      "passed": true,
+      "detail": "72 >= 50"
+    },
+    {
+      "name": "component_count",
+      "passed": true,
+      "detail": "2 >= 2"
+    },
+    {
+      "name": "strategy_return",
+      "passed": true,
+      "detail": "1.7409 >= 0.3000"
+    },
+    {
+      "name": "max_drawdown",
+      "passed": true,
+      "detail": "-0.0660 >= -0.1500"
+    },
+    {
+      "name": "sharpe",
+      "passed": true,
+      "detail": "3.1420 >= 1.3000"
+    },
+    {
+      "name": "positive_trade_ratio",
+      "passed": true,
+      "detail": "0.6806 >= 0.5500"
+    },
+    {
+      "name": "avg_stock_count",
+      "passed": true,
+      "detail": "20.00 >= 15"
+    },
+    {
+      "name": "stress_1_5_return",
+      "passed": true,
+      "detail": "1.6452 > 0.0000"
+    },
+    {
+      "name": "stress_2_0_return",
+      "passed": true,
+      "detail": "1.5528 > 0.0000"
+    },
+    {
+      "name": "recent_trades",
+      "passed": true,
+      "detail": "15 >= 5"
+    }
+  ],
+  "failed_checks": [],
+  "component_count": 2,
+  "components": [
+    {
+      "id": "ak_low_vol_contraction_breakout_mid_liquidity",
+      "strategy_id": "ak_contraction_breakout_combo",
+      "strategy_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "execution_role": "primary_local_sleeve",
+      "allowed_market_regime": "low_volatility",
+      "allowed_liquidity_bucket": "mid_liquidity"
+    },
+    {
+      "id": "ak_high_vol_mean_reversion_mid_liquidity",
+      "strategy_id": "ak_mean_reversion_quality_combo",
+      "strategy_name": "AkShare高波动均值回归-中流动性观察策略",
+      "execution_role": "high_volatility_backup_sleeve",
+      "allowed_market_regime": "high_volatility",
+      "allowed_liquidity_bucket": "mid_liquidity"
+    }
+  ],
+  "baseline": {
+    "sample_trades": 72,
+    "strategy_return": 1.740866685270742,
+    "max_drawdown": -0.06597592399323748,
+    "sharpe": 3.14203779176307,
+    "positive_trade_ratio": 0.6805555555555556,
+    "avg_stock_count": 20.0,
+    "first_trade_date": "2024-04-17",
+    "last_trade_date": "2026-06-29"
+  },
+  "cost_stress": {
+    "cost_1_0x": {
+      "sample_trades": 72,
+      "strategy_return": 1.740866685270742,
+      "max_drawdown": -0.06597592399323748,
+      "sharpe": 3.14203779176307,
+      "positive_trade_ratio": 0.6805555555555556,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2026-06-29"
+    },
+    "cost_1_5x": {
+      "sample_trades": 72,
+      "strategy_return": 1.6452070410685042,
+      "max_drawdown": -0.0678747318367906,
+      "sharpe": 3.034462636125295,
+      "positive_trade_ratio": 0.6666666666666666,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2026-06-29"
+    },
+    "cost_2_0x": {
+      "sample_trades": 72,
+      "strategy_return": 1.5528412282010402,
+      "max_drawdown": -0.06977064315842485,
+      "sharpe": 2.9268874804875207,
+      "positive_trade_ratio": 0.6666666666666666,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2026-06-29"
+    }
+  },
+  "segments": {
+    "first_half": {
+      "sample_trades": 36,
+      "strategy_return": 0.5725046125761362,
+      "max_drawdown": -0.06597592399323748,
+      "sharpe": 2.3033460546459485,
+      "positive_trade_ratio": 0.5555555555555556,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2025-04-25"
+    },
+    "second_half": {
+      "sample_trades": 36,
+      "strategy_return": 0.742994369206047,
+      "max_drawdown": -0.03719283070485868,
+      "sharpe": 5.036204850893766,
+      "positive_trade_ratio": 0.8055555555555556,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2025-05-07",
+      "last_trade_date": "2026-06-29"
+    },
+    "before_2025_07_01": {
+      "sample_trades": 44,
+      "strategy_return": 0.7091465919974205,
+      "max_drawdown": -0.06597592399323748,
+      "sharpe": 2.4289140461387877,
+      "positive_trade_ratio": 0.6136363636363636,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2025-06-24"
+    },
+    "from_2025_07_01": {
+      "sample_trades": 28,
+      "strategy_return": 0.6036463449677449,
+      "max_drawdown": -0.03719283070485879,
+      "sharpe": 5.059459827748509,
+      "positive_trade_ratio": 0.7857142857142857,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2025-07-01",
+      "last_trade_date": "2026-06-29"
+    },
+    "year_2024": {
+      "sample_trades": 28,
+      "strategy_return": 0.5013148496348274,
+      "max_drawdown": -0.05471178677320809,
+      "sharpe": 2.3996274869056013,
+      "positive_trade_ratio": 0.5357142857142857,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2024-12-31"
+    },
+    "year_2025": {
+      "sample_trades": 29,
+      "strategy_return": 0.3998206877155439,
+      "max_drawdown": -0.024416054057118886,
+      "sharpe": 4.294648970155776,
+      "positive_trade_ratio": 0.7586206896551724,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2025-01-15",
+      "last_trade_date": "2025-12-25"
+    },
+    "year_2026": {
+      "sample_trades": 15,
+      "strategy_return": 0.30419858378895603,
+      "max_drawdown": -0.03719283070485857,
+      "sharpe": 5.098621629383738,
+      "positive_trade_ratio": 0.8,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2026-01-05",
+      "last_trade_date": "2026-06-29"
+    },
+    "regime_high_volatility": {
+      "sample_trades": 33,
+      "strategy_return": 0.48191543140246806,
+      "max_drawdown": -0.04892893054364811,
+      "sharpe": 3.0216827049654844,
+      "positive_trade_ratio": 0.696969696969697,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2026-06-29"
+    },
+    "regime_low_volatility": {
+      "sample_trades": 39,
+      "strategy_return": 0.8495432513829866,
+      "max_drawdown": -0.041902416191464065,
+      "sharpe": 3.2286751147990493,
+      "positive_trade_ratio": 0.6666666666666666,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-05-30",
+      "last_trade_date": "2026-05-19"
+    }
+  },
+  "component_usage": [
+    {
+      "component_id": "ak_low_vol_contraction_breakout_mid_liquidity",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "execution_role": "primary_local_sleeve",
+      "market_regime": "low_volatility",
+      "sample_trades": 39,
+      "strategy_return": 0.8495432513829866,
+      "max_drawdown": -0.041902416191464065,
+      "sharpe": 3.2286751147990493,
+      "positive_trade_ratio": 0.6666666666666666,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-05-30",
+      "last_trade_date": "2026-05-19"
+    },
+    {
+      "component_id": "ak_high_vol_mean_reversion_mid_liquidity",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "execution_role": "high_volatility_backup_sleeve",
+      "market_regime": "high_volatility",
+      "sample_trades": 33,
+      "strategy_return": 0.48191543140246806,
+      "max_drawdown": -0.04892893054364811,
+      "sharpe": 3.0216827049654844,
+      "positive_trade_ratio": 0.696969696969697,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2026-06-29"
+    }
+  ],
+  "trade_count": 72,
+  "trade_records_preview": [
+    {
+      "date": "2025-09-10",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": -0.0002889347414756771,
+      "net_return_5d": -0.0012889347414756771,
+      "stock_count": 20,
+      "codes": "601211,600570,601881,601800,601985,601006,601919,601186,601878,601166,601390,600926,600584,600015,600031,601117,601377,601688,600023,600900"
+    },
+    {
+      "date": "2025-09-17",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": -0.02191398045848496,
+      "net_return_5d": -0.022913980458484962,
+      "stock_count": 20,
+      "codes": "600926,600900,601939,600887,601229,600023,601319,600027,601919,601009,601998,600919,600011,601618,601766,601360,002648,600905,601985,601881"
+    },
+    {
+      "date": "2025-10-31",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.0030713924958697012,
+      "net_return_5d": 0.0020713924958697012,
+      "stock_count": 20,
+      "codes": "002837,600048,300124,300433,600522,600999,601816,000988,601225,600015,601788,600584,601006,601881,600061,601878,601059,002558,600150,603019"
+    },
+    {
+      "date": "2025-12-15",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.021853853537532008,
+      "net_return_5d": 0.020853853537532007,
+      "stock_count": 20,
+      "codes": "600027,003816,600690,600372,601229,600011,600926,600023,600018,600549,601117,300502,600489,601998,600900,600015,600919,600115,000657,601166"
+    },
+    {
+      "date": "2025-12-25",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.024375993218029395,
+      "net_return_5d": 0.023375993218029394,
+      "stock_count": 20,
+      "codes": "600887,600023,600372,600011,601985,002532,002558,003816,300308,601390,002648,601006,603799,601229,600362,601689,600061,600183,601998,000807"
+    },
+    {
+      "date": "2026-01-05",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.03531411940567629,
+      "net_return_5d": 0.03431411940567629,
+      "stock_count": 20,
+      "codes": "600926,601669,600489,600905,601319,600406,000792,600115,600372,002532,600061,601985,601688,601169,601229,600999,600111,600031,002074,601881"
+    },
+    {
+      "date": "2026-01-12",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.00011016240306385705,
+      "net_return_5d": -0.000889837596936143,
+      "stock_count": 20,
+      "codes": "600919,601166,601658,600549,601816,601328,601939,601229,003816,600031,601669,600905,600406,600015,601881,000988,601872,600893,600026,601390"
+    },
+    {
+      "date": "2026-01-19",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.07762789604485039,
+      "net_return_5d": 0.07662789604485039,
+      "stock_count": 20,
+      "codes": "600489,600549,002532,600029,000975,600115,000657,002493,600183,600547,003816,600176,600875,601018,600019,000807,002648,601888,600031,600893"
+    },
+    {
+      "date": "2026-01-26",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": -0.03619283070485873,
+      "net_return_5d": -0.03719283070485873,
+      "stock_count": 20,
+      "codes": "600549,000657,600489,600547,002532,003816,600919,601658,000807,600031,600362,600019,601939,600989,600026,600905,600926,600938,600522,601919"
+    },
+    {
+      "date": "2026-02-02",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.03746835876063279,
+      "net_return_5d": 0.03646835876063279,
+      "stock_count": 20,
+      "codes": "003816,601939,601658,601998,600905,601077,601916,600026,600919,601229,002602,002493,600150,601881,601319,601018,300442,601872,600031,600989"
+    },
+    {
+      "date": "2026-02-10",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.015227590509298682,
+      "net_return_5d": 0.014227590509298681,
+      "stock_count": 20,
+      "codes": "601872,600026,601077,601916,600031,601939,601229,600150,600522,600176,601009,000768,002493,600989,600115,601018,601658,600029,601888,600309"
+    },
+    {
+      "date": "2026-03-13",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.0009606321280233643,
+      "net_return_5d": -3.936787197663576e-05,
+      "stock_count": 20,
+      "codes": "600919,601229,601077,601916,601169,600015,002384,601939,601998,601658,600887,600104,601117,601328,600188,601166,601009,300502,000792,601728"
+    },
+    {
+      "date": "2026-03-25",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.014798408525217932,
+      "net_return_5d": 0.013798408525217933,
+      "stock_count": 20,
+      "codes": "300251,601698,600150,600019,000807,002532,600183,601800,600048,600118,600584,600887,600588,601211,600362,002602,601360,600372,601186,000975"
+    },
+    {
+      "date": "2026-04-01",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.005909729487374732,
+      "net_return_5d": 0.0049097294873747315,
+      "stock_count": 20,
+      "codes": "600150,600019,600549,600372,600584,600438,601800,600027,002493,600183,601728,600346,600048,600938,601186,000657,601006,002600,002736,601360"
+    },
+    {
+      "date": "2026-04-09",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.022224371270626698,
+      "net_return_5d": 0.021224371270626697,
+      "stock_count": 20,
+      "codes": "601727,601800,600438,600011,601169,002736,601319,601881,601186,601229,300274,601816,002493,601877,600019,601658,601377,600018,600406,300498"
+    },
+    {
+      "date": "2026-04-16",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.0011341054925466387,
+      "net_return_5d": 0.0001341054925466387,
+      "stock_count": 20,
+      "codes": "600690,600011,601618,300274,600150,002493,600048,601009,601169,601881,600018,601111,600900,600515,600989,601319,600019,601186,601816,600029"
+    },
+    {
+      "date": "2026-04-23",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.013685824142123276,
+      "net_return_5d": 0.012685824142123277,
+      "stock_count": 20,
+      "codes": "601319,601377,601881,600104,300251,601939,300274,600048,601186,300433,600018,002493,601117,600690,601618,600031,601018,600026,601077,601901"
+    },
+    {
+      "date": "2026-05-12",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.029051126355598804,
+      "net_return_5d": 0.028051126355598803,
+      "stock_count": 20,
+      "codes": "600183,002938,601985,600027,002463,002384,300476,600011,600023,600905,601618,601901,603986,600900,600018,601916,601728,601009,601319,601229"
+    },
+    {
+      "date": "2026-05-19",
+      "component_strategy_id": "ak_contraction_breakout_combo",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "market_regime": "low_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.034784218765923226,
+      "net_return_5d": 0.033784218765923225,
+      "stock_count": 20,
+      "codes": "002384,000988,601985,600183,600919,603986,003816,601916,600900,600027,601186,601618,601901,002463,600018,601939,603019,601818,601006,600999"
+    },
+    {
+      "date": "2026-06-29",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "market_regime": "high_volatility",
+      "liquidity_bucket": "mid_liquidity",
+      "gross_return_5d": 0.035239624794884315,
+      "net_return_5d": 0.034239624794884314,
+      "stock_count": 20,
+      "codes": "601360,600875,600930,601111,601225,600023,300450,002050,600938,600588,000975,601456,601088,600089,600489,000617,002532,600027,000807,601898"
+    }
+  ],
+  "paper_scope": "仅限 AkShare 执行包中的低波动收缩突破主观察与高波动均值回归备选；进入真实模拟盘前仍需 JoinQuant 交易可行性复核。"
+}

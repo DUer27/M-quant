@@ -182,3 +182,12 @@
 - `/backtest-api/import-results` 现在会识别 `source=joinquant_akshare_latest_signal_tradeability_review`，校验 `strategy_id`、`signal_date`、`decision` 和 `records` 后单独入库。
 - 新增 `/strategy-api/tradeability-reviews` 只读接口，并在 `模拟观察清单` 中显示 `待聚宽复核/复核通过/复核未过`、可交易数量和脚本下载入口。
 - 当前尚未导入真实 JoinQuant 复核 JSON，因此最新 AkShare 触发信号仍显示为 `待聚宽复核`，不得视为已可开仓。
+
+## 追加：AkShare 本地高低波动切换策略
+
+- 新增 `outputs/sources/akshare/scripts/build_akshare_regime_switch_strategy.py`。
+- 新增结果 `outputs/sources/akshare/results/akshare_regime_switch_paper_watch_strategy_20260709.json`。
+- 新增说明 `outputs/_docs/akshare-regime-switch-paper-watch-strategy-20260709.md`。
+- 逻辑：只组合执行包里已审计的 `AkShare低波动收缩突破-中流动性观察策略` 与 `AkShare高波动均值回归-中流动性观察策略` 的真实 trade_records，形成一个高/低波动切换控制器。
+- 结果：72 次 5 日调仓，收益 174.09%，最大回撤 -6.60%，Sharpe 3.14，2.0x 成本压力收益 155.28%，决策 `ready_local_switch_paper_watch`。
+- 平台 `模拟观察清单` 已展示该本地切换控制器摘要，并保留边界：AkShare 本地 OHLCV 证据不等同于 JoinQuant 原生实测，最新开仓仍需交易可行性复核。
