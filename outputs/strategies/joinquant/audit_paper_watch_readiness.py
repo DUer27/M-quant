@@ -13,7 +13,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-backtest-results.json"
-EXECUTION_PACK_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "paper_watch_execution_pack_20260709.json"
+MATURITY_AUDIT_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "strategy_maturity_audit_20260709.json"
 RESULT_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "paper_watch_readiness_audit_20260709.json"
 DOC_PATH = ROOT / "outputs" / "_docs" / "paper-watch-readiness-audit-20260709.md"
 TODAY = pd.Timestamp("2026-07-09")
@@ -35,6 +35,27 @@ def load_imported_results() -> list[dict]:
     if isinstance(data, list):
         return data
     return data.get("results", [])
+
+
+def normalize_layer_value(value):
+    return None if value in ("", None) else value
+
+
+def load_controlled_routes() -> list[dict]:
+    maturity = json.loads(MATURITY_AUDIT_PATH.read_text(encoding="utf-8"))
+    routes = maturity.get("controlled_routes", [])
+    return [
+        {
+            "strategy_id": route.get("strategy_id"),
+            "strategy_name": route.get("strategy_name"),
+            "allowed_layer": route.get("layer"),
+            "allowed_market_regime": normalize_layer_value(route.get("market_regime")),
+            "allowed_market_cap_bucket": normalize_layer_value(route.get("market_cap_bucket")),
+            "maturity_source": route.get("source"),
+            "maturity_data_policy": route.get("data_policy"),
+        }
+        for route in routes
+    ]
 
 
 def max_drawdown(equity: pd.Series) -> float | None:
@@ -100,9 +121,9 @@ def match_trading_result(results: list[dict], route: dict) -> dict | None:
             continue
         if item.get("strategy_id") != route.get("strategy_id"):
             continue
-        if item.get("market_regime") != route.get("allowed_market_regime"):
+        if normalize_layer_value(item.get("market_regime")) != normalize_layer_value(route.get("allowed_market_regime")):
             continue
-        if item.get("market_cap_bucket") != route.get("allowed_market_cap_bucket"):
+        if normalize_layer_value(item.get("market_cap_bucket")) != normalize_layer_value(route.get("allowed_market_cap_bucket")):
             continue
         return item
     return None
@@ -182,6 +203,57 @@ def audit_route(results: list[dict], route: dict) -> dict:
     }
 
 
+def route_priority(route: dict) -> tuple:
+    decision_rank = {
+        "ready_controlled_paper_watch": 0,
+        "conditional_paper_watch": 1,
+        "conditional_recheck_required": 2,
+        "not_ready": 3,
+        "missing_result": 4,
+    }
+    baseline = route.get("baseline") or {}
+    return (
+        decision_rank.get(route.get("decision"), 9),
+        -float(baseline.get("avg_selected_count") or 0),
+        -float(baseline.get("sharpe") or -99),
+        -float(baseline.get("strategy_return") or -99),
+    )
+
+
+def select_recommended_routes(routes: list[dict], max_routes: int = 2) -> list[dict]:
+    selected = []
+    used_strategies = set()
+    for route in sorted(routes, key=route_priority):
+        if route["decision"] not in {"ready_controlled_paper_watch", "conditional_paper_watch"}:
+            continue
+        if route["strategy_id"] in used_strategies:
+            continue
+        baseline = route.get("baseline") or {}
+        selected.append({
+            "strategy_id": route["strategy_id"],
+            "strategy_name": route["strategy_name"],
+            "layer": route["allowed_layer"],
+            "market_regime": route["allowed_market_regime"],
+            "market_cap_bucket": route["allowed_market_cap_bucket"],
+            "sample_dates": baseline.get("periods"),
+            "strategy_return": baseline.get("strategy_return"),
+            "annual_return": None,
+            "max_drawdown": baseline.get("max_drawdown"),
+            "sharpe": baseline.get("sharpe"),
+            "win_rate": baseline.get("win_rate"),
+            "avg_selected_count": baseline.get("avg_selected_count"),
+            "readiness_decision": route["decision"],
+            "readiness_reason": route["decision_reason"],
+            "source": route.get("source"),
+            "data_policy": route.get("data_policy"),
+            "paper_scope": f"仅限 {route['allowed_layer']}，不得扩展到未通过分层。",
+        })
+        used_strategies.add(route["strategy_id"])
+        if len(selected) >= max_routes:
+            break
+    return selected
+
+
 def pct(value: float | None) -> str:
     if value is None:
         return "-"
@@ -200,6 +272,15 @@ def write_doc(pack: dict) -> None:
         "## 路线结论",
         "",
     ]
+    recommended = pack.get("recommended_routes", [])
+    if recommended:
+        lines.extend(["## 推荐进入观察配置", ""])
+        for route in recommended:
+            lines.extend([
+                f"- `{route['strategy_name']}`：{route['layer']}，决策 `{route['readiness_decision']}`，收益 {pct(route['strategy_return'])}，回撤 {pct(route['max_drawdown'])}，Sharpe {route['sharpe']:.2f}。",
+            ])
+        lines.append("")
+
     for route in pack["routes"]:
         base = route["baseline"]
         stress = route["cost_stress"]
@@ -230,9 +311,9 @@ def write_doc(pack: dict) -> None:
 
 def main() -> int:
     results = load_imported_results()
-    execution_pack = json.loads(EXECUTION_PACK_PATH.read_text(encoding="utf-8"))
-    routes = execution_pack.get("routes", [])
+    routes = load_controlled_routes()
     audited_routes = [audit_route(results, route) for route in routes]
+    recommended_routes = select_recommended_routes(audited_routes, max_routes=2)
     decision_counts = {
         str(key): int(value)
         for key, value in pd.Series([route["decision"] for route in audited_routes]).value_counts().items()
@@ -241,12 +322,14 @@ def main() -> int:
         "source": "joinquant_paper_watch_readiness_audit",
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "input": {
-            "execution_pack": str(EXECUTION_PACK_PATH.relative_to(ROOT)),
+            "maturity_audit": str(MATURITY_AUDIT_PATH.relative_to(ROOT)),
             "imported_backtests": str(DATA_PATH.relative_to(ROOT)),
         },
         "data_policy": "只读取已导入 JoinQuant 真实交易回测净值曲线；成本压力和分段收益由曲线中的真实 gross_return/cost/turnover 重算，不生成虚构收益。",
         "gates": GATES,
         "route_count": len(audited_routes),
+        "recommended_route_count": len(recommended_routes),
+        "recommended_routes": recommended_routes,
         "decision_counts": decision_counts,
         "routes": audited_routes,
     }

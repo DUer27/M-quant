@@ -11,12 +11,26 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 RESULT_DIR = ROOT / "outputs" / "strategies" / "joinquant"
 INPUT_PATH = RESULT_DIR / "paper_watch_routes_20260709.json"
+READINESS_PATH = RESULT_DIR / "paper_watch_readiness_audit_20260709.json"
 OUTPUT_PATH = RESULT_DIR / "paper_watch_execution_pack_20260709.json"
 DOC_PATH = ROOT / "outputs" / "_docs" / "paper-watch-execution-pack-20260709.md"
 
 
 def pct(value: float) -> str:
     return f"{value * 100:.2f}%"
+
+
+def optional_float(value):
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def display_bucket(value) -> str:
+    return value or "不限制市值层"
 
 
 def build_route_config(route: dict) -> dict:
@@ -44,7 +58,7 @@ def build_route_config(route: dict) -> dict:
         "paper_watch_baseline": {
             "sample_dates": sample_dates,
             "strategy_return": strategy_return,
-            "annual_return": float(route.get("annual_return") or 0),
+            "annual_return": optional_float(route.get("annual_return")),
             "max_drawdown": drawdown,
             "sharpe": sharpe,
             "win_rate": win_rate,
@@ -111,7 +125,7 @@ def write_doc(pack: dict) -> None:
             f"### {route['strategy_name']} - {route['allowed_layer']}",
             "",
             f"- 允许波动层：`{route['allowed_market_regime']}`",
-            f"- 允许市值层：`{route['allowed_market_cap_bucket']}`",
+            f"- 允许市值层：`{display_bucket(route['allowed_market_cap_bucket'])}`",
             f"- 真实回测收益：{pct(baseline['strategy_return'])}",
             f"- 真实最大回撤：{pct(baseline['max_drawdown'])}",
             f"- Sharpe：{baseline['sharpe']:.2f}",
@@ -126,12 +140,20 @@ def write_doc(pack: dict) -> None:
 
 def main() -> int:
     source = json.loads(INPUT_PATH.read_text(encoding="utf-8"))
-    routes = source.get("routes") if isinstance(source.get("routes"), list) else []
+    if READINESS_PATH.exists():
+        readiness = json.loads(READINESS_PATH.read_text(encoding="utf-8"))
+        routes = readiness.get("recommended_routes") if isinstance(readiness.get("recommended_routes"), list) else []
+        input_path = READINESS_PATH if routes else INPUT_PATH
+    else:
+        routes = []
+        input_path = INPUT_PATH
+    if not routes:
+        routes = source.get("routes") if isinstance(source.get("routes"), list) else []
     pack = {
         "source": "joinquant_controlled_paper_watch_execution_pack",
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "input": str(INPUT_PATH.relative_to(ROOT)),
-        "data_policy": "只从已审计通过的 JoinQuant 真实受控路线生成执行配置；不新增收益、不扩展未通过分层。",
+        "input": str(input_path.relative_to(ROOT)),
+        "data_policy": "优先从模拟观察就绪审计推荐路线生成执行配置；不新增收益、不扩展未通过分层。",
         "status": "ready" if routes else "not_ready",
         "route_count": len(routes),
         "global_controls": [
