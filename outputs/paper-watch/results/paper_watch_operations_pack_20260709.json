@@ -1,6 +1,6 @@
 {
   "source": "m_quant_paper_watch_operations_pack",
-  "generated_at": "2026-07-09T20:47:34",
+  "generated_at": "2026-07-10T01:46:44",
   "status": "ready_with_blockers",
   "data_policy": "只读取已审计 JoinQuant 曲线、AkShare 本地 OHLCV 策略与已导入交易复核；不生成收益、净值、成交或持仓。",
   "sleeve_count": 2,
