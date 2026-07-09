@@ -213,7 +213,11 @@
                     粘贴模拟观察账本 JSON
                     <textarea id="paper-watch-ledger-json" rows="5" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
                   </label>
-                  <button id="import-paper-watch-ledger" class="primary" type="button">导入账本</button>
+                  <div class="backtest-actions">
+                    <button id="download-paper-watch-ledger-csv" type="button">下载CSV模板</button>
+                    <button id="download-paper-watch-ledger-json" type="button">下载JSON模板</button>
+                    <button id="import-paper-watch-ledger" class="primary" type="button">导入账本</button>
+                  </div>
                   <p id="paper-watch-ledger-message" class="form-message">只导入真实观察记录；平台不生成收益或净值。</p>
                 </div>
               </details>
