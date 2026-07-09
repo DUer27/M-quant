@@ -209,3 +209,10 @@
 - 运行包只读取已审计 JoinQuant 曲线、AkShare 本地 OHLCV 策略与已导入交易复核；不生成收益、净值、成交或持仓。
 - 当前 2 个资金袖中，`市场状态切换策略 v1` 可进入受控模拟观察；`AkShare本地高低波动切换策略 v1` 因缺 JoinQuant 交易可行性复核 JSON，初始账本强制 `record_only`、`planned_weight=0`。
 - 平台新增 `/strategy-api/paper-watch-operations-pack`，并在 `模拟观察清单` 显示运行包摘要。
+
+## 追加：模拟观察账本导入
+
+- 平台新增 `data/imported-paper-watch-ledger.json` 作为模拟观察账本记录库。
+- 新增 `/paper-watch-api/import-ledger` 与 `/paper-watch-api/ledger`，账本记录和因子/策略回测、交易可行性复核分开保存。
+- 导入校验：资金袖必须来自运行包，`planned_weight` 必须在 0-1 之间；未通过准入的资金袖不能导入大于 0 的观察权重。
+- `模拟观察清单` 新增账本回填框和已导入账本数量展示；该功能只接收真实观察记录，不生成收益、净值、成交或持仓。

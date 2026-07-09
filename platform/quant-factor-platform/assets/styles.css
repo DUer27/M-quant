@@ -1256,6 +1256,16 @@ td small {
   margin: 0;
 }
 
+.ledger-import {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ledger-import textarea {
+  min-height: 120px;
+}
+
 .compact-details {
   margin-top: 12px;
 }
