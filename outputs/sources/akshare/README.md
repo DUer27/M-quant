@@ -118,6 +118,26 @@
 - 该结果只证明 AkShare 本地真实 OHLCV 路线可进入受控模拟观察，不等同于 JoinQuant 原生实测；后续仍需补行业暴露、市值、涨跌停/停牌、JoinQuant 复核和样本外跟踪。
 - 平台 `模拟观察清单` 已接入这些本地路线，并单独标记 `AkShare本地OHLCV`，不得和 JoinQuant 证据混用。
 
+## 本地受控执行包
+
+```bash
+/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 \
+  outputs/sources/akshare/scripts/build_akshare_paper_watch_execution_pack.py
+```
+
+当前产物：
+
+- `outputs/sources/akshare/results/akshare_paper_watch_execution_pack_20260709.json`
+- `outputs/_docs/akshare-paper-watch-execution-pack-20260709.md`
+
+执行包结论：
+
+- 6 条 AkShare 本地就绪路线中，2 条进入本地受控模拟观察执行包。
+- 主观察：`AkShare低波动收缩突破-中流动性观察策略`。
+- 高波动备选：`AkShare高波动均值回归-中流动性观察策略`。
+- 其余 4 条只做候选监控，不默认开仓。
+- 执行包明确开仓边界、Top20 等权、单票 5% 上限、5 日调仓、暂停规则和每日观察字段。
+
 ## 新因子探测
 
 - `scripts/probe_ohlcv_factor_candidates.py`：使用本地真实 AkShare OHLCV 历史探测新增候选因子。

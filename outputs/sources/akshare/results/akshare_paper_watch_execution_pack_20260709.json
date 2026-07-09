@@ -1,0 +1,1758 @@
+{
+  "source": "akshare_local_paper_watch_execution_pack",
+  "generated_at": "2026-07-09T15:57:42",
+  "input": "outputs/sources/akshare/results/akshare_paper_watch_readiness_audit_20260709.json",
+  "data_policy": "从 AkShare 本地严格就绪审计生成执行配置；不新增收益、不扩展未审计股票池或分层。",
+  "status": "ready",
+  "route_count": 6,
+  "paper_watch_route_count": 2,
+  "global_controls": [
+    "AkShare 路线只作为本地真实 OHLCV 证据源，不等同于 JoinQuant 原生策略回测。",
+    "只允许执行包中的市场波动层和流动性层开仓观察。",
+    "模拟盘必须记录净值、回撤、相对沪深300、候选数量、行业暴露、市值暴露、涨跌停和停牌数量。",
+    "任一暂停规则触发后只允许平仓或观察，重新开仓必须重新审计。",
+    "进入真实模拟盘前优先补 JoinQuant 复核结果。"
+  ],
+  "routes": [
+    {
+      "id": "ak_low_vol_contraction_breakout_mid_liquidity",
+      "strategy_id": "ak_contraction_breakout_combo",
+      "strategy_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "execution_role": "primary_local_sleeve",
+      "allowed_market_regime": "low_volatility",
+      "allowed_liquidity_bucket": "mid_liquidity",
+      "allowed_layer": "low_volatility/mid_liquidity",
+      "rebalance_days": 5,
+      "position_mode": "equal_weight_top_20_or_available",
+      "max_position_weight": 0.05,
+      "paper_watch_priority": 1,
+      "can_enter_paper_watch": true,
+      "entry_gate": [
+        "只在 low_volatility / mid_liquidity 分层观察",
+        "只使用 AkShare 本地真实 OHLCV 因子脚本当期生成的候选池和排序分数",
+        "候选池每期 Top20 等权，若可交易股票少于 10 只则只记录信号",
+        "不得扩展到未审计股票池、未审计分层或未审计成本口径",
+        "进入真实模拟盘前继续补 JoinQuant 复核、行业暴露、市值、涨跌停和停牌检查"
+      ],
+      "paper_watch_baseline": {
+        "sample_dates": 39,
+        "strategy_return": 0.8495432513829866,
+        "annual_return": null,
+        "max_drawdown": -0.041902416191464065,
+        "sharpe": 3.2286751147990493,
+        "win_rate": 0.6666666666666666,
+        "avg_selected_count": 20.0,
+        "source": "akshare_strategy_candidate_validation"
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "sample_trades": 39,
+          "strategy_return": 0.8495432513829866,
+          "max_drawdown": -0.041902416191464065,
+          "sharpe": 3.2286751147990493,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        },
+        "cost_1_5x": {
+          "sample_trades": 39,
+          "strategy_return": 0.8143521960451179,
+          "max_drawdown": -0.04335948175352211,
+          "sharpe": 3.1307459428322235,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        },
+        "cost_2_0x": {
+          "sample_trades": 39,
+          "strategy_return": 0.7798138498280636,
+          "max_drawdown": -0.044815069310907396,
+          "sharpe": 3.0328167708653964,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        }
+      },
+      "pause_rules": [
+        {
+          "rule": "local_rolling_drawdown_guard",
+          "trigger": -0.062854,
+          "meaning": "本地模拟净值回撤超过历史最大回撤的压力阈值，或超过 8%，暂停新开仓并复核数据口径。"
+        },
+        {
+          "rule": "three_rebalance_underperformance",
+          "trigger": "连续3个5日调仓周期跑输沪深300且命中率低于历史胜率 0.67",
+          "meaning": "说明本地路线样本外可能失效，暂停该路线并等待重新审计。"
+        },
+        {
+          "rule": "layer_violation",
+          "trigger": "市场状态不为 low_volatility 或流动性分层不为 mid_liquidity",
+          "meaning": "不满足本地受控分层时，只记录信号，不允许开仓。"
+        },
+        {
+          "rule": "candidate_count_guard",
+          "trigger": "候选数少于 15 或实际可买入少于 10",
+          "meaning": "容量不足时不开新仓，避免把小样本强行扩成可交易策略。"
+        },
+        {
+          "rule": "data_source_guard",
+          "trigger": "AkShare 行情缺失、复权异常、涨跌停/停牌状态无法确认",
+          "meaning": "数据源或交易可行性不完整时，暂停该路线并等待 JoinQuant/模拟盘复核。"
+        }
+      ],
+      "daily_observation_fields": [
+        "date",
+        "strategy_id",
+        "market_regime",
+        "liquidity_bucket",
+        "candidate_count",
+        "selected_count",
+        "selected_codes",
+        "paper_nav",
+        "paper_period_return_5d",
+        "hs300_period_return_5d",
+        "rolling_drawdown",
+        "turnover_estimate",
+        "industry_top_exposure",
+        "market_cap_bucket_exposure",
+        "limit_up_down_count",
+        "suspended_count",
+        "pause_flag",
+        "notes"
+      ],
+      "evidence": {
+        "data_policy": "真实 AkShare OHLCV 本地历史生成候选池；5日等权调仓收益来自真实未来5日价格变化扣成本；未生成虚构绩效。",
+        "paper_scope": "仅限 低波动确认路线 / low_volatility / mid_liquidity，不得扩展到未审计股票池或未通过分层。",
+        "checks": [
+          {
+            "name": "sample_trades",
+            "passed": true,
+            "detail": "39 >= 30"
+          },
+          {
+            "name": "strategy_return",
+            "passed": true,
+            "detail": "0.8495 >= 0.2000"
+          },
+          {
+            "name": "max_drawdown",
+            "passed": true,
+            "detail": "-0.0419 >= -0.1500"
+          },
+          {
+            "name": "sharpe",
+            "passed": true,
+            "detail": "3.2287 >= 1.2000"
+          },
+          {
+            "name": "positive_trade_ratio",
+            "passed": true,
+            "detail": "0.6667 >= 0.5500"
+          },
+          {
+            "name": "avg_stock_count",
+            "passed": true,
+            "detail": "20.00 >= 15"
+          },
+          {
+            "name": "stress_1_5_return",
+            "passed": true,
+            "detail": "0.8144 > 0.0000"
+          },
+          {
+            "name": "stress_2_0_return",
+            "passed": true,
+            "detail": "0.7798 > 0.0000"
+          },
+          {
+            "name": "first_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "second_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "oos_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "year_segments_all_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "recent_trades",
+            "passed": true,
+            "detail": "9"
+          }
+        ],
+        "segments": {
+          "year_2024": {
+            "sample_trades": 11,
+            "strategy_return": 0.20059220395855637,
+            "strategy_annual_return": 1.3108716903569406,
+            "max_drawdown": -0.020546315693444117,
+            "sharpe": 2.2071463581687074,
+            "positive_trade_ratio": 0.45454545454545453,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2024-12-31"
+          },
+          "year_2025": {
+            "sample_trades": 19,
+            "strategy_return": 0.28729836053858415,
+            "strategy_annual_return": 0.9540629587185219,
+            "max_drawdown": -0.02154088004728616,
+            "sharpe": 4.74763149530061,
+            "positive_trade_ratio": 0.7894736842105263,
+            "first_trade_date": "2025-02-25",
+            "last_trade_date": "2025-12-25"
+          },
+          "year_2026": {
+            "sample_trades": 9,
+            "strategy_return": 0.1967123049983821,
+            "strategy_annual_return": 1.7336482859317406,
+            "max_drawdown": -0.03719283070485857,
+            "sharpe": 4.6014488520145544,
+            "positive_trade_ratio": 0.6666666666666666,
+            "first_trade_date": "2026-01-05",
+            "last_trade_date": "2026-05-19"
+          },
+          "first_half": {
+            "sample_trades": 19,
+            "strategy_return": 0.2052029817208194,
+            "strategy_annual_return": 0.6406760542500525,
+            "max_drawdown": -0.041902416191464065,
+            "sharpe": 1.6981698847985391,
+            "positive_trade_ratio": 0.5263157894736842,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2025-06-17"
+          },
+          "second_half": {
+            "sample_trades": 20,
+            "strategy_return": 0.5346321569352257,
+            "strategy_annual_return": 1.942597227736051,
+            "max_drawdown": -0.03719283070485868,
+            "sharpe": 6.07968068829499,
+            "positive_trade_ratio": 0.8,
+            "first_trade_date": "2025-06-24",
+            "last_trade_date": "2026-05-19"
+          },
+          "before_2025_07_01": {
+            "sample_trades": 20,
+            "strategy_return": 0.2290829256111966,
+            "strategy_annual_return": 0.6816847561351935,
+            "max_drawdown": -0.041902416191464065,
+            "sharpe": 1.8166035671810097,
+            "positive_trade_ratio": 0.55,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2025-06-24"
+          },
+          "from_2025_07_01": {
+            "sample_trades": 19,
+            "strategy_return": 0.5048156742257635,
+            "strategy_annual_return": 1.9566357425469723,
+            "max_drawdown": -0.03719283070485868,
+            "sharpe": 5.9490128119764,
+            "positive_trade_ratio": 0.7894736842105263,
+            "first_trade_date": "2025-07-01",
+            "last_trade_date": "2026-05-19"
+          }
+        },
+        "segment_details": {
+          "year_segments": {
+            "year_2024": {
+              "sample_trades": 11,
+              "strategy_return": 0.20059220395855637,
+              "strategy_annual_return": 1.3108716903569406,
+              "max_drawdown": -0.020546315693444117,
+              "sharpe": 2.2071463581687074,
+              "positive_trade_ratio": 0.45454545454545453,
+              "first_trade_date": "2024-05-30",
+              "last_trade_date": "2024-12-31"
+            },
+            "year_2025": {
+              "sample_trades": 19,
+              "strategy_return": 0.28729836053858415,
+              "strategy_annual_return": 0.9540629587185219,
+              "max_drawdown": -0.02154088004728616,
+              "sharpe": 4.74763149530061,
+              "positive_trade_ratio": 0.7894736842105263,
+              "first_trade_date": "2025-02-25",
+              "last_trade_date": "2025-12-25"
+            },
+            "year_2026": {
+              "sample_trades": 9,
+              "strategy_return": 0.1967123049983821,
+              "strategy_annual_return": 1.7336482859317406,
+              "max_drawdown": -0.03719283070485857,
+              "sharpe": 4.6014488520145544,
+              "positive_trade_ratio": 0.6666666666666666,
+              "first_trade_date": "2026-01-05",
+              "last_trade_date": "2026-05-19"
+            }
+          },
+          "recent_trade_count": 9,
+          "recent_first_trade_date": "2026-01-05",
+          "recent_last_trade_date": "2026-05-19"
+        }
+      }
+    },
+    {
+      "id": "ak_high_vol_mean_reversion_mid_liquidity",
+      "strategy_id": "ak_mean_reversion_quality_combo",
+      "strategy_name": "AkShare高波动均值回归-中流动性观察策略",
+      "execution_role": "high_volatility_backup_sleeve",
+      "allowed_market_regime": "high_volatility",
+      "allowed_liquidity_bucket": "mid_liquidity",
+      "allowed_layer": "high_volatility/mid_liquidity",
+      "rebalance_days": 5,
+      "position_mode": "equal_weight_top_20_or_available",
+      "max_position_weight": 0.05,
+      "paper_watch_priority": 2,
+      "can_enter_paper_watch": true,
+      "entry_gate": [
+        "只在 high_volatility / mid_liquidity 分层观察",
+        "只使用 AkShare 本地真实 OHLCV 因子脚本当期生成的候选池和排序分数",
+        "候选池每期 Top20 等权，若可交易股票少于 10 只则只记录信号",
+        "不得扩展到未审计股票池、未审计分层或未审计成本口径",
+        "进入真实模拟盘前继续补 JoinQuant 复核、行业暴露、市值、涨跌停和停牌检查"
+      ],
+      "paper_watch_baseline": {
+        "sample_dates": 33,
+        "strategy_return": 0.48191543140246806,
+        "annual_return": null,
+        "max_drawdown": -0.04892893054364811,
+        "sharpe": 3.0216827049654844,
+        "win_rate": 0.696969696969697,
+        "avg_selected_count": 20.0,
+        "source": "akshare_strategy_candidate_validation"
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "sample_trades": 33,
+          "strategy_return": 0.48191543140246806,
+          "max_drawdown": -0.04892893054364811,
+          "sharpe": 3.0216827049654844,
+          "positive_trade_ratio": 0.696969696969697,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-04-17",
+          "last_trade_date": "2026-06-29"
+        },
+        "cost_1_5x": {
+          "sample_trades": 33,
+          "strategy_return": 0.4579347090572965,
+          "max_drawdown": -0.05037891740367495,
+          "sharpe": 2.899654900780464,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-04-17",
+          "last_trade_date": "2026-06-29"
+        },
+        "cost_2_0x": {
+          "sample_trades": 33,
+          "strategy_return": 0.43433046576621104,
+          "max_drawdown": -0.05182742982639843,
+          "sharpe": 2.777627096595443,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-04-17",
+          "last_trade_date": "2026-06-29"
+        }
+      },
+      "pause_rules": [
+        {
+          "rule": "local_rolling_drawdown_guard",
+          "trigger": -0.073393,
+          "meaning": "本地模拟净值回撤超过历史最大回撤的压力阈值，或超过 8%，暂停新开仓并复核数据口径。"
+        },
+        {
+          "rule": "three_rebalance_underperformance",
+          "trigger": "连续3个5日调仓周期跑输沪深300且命中率低于历史胜率 0.70",
+          "meaning": "说明本地路线样本外可能失效，暂停该路线并等待重新审计。"
+        },
+        {
+          "rule": "layer_violation",
+          "trigger": "市场状态不为 high_volatility 或流动性分层不为 mid_liquidity",
+          "meaning": "不满足本地受控分层时，只记录信号，不允许开仓。"
+        },
+        {
+          "rule": "candidate_count_guard",
+          "trigger": "候选数少于 15 或实际可买入少于 10",
+          "meaning": "容量不足时不开新仓，避免把小样本强行扩成可交易策略。"
+        },
+        {
+          "rule": "data_source_guard",
+          "trigger": "AkShare 行情缺失、复权异常、涨跌停/停牌状态无法确认",
+          "meaning": "数据源或交易可行性不完整时，暂停该路线并等待 JoinQuant/模拟盘复核。"
+        }
+      ],
+      "daily_observation_fields": [
+        "date",
+        "strategy_id",
+        "market_regime",
+        "liquidity_bucket",
+        "candidate_count",
+        "selected_count",
+        "selected_codes",
+        "paper_nav",
+        "paper_period_return_5d",
+        "hs300_period_return_5d",
+        "rolling_drawdown",
+        "turnover_estimate",
+        "industry_top_exposure",
+        "market_cap_bucket_exposure",
+        "limit_up_down_count",
+        "suspended_count",
+        "pause_flag",
+        "notes"
+      ],
+      "evidence": {
+        "data_policy": "真实 AkShare OHLCV 本地历史生成候选池；5日等权调仓收益来自真实未来5日价格变化扣成本；未生成虚构绩效。",
+        "paper_scope": "仅限 高波动回归路线 / high_volatility / mid_liquidity，不得扩展到未审计股票池或未通过分层。",
+        "checks": [
+          {
+            "name": "sample_trades",
+            "passed": true,
+            "detail": "33 >= 30"
+          },
+          {
+            "name": "strategy_return",
+            "passed": true,
+            "detail": "0.4819 >= 0.2000"
+          },
+          {
+            "name": "max_drawdown",
+            "passed": true,
+            "detail": "-0.0489 >= -0.1500"
+          },
+          {
+            "name": "sharpe",
+            "passed": true,
+            "detail": "3.0217 >= 1.2000"
+          },
+          {
+            "name": "positive_trade_ratio",
+            "passed": true,
+            "detail": "0.6970 >= 0.5500"
+          },
+          {
+            "name": "avg_stock_count",
+            "passed": true,
+            "detail": "20.00 >= 15"
+          },
+          {
+            "name": "stress_1_5_return",
+            "passed": true,
+            "detail": "0.4579 > 0.0000"
+          },
+          {
+            "name": "stress_2_0_return",
+            "passed": true,
+            "detail": "0.4343 > 0.0000"
+          },
+          {
+            "name": "first_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "second_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "oos_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "year_segments_all_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "recent_trades",
+            "passed": true,
+            "detail": "6"
+          }
+        ],
+        "segments": {
+          "year_2024": {
+            "sample_trades": 17,
+            "strategy_return": 0.25047859271844164,
+            "strategy_annual_return": 0.9400037212856645,
+            "max_drawdown": -0.03745921010757758,
+            "sharpe": 2.5997579417307897,
+            "positive_trade_ratio": 0.5882352941176471,
+            "first_trade_date": "2024-04-17",
+            "last_trade_date": "2024-12-18"
+          },
+          "year_2025": {
+            "sample_trades": 10,
+            "strategy_return": 0.08740967177949543,
+            "strategy_annual_return": 0.5255332747535935,
+            "max_drawdown": -0.02417338057448204,
+            "sharpe": 3.246303186372338,
+            "positive_trade_ratio": 0.7,
+            "first_trade_date": "2025-01-15",
+            "last_trade_date": "2025-10-31"
+          },
+          "year_2026": {
+            "sample_trades": 6,
+            "strategy_return": 0.08981797742166564,
+            "strategy_annual_return": 1.0595546878406426,
+            "max_drawdown": 0.0,
+            "sharpe": 8.47799688916949,
+            "positive_trade_ratio": 1.0,
+            "first_trade_date": "2026-03-25",
+            "last_trade_date": "2026-06-29"
+          },
+          "first_half": {
+            "sample_trades": 16,
+            "strategy_return": 0.261310773061705,
+            "strategy_annual_return": 1.077732490727064,
+            "max_drawdown": -0.030248057592466404,
+            "sharpe": 2.804839716760501,
+            "positive_trade_ratio": 0.625,
+            "first_trade_date": "2024-04-17",
+            "last_trade_date": "2024-12-11"
+          },
+          "second_half": {
+            "sample_trades": 17,
+            "strategy_return": 0.17490111323260016,
+            "strategy_annual_return": 0.6126247141050125,
+            "max_drawdown": -0.02417338057448215,
+            "sharpe": 4.140119573532159,
+            "positive_trade_ratio": 0.7647058823529411,
+            "first_trade_date": "2024-12-18",
+            "last_trade_date": "2026-06-29"
+          },
+          "before_2025_07_01": {
+            "sample_trades": 24,
+            "strategy_return": 0.39058688098486005,
+            "strategy_annual_return": 0.9985548344522623,
+            "max_drawdown": -0.04892893054364811,
+            "sharpe": 3.103565230752782,
+            "positive_trade_ratio": 0.6666666666666666,
+            "first_trade_date": "2024-04-17",
+            "last_trade_date": "2025-05-07"
+          },
+          "from_2025_07_01": {
+            "sample_trades": 9,
+            "strategy_return": 0.0656762635017285,
+            "strategy_annual_return": 0.42791264107668736,
+            "max_drawdown": -0.022913980458484917,
+            "sharpe": 3.1869131446299823,
+            "positive_trade_ratio": 0.7777777777777778,
+            "first_trade_date": "2025-09-10",
+            "last_trade_date": "2026-06-29"
+          }
+        },
+        "segment_details": {
+          "year_segments": {
+            "year_2024": {
+              "sample_trades": 17,
+              "strategy_return": 0.25047859271844164,
+              "strategy_annual_return": 0.9400037212856645,
+              "max_drawdown": -0.03745921010757758,
+              "sharpe": 2.5997579417307897,
+              "positive_trade_ratio": 0.5882352941176471,
+              "first_trade_date": "2024-04-17",
+              "last_trade_date": "2024-12-18"
+            },
+            "year_2025": {
+              "sample_trades": 10,
+              "strategy_return": 0.08740967177949543,
+              "strategy_annual_return": 0.5255332747535935,
+              "max_drawdown": -0.02417338057448204,
+              "sharpe": 3.246303186372338,
+              "positive_trade_ratio": 0.7,
+              "first_trade_date": "2025-01-15",
+              "last_trade_date": "2025-10-31"
+            },
+            "year_2026": {
+              "sample_trades": 6,
+              "strategy_return": 0.08981797742166564,
+              "strategy_annual_return": 1.0595546878406426,
+              "max_drawdown": 0.0,
+              "sharpe": 8.47799688916949,
+              "positive_trade_ratio": 1.0,
+              "first_trade_date": "2026-03-25",
+              "last_trade_date": "2026-06-29"
+            }
+          },
+          "recent_trade_count": 6,
+          "recent_first_trade_date": "2026-03-25",
+          "recent_last_trade_date": "2026-06-29"
+        }
+      }
+    },
+    {
+      "id": "ak_low_vol_trend_pullback_mid_liquidity",
+      "strategy_id": "ak_trend_pullback_reversal_combo",
+      "strategy_name": "AkShare低波动趋势回踩-中流动性观察策略",
+      "execution_role": "candidate_monitor",
+      "allowed_market_regime": "low_volatility",
+      "allowed_liquidity_bucket": "mid_liquidity",
+      "allowed_layer": "low_volatility/mid_liquidity",
+      "rebalance_days": 5,
+      "position_mode": "equal_weight_top_20_or_available",
+      "max_position_weight": 0.05,
+      "paper_watch_priority": 3,
+      "can_enter_paper_watch": false,
+      "entry_gate": [
+        "只在 low_volatility / mid_liquidity 分层观察",
+        "只使用 AkShare 本地真实 OHLCV 因子脚本当期生成的候选池和排序分数",
+        "候选池每期 Top20 等权，若可交易股票少于 10 只则只记录信号",
+        "不得扩展到未审计股票池、未审计分层或未审计成本口径",
+        "进入真实模拟盘前继续补 JoinQuant 复核、行业暴露、市值、涨跌停和停牌检查"
+      ],
+      "paper_watch_baseline": {
+        "sample_dates": 39,
+        "strategy_return": 1.113801288133042,
+        "annual_return": null,
+        "max_drawdown": -0.07378817707287377,
+        "sharpe": 2.84331515528495,
+        "win_rate": 0.7435897435897436,
+        "avg_selected_count": 20.0,
+        "source": "akshare_strategy_candidate_validation"
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "sample_trades": 39,
+          "strategy_return": 1.113801288133042,
+          "max_drawdown": -0.07378817707287377,
+          "sharpe": 2.84331515528495,
+          "positive_trade_ratio": 0.7435897435897436,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        },
+        "cost_1_5x": {
+          "sample_trades": 39,
+          "strategy_return": 1.0736996151831835,
+          "max_drawdown": -0.07521291046522371,
+          "sharpe": 2.7740225056075896,
+          "positive_trade_ratio": 0.7435897435897436,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        },
+        "cost_2_0x": {
+          "sample_trades": 39,
+          "strategy_return": 1.0343395431918978,
+          "max_drawdown": -0.07663618225319935,
+          "sharpe": 2.704729855930228,
+          "positive_trade_ratio": 0.7435897435897436,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        }
+      },
+      "pause_rules": [
+        {
+          "rule": "local_rolling_drawdown_guard",
+          "trigger": -0.08,
+          "meaning": "本地模拟净值回撤超过历史最大回撤的压力阈值，或超过 8%，暂停新开仓并复核数据口径。"
+        },
+        {
+          "rule": "three_rebalance_underperformance",
+          "trigger": "连续3个5日调仓周期跑输沪深300且命中率低于历史胜率 0.74",
+          "meaning": "说明本地路线样本外可能失效，暂停该路线并等待重新审计。"
+        },
+        {
+          "rule": "layer_violation",
+          "trigger": "市场状态不为 low_volatility 或流动性分层不为 mid_liquidity",
+          "meaning": "不满足本地受控分层时，只记录信号，不允许开仓。"
+        },
+        {
+          "rule": "candidate_count_guard",
+          "trigger": "候选数少于 15 或实际可买入少于 10",
+          "meaning": "容量不足时不开新仓，避免把小样本强行扩成可交易策略。"
+        },
+        {
+          "rule": "data_source_guard",
+          "trigger": "AkShare 行情缺失、复权异常、涨跌停/停牌状态无法确认",
+          "meaning": "数据源或交易可行性不完整时，暂停该路线并等待 JoinQuant/模拟盘复核。"
+        }
+      ],
+      "daily_observation_fields": [
+        "date",
+        "strategy_id",
+        "market_regime",
+        "liquidity_bucket",
+        "candidate_count",
+        "selected_count",
+        "selected_codes",
+        "paper_nav",
+        "paper_period_return_5d",
+        "hs300_period_return_5d",
+        "rolling_drawdown",
+        "turnover_estimate",
+        "industry_top_exposure",
+        "market_cap_bucket_exposure",
+        "limit_up_down_count",
+        "suspended_count",
+        "pause_flag",
+        "notes"
+      ],
+      "evidence": {
+        "data_policy": "真实 AkShare OHLCV 本地历史生成候选池；5日等权调仓收益来自真实未来5日价格变化扣成本；未生成虚构绩效。",
+        "paper_scope": "仅限 低波动确认路线 / low_volatility / mid_liquidity，不得扩展到未审计股票池或未通过分层。",
+        "checks": [
+          {
+            "name": "sample_trades",
+            "passed": true,
+            "detail": "39 >= 30"
+          },
+          {
+            "name": "strategy_return",
+            "passed": true,
+            "detail": "1.1138 >= 0.2000"
+          },
+          {
+            "name": "max_drawdown",
+            "passed": true,
+            "detail": "-0.0738 >= -0.1500"
+          },
+          {
+            "name": "sharpe",
+            "passed": true,
+            "detail": "2.8433 >= 1.2000"
+          },
+          {
+            "name": "positive_trade_ratio",
+            "passed": true,
+            "detail": "0.7436 >= 0.5500"
+          },
+          {
+            "name": "avg_stock_count",
+            "passed": true,
+            "detail": "20.00 >= 15"
+          },
+          {
+            "name": "stress_1_5_return",
+            "passed": true,
+            "detail": "1.0737 > 0.0000"
+          },
+          {
+            "name": "stress_2_0_return",
+            "passed": true,
+            "detail": "1.0343 > 0.0000"
+          },
+          {
+            "name": "first_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "second_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "oos_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "year_segments_all_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "recent_trades",
+            "passed": true,
+            "detail": "9"
+          }
+        ],
+        "segments": {
+          "year_2024": {
+            "sample_trades": 11,
+            "strategy_return": 0.3021657368896471,
+            "strategy_annual_return": 2.352586349978467,
+            "max_drawdown": -0.03796506968499569,
+            "sharpe": 2.2657843741637795,
+            "positive_trade_ratio": 0.6363636363636364,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2024-12-31"
+          },
+          "year_2025": {
+            "sample_trades": 19,
+            "strategy_return": 0.35096742395395064,
+            "strategy_annual_return": 1.22102131379138,
+            "max_drawdown": -0.04678781829918954,
+            "sharpe": 4.466005166487144,
+            "positive_trade_ratio": 0.8421052631578947,
+            "first_trade_date": "2025-02-25",
+            "last_trade_date": "2025-12-25"
+          },
+          "year_2026": {
+            "sample_trades": 9,
+            "strategy_return": 0.2015809031830873,
+            "strategy_annual_return": 1.7965133548743952,
+            "max_drawdown": -0.05710682660888877,
+            "sharpe": 3.5441917722919505,
+            "positive_trade_ratio": 0.6666666666666666,
+            "first_trade_date": "2026-01-05",
+            "last_trade_date": "2026-05-19"
+          },
+          "first_half": {
+            "sample_trades": 19,
+            "strategy_return": 0.2770548980162526,
+            "strategy_annual_return": 0.9130875776976282,
+            "max_drawdown": -0.07378817707287377,
+            "sharpe": 1.579412956339107,
+            "positive_trade_ratio": 0.6842105263157895,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2025-06-17"
+          },
+          "second_half": {
+            "sample_trades": 20,
+            "strategy_return": 0.655215677428254,
+            "strategy_annual_return": 2.5605211476725094,
+            "max_drawdown": -0.05710682660888877,
+            "sharpe": 5.777603550870509,
+            "positive_trade_ratio": 0.8,
+            "first_trade_date": "2025-06-24",
+            "last_trade_date": "2026-05-19"
+          },
+          "before_2025_07_01": {
+            "sample_trades": 20,
+            "strategy_return": 0.30985180966310066,
+            "strategy_annual_return": 0.9742395795845633,
+            "max_drawdown": -0.07378817707287377,
+            "sharpe": 1.6816382348002896,
+            "positive_trade_ratio": 0.7,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2025-06-24"
+          },
+          "from_2025_07_01": {
+            "sample_trades": 19,
+            "strategy_return": 0.6137713232435968,
+            "strategy_annual_return": 2.559002033287589,
+            "max_drawdown": -0.05710682660888877,
+            "sharpe": 5.627113676926609,
+            "positive_trade_ratio": 0.7894736842105263,
+            "first_trade_date": "2025-07-01",
+            "last_trade_date": "2026-05-19"
+          }
+        },
+        "segment_details": {
+          "year_segments": {
+            "year_2024": {
+              "sample_trades": 11,
+              "strategy_return": 0.3021657368896471,
+              "strategy_annual_return": 2.352586349978467,
+              "max_drawdown": -0.03796506968499569,
+              "sharpe": 2.2657843741637795,
+              "positive_trade_ratio": 0.6363636363636364,
+              "first_trade_date": "2024-05-30",
+              "last_trade_date": "2024-12-31"
+            },
+            "year_2025": {
+              "sample_trades": 19,
+              "strategy_return": 0.35096742395395064,
+              "strategy_annual_return": 1.22102131379138,
+              "max_drawdown": -0.04678781829918954,
+              "sharpe": 4.466005166487144,
+              "positive_trade_ratio": 0.8421052631578947,
+              "first_trade_date": "2025-02-25",
+              "last_trade_date": "2025-12-25"
+            },
+            "year_2026": {
+              "sample_trades": 9,
+              "strategy_return": 0.2015809031830873,
+              "strategy_annual_return": 1.7965133548743952,
+              "max_drawdown": -0.05710682660888877,
+              "sharpe": 3.5441917722919505,
+              "positive_trade_ratio": 0.6666666666666666,
+              "first_trade_date": "2026-01-05",
+              "last_trade_date": "2026-05-19"
+            }
+          },
+          "recent_trade_count": 9,
+          "recent_first_trade_date": "2026-01-05",
+          "recent_last_trade_date": "2026-05-19"
+        }
+      }
+    },
+    {
+      "id": "ak_low_vol_defensive_mid_liquidity",
+      "strategy_id": "ak_defensive_quality_combo",
+      "strategy_name": "AkShare低波动防守确认-中流动性观察策略",
+      "execution_role": "candidate_monitor",
+      "allowed_market_regime": "low_volatility",
+      "allowed_liquidity_bucket": "mid_liquidity",
+      "allowed_layer": "low_volatility/mid_liquidity",
+      "rebalance_days": 5,
+      "position_mode": "equal_weight_top_20_or_available",
+      "max_position_weight": 0.05,
+      "paper_watch_priority": 3,
+      "can_enter_paper_watch": false,
+      "entry_gate": [
+        "只在 low_volatility / mid_liquidity 分层观察",
+        "只使用 AkShare 本地真实 OHLCV 因子脚本当期生成的候选池和排序分数",
+        "候选池每期 Top20 等权，若可交易股票少于 10 只则只记录信号",
+        "不得扩展到未审计股票池、未审计分层或未审计成本口径",
+        "进入真实模拟盘前继续补 JoinQuant 复核、行业暴露、市值、涨跌停和停牌检查"
+      ],
+      "paper_watch_baseline": {
+        "sample_dates": 39,
+        "strategy_return": 0.9688941281691121,
+        "annual_return": null,
+        "max_drawdown": -0.05491428446661595,
+        "sharpe": 2.8073637156736986,
+        "win_rate": 0.6923076923076923,
+        "avg_selected_count": 20.0,
+        "source": "akshare_strategy_candidate_validation"
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "sample_trades": 39,
+          "strategy_return": 0.9688941281691121,
+          "max_drawdown": -0.05491428446661595,
+          "sharpe": 2.8073637156736986,
+          "positive_trade_ratio": 0.6923076923076923,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        },
+        "cost_1_5x": {
+          "sample_trades": 39,
+          "strategy_return": 0.9314798814344405,
+          "max_drawdown": -0.056358139525129136,
+          "sharpe": 2.7314090404207034,
+          "positive_trade_ratio": 0.6923076923076923,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        },
+        "cost_2_0x": {
+          "sample_trades": 39,
+          "strategy_return": 0.8947586847488656,
+          "max_drawdown": -0.057800523288345396,
+          "sharpe": 2.655454365167707,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        }
+      },
+      "pause_rules": [
+        {
+          "rule": "local_rolling_drawdown_guard",
+          "trigger": -0.08,
+          "meaning": "本地模拟净值回撤超过历史最大回撤的压力阈值，或超过 8%，暂停新开仓并复核数据口径。"
+        },
+        {
+          "rule": "three_rebalance_underperformance",
+          "trigger": "连续3个5日调仓周期跑输沪深300且命中率低于历史胜率 0.69",
+          "meaning": "说明本地路线样本外可能失效，暂停该路线并等待重新审计。"
+        },
+        {
+          "rule": "layer_violation",
+          "trigger": "市场状态不为 low_volatility 或流动性分层不为 mid_liquidity",
+          "meaning": "不满足本地受控分层时，只记录信号，不允许开仓。"
+        },
+        {
+          "rule": "candidate_count_guard",
+          "trigger": "候选数少于 15 或实际可买入少于 10",
+          "meaning": "容量不足时不开新仓，避免把小样本强行扩成可交易策略。"
+        },
+        {
+          "rule": "data_source_guard",
+          "trigger": "AkShare 行情缺失、复权异常、涨跌停/停牌状态无法确认",
+          "meaning": "数据源或交易可行性不完整时，暂停该路线并等待 JoinQuant/模拟盘复核。"
+        }
+      ],
+      "daily_observation_fields": [
+        "date",
+        "strategy_id",
+        "market_regime",
+        "liquidity_bucket",
+        "candidate_count",
+        "selected_count",
+        "selected_codes",
+        "paper_nav",
+        "paper_period_return_5d",
+        "hs300_period_return_5d",
+        "rolling_drawdown",
+        "turnover_estimate",
+        "industry_top_exposure",
+        "market_cap_bucket_exposure",
+        "limit_up_down_count",
+        "suspended_count",
+        "pause_flag",
+        "notes"
+      ],
+      "evidence": {
+        "data_policy": "真实 AkShare OHLCV 本地历史生成候选池；5日等权调仓收益来自真实未来5日价格变化扣成本；未生成虚构绩效。",
+        "paper_scope": "仅限 低波动确认路线 / low_volatility / mid_liquidity，不得扩展到未审计股票池或未通过分层。",
+        "checks": [
+          {
+            "name": "sample_trades",
+            "passed": true,
+            "detail": "39 >= 30"
+          },
+          {
+            "name": "strategy_return",
+            "passed": true,
+            "detail": "0.9689 >= 0.2000"
+          },
+          {
+            "name": "max_drawdown",
+            "passed": true,
+            "detail": "-0.0549 >= -0.1500"
+          },
+          {
+            "name": "sharpe",
+            "passed": true,
+            "detail": "2.8074 >= 1.2000"
+          },
+          {
+            "name": "positive_trade_ratio",
+            "passed": true,
+            "detail": "0.6923 >= 0.5500"
+          },
+          {
+            "name": "avg_stock_count",
+            "passed": true,
+            "detail": "20.00 >= 15"
+          },
+          {
+            "name": "stress_1_5_return",
+            "passed": true,
+            "detail": "0.9315 > 0.0000"
+          },
+          {
+            "name": "stress_2_0_return",
+            "passed": true,
+            "detail": "0.8948 > 0.0000"
+          },
+          {
+            "name": "first_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "second_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "oos_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "year_segments_all_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "recent_trades",
+            "passed": true,
+            "detail": "9"
+          }
+        ],
+        "segments": {
+          "year_2024": {
+            "sample_trades": 11,
+            "strategy_return": 0.29274014028625883,
+            "strategy_annual_return": 2.2428301326634505,
+            "max_drawdown": -0.022191359336786953,
+            "sharpe": 2.4116613153076427,
+            "positive_trade_ratio": 0.6363636363636364,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2024-12-31"
+          },
+          "year_2025": {
+            "sample_trades": 19,
+            "strategy_return": 0.26263085622699145,
+            "strategy_annual_return": 0.8563034536330372,
+            "max_drawdown": -0.037368239111462476,
+            "sharpe": 3.4334809661087484,
+            "positive_trade_ratio": 0.6842105263157895,
+            "first_trade_date": "2025-02-25",
+            "last_trade_date": "2025-12-25"
+          },
+          "year_2026": {
+            "sample_trades": 9,
+            "strategy_return": 0.2062427921616281,
+            "strategy_annual_return": 1.857817524394671,
+            "max_drawdown": -0.04588099164276671,
+            "sharpe": 4.126051829720129,
+            "positive_trade_ratio": 0.7777777777777778,
+            "first_trade_date": "2026-01-05",
+            "last_trade_date": "2026-05-19"
+          },
+          "first_half": {
+            "sample_trades": 19,
+            "strategy_return": 0.2690133186829724,
+            "strategy_annual_return": 0.8812982732480708,
+            "max_drawdown": -0.05491428446661595,
+            "sharpe": 1.6892751094811254,
+            "positive_trade_ratio": 0.5263157894736842,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2025-06-17"
+          },
+          "second_half": {
+            "sample_trades": 20,
+            "strategy_return": 0.5515157320905828,
+            "strategy_annual_return": 2.0248621156491926,
+            "max_drawdown": -0.0458809916427666,
+            "sharpe": 5.028599400630769,
+            "positive_trade_ratio": 0.85,
+            "first_trade_date": "2025-06-24",
+            "last_trade_date": "2026-05-19"
+          },
+          "before_2025_07_01": {
+            "sample_trades": 20,
+            "strategy_return": 0.2818782389694867,
+            "strategy_annual_return": 0.8697083740403944,
+            "max_drawdown": -0.05491428446661595,
+            "sharpe": 1.7111937398509012,
+            "positive_trade_ratio": 0.55,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2025-06-24"
+          },
+          "from_2025_07_01": {
+            "sample_trades": 19,
+            "strategy_return": 0.5359447319676187,
+            "strategy_annual_return": 2.1216612411972737,
+            "max_drawdown": -0.04588099164276671,
+            "sharpe": 5.058532883787413,
+            "positive_trade_ratio": 0.8421052631578947,
+            "first_trade_date": "2025-07-01",
+            "last_trade_date": "2026-05-19"
+          }
+        },
+        "segment_details": {
+          "year_segments": {
+            "year_2024": {
+              "sample_trades": 11,
+              "strategy_return": 0.29274014028625883,
+              "strategy_annual_return": 2.2428301326634505,
+              "max_drawdown": -0.022191359336786953,
+              "sharpe": 2.4116613153076427,
+              "positive_trade_ratio": 0.6363636363636364,
+              "first_trade_date": "2024-05-30",
+              "last_trade_date": "2024-12-31"
+            },
+            "year_2025": {
+              "sample_trades": 19,
+              "strategy_return": 0.26263085622699145,
+              "strategy_annual_return": 0.8563034536330372,
+              "max_drawdown": -0.037368239111462476,
+              "sharpe": 3.4334809661087484,
+              "positive_trade_ratio": 0.6842105263157895,
+              "first_trade_date": "2025-02-25",
+              "last_trade_date": "2025-12-25"
+            },
+            "year_2026": {
+              "sample_trades": 9,
+              "strategy_return": 0.2062427921616281,
+              "strategy_annual_return": 1.857817524394671,
+              "max_drawdown": -0.04588099164276671,
+              "sharpe": 4.126051829720129,
+              "positive_trade_ratio": 0.7777777777777778,
+              "first_trade_date": "2026-01-05",
+              "last_trade_date": "2026-05-19"
+            }
+          },
+          "recent_trade_count": 9,
+          "recent_first_trade_date": "2026-01-05",
+          "recent_last_trade_date": "2026-05-19"
+        }
+      }
+    },
+    {
+      "id": "ak_low_vol_volume_trend_mid_liquidity",
+      "strategy_id": "ak_volume_trend_quality_combo",
+      "strategy_name": "AkShare低波动量价趋势-中流动性观察策略",
+      "execution_role": "candidate_monitor",
+      "allowed_market_regime": "low_volatility",
+      "allowed_liquidity_bucket": "mid_liquidity",
+      "allowed_layer": "low_volatility/mid_liquidity",
+      "rebalance_days": 5,
+      "position_mode": "equal_weight_top_20_or_available",
+      "max_position_weight": 0.05,
+      "paper_watch_priority": 3,
+      "can_enter_paper_watch": false,
+      "entry_gate": [
+        "只在 low_volatility / mid_liquidity 分层观察",
+        "只使用 AkShare 本地真实 OHLCV 因子脚本当期生成的候选池和排序分数",
+        "候选池每期 Top20 等权，若可交易股票少于 10 只则只记录信号",
+        "不得扩展到未审计股票池、未审计分层或未审计成本口径",
+        "进入真实模拟盘前继续补 JoinQuant 复核、行业暴露、市值、涨跌停和停牌检查"
+      ],
+      "paper_watch_baseline": {
+        "sample_dates": 39,
+        "strategy_return": 0.9776003088148422,
+        "annual_return": null,
+        "max_drawdown": -0.10921042463391195,
+        "sharpe": 2.6860659286271273,
+        "win_rate": 0.6923076923076923,
+        "avg_selected_count": 20.0,
+        "source": "akshare_strategy_candidate_validation"
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "sample_trades": 39,
+          "strategy_return": 0.9776003088148422,
+          "max_drawdown": -0.10921042463391195,
+          "sharpe": 2.6860659286271273,
+          "positive_trade_ratio": 0.6923076923076923,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        },
+        "cost_1_5x": {
+          "sample_trades": 39,
+          "strategy_return": 0.9400196105778682,
+          "max_drawdown": -0.11148757780899976,
+          "sharpe": 2.614365551505932,
+          "positive_trade_ratio": 0.6923076923076923,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        },
+        "cost_2_0x": {
+          "sample_trades": 39,
+          "strategy_return": 0.903135059139659,
+          "max_drawdown": -0.11376007208804739,
+          "sharpe": 2.5426651743847377,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-05-30",
+          "last_trade_date": "2026-05-19"
+        }
+      },
+      "pause_rules": [
+        {
+          "rule": "local_rolling_drawdown_guard",
+          "trigger": -0.08,
+          "meaning": "本地模拟净值回撤超过历史最大回撤的压力阈值，或超过 8%，暂停新开仓并复核数据口径。"
+        },
+        {
+          "rule": "three_rebalance_underperformance",
+          "trigger": "连续3个5日调仓周期跑输沪深300且命中率低于历史胜率 0.69",
+          "meaning": "说明本地路线样本外可能失效，暂停该路线并等待重新审计。"
+        },
+        {
+          "rule": "layer_violation",
+          "trigger": "市场状态不为 low_volatility 或流动性分层不为 mid_liquidity",
+          "meaning": "不满足本地受控分层时，只记录信号，不允许开仓。"
+        },
+        {
+          "rule": "candidate_count_guard",
+          "trigger": "候选数少于 15 或实际可买入少于 10",
+          "meaning": "容量不足时不开新仓，避免把小样本强行扩成可交易策略。"
+        },
+        {
+          "rule": "data_source_guard",
+          "trigger": "AkShare 行情缺失、复权异常、涨跌停/停牌状态无法确认",
+          "meaning": "数据源或交易可行性不完整时，暂停该路线并等待 JoinQuant/模拟盘复核。"
+        }
+      ],
+      "daily_observation_fields": [
+        "date",
+        "strategy_id",
+        "market_regime",
+        "liquidity_bucket",
+        "candidate_count",
+        "selected_count",
+        "selected_codes",
+        "paper_nav",
+        "paper_period_return_5d",
+        "hs300_period_return_5d",
+        "rolling_drawdown",
+        "turnover_estimate",
+        "industry_top_exposure",
+        "market_cap_bucket_exposure",
+        "limit_up_down_count",
+        "suspended_count",
+        "pause_flag",
+        "notes"
+      ],
+      "evidence": {
+        "data_policy": "真实 AkShare OHLCV 本地历史生成候选池；5日等权调仓收益来自真实未来5日价格变化扣成本；未生成虚构绩效。",
+        "paper_scope": "仅限 低波动确认路线 / low_volatility / mid_liquidity，不得扩展到未审计股票池或未通过分层。",
+        "checks": [
+          {
+            "name": "sample_trades",
+            "passed": true,
+            "detail": "39 >= 30"
+          },
+          {
+            "name": "strategy_return",
+            "passed": true,
+            "detail": "0.9776 >= 0.2000"
+          },
+          {
+            "name": "max_drawdown",
+            "passed": true,
+            "detail": "-0.1092 >= -0.1500"
+          },
+          {
+            "name": "sharpe",
+            "passed": true,
+            "detail": "2.6861 >= 1.2000"
+          },
+          {
+            "name": "positive_trade_ratio",
+            "passed": true,
+            "detail": "0.6923 >= 0.5500"
+          },
+          {
+            "name": "avg_stock_count",
+            "passed": true,
+            "detail": "20.00 >= 15"
+          },
+          {
+            "name": "stress_1_5_return",
+            "passed": true,
+            "detail": "0.9400 > 0.0000"
+          },
+          {
+            "name": "stress_2_0_return",
+            "passed": true,
+            "detail": "0.9031 > 0.0000"
+          },
+          {
+            "name": "first_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "second_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "oos_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "year_segments_all_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "recent_trades",
+            "passed": true,
+            "detail": "9"
+          }
+        ],
+        "segments": {
+          "year_2024": {
+            "sample_trades": 11,
+            "strategy_return": 0.301105786411932,
+            "strategy_annual_return": 2.3401009054385447,
+            "max_drawdown": -0.02722546778834123,
+            "sharpe": 2.4835968954204763,
+            "positive_trade_ratio": 0.7272727272727273,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2024-12-31"
+          },
+          "year_2025": {
+            "sample_trades": 19,
+            "strategy_return": 0.27993723525445335,
+            "strategy_annual_return": 0.9245626813990673,
+            "max_drawdown": -0.06402385689140355,
+            "sharpe": 2.856769133915185,
+            "positive_trade_ratio": 0.6842105263157895,
+            "first_trade_date": "2025-02-25",
+            "last_trade_date": "2025-12-25"
+          },
+          "year_2026": {
+            "sample_trades": 9,
+            "strategy_return": 0.18750990129602574,
+            "strategy_annual_return": 1.617993359541741,
+            "max_drawdown": -0.04544503240917297,
+            "sharpe": 3.4002597577122784,
+            "positive_trade_ratio": 0.6666666666666666,
+            "first_trade_date": "2026-01-05",
+            "last_trade_date": "2026-05-19"
+          },
+          "first_half": {
+            "sample_trades": 19,
+            "strategy_return": 0.22627798177657277,
+            "strategy_annual_return": 0.7178838403189747,
+            "max_drawdown": -0.10921042463391195,
+            "sharpe": 1.4434505173856231,
+            "positive_trade_ratio": 0.631578947368421,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2025-06-17"
+          },
+          "second_half": {
+            "sample_trades": 20,
+            "strategy_return": 0.6126851645413951,
+            "strategy_annual_return": 2.3344558292802184,
+            "max_drawdown": -0.05701296189755656,
+            "sharpe": 4.8129826337055865,
+            "positive_trade_ratio": 0.75,
+            "first_trade_date": "2025-06-24",
+            "last_trade_date": "2026-05-19"
+          },
+          "before_2025_07_01": {
+            "sample_trades": 20,
+            "strategy_return": 0.2538888778414803,
+            "strategy_annual_return": 0.7685315275532911,
+            "max_drawdown": -0.10921042463391195,
+            "sharpe": 1.5431491070924166,
+            "positive_trade_ratio": 0.65,
+            "first_trade_date": "2024-05-30",
+            "last_trade_date": "2025-06-24"
+          },
+          "from_2025_07_01": {
+            "sample_trades": 19,
+            "strategy_return": 0.5771734989939481,
+            "strategy_annual_return": 2.348893479070747,
+            "max_drawdown": -0.05701296189755645,
+            "sharpe": 4.707975683140449,
+            "positive_trade_ratio": 0.7368421052631579,
+            "first_trade_date": "2025-07-01",
+            "last_trade_date": "2026-05-19"
+          }
+        },
+        "segment_details": {
+          "year_segments": {
+            "year_2024": {
+              "sample_trades": 11,
+              "strategy_return": 0.301105786411932,
+              "strategy_annual_return": 2.3401009054385447,
+              "max_drawdown": -0.02722546778834123,
+              "sharpe": 2.4835968954204763,
+              "positive_trade_ratio": 0.7272727272727273,
+              "first_trade_date": "2024-05-30",
+              "last_trade_date": "2024-12-31"
+            },
+            "year_2025": {
+              "sample_trades": 19,
+              "strategy_return": 0.27993723525445335,
+              "strategy_annual_return": 0.9245626813990673,
+              "max_drawdown": -0.06402385689140355,
+              "sharpe": 2.856769133915185,
+              "positive_trade_ratio": 0.6842105263157895,
+              "first_trade_date": "2025-02-25",
+              "last_trade_date": "2025-12-25"
+            },
+            "year_2026": {
+              "sample_trades": 9,
+              "strategy_return": 0.18750990129602574,
+              "strategy_annual_return": 1.617993359541741,
+              "max_drawdown": -0.04544503240917297,
+              "sharpe": 3.4002597577122784,
+              "positive_trade_ratio": 0.6666666666666666,
+              "first_trade_date": "2026-01-05",
+              "last_trade_date": "2026-05-19"
+            }
+          },
+          "recent_trade_count": 9,
+          "recent_first_trade_date": "2026-01-05",
+          "recent_last_trade_date": "2026-05-19"
+        }
+      }
+    },
+    {
+      "id": "ak_high_vol_anti_crowding_mid_liquidity",
+      "strategy_id": "ak_anti_crowding_reversal_combo",
+      "strategy_name": "AkShare高波动反拥挤-中流动性观察策略",
+      "execution_role": "candidate_monitor",
+      "allowed_market_regime": "high_volatility",
+      "allowed_liquidity_bucket": "mid_liquidity",
+      "allowed_layer": "high_volatility/mid_liquidity",
+      "rebalance_days": 5,
+      "position_mode": "equal_weight_top_20_or_available",
+      "max_position_weight": 0.05,
+      "paper_watch_priority": 3,
+      "can_enter_paper_watch": false,
+      "entry_gate": [
+        "只在 high_volatility / mid_liquidity 分层观察",
+        "只使用 AkShare 本地真实 OHLCV 因子脚本当期生成的候选池和排序分数",
+        "候选池每期 Top20 等权，若可交易股票少于 10 只则只记录信号",
+        "不得扩展到未审计股票池、未审计分层或未审计成本口径",
+        "进入真实模拟盘前继续补 JoinQuant 复核、行业暴露、市值、涨跌停和停牌检查"
+      ],
+      "paper_watch_baseline": {
+        "sample_dates": 33,
+        "strategy_return": 0.4213370562466734,
+        "annual_return": null,
+        "max_drawdown": -0.04473056878321058,
+        "sharpe": 2.5585838165479964,
+        "win_rate": 0.6666666666666666,
+        "avg_selected_count": 20.0,
+        "source": "akshare_strategy_candidate_validation"
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "sample_trades": 33,
+          "strategy_return": 0.4213370562466734,
+          "max_drawdown": -0.04473056878321058,
+          "sharpe": 2.5585838165479964,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-04-17",
+          "last_trade_date": "2026-06-29"
+        },
+        "cost_1_5x": {
+          "sample_trades": 33,
+          "strategy_return": 0.3983065987126009,
+          "max_drawdown": -0.046184838448537935,
+          "sharpe": 2.44389201423816,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-04-17",
+          "last_trade_date": "2026-06-29"
+        },
+        "cost_2_0x": {
+          "sample_trades": 33,
+          "strategy_return": 0.37563817300196223,
+          "max_drawdown": -0.04881969559379373,
+          "sharpe": 2.3292002119283235,
+          "positive_trade_ratio": 0.6666666666666666,
+          "avg_stock_count": 20.0,
+          "first_trade_date": "2024-04-17",
+          "last_trade_date": "2026-06-29"
+        }
+      },
+      "pause_rules": [
+        {
+          "rule": "local_rolling_drawdown_guard",
+          "trigger": -0.067096,
+          "meaning": "本地模拟净值回撤超过历史最大回撤的压力阈值，或超过 8%，暂停新开仓并复核数据口径。"
+        },
+        {
+          "rule": "three_rebalance_underperformance",
+          "trigger": "连续3个5日调仓周期跑输沪深300且命中率低于历史胜率 0.67",
+          "meaning": "说明本地路线样本外可能失效，暂停该路线并等待重新审计。"
+        },
+        {
+          "rule": "layer_violation",
+          "trigger": "市场状态不为 high_volatility 或流动性分层不为 mid_liquidity",
+          "meaning": "不满足本地受控分层时，只记录信号，不允许开仓。"
+        },
+        {
+          "rule": "candidate_count_guard",
+          "trigger": "候选数少于 15 或实际可买入少于 10",
+          "meaning": "容量不足时不开新仓，避免把小样本强行扩成可交易策略。"
+        },
+        {
+          "rule": "data_source_guard",
+          "trigger": "AkShare 行情缺失、复权异常、涨跌停/停牌状态无法确认",
+          "meaning": "数据源或交易可行性不完整时，暂停该路线并等待 JoinQuant/模拟盘复核。"
+        }
+      ],
+      "daily_observation_fields": [
+        "date",
+        "strategy_id",
+        "market_regime",
+        "liquidity_bucket",
+        "candidate_count",
+        "selected_count",
+        "selected_codes",
+        "paper_nav",
+        "paper_period_return_5d",
+        "hs300_period_return_5d",
+        "rolling_drawdown",
+        "turnover_estimate",
+        "industry_top_exposure",
+        "market_cap_bucket_exposure",
+        "limit_up_down_count",
+        "suspended_count",
+        "pause_flag",
+        "notes"
+      ],
+      "evidence": {
+        "data_policy": "真实 AkShare OHLCV 本地历史生成候选池；5日等权调仓收益来自真实未来5日价格变化扣成本；未生成虚构绩效。",
+        "paper_scope": "仅限 高波动回归路线 / high_volatility / mid_liquidity，不得扩展到未审计股票池或未通过分层。",
+        "checks": [
+          {
+            "name": "sample_trades",
+            "passed": true,
+            "detail": "33 >= 30"
+          },
+          {
+            "name": "strategy_return",
+            "passed": true,
+            "detail": "0.4213 >= 0.2000"
+          },
+          {
+            "name": "max_drawdown",
+            "passed": true,
+            "detail": "-0.0447 >= -0.1500"
+          },
+          {
+            "name": "sharpe",
+            "passed": true,
+            "detail": "2.5586 >= 1.2000"
+          },
+          {
+            "name": "positive_trade_ratio",
+            "passed": true,
+            "detail": "0.6667 >= 0.5500"
+          },
+          {
+            "name": "avg_stock_count",
+            "passed": true,
+            "detail": "20.00 >= 15"
+          },
+          {
+            "name": "stress_1_5_return",
+            "passed": true,
+            "detail": "0.3983 > 0.0000"
+          },
+          {
+            "name": "stress_2_0_return",
+            "passed": true,
+            "detail": "0.3756 > 0.0000"
+          },
+          {
+            "name": "first_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "second_half_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "oos_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "year_segments_all_positive",
+            "passed": true,
+            "detail": "True"
+          },
+          {
+            "name": "recent_trades",
+            "passed": true,
+            "detail": "6"
+          }
+        ],
+        "segments": {
+          "year_2024": {
+            "sample_trades": 17,
+            "strategy_return": 0.23216623606926823,
+            "strategy_annual_return": 0.856982534343472,
+            "max_drawdown": -0.03342669514330743,
+            "sharpe": 2.2365790040680404,
+            "positive_trade_ratio": 0.5294117647058824,
+            "first_trade_date": "2024-04-17",
+            "last_trade_date": "2024-12-18"
+          },
+          "year_2025": {
+            "sample_trades": 10,
+            "strategy_return": 0.05997854187375218,
+            "strategy_annual_return": 0.3412114444882266,
+            "max_drawdown": -0.017505709089953192,
+            "sharpe": 2.838337373165552,
+            "positive_trade_ratio": 0.7,
+            "first_trade_date": "2025-01-15",
+            "last_trade_date": "2025-10-31"
+          },
+          "year_2026": {
+            "sample_trades": 6,
+            "strategy_return": 0.08825507535437072,
+            "strategy_annual_return": 1.0348757241385758,
+            "max_drawdown": 0.0,
+            "sharpe": 10.529027722763903,
+            "positive_trade_ratio": 1.0,
+            "first_trade_date": "2026-03-25",
+            "last_trade_date": "2026-06-29"
+          },
+          "first_half": {
+            "sample_trades": 16,
+            "strategy_return": 0.2371770813092522,
+            "strategy_annual_return": 0.9550612963715084,
+            "max_drawdown": -0.03342669514330743,
+            "sharpe": 2.355971933498394,
+            "positive_trade_ratio": 0.5625,
+            "first_trade_date": "2024-04-17",
+            "last_trade_date": "2024-12-11"
+          },
+          "second_half": {
+            "sample_trades": 17,
+            "strategy_return": 0.14885498423761012,
+            "strategy_annual_return": 0.5089283934668449,
+            "max_drawdown": -0.017505709089953192,
+            "sharpe": 4.3911795580543584,
+            "positive_trade_ratio": 0.7647058823529411,
+            "first_trade_date": "2024-12-18",
+            "last_trade_date": "2026-06-29"
+          },
+          "before_2025_07_01": {
+            "sample_trades": 24,
+            "strategy_return": 0.32359433614038435,
+            "strategy_annual_return": 0.8017116642443394,
+            "max_drawdown": -0.04473056878321058,
+            "sharpe": 2.459598610790655,
+            "positive_trade_ratio": 0.5833333333333334,
+            "first_trade_date": "2024-04-17",
+            "last_trade_date": "2025-05-07"
+          },
+          "from_2025_07_01": {
+            "sample_trades": 9,
+            "strategy_return": 0.0738464327305206,
+            "strategy_annual_return": 0.49030857769710434,
+            "max_drawdown": -0.017505709089953192,
+            "sharpe": 4.288266497900451,
+            "positive_trade_ratio": 0.8888888888888888,
+            "first_trade_date": "2025-09-10",
+            "last_trade_date": "2026-06-29"
+          }
+        },
+        "segment_details": {
+          "year_segments": {
+            "year_2024": {
+              "sample_trades": 17,
+              "strategy_return": 0.23216623606926823,
+              "strategy_annual_return": 0.856982534343472,
+              "max_drawdown": -0.03342669514330743,
+              "sharpe": 2.2365790040680404,
+              "positive_trade_ratio": 0.5294117647058824,
+              "first_trade_date": "2024-04-17",
+              "last_trade_date": "2024-12-18"
+            },
+            "year_2025": {
+              "sample_trades": 10,
+              "strategy_return": 0.05997854187375218,
+              "strategy_annual_return": 0.3412114444882266,
+              "max_drawdown": -0.017505709089953192,
+              "sharpe": 2.838337373165552,
+              "positive_trade_ratio": 0.7,
+              "first_trade_date": "2025-01-15",
+              "last_trade_date": "2025-10-31"
+            },
+            "year_2026": {
+              "sample_trades": 6,
+              "strategy_return": 0.08825507535437072,
+              "strategy_annual_return": 1.0348757241385758,
+              "max_drawdown": 0.0,
+              "sharpe": 10.529027722763903,
+              "positive_trade_ratio": 1.0,
+              "first_trade_date": "2026-03-25",
+              "last_trade_date": "2026-06-29"
+            }
+          },
+          "recent_trade_count": 6,
+          "recent_first_trade_date": "2026-03-25",
+          "recent_last_trade_date": "2026-06-29"
+        }
+      }
+    }
+  ]
+}
