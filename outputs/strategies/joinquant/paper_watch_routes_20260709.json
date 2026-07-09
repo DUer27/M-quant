@@ -1,0 +1,64 @@
+{
+  "source": "joinquant_paper_watch_routes",
+  "generated_at": "2026-07-09T14:23:56",
+  "data_policy": "只使用 JoinQuant 真实策略交易回测中通过硬门槛的受控分层路线；不得扩展到未通过分层。",
+  "status": "ready_for_controlled_paper_watch",
+  "route_count": 2,
+  "selection_policy": "按 Sharpe、收益、年化、回撤和样本日排序，每个策略最多取一条首批路线。",
+  "required_controls": [
+    "只允许配置中列出的市场波动和市值层开仓",
+    "模拟盘继续记录净值、回撤、换手、滑点和行业暴露",
+    "任一策略实盘外推前必须补样本外和成本敏感性复核",
+    "未通过层不得因为同名策略整体开放"
+  ],
+  "routes": [
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "layer": "低波动/大市值",
+      "market_regime": "low_volatility",
+      "market_cap_bucket": "large_cap",
+      "sample_dates": 31,
+      "strategy_return": 0.4992595506771098,
+      "annual_return": 0.9317088757255843,
+      "max_drawdown": -0.03919115266187512,
+      "sharpe": 2.5191408980385095,
+      "win_rate": 0.5806451612903226,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "layer": "高波动/中市值",
+      "market_regime": "high_volatility",
+      "market_cap_bucket": "mid_cap",
+      "sample_dates": 39,
+      "strategy_return": 0.5765921523017343,
+      "annual_return": 0.8010022295639585,
+      "max_drawdown": -0.10369602814399159,
+      "sharpe": 1.953540702514037,
+      "win_rate": 0.5641025641025641,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 高波动/中市值，不得扩展到未通过分层。"
+    }
+  ]
+}
