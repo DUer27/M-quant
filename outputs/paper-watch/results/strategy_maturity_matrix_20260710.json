@@ -1,6 +1,6 @@
 {
   "source": "m_quant_strategy_maturity_matrix",
-  "generated_at": "2026-07-10T02:48:32",
+  "generated_at": "2026-07-10T02:59:52",
   "target_ready_strategy_count": 2,
   "ready_strategy_count": 1,
   "goal_status": "not_met",
@@ -14,6 +14,7 @@
     "akshare_switch_strategy": "outputs/sources/akshare/results/akshare_regime_switch_paper_watch_strategy_20260709.json",
     "akshare_robustness_audit": "outputs/sources/akshare/results/akshare_regime_switch_robustness_audit_20260709.json",
     "tradeability_reviews": "platform/quant-factor-platform/data/imported-tradeability-reviews.json",
+    "core_medium_small_signal_reviews": "platform/quant-factor-platform/data/imported-core-medium-small-signal-reviews.json",
     "independent_sleeve_candidate_audit": "outputs/paper-watch/results/independent_sleeve_candidate_audit_20260710.json"
   },
   "evidence_summary": {
@@ -25,11 +26,12 @@
     "operations_ready_sleeve_count": 1,
     "operations_blocked_sleeve_count": 1,
     "akshare_awaiting_joinquant_candidate_count": 6,
-    "tradeability_review_count": 0
+    "tradeability_review_count": 0,
+    "core_medium_small_signal_review_count": 0
   },
   "blockers": [
     "独立可观察资金袖只有 1 个，目标为 2 个。",
-    "尚未导入 JoinQuant 最新信号交易可行性复核 JSON。"
+    "尚未导入任何 JoinQuant 最新信号复核 JSON。"
   ],
   "entries": [
     {
@@ -279,6 +281,7 @@
         },
         "blocked_reasons": [],
         "required_next_evidence": [],
+        "latest_review_decision": null,
         "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。"
       },
       {
@@ -305,6 +308,7 @@
         "required_next_evidence": [
           "导入通过严格校验的 JoinQuant 最新信号交易可行性复核 JSON。"
         ],
+        "latest_review_decision": null,
         "data_policy": "只组合 AkShare 本地真实 OHLCV 已生成的执行组件 trade_records；不新增收益、不扩展未审计分层、不伪造交易状态。"
       },
       {

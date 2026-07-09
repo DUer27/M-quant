@@ -23,6 +23,7 @@ AK_FACTOR_AUDIT_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "a
 AK_SWITCH_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "akshare_regime_switch_paper_watch_strategy_20260709.json"
 AK_ROBUSTNESS_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "akshare_regime_switch_robustness_audit_20260709.json"
 TRADEABILITY_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-tradeability-reviews.json"
+CORE_SIGNAL_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-core-medium-small-signal-reviews.json"
 INDEPENDENT_SLEEVE_AUDIT_PATH = RESULTS_DIR / "independent_sleeve_candidate_audit_20260710.json"
 
 RESULT_PATH = RESULTS_DIR / "strategy_maturity_matrix_20260710.json"
@@ -187,6 +188,7 @@ def build_matrix() -> dict:
     ak_switch = read_json(AK_SWITCH_PATH, {})
     ak_robustness = read_json(AK_ROBUSTNESS_PATH, {})
     tradeability_reviews = read_json(TRADEABILITY_REVIEWS_PATH, [])
+    core_signal_reviews = read_json(CORE_SIGNAL_REVIEWS_PATH, [])
     independent_sleeve_audit = read_json(INDEPENDENT_SLEEVE_AUDIT_PATH, {})
 
     entries = []
@@ -218,8 +220,8 @@ def build_matrix() -> dict:
         blockers.append(
             f"独立可观察资金袖只有 {len(ready_goal_entries)} 个，目标为 {TARGET_READY_STRATEGIES} 个。"
         )
-    if not tradeability_reviews:
-        blockers.append("尚未导入 JoinQuant 最新信号交易可行性复核 JSON。")
+    if len(ready_goal_entries) < TARGET_READY_STRATEGIES and not tradeability_reviews and not core_signal_reviews:
+        blockers.append("尚未导入任何 JoinQuant 最新信号复核 JSON。")
     for item in independent_sleeve_audit.get("blocking_summary", []):
         if "独立可观察资金袖" in item and any("独立可观察资金袖" in blocker for blocker in blockers):
             continue
@@ -274,6 +276,7 @@ def build_matrix() -> dict:
             "akshare_switch_strategy": str(AK_SWITCH_PATH.relative_to(ROOT)),
             "akshare_robustness_audit": str(AK_ROBUSTNESS_PATH.relative_to(ROOT)),
             "tradeability_reviews": str(TRADEABILITY_REVIEWS_PATH.relative_to(ROOT)),
+            "core_medium_small_signal_reviews": str(CORE_SIGNAL_REVIEWS_PATH.relative_to(ROOT)),
             "independent_sleeve_candidate_audit": str(INDEPENDENT_SLEEVE_AUDIT_PATH.relative_to(ROOT)),
         },
         "evidence_summary": {
@@ -289,6 +292,7 @@ def build_matrix() -> dict:
                 if item.get("decision") == "awaiting_joinquant_review"
             ]),
             "tradeability_review_count": len(tradeability_reviews),
+            "core_medium_small_signal_review_count": len(core_signal_reviews),
         },
         "blockers": blockers,
         "entries": entries,

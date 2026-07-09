@@ -22,6 +22,7 @@ JQ_INDEPENDENCE_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "paper_wa
 JQ_MATURITY_PATH = ROOT / "outputs" / "strategies" / "joinquant" / "strategy_maturity_audit_20260709.json"
 AK_FACTOR_AUDIT_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "akshare_factor_quality_audit.json"
 TRADEABILITY_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-tradeability-reviews.json"
+CORE_SIGNAL_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-core-medium-small-signal-reviews.json"
 
 RESULT_PATH = RESULTS_DIR / "independent_sleeve_candidate_audit_20260710.json"
 DOC_PATH = DOCS_DIR / "independent-sleeve-candidate-audit-20260710.md"
@@ -55,6 +56,7 @@ def decision_name(decision: str) -> str:
     names = {
         "eligible_primary_sleeve": "已准入独立资金袖",
         "blocked_pending_tradeability": "待交易可行性复核",
+        "blocked_by_latest_signal_review": "最新信号未通过",
         "monitor_only_component_overlap": "组件重叠，仅监控",
         "mutually_exclusive_candidate_needs_promotion": "互斥候选，待晋级确认",
         "route_candidate_needs_independence_review": "路线候选，需独立性复核",
@@ -88,6 +90,7 @@ def build_candidates() -> dict:
     maturity = read_json(JQ_MATURITY_PATH, {})
     ak_audit = read_json(AK_FACTOR_AUDIT_PATH, {})
     reviews = read_json(TRADEABILITY_REVIEWS_PATH, [])
+    core_signal_reviews = read_json(CORE_SIGNAL_REVIEWS_PATH, [])
 
     candidates: list[dict] = []
     used_keys: set[str] = set()
@@ -98,6 +101,9 @@ def build_candidates() -> dict:
         decision = "eligible_primary_sleeve" if can_start else "blocked_pending_tradeability"
         if sleeve.get("sleeve_id") == "akshare_local_switch" and review.get("decision") != "tradeability_review_passed":
             decision = "blocked_pending_tradeability"
+        if sleeve.get("sleeve_id") == "jq_medium_vol_small_cap_core" and not can_start:
+            decision = "blocked_by_latest_signal_review"
+            review = sleeve.get("latest_signal_review") or {}
         item = {
             "candidate_id": sleeve.get("sleeve_id"),
             "strategy_id": sleeve.get("strategy_id"),
@@ -110,9 +116,12 @@ def build_candidates() -> dict:
             "can_start_observation": can_start,
             "metrics": metric_block(sleeve),
             "blocked_reasons": sleeve.get("blocked_reasons", []),
-            "required_next_evidence": [] if can_start else [
-                "导入通过严格校验的 JoinQuant 最新信号交易可行性复核 JSON。"
-            ],
+            "required_next_evidence": [] if can_start else (
+                ["重新导入 decision=promotion_signal_ready 的核心量价中波动/小市值 JoinQuant 最新信号复核 JSON。"]
+                if sleeve.get("sleeve_id") == "jq_medium_vol_small_cap_core"
+                else ["导入通过严格校验的 JoinQuant 最新信号交易可行性复核 JSON。"]
+            ),
+            "latest_review_decision": review.get("decision"),
             "data_policy": sleeve.get("data_policy"),
         }
         candidates.append(item)
@@ -231,8 +240,8 @@ def build_candidates() -> dict:
     blocking_summary = []
     if len(eligible) < 2:
         blocking_summary.append(f"当前独立可观察资金袖为 {len(eligible)} 个，距离目标 2 个还差 {2 - len(eligible)} 个。")
-    if not reviews:
-        blocking_summary.append("尚未导入任何 JoinQuant 交易可行性复核 JSON。")
+    if not reviews and not core_signal_reviews:
+        blocking_summary.append("尚未导入任何 JoinQuant 最新信号复核 JSON。")
 
     return {
         "source": "m_quant_independent_sleeve_candidate_audit",
