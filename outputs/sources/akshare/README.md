@@ -175,6 +175,26 @@
 - 在 JoinQuant 真实研究环境检查停牌、ST、涨跌停、行业、市值、换手率和可交易数量。
 - 该脚本不生成收益，不替代策略回测；只有 `decision=tradeability_review_passed` 且可交易候选不少于 10 只，才允许继续推进模拟观察。
 
+## 本地高低波动切换策略
+
+```bash
+/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 \
+  outputs/sources/akshare/scripts/build_akshare_regime_switch_strategy.py
+```
+
+当前产物：
+
+- `outputs/sources/akshare/results/akshare_regime_switch_paper_watch_strategy_20260709.json`
+- `outputs/_docs/akshare-regime-switch-paper-watch-strategy-20260709.md`
+
+当前结论：
+
+- 策略：`AkShare本地高低波动切换策略 v1`。
+- 组件：低波动使用 `AkShare低波动收缩突破-中流动性观察策略`，高波动使用 `AkShare高波动均值回归-中流动性观察策略`。
+- 样本：72 次 5 日调仓，收益 174.09%，最大回撤 -6.60%，Sharpe 3.14，2.0x 成本压力收益 155.28%。
+- 决策：`ready_local_switch_paper_watch`。
+- 边界：只组合已有 AkShare 真实 OHLCV trade_records，不是 JoinQuant 原生策略回测；进入真实模拟观察前仍要完成 JoinQuant 交易可行性复核。
+
 ## 新因子探测
 
 - `scripts/probe_ohlcv_factor_candidates.py`：使用本地真实 AkShare OHLCV 历史探测新增候选因子。

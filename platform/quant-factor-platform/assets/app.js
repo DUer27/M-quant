@@ -285,6 +285,20 @@ function renderPaperWatchRoutes(pack) {
           <a class="inline-link" href="${escapeHtml(pack.localBacktest.tradeabilityReviewScriptEndpoint)}">下载复核脚本</a>
         </div>
       ` : ''}
+      ${pack.localBacktest?.regimeSwitch ? `
+        <div class="paper-watch-note">
+          <strong>${escapeHtml(pack.localBacktest.regimeSwitch.strategy_name || 'AkShare本地切换策略')}</strong>
+          <span class="tag ${pack.localBacktest.regimeSwitch.decision === 'ready_local_switch_paper_watch' ? 'good' : 'watch'}">${escapeHtml(pack.localBacktest.regimeSwitch.decision || '-')}</span>
+          <p>
+            本地真实 OHLCV 合成高/低波动控制器：
+            ${escapeHtml(pack.localBacktest.regimeSwitch.baseline?.sample_trades ?? 0)} 次调仓，
+            收益 ${formatPercent(pack.localBacktest.regimeSwitch.baseline?.strategy_return, 2)}，
+            回撤 ${formatPercent(pack.localBacktest.regimeSwitch.baseline?.max_drawdown, 2)}，
+            Sharpe ${formatNumber(pack.localBacktest.regimeSwitch.baseline?.sharpe, 2)}。
+          </p>
+          <p>${escapeHtml(pack.localBacktest.regimeSwitch.paper_scope || '进入模拟观察前仍需交易可行性复核。')}</p>
+        </div>
+      ` : ''}
       ${routes.map((route) => {
       const execution = route.execution || {};
       const readiness = route.readiness || {};

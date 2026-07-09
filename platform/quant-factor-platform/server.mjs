@@ -44,6 +44,7 @@ const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'p
 const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_readiness_audit_20260709.json');
 const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_execution_pack_20260709.json');
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
+const akshareRegimeSwitchPaperWatchPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_paper_watch_strategy_20260709.json');
 const akshareLatestSignalTradeabilityReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_latest_signal_tradeability_review_20260709.py');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
@@ -912,6 +913,7 @@ function buildPaperWatchRoutes() {
   const akshareReadinessAudit = readJsonFile(aksharePaperWatchReadinessAuditPath, {});
   const akshareExecutionPack = readJsonFile(aksharePaperWatchExecutionPackPath, {});
   const akshareLatestSignal = readJsonFile(aksharePaperWatchLatestSignalPath, {});
+  const akshareRegimeSwitch = readJsonFile(akshareRegimeSwitchPaperWatchPath, null);
   const tradeabilityReviews = readImportedTradeabilityReviews();
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
@@ -1010,6 +1012,7 @@ function buildPaperWatchRoutes() {
         'ak_mean_reversion_quality_combo',
         akshareLatestSignal.signal_date || '',
       ),
+      regimeSwitch: akshareRegimeSwitch,
       paperWatchRouteCount: Number(akshareExecutionPack.paper_watch_route_count || 0),
       recommendedRouteCount: Number(akshareReadinessAudit.recommended_route_count || akshareRecommendedRoutes.length || 0),
       tradeabilityReviewScriptEndpoint: '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py',
@@ -4596,6 +4599,15 @@ async function handleApi(req, res, pathname) {
       dataPolicy: '只展示用户从 JoinQuant 真实研究环境导入的交易可行性复核结果；不生成收益或回测绩效。',
       records: readImportedTradeabilityReviews(),
     });
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/akshare-regime-switch-paper-watch-strategy') {
+    sendJson(res, readJsonFile(akshareRegimeSwitchPaperWatchPath, {
+      source: 'akshare_local_regime_switch_paper_watch_strategy',
+      decision: 'missing',
+      data_policy: '尚未生成 AkShare 本地切换策略结果。',
+    }));
     return true;
   }
 
