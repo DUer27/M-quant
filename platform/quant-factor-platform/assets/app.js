@@ -307,6 +307,19 @@ function renderPaperWatchRoutes(pack) {
           <p>${escapeHtml(pack.localBacktest.regimeSwitch.paper_scope || '进入模拟观察前仍需交易可行性复核。')}</p>
         </div>
       ` : ''}
+      ${pack.operationsPack ? `
+        <div class="paper-watch-note">
+          <strong>模拟观察运行包</strong>
+          <span>${escapeHtml(pack.operationsPack.ready_sleeve_count ?? 0)} 可观察 / ${escapeHtml(pack.operationsPack.sleeve_count ?? 0)} 资金袖</span>
+          <p>${escapeHtml(pack.operationsPack.data_policy || '')}</p>
+          <p>
+            初始账本：
+            ${(pack.operationsPack.initial_ledger_rows || []).map((row) => (
+              `${escapeHtml(row.sleeve_id || '-')}: ${escapeHtml(row.paper_action || '-')} / ${escapeHtml(row.gate_status || '-')}`
+            )).join('；')}
+          </p>
+        </div>
+      ` : ''}
       ${routes.map((route) => {
       const execution = route.execution || {};
       const readiness = route.readiness || {};

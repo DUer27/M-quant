@@ -200,3 +200,12 @@
 - 审计只重建已有真实 trade_records，不生成新收益；检查组件占比、组件收益、年度正收益、留一年、滚动 12 期、最差滚动回撤、近期收益。
 - 结果：`robust_local_switch_paper_watch`，无失败项；年度正收益比例 100%，留一年最差收益 82.56%，留一年最差 Sharpe 2.78，滚动 12 期正收益比例 93.44%，最差滚动 12 期收益 -2.90%。
 - 平台 `模拟观察清单` 已展示稳健性摘要，但仍保留 JoinQuant 交易可行性复核门槛。
+
+## 追加：模拟观察运行包
+
+- 新增 `outputs/paper-watch/scripts/build_paper_watch_operations_pack.py`。
+- 新增结果 `outputs/paper-watch/results/paper_watch_operations_pack_20260709.json`。
+- 新增说明 `outputs/_docs/paper-watch-operations-pack-20260709.md` 与 `outputs/paper-watch/README.md`。
+- 运行包只读取已审计 JoinQuant 曲线、AkShare 本地 OHLCV 策略与已导入交易复核；不生成收益、净值、成交或持仓。
+- 当前 2 个资金袖中，`市场状态切换策略 v1` 可进入受控模拟观察；`AkShare本地高低波动切换策略 v1` 因缺 JoinQuant 交易可行性复核 JSON，初始账本强制 `record_only`、`planned_weight=0`。
+- 平台新增 `/strategy-api/paper-watch-operations-pack`，并在 `模拟观察清单` 显示运行包摘要。

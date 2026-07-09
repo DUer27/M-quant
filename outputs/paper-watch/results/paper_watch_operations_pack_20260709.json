@@ -1,0 +1,285 @@
+{
+  "source": "m_quant_paper_watch_operations_pack",
+  "generated_at": "2026-07-09T20:47:34",
+  "status": "ready_with_blockers",
+  "data_policy": "只读取已审计 JoinQuant 曲线、AkShare 本地 OHLCV 策略与已导入交易复核；不生成收益、净值、成交或持仓。",
+  "sleeve_count": 2,
+  "ready_sleeve_count": 1,
+  "blocked_sleeve_count": 1,
+  "capital_sleeves": [
+    {
+      "sleeve_id": "jq_controller",
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "strategy_name": "市场状态切换策略 v1",
+      "evidence_system": "JoinQuant derived real curves",
+      "operational_status": "ready_for_controlled_paper_watch",
+      "can_start_observation": true,
+      "blocked_reasons": [],
+      "role": "primary_controller",
+      "scope": "高低波动切换；中波动默认空仓/观察。",
+      "baseline": {
+        "sample_dates": 70,
+        "strategy_return": 0.8328872072774001,
+        "max_drawdown": -0.09068798084469964,
+        "sharpe": 1.8039399491070465,
+        "win_rate": 0.6285714285714286,
+        "avg_selected_count": 29.357142857142858
+      },
+      "entry_gate": [
+        "高波动环境使用 JQ质量利润流动性策略 v1",
+        "低波动环境使用 K线辅助确认策略",
+        "中波动环境空仓/观察，不强行开仓",
+        "只使用已导入 JoinQuant 真实曲线验证过的组件策略和市场状态"
+      ],
+      "pause_rules": [
+        {
+          "rule": "rolling_drawdown_guard",
+          "trigger": -0.11336,
+          "meaning": "模拟盘回撤超过历史该路线最大回撤的 1.25 倍，或超过 8%，先暂停新开仓。"
+        },
+        {
+          "rule": "three_rebalance_underperformance",
+          "trigger": "连续3个调仓周期跑输沪深300且命中率低于历史胜率",
+          "meaning": "说明样本外状态可能劣化，暂停并复核分层环境。"
+        },
+        {
+          "rule": "layer_violation",
+          "trigger": "市场状态不满足执行配置",
+          "meaning": "不满足受控路线，禁止开仓；切换策略在中波动默认空仓。"
+        }
+      ],
+      "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。"
+    },
+    {
+      "sleeve_id": "akshare_local_switch",
+      "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+      "strategy_name": "AkShare本地高低波动切换策略 v1",
+      "evidence_system": "AkShare local OHLCV",
+      "operational_status": "ready_local_switch_pending_tradeability_review",
+      "can_start_observation": false,
+      "blocked_reasons": [
+        "最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。"
+      ],
+      "role": "local_independent_candidate",
+      "scope": "仅限 AkShare 执行包中的低波动收缩突破主观察与高波动均值回归备选；进入真实模拟盘前仍需 JoinQuant 交易可行性复核。",
+      "baseline": {
+        "sample_trades": 72,
+        "strategy_return": 1.740866685270742,
+        "max_drawdown": -0.06597592399323748,
+        "sharpe": 3.14203779176307,
+        "positive_trade_ratio": 0.6805555555555556,
+        "avg_stock_count": 20.0,
+        "first_trade_date": "2024-04-17",
+        "last_trade_date": "2026-06-29"
+      },
+      "robustness": {
+        "decision": "robust_local_switch_paper_watch",
+        "failed_checks": [],
+        "summary": {
+          "year_positive_ratio": 1.0,
+          "min_leave_one_year_return": 0.825644158477095,
+          "min_leave_one_year_sharpe": 2.7823945174141897,
+          "rolling_12_positive_ratio": 0.9344262295081968,
+          "worst_rolling_12_return": -0.028994451081872152,
+          "worst_rolling_12_drawdown": -0.0659759239932376,
+          "min_rolling_12_sharpe": -0.9251959188416783
+        }
+      },
+      "latest_signal": {
+        "signal_date": "2026-07-09",
+        "triggered_component_strategy_id": "ak_mean_reversion_quality_combo",
+        "triggered_component_name": "AkShare高波动均值回归-中流动性观察策略",
+        "action": "paper_watch_open_allowed",
+        "candidate_count": 15,
+        "selected_count": 15,
+        "selected_codes": [
+          "002001",
+          "000568",
+          "000858",
+          "000425",
+          "000338",
+          "000651",
+          "000001",
+          "002142",
+          "000776",
+          "002027",
+          "002241",
+          "002179",
+          "002230",
+          "002415",
+          "002714"
+        ]
+      },
+      "tradeability_review": null,
+      "data_policy": "只组合 AkShare 本地真实 OHLCV 已生成的执行组件 trade_records；不新增收益、不扩展未审计分层、不伪造交易状态。"
+    }
+  ],
+  "monitors": [
+    {
+      "sleeve_id": "jq_component_monitor",
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "evidence_system": "JoinQuant",
+      "operational_status": "monitor_only_due_component_overlap",
+      "can_start_observation": false,
+      "blocked_reasons": [
+        "与市场状态切换策略共享高波动组件，不能作为独立资金袖重复满仓。"
+      ],
+      "baseline": {
+        "strategy_return": 0.35130804884936606,
+        "max_drawdown": -0.10268028853355404,
+        "sharpe": 1.7373322248071763
+      }
+    }
+  ],
+  "daily_ledger_template": [
+    {
+      "field": "date",
+      "meaning": "观察日期，YYYY-MM-DD。"
+    },
+    {
+      "field": "sleeve_id",
+      "meaning": "资金袖：jq_controller / akshare_local_switch。"
+    },
+    {
+      "field": "strategy_id",
+      "meaning": "策略ID。"
+    },
+    {
+      "field": "signal_state",
+      "meaning": "ready / blocked / record_only / paused。"
+    },
+    {
+      "field": "gate_status",
+      "meaning": "准入门槛状态，必须来自运行包。"
+    },
+    {
+      "field": "candidate_count",
+      "meaning": "当期候选数量。"
+    },
+    {
+      "field": "selected_count",
+      "meaning": "当期入选数量。"
+    },
+    {
+      "field": "selected_codes",
+      "meaning": "入选股票代码列表。"
+    },
+    {
+      "field": "paper_action",
+      "meaning": "open_allowed / record_only / pause_new_entry / close_only。"
+    },
+    {
+      "field": "planned_weight",
+      "meaning": "计划观察仓位；未复核通过时必须为 0。"
+    },
+    {
+      "field": "paper_nav",
+      "meaning": "模拟观察净值；由后续真实记录填写，本包不生成。"
+    },
+    {
+      "field": "period_return",
+      "meaning": "观察期收益；由后续真实记录填写，本包不生成。"
+    },
+    {
+      "field": "benchmark_return",
+      "meaning": "基准收益；由后续真实记录填写。"
+    },
+    {
+      "field": "rolling_drawdown",
+      "meaning": "模拟观察滚动回撤。"
+    },
+    {
+      "field": "turnover",
+      "meaning": "换手率或估算换手。"
+    },
+    {
+      "field": "slippage",
+      "meaning": "滑点记录。"
+    },
+    {
+      "field": "industry_top_exposure",
+      "meaning": "第一大行业暴露。"
+    },
+    {
+      "field": "market_cap_exposure",
+      "meaning": "市值暴露。"
+    },
+    {
+      "field": "blocked_reason",
+      "meaning": "若不可开仓，记录阻塞原因。"
+    },
+    {
+      "field": "notes",
+      "meaning": "人工备注。"
+    }
+  ],
+  "initial_ledger_rows": [
+    {
+      "date": "2026-07-09",
+      "sleeve_id": "jq_controller",
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "signal_state": "ready",
+      "gate_status": "ready_for_controlled_paper_watch",
+      "candidate_count": null,
+      "selected_count": null,
+      "selected_codes": [],
+      "paper_action": "open_allowed",
+      "planned_weight": 1.0,
+      "paper_nav": null,
+      "period_return": null,
+      "benchmark_return": null,
+      "rolling_drawdown": null,
+      "turnover": null,
+      "slippage": null,
+      "industry_top_exposure": null,
+      "market_cap_exposure": null,
+      "blocked_reason": "",
+      "notes": "运行包初始行；不含任何生成的模拟收益。"
+    },
+    {
+      "date": "2026-07-09",
+      "sleeve_id": "akshare_local_switch",
+      "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+      "signal_state": "blocked",
+      "gate_status": "ready_local_switch_pending_tradeability_review",
+      "candidate_count": 15,
+      "selected_count": 15,
+      "selected_codes": [
+        "002001",
+        "000568",
+        "000858",
+        "000425",
+        "000338",
+        "000651",
+        "000001",
+        "002142",
+        "000776",
+        "002027",
+        "002241",
+        "002179",
+        "002230",
+        "002415",
+        "002714"
+      ],
+      "paper_action": "record_only",
+      "planned_weight": 0.0,
+      "paper_nav": null,
+      "period_return": null,
+      "benchmark_return": null,
+      "rolling_drawdown": null,
+      "turnover": null,
+      "slippage": null,
+      "industry_top_exposure": null,
+      "market_cap_exposure": null,
+      "blocked_reason": "最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。",
+      "notes": "运行包初始行；不含任何生成的模拟收益。"
+    }
+  ],
+  "global_rules": [
+    "每个 sleeve_id 独立记录，不得把组件监控路线当作第二资金袖。",
+    "planned_weight 只能在 can_start_observation=true 时大于 0。",
+    "AkShare 本地信号缺 JoinQuant 交易复核时只能 record_only。",
+    "任何暂停规则触发后，paper_action 只能是 pause_new_entry 或 close_only。"
+  ]
+}
