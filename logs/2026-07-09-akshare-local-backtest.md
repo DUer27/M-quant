@@ -60,3 +60,14 @@
 - 脚本输出：5/10/20 日事件收益、5日调仓交易净值、目标路线、市值层和高/中/低波动 × 大/中/小市值交叉层。
 - 真实数据替换：JoinQuant `money_ma20` 替代本地腾讯源成交量兜底；`valuation.market_cap` 做市值层；`valuation.turnover_ratio` 参与拥挤风险复核。
 - 边界：脚本生成不代表策略有效，只有把 JoinQuant 实跑 JSON 回填并通过收益、回撤、Sharpe、样本外和成本审计后，才允许升级为正式候选。
+
+## 追加：真实 OHLCV 新因子挖掘
+
+- 扩展 `outputs/sources/akshare/scripts/build_ohlcv_factor_backtest.py`，新增 6 个 OHLCV 可复现因子/组合。
+- 重跑真实 AkShare 沪深300样本后，因子结果从 27 条扩展到 45 条，策略分层结果从 64 条扩展到 96 条。
+- 通过本地单因子初筛：`ak_liquidity_stability`，5日 RankIC 0.0305、t 值 6.57；10日 RankIC 0.0256、t 值 5.41；20日 RankIC 0.0208、t 值 4.24。
+- 暂缓单独使用：`ak_breakout_confirmation`、`ak_pullback_support_quality`、`ak_trend_pullback_reversal_combo` 单因子不显著。
+- 新增 2 条 `joinquant_review_candidate`：
+  - `AkShare低波动收缩突破-中流动性观察策略`：39 次交易，总收益 84.95%，最大回撤 -4.19%，Sharpe 3.23。
+  - `AkShare低波动趋势回踩-中流动性观察策略`：39 次交易，总收益 111.38%，最大回撤 -7.38%，Sharpe 2.84。
+- 聚宽复核脚本同步扩展为 6 条候选；这些仍不是正式策略，下一步必须回填 JoinQuant 真实结果再筛。

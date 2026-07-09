@@ -79,6 +79,7 @@
 
 - 未分层策略仍不够成熟，不能直接模拟盘。
 - `AkShare拥挤风险`、`AkShare反拥挤回归组合`、`AkShare均值回归质量组合` 的 5 日 RankIC 通过本地初筛。
+- 2026-07-09 追加挖掘后，`AkShare流动性稳定` 5/10/20 日均通过本地单因子显著性初筛；`AkShare突破确认`、`AkShare趋势回踩支撑` 单因子未通过，不单独升级。
 - 分层后高波动×中/低流动性的均值回归路线、低波动×中流动性的防守/量价确认路线表现更强，但只有 33-39 次样本交易，必须做 JoinQuant 复核、年度分段和行业暴露检查。
 
 ## 本地候选稳定性验证
@@ -96,4 +97,9 @@
 - `outputs/sources/akshare/results/akshare_strategy_candidate_validation.json`
 - `outputs/_docs/akshare-strategy-candidate-validation-20260709.md`
 
-当前 4 条强分层策略通过本地年度、前后半段、2025-07-01 后样本外、回撤和 Sharpe 门槛，状态为 `joinquant_review_candidate`。这只表示可以进入 JoinQuant 复核，不代表已经可以实盘或模拟盘。
+当前 6 条强分层策略通过本地年度、前后半段、2025-07-01 后样本外、回撤和 Sharpe 门槛，状态为 `joinquant_review_candidate`。这只表示可以进入 JoinQuant 复核，不代表已经可以实盘或模拟盘。
+
+追加通过的两条候选：
+
+- `AkShare低波动收缩突破-中流动性观察策略`
+- `AkShare低波动趋势回踩-中流动性观察策略`

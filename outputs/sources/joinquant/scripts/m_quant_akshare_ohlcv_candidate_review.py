@@ -61,6 +61,22 @@ CANDIDATES = [
         "target_liquidity_bucket": "mid_liquidity",
         "route": "高波动回归路线",
     },
+    {
+        "strategy_id": "ak_low_vol_contraction_breakout_mid_liquidity",
+        "strategy_name": "AkShare低波动收缩突破-中流动性复核策略",
+        "score_col": "ak_contraction_breakout_combo",
+        "target_market_regime": "low_volatility",
+        "target_liquidity_bucket": "mid_liquidity",
+        "route": "低波动确认路线",
+    },
+    {
+        "strategy_id": "ak_low_vol_trend_pullback_mid_liquidity",
+        "strategy_name": "AkShare低波动趋势回踩-中流动性复核策略",
+        "score_col": "ak_trend_pullback_reversal_combo",
+        "target_market_regime": "low_volatility",
+        "target_liquidity_bucket": "mid_liquidity",
+        "route": "低波动确认路线",
+    },
 ]
 
 
@@ -158,12 +174,17 @@ def build_price_base():
     group = price.groupby("code", group_keys=False)
     price["ret_1"] = group["close"].pct_change()
     price["ret_5"] = group["close"].pct_change(5)
+    price["ret_10"] = group["close"].pct_change(10)
     price["ret_20"] = group["close"].pct_change(20)
     price["ma20"] = group["close"].rolling(20, min_periods=20).mean().reset_index(level=0, drop=True)
     price["ma60"] = group["close"].rolling(60, min_periods=60).mean().reset_index(level=0, drop=True)
     price["vol20"] = price.groupby("code")["ret_1"].rolling(20, min_periods=20).std().reset_index(level=0, drop=True)
+    price["vol60"] = price.groupby("code")["ret_1"].rolling(60, min_periods=60).std().reset_index(level=0, drop=True)
     price["volume_ma20"] = group["volume"].rolling(20, min_periods=20).mean().reset_index(level=0, drop=True)
+    price["volume_std20"] = group["volume"].rolling(20, min_periods=20).std().reset_index(level=0, drop=True)
     price["money_ma20"] = group["money"].rolling(20, min_periods=20).mean().reset_index(level=0, drop=True)
+    price["money_std20"] = group["money"].rolling(20, min_periods=20).std().reset_index(level=0, drop=True)
+    price["prior_high20"] = group["close"].rolling(20, min_periods=20).max().reset_index(level=0, drop=True).groupby(price["code"]).shift(1)
     price["rolling_high60"] = group["close"].rolling(60, min_periods=60).max().reset_index(level=0, drop=True)
     price["drawdown60"] = safe_div(price["close"], price["rolling_high60"]) - 1
     price["volume_ratio20"] = safe_div(price["volume"], price["volume_ma20"])
@@ -218,7 +239,12 @@ def build_factor_table():
         day_range = (part["high"] - part["low"]).replace(0, np.nan)
         part["close_position"] = ((part["close"] - part["low"]) / day_range).clip(0, 1).fillna(0.5)
         part["upper_shadow_ratio"] = ((part["high"] - np.maximum(part["open"], part["close"])) / day_range).clip(0, 1).fillna(0)
+        part["lower_shadow_ratio"] = ((np.minimum(part["open"], part["close"]) - part["low"]) / day_range).clip(0, 1).fillna(0)
         part["body_return"] = part["close"] / part["open"].replace(0, np.nan) - 1
+        part["money_stability20"] = 1 / (1 + safe_div(part["money_std20"], part["money_ma20"]))
+        part["volume_stability20"] = 1 / (1 + safe_div(part["volume_std20"], part["volume_ma20"]))
+        part["activity_stability20"] = part["money_stability20"].where(part["money_stability20"].notna(), part["volume_stability20"])
+        part["prior_high20_gap"] = safe_div(part["close"], part["prior_high20"]) - 1
 
         raw_volume_price = (
             0.35 * part["ret_20"]
@@ -243,12 +269,36 @@ def build_factor_table():
             + 0.25 * part["ret_5"].clip(lower=-0.2, upper=0.5)
             + 0.20 * part["close_ma20_gap"].clip(lower=-0.2, upper=0.5)
         )
+        raw_volatility_contraction_quality = (
+            -0.42 * part["vol20"]
+            - 0.28 * part["vol60"]
+            + 0.18 * part["activity_stability20"]
+            + 0.12 * (-part["drawdown60"].abs())
+        )
+        raw_breakout_confirmation = (
+            0.30 * part["prior_high20_gap"].clip(lower=-0.10, upper=0.12)
+            + 0.24 * clipped_log_ratio(part["activity_ratio20"], 0.2, 5)
+            + 0.22 * part["close_position"]
+            + 0.14 * part["body_return"].clip(lower=-0.08, upper=0.08)
+            + 0.10 * part["activity_stability20"]
+        )
+        raw_pullback_support_quality = (
+            0.28 * part["ma20_ma60_gap"].clip(lower=-0.10, upper=0.15)
+            + 0.24 * (-part["close_ma20_gap"].abs().clip(upper=0.20))
+            + 0.18 * part["lower_shadow_ratio"].fillna(0)
+            + 0.16 * (-part["ret_5"].clip(lower=-0.20, upper=0.20).abs())
+            + 0.14 * part["close_position"]
+        )
 
         part["ak_volume_price_confirmation"] = rank01(raw_volume_price, True)
         part["ak_trend_quality"] = rank01(raw_trend_quality, True)
         part["ak_low_volatility_quality"] = rank01(raw_low_volatility_quality, True)
         part["ak_kline_confirmation"] = rank01(raw_kline_confirmation, True)
         part["ak_crowding_risk"] = rank01(raw_crowding_risk, True)
+        part["ak_volatility_contraction_quality"] = rank01(raw_volatility_contraction_quality, True)
+        part["ak_breakout_confirmation"] = rank01(raw_breakout_confirmation, True)
+        part["ak_pullback_support_quality"] = rank01(raw_pullback_support_quality, True)
+        part["ak_liquidity_stability"] = rank01(part["activity_stability20"], True)
         part["ak_volume_trend_quality_combo"] = (
             0.32 * part["ak_volume_price_confirmation"]
             + 0.28 * part["ak_trend_quality"]
@@ -277,6 +327,22 @@ def build_factor_table():
             + 0.12 * part["ak_low_volatility_quality"]
             + 0.08 * (1 - part["ak_kline_confirmation"])
         )
+        part["ak_contraction_breakout_combo"] = (
+            0.30 * part["ak_volatility_contraction_quality"]
+            + 0.28 * part["ak_breakout_confirmation"]
+            + 0.18 * part["ak_volume_price_confirmation"]
+            + 0.12 * part["ak_liquidity_stability"]
+            + 0.10 * part["ak_trend_quality"]
+            - 0.18 * part["ak_crowding_risk"]
+        )
+        part["ak_trend_pullback_reversal_combo"] = (
+            0.30 * part["ak_pullback_support_quality"]
+            + 0.22 * part["ak_trend_quality"]
+            + 0.18 * part["ak_low_volatility_quality"]
+            + 0.14 * part["ak_kline_confirmation"]
+            + 0.10 * part["ak_liquidity_stability"]
+            - 0.16 * part["ak_crowding_risk"]
+        )
 
         liquidity_rank = part["money_ma20"].rank(pct=True, method="average")
         part["liquidity_bucket"] = "mid_liquidity"
@@ -302,6 +368,9 @@ def build_factor_table():
             "ak_kline_confirmation", "ak_crowding_risk", "ak_volume_trend_quality_combo",
             "ak_defensive_quality_combo", "ak_mean_reversion_quality_combo",
             "ak_anti_crowding_reversal_combo",
+            "ak_volatility_contraction_quality", "ak_breakout_confirmation",
+            "ak_pullback_support_quality", "ak_liquidity_stability",
+            "ak_contraction_breakout_combo", "ak_trend_pullback_reversal_combo",
         ]
         rows.append(part[keep].copy())
 

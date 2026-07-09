@@ -57,6 +57,30 @@ FACTOR_DEFS = [
         "description": "高换手、高量比、短期涨幅和均线过伸共同识别拥挤风险。",
     },
     {
+        "id": "ak_volatility_contraction_quality",
+        "name": "AkShare波动收缩质量",
+        "direction": "positive",
+        "description": "20/60日波动较低且成交活动更稳定时，视为收缩蓄势质量更高。",
+    },
+    {
+        "id": "ak_breakout_confirmation",
+        "name": "AkShare突破确认",
+        "direction": "positive",
+        "description": "价格相对20日前高突破、放量和强收盘共同确认突破有效性。",
+    },
+    {
+        "id": "ak_pullback_support_quality",
+        "name": "AkShare趋势回踩支撑",
+        "direction": "positive",
+        "description": "中期趋势仍在、价格贴近MA20、下影承接和短线不过热共同识别回踩支撑。",
+    },
+    {
+        "id": "ak_liquidity_stability",
+        "name": "AkShare流动性稳定",
+        "direction": "positive",
+        "description": "20日成交额/成交量越稳定，短期冲击成本和异常成交风险越低。",
+    },
+    {
         "id": "ak_volume_trend_quality_combo",
         "name": "AkShare量价趋势质量组合",
         "direction": "positive",
@@ -79,6 +103,18 @@ FACTOR_DEFS = [
         "name": "AkShare反拥挤回归组合",
         "direction": "positive",
         "description": "低拥挤、低短线追涨和不过度强K线的反向确认组合。",
+    },
+    {
+        "id": "ak_contraction_breakout_combo",
+        "name": "AkShare收缩突破组合",
+        "direction": "positive",
+        "description": "波动收缩、突破确认、量价确认和流动性稳定共同确认，扣除拥挤风险。",
+    },
+    {
+        "id": "ak_trend_pullback_reversal_combo",
+        "name": "AkShare趋势回踩反转组合",
+        "direction": "positive",
+        "description": "趋势仍在、回踩接近MA20、低波动和K线承接共同确认，扣除拥挤风险。",
     },
 ]
 
@@ -134,12 +170,17 @@ def add_factor_columns(df: pd.DataFrame) -> pd.DataFrame:
         g = group.sort_values("date").copy()
         g["ret_1"] = g["close"].pct_change()
         g["ret_5"] = g["close"].pct_change(5)
+        g["ret_10"] = g["close"].pct_change(10)
         g["ret_20"] = g["close"].pct_change(20)
         g["ma20"] = g["close"].rolling(20, min_periods=20).mean()
         g["ma60"] = g["close"].rolling(60, min_periods=60).mean()
         g["vol20"] = g["ret_1"].rolling(20, min_periods=20).std()
+        g["vol60"] = g["ret_1"].rolling(60, min_periods=60).std()
         g["volume_ma20"] = g["volume"].rolling(20, min_periods=20).mean()
+        g["volume_std20"] = g["volume"].rolling(20, min_periods=20).std()
         g["amount_ma20"] = g["amount"].rolling(20, min_periods=20).mean()
+        g["amount_std20"] = g["amount"].rolling(20, min_periods=20).std()
+        g["prior_high20"] = g["close"].rolling(20, min_periods=20).max().shift(1)
         g["rolling_high60"] = g["close"].rolling(60, min_periods=60).max()
         g["drawdown60"] = safe_div(g["close"], g["rolling_high60"]) - 1
         for horizon in [5, 10, 20]:
@@ -150,13 +191,19 @@ def add_factor_columns(df: pd.DataFrame) -> pd.DataFrame:
     day_range = (out["high"] - out["low"]).replace(0, np.nan)
     out["close_position"] = (out["close"] - out["low"]) / day_range
     out["upper_shadow_ratio"] = (out["high"] - out[["open", "close"]].max(axis=1)) / day_range
+    out["lower_shadow_ratio"] = (out[["open", "close"]].min(axis=1) - out["low"]) / day_range
     out["body_return"] = out["close"] / out["open"] - 1
     out["volume_ratio20"] = safe_div(out["volume"], out["volume_ma20"])
     out["amount_ratio20"] = safe_div(out["amount"], out["amount_ma20"])
     out["activity_ratio20"] = out["amount_ratio20"].where(out["amount_ratio20"].notna(), out["volume_ratio20"])
     out["liquidity_metric20"] = out["amount_ma20"].where(out["amount_ma20"].notna(), out["volume_ma20"])
+    out["activity_stability20"] = (1 / (1 + safe_div(out["amount_std20"], out["amount_ma20"]))).where(
+        out["amount_std20"].notna() & out["amount_ma20"].notna(),
+        1 / (1 + safe_div(out["volume_std20"], out["volume_ma20"])),
+    )
     out["ma20_ma60_gap"] = safe_div(out["ma20"], out["ma60"]) - 1
     out["close_ma20_gap"] = safe_div(out["close"], out["ma20"]) - 1
+    out["prior_high20_gap"] = safe_div(out["close"], out["prior_high20"]) - 1
 
     out["raw_volume_price"] = (
         0.35 * out["ret_20"]
@@ -181,12 +228,37 @@ def add_factor_columns(df: pd.DataFrame) -> pd.DataFrame:
         + 0.25 * out["ret_5"].clip(lower=-0.2, upper=0.5)
         + 0.20 * out["close_ma20_gap"].clip(lower=-0.2, upper=0.5)
     )
+    out["raw_volatility_contraction_quality"] = (
+        -0.42 * out["vol20"]
+        - 0.28 * out["vol60"]
+        + 0.18 * out["activity_stability20"]
+        + 0.12 * (-out["drawdown60"].abs())
+    )
+    out["raw_breakout_confirmation"] = (
+        0.30 * out["prior_high20_gap"].clip(lower=-0.10, upper=0.12)
+        + 0.24 * np.log(out["activity_ratio20"].clip(lower=0.2, upper=5))
+        + 0.22 * out["close_position"]
+        + 0.14 * out["body_return"].clip(lower=-0.08, upper=0.08)
+        + 0.10 * out["activity_stability20"]
+    )
+    out["raw_pullback_support_quality"] = (
+        0.28 * out["ma20_ma60_gap"].clip(lower=-0.10, upper=0.15)
+        + 0.24 * (-out["close_ma20_gap"].abs().clip(upper=0.20))
+        + 0.18 * out["lower_shadow_ratio"].fillna(0)
+        + 0.16 * (-out["ret_5"].clip(lower=-0.20, upper=0.20).abs())
+        + 0.14 * out["close_position"]
+    )
+    out["raw_liquidity_stability"] = out["activity_stability20"]
 
     out["ak_volume_price_confirmation"] = pct_rank_by_date(out, "raw_volume_price")
     out["ak_trend_quality"] = pct_rank_by_date(out, "raw_trend_quality")
     out["ak_low_volatility_quality"] = pct_rank_by_date(out, "raw_low_volatility_quality")
     out["ak_kline_confirmation"] = pct_rank_by_date(out, "raw_kline_confirmation")
     out["ak_crowding_risk"] = pct_rank_by_date(out, "raw_crowding_risk")
+    out["ak_volatility_contraction_quality"] = pct_rank_by_date(out, "raw_volatility_contraction_quality")
+    out["ak_breakout_confirmation"] = pct_rank_by_date(out, "raw_breakout_confirmation")
+    out["ak_pullback_support_quality"] = pct_rank_by_date(out, "raw_pullback_support_quality")
+    out["ak_liquidity_stability"] = pct_rank_by_date(out, "raw_liquidity_stability")
     out["ak_volume_trend_quality_combo"] = (
         0.32 * out["ak_volume_price_confirmation"]
         + 0.28 * out["ak_trend_quality"]
@@ -214,6 +286,22 @@ def add_factor_columns(df: pd.DataFrame) -> pd.DataFrame:
         + 0.18 * (1 - out["ak_trend_quality"])
         + 0.12 * out["ak_low_volatility_quality"]
         + 0.08 * (1 - out["ak_kline_confirmation"])
+    )
+    out["ak_contraction_breakout_combo"] = (
+        0.30 * out["ak_volatility_contraction_quality"]
+        + 0.28 * out["ak_breakout_confirmation"]
+        + 0.18 * out["ak_volume_price_confirmation"]
+        + 0.12 * out["ak_liquidity_stability"]
+        + 0.10 * out["ak_trend_quality"]
+        - 0.18 * out["ak_crowding_risk"]
+    )
+    out["ak_trend_pullback_reversal_combo"] = (
+        0.30 * out["ak_pullback_support_quality"]
+        + 0.22 * out["ak_trend_quality"]
+        + 0.18 * out["ak_low_volatility_quality"]
+        + 0.14 * out["ak_kline_confirmation"]
+        + 0.10 * out["ak_liquidity_stability"]
+        - 0.16 * out["ak_crowding_risk"]
     )
 
     market = out.groupby("date", as_index=False)["ret_1"].mean().rename(columns={"ret_1": "market_ret_1"})
@@ -415,6 +503,8 @@ def main() -> int:
         ("ak_defensive_quality_combo", "AkShare防守质量确认策略 v0"),
         ("ak_mean_reversion_quality_combo", "AkShare均值回归质量策略 v0"),
         ("ak_anti_crowding_reversal_combo", "AkShare反拥挤回归策略 v0"),
+        ("ak_contraction_breakout_combo", "AkShare收缩突破策略 v0"),
+        ("ak_trend_pullback_reversal_combo", "AkShare趋势回踩反转策略 v0"),
     ]
     strategy_results = [
         simulate_strategy(factors, strategy_id, name, args.top_n, args.cost, layer)
@@ -466,10 +556,16 @@ def main() -> int:
         "ak_low_volatility_quality",
         "ak_kline_confirmation",
         "ak_crowding_risk",
+        "ak_volatility_contraction_quality",
+        "ak_breakout_confirmation",
+        "ak_pullback_support_quality",
+        "ak_liquidity_stability",
         "ak_volume_trend_quality_combo",
         "ak_defensive_quality_combo",
         "ak_mean_reversion_quality_combo",
         "ak_anti_crowding_reversal_combo",
+        "ak_contraction_breakout_combo",
+        "ak_trend_pullback_reversal_combo",
         "future_return_5",
         "future_return_10",
         "future_return_20",
