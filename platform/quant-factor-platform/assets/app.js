@@ -72,6 +72,9 @@ const elements = {
   librarySourceKind: document.querySelector('#library-source-kind'),
   libraryUnavailableCount: document.querySelector('#library-unavailable-count'),
   navButtons: document.querySelectorAll('.nav button[data-view-target]'),
+  paperWatchControls: document.querySelector('#paper-watch-controls'),
+  paperWatchList: document.querySelector('#paper-watch-list'),
+  paperWatchStatus: document.querySelector('#paper-watch-status'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
   askResearchAssistant: document.querySelector('#ask-research-assistant'),
@@ -248,6 +251,38 @@ function renderRisk(risks) {
       `;
     })
     .join('');
+}
+
+function renderPaperWatchRoutes(pack) {
+  if (!elements.paperWatchList) return;
+  const routes = Array.isArray(pack.routes) ? pack.routes : [];
+  const ready = pack.status === 'ready_for_controlled_paper_watch';
+  if (elements.paperWatchStatus) {
+    elements.paperWatchStatus.textContent = ready
+      ? `${routes.length}条受控路线`
+      : '未就绪';
+  }
+  elements.paperWatchList.innerHTML = routes.length
+    ? routes.map((route) => `
+      <article class="paper-watch-item">
+        <div>
+          <strong>${escapeHtml(route.strategy_name || route.strategy_id)}</strong>
+          <span>${escapeHtml(route.layer || '-')}</span>
+        </div>
+        <div class="paper-watch-metrics">
+          <span>收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>
+          <span>回撤 ${(Number(route.max_drawdown || 0) * 100).toFixed(2)}%</span>
+          <span>Sharpe ${Number(route.sharpe || 0).toFixed(2)}</span>
+        </div>
+        <p>${escapeHtml(route.paper_scope || '')}</p>
+      </article>
+    `).join('')
+    : '<div class="empty-state">暂无可进入模拟观察的受控路线。</div>';
+  if (elements.paperWatchControls) {
+    elements.paperWatchControls.innerHTML = (pack.requiredControls || [])
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join('');
+  }
 }
 
 function labelForStatus(status) {
@@ -2112,11 +2147,12 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
-  const [summary, factors, equity, risks, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline] = await Promise.all([
+  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
     request('/api/risk'),
+    request('/strategy-api/paper-watch-routes'),
     request('/factor-api/real-factor-summary'),
     request('/strategy-api/definitions'),
     request('/factor-api/indicator-factor-definitions'),
@@ -2128,6 +2164,7 @@ async function refreshDashboard() {
   renderSummary(summary);
   renderFactors(factors);
   renderRisk(risks);
+  renderPaperWatchRoutes(paperWatchRoutes);
   drawChart(equity);
   renderFactorLibrary(factorSummary, strategies, factorDefinitions, researchPipeline);
   renderStrategyLibrary(strategies);
