@@ -311,6 +311,49 @@ function renderMaturityMatrix(matrix) {
   `;
 }
 
+function renderTradeabilityReviewTaskPack(pack) {
+  if (!pack) return '';
+  const target = pack.target || {};
+  const gate = pack.current_gate || {};
+  const passGate = pack.pass_gate || {};
+  const script = pack.joinquant_script || {};
+  const steps = Array.isArray(pack.steps) ? pack.steps : [];
+  const selectedCodes = Array.isArray(target.selected_codes) ? target.selected_codes : [];
+  const imported = pack.status === 'review_passed' || pack.status === 'review_failed' || pack.status === 'review_imported';
+  return `
+    <div class="paper-watch-note">
+      <strong>交易可行性复核任务包</strong>
+      <span class="tag ${imported ? 'good' : 'pending'}">${escapeHtml(pack.status || 'missing')}</span>
+      <p>
+        ${escapeHtml(target.strategy_name || target.strategy_id || '-')}：
+        ${escapeHtml(target.signal_date || '-')}，
+        入选 ${escapeHtml(target.selected_count ?? 0)} 只，
+        当前 ${gate.can_start_observation ? '已可观察' : '仍需 JoinQuant 真实复核'}。
+      </p>
+      <p>
+        通过门槛：可交易数量不少于 ${escapeHtml(passGate.min_tradable_count ?? 10)}，
+        decision 必须为 ${escapeHtml(passGate.required_decision || 'tradeability_review_passed')}。
+      </p>
+      ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载交易复核脚本</a>` : ''}
+      <details class="compact-details">
+        <summary>查看复核步骤和候选</summary>
+        <div class="paper-watch-rules">
+          <strong>执行步骤</strong>
+          ${renderTextList(steps)}
+          <strong>入选代码</strong>
+          ${renderTextList(selectedCodes)}
+          <strong>导入要求</strong>
+          ${renderTextList([
+            `导入接口：${passGate.import_endpoint || '/backtest-api/import-results'}`,
+            `预期 source：${script.expected_source || 'joinquant_akshare_latest_signal_tradeability_review'}`,
+            passGate.after_import_expected_effect || '导入后才允许继续判断是否解除阻塞。',
+          ])}
+        </div>
+      </details>
+    </div>
+  `;
+}
+
 function renderPaperWatchRoutes(pack) {
   if (!elements.paperWatchList) return;
   const routes = Array.isArray(pack.routes) ? pack.routes : [];
@@ -365,6 +408,7 @@ function renderPaperWatchRoutes(pack) {
           <p>${escapeHtml(pack.localBacktest.regimeSwitch.paper_scope || '进入模拟观察前仍需交易可行性复核。')}</p>
         </div>
       ` : ''}
+      ${renderTradeabilityReviewTaskPack(pack.tradeabilityReviewTaskPack)}
       ${renderMaturityMatrix(pack.maturityMatrix)}
       ${pack.operationsPack ? `
         <div class="paper-watch-note">

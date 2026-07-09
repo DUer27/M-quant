@@ -1,0 +1,92 @@
+{
+  "source": "m_quant_tradeability_review_task_pack",
+  "generated_at": "2026-07-10T01:31:38",
+  "status": "waiting_for_joinquant_review",
+  "data_policy": "只整理已有 AkShare 本地最新信号、运行包和成熟策略矩阵；不调用 JoinQuant，不生成交易可行性、收益、净值、成交或持仓。",
+  "target": {
+    "sleeve_id": "akshare_local_switch",
+    "strategy_id": "ak_mean_reversion_quality_combo",
+    "strategy_name": "AkShare高波动均值回归-中流动性观察策略",
+    "signal_date": "2026-07-09",
+    "action": "paper_watch_open_allowed",
+    "candidate_count": 15,
+    "selected_count": 15,
+    "selected_codes": [
+      "002001",
+      "000568",
+      "000858",
+      "000425",
+      "000338",
+      "000651",
+      "000001",
+      "002142",
+      "000776",
+      "002027",
+      "002241",
+      "002179",
+      "002230",
+      "002415",
+      "002714"
+    ],
+    "selected_names": [
+      "新和成",
+      "泸州老窖",
+      "五粮液",
+      "徐工机械",
+      "潍柴动力",
+      "格力电器",
+      "平安银行",
+      "宁波银行",
+      "广发证券",
+      "分众传媒",
+      "歌尔股份",
+      "中航光电",
+      "科大讯飞",
+      "海康威视",
+      "牧原股份"
+    ]
+  },
+  "current_gate": {
+    "operational_status": "ready_local_switch_pending_tradeability_review",
+    "can_start_observation": false,
+    "blocked_reasons": [
+      "最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。"
+    ],
+    "maturity_goal_status": "not_met",
+    "ready_strategy_count": 1,
+    "target_ready_strategy_count": 2
+  },
+  "joinquant_script": {
+    "path": "outputs/sources/joinquant/scripts/m_quant_akshare_latest_signal_tradeability_review_20260709.py",
+    "download_endpoint": "/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py",
+    "environment": "JoinQuant Python3 research notebook",
+    "expected_source": "joinquant_akshare_latest_signal_tradeability_review",
+    "expected_result_type": "tradeability_review"
+  },
+  "pass_gate": {
+    "min_tradable_count": 10,
+    "required_decision": "tradeability_review_passed",
+    "required_fields": [
+      "source",
+      "strategy_id",
+      "strategy_name",
+      "signal_date",
+      "candidate_count",
+      "tradable_count",
+      "blocked_count",
+      "decision",
+      "records"
+    ],
+    "import_endpoint": "/backtest-api/import-results",
+    "after_import_expected_effect": "平台会把复核结果写入 imported-tradeability-reviews.json；只有 decision=tradeability_review_passed 且运行包重建后，akshare_local_switch 才可能从 record_only 进入可观察资金袖。"
+  },
+  "steps": [
+    "打开 JoinQuant Python3 研究环境。",
+    "下载或复制 joinquant_script.download_endpoint 返回的脚本。",
+    "在 JoinQuant 中运行脚本，等待其打印 JSON。",
+    "完整复制打印出的 JSON，不要手工改 candidate_count、tradable_count、decision 或 records。",
+    "回到 M-quant 回测中心结果回填，粘贴 JSON 并导入。",
+    "导入后重新生成运行包和成熟策略矩阵，确认 akshare_local_switch 是否解除阻塞。"
+  ],
+  "latest_review": null
+}
