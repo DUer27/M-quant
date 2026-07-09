@@ -39,6 +39,7 @@ const strategyMaturityAuditPath = outputPath('strategies', 'joinquant', 'strateg
 const paperWatchRoutesPath = outputPath('strategies', 'joinquant', 'paper_watch_routes_20260709.json');
 const paperWatchExecutionPackPath = outputPath('strategies', 'joinquant', 'paper_watch_execution_pack_20260709.json');
 const paperWatchReadinessAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_readiness_audit_20260709.json');
+const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_independence_audit_20260709.json');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -893,6 +894,7 @@ function buildPaperWatchRoutes() {
   const pack = readJsonFile(paperWatchRoutesPath, {});
   const executionPack = readJsonFile(paperWatchExecutionPackPath, {});
   const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
+  const independenceAudit = readJsonFile(paperWatchIndependenceAuditPath, {});
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
     : [];
@@ -928,6 +930,14 @@ function buildPaperWatchRoutes() {
     executionDataPolicy: executionPack.data_policy || '',
     executionStatus: executionPack.status || 'not_ready',
     globalControls: Array.isArray(executionPack.global_controls) ? executionPack.global_controls : [],
+    independence: {
+      decision: independenceAudit.decision || '',
+      decisionName: independenceAudit.decision_name || '',
+      deploymentMode: independenceAudit.deployment_mode || '',
+      independentCapitalSleeves: Number(independenceAudit.independent_capital_sleeves || 0),
+      overlaps: Array.isArray(independenceAudit.overlaps) ? independenceAudit.overlaps : [],
+      summary: independenceAudit.summary || '',
+    },
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
     readinessCounts: recommendedReadinessCounts,
     readinessDecisionCounts: readinessCounts,

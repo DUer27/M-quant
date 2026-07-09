@@ -1,0 +1,96 @@
+{
+  "source": "paper_watch_independence_audit",
+  "generated_at": "2026-07-09T15:26:02",
+  "data_policy": "只读取模拟观察推荐路线和已生成的真实曲线组合策略组件；不生成收益或回测结果。",
+  "recommended_route_count": 2,
+  "independent_capital_sleeves": 1,
+  "deployment_mode": "portfolio_controller_primary",
+  "decision": "use_switch_strategy_as_primary_and_component_as_monitor",
+  "decision_name": "切换策略主用，组件策略监控",
+  "summary": "市场状态切换策略包含 JQ质量利润流动性策略的高波动组件；模拟盘应把切换策略作为组合控制器，JQ高波动作为组件监控或备选，不应和切换策略在高波动环境下重复满仓。",
+  "routes": [
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "layer": "高波动",
+      "market_regime": "high_volatility",
+      "market_cap_bucket": null,
+      "sample_dates": 39,
+      "strategy_return": 0.35130804884936606,
+      "annual_return": null,
+      "max_drawdown": -0.10268028853355404,
+      "sharpe": 1.7373322248071763,
+      "win_rate": 0.6153846153846154,
+      "avg_selected_count": 30.0,
+      "readiness_decision": "ready_controlled_paper_watch",
+      "readiness_reason": "硬门槛、成本压力、前后半段和近期触发均通过。",
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 高波动，不得扩展到未通过分层。",
+      "components": [
+        {
+          "strategy_id": "jq_quality_profit_liquidity_v1",
+          "strategy_name": "JQ质量利润流动性策略 v1",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": null,
+          "role": "standalone_route"
+        }
+      ],
+      "component_keys": [
+        "jq_quality_profit_liquidity_v1::high_volatility::"
+      ]
+    },
+    {
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "strategy_name": "市场状态切换策略 v1",
+      "layer": "高低波动切换",
+      "market_regime": "adaptive_high_low_volatility",
+      "market_cap_bucket": null,
+      "sample_dates": 70,
+      "strategy_return": 0.8328872072774001,
+      "annual_return": null,
+      "max_drawdown": -0.09068798084469964,
+      "sharpe": 1.8039399491070465,
+      "win_rate": 0.6285714285714286,
+      "avg_selected_count": 29.357142857142858,
+      "readiness_decision": "ready_controlled_paper_watch",
+      "readiness_reason": "硬门槛、成本压力、前后半段和近期触发均通过。",
+      "source": "derived_from_joinquant_real_trading_curves",
+      "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。",
+      "paper_scope": "仅限 高低波动切换，不得扩展到未通过分层。",
+      "components": [
+        {
+          "strategy_id": "jq_quality_profit_liquidity_v1",
+          "strategy_name": "JQ质量利润流动性策略 v1",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": null,
+          "role": "高波动环境主策略"
+        },
+        {
+          "strategy_id": "kline_assisted_confirmation",
+          "strategy_name": "K线辅助确认策略",
+          "market_regime": "low_volatility",
+          "market_cap_bucket": null,
+          "role": "低波动环境确认策略"
+        }
+      ],
+      "component_keys": [
+        "jq_quality_profit_liquidity_v1::high_volatility::",
+        "kline_assisted_confirmation::low_volatility::"
+      ]
+    }
+  ],
+  "overlaps": [
+    {
+      "left_strategy_id": "jq_quality_profit_liquidity_v1",
+      "left_strategy_name": "JQ质量利润流动性策略 v1",
+      "right_strategy_id": "regime_switch_quality_kline_v1",
+      "right_strategy_name": "市场状态切换策略 v1",
+      "relation": "component_overlap",
+      "shared_components": [
+        "jq_quality_profit_liquidity_v1::high_volatility::"
+      ],
+      "warning": "两条推荐路线共享同一个底层策略/市场状态组件，不应作为两笔独立资金同时满仓运行。"
+    }
+  ]
+}

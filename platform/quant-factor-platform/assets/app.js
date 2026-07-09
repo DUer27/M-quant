@@ -257,6 +257,7 @@ function renderPaperWatchRoutes(pack) {
   if (!elements.paperWatchList) return;
   const routes = Array.isArray(pack.routes) ? pack.routes : [];
   const counts = pack.readinessCounts || {};
+  const independence = pack.independence || {};
   const ready = pack.readinessStatus === 'ready_controlled_paper_watch';
   const conditional = pack.readinessStatus === 'conditional_paper_watch';
   if (elements.paperWatchStatus) {
@@ -266,7 +267,15 @@ function renderPaperWatchRoutes(pack) {
     elements.paperWatchStatus.className = `tag ${ready ? 'good' : conditional ? 'pending' : 'watch'}`;
   }
   elements.paperWatchList.innerHTML = routes.length
-    ? routes.map((route) => {
+    ? `
+      ${independence.summary ? `
+        <div class="paper-watch-note">
+          <strong>${escapeHtml(independence.decisionName || '独立性审计')}</strong>
+          <span>独立资金袖 ${escapeHtml(independence.independentCapitalSleeves || 0)} 个</span>
+          <p>${escapeHtml(independence.summary)}</p>
+        </div>
+      ` : ''}
+      ${routes.map((route) => {
       const execution = route.execution || {};
       const readiness = route.readiness || {};
       const failedChecks = (readiness.checks || []).filter((item) => !item.passed);
@@ -308,10 +317,14 @@ function renderPaperWatchRoutes(pack) {
           </details>
         </article>
       `;
-    }).join('')
+    }).join('')}
+    `
     : '<div class="empty-state">暂无可进入模拟观察的受控路线。</div>';
   if (elements.paperWatchControls) {
-    elements.paperWatchControls.innerHTML = [...(pack.requiredControls || []), ...(pack.globalControls || [])]
+    const overlapWarnings = (independence.overlaps || [])
+      .map((item) => item.warning)
+      .filter(Boolean);
+    elements.paperWatchControls.innerHTML = [...(pack.requiredControls || []), ...(pack.globalControls || []), ...overlapWarnings]
       .map((item) => `<li>${escapeHtml(item)}</li>`)
       .join('');
   }
