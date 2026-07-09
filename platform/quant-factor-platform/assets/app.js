@@ -77,6 +77,8 @@ const elements = {
   paperWatchLedgerMessage: document.querySelector('#paper-watch-ledger-message'),
   paperWatchList: document.querySelector('#paper-watch-list'),
   paperWatchStatus: document.querySelector('#paper-watch-status'),
+  downloadPaperWatchLedgerCsv: document.querySelector('#download-paper-watch-ledger-csv'),
+  downloadPaperWatchLedgerJson: document.querySelector('#download-paper-watch-ledger-json'),
   importPaperWatchLedger: document.querySelector('#import-paper-watch-ledger'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
@@ -2480,6 +2482,14 @@ elements.importPaperWatchLedger?.addEventListener('click', async () => {
     elements.paperWatchLedgerMessage.textContent = `导入失败：${error.message}`;
     elements.paperWatchLedgerMessage.dataset.tone = 'error';
   }
+});
+
+elements.downloadPaperWatchLedgerCsv?.addEventListener('click', () => {
+  window.location.href = '/paper-watch-api/ledger-template.csv';
+});
+
+elements.downloadPaperWatchLedgerJson?.addEventListener('click', () => {
+  window.location.href = '/paper-watch-api/ledger-template.json';
 });
 
 elements.askResearchAssistant?.addEventListener('click', async () => {

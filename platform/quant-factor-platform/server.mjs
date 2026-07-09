@@ -2972,6 +2972,49 @@ function latestTradeabilityReviewFor(reviews, strategyId, signalDate) {
     .sort((left, right) => String(right.importedAt || '').localeCompare(String(left.importedAt || '')))[0] || null;
 }
 
+function paperWatchLedgerTemplateRows() {
+  const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
+  const templateFields = (operationsPack.daily_ledger_template || []).map((item) => item.field);
+  const rows = operationsPack.initial_ledger_rows || [];
+  return {
+    operationsPack,
+    headers: templateFields.length ? templateFields : [
+      'date',
+      'sleeve_id',
+      'strategy_id',
+      'signal_state',
+      'gate_status',
+      'candidate_count',
+      'selected_count',
+      'selected_codes',
+      'paper_action',
+      'planned_weight',
+      'paper_nav',
+      'period_return',
+      'benchmark_return',
+      'rolling_drawdown',
+      'turnover',
+      'slippage',
+      'industry_top_exposure',
+      'market_cap_exposure',
+      'blocked_reason',
+      'notes',
+    ],
+    rows,
+  };
+}
+
+function buildPaperWatchLedgerTemplateCsv() {
+  const { headers, rows } = paperWatchLedgerTemplateRows();
+  return [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => {
+      const value = Array.isArray(row[header]) ? row[header].join('|') : row[header];
+      return csvCell(value);
+    }).join(',')),
+  ].join('\n');
+}
+
 function readAkshareLocalBacktestRecords() {
   const pack = readJsonFile(akshareOhlcvBacktestPath, null);
   if (!pack) return [];
@@ -4688,6 +4731,28 @@ async function handleApi(req, res, pathname) {
       importedCount: rows.length,
       records: nextLedger,
     }, 201);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/ledger-template.csv') {
+    sendCsv(res, 'm-quant-paper-watch-ledger-template-20260709.csv', buildPaperWatchLedgerTemplateCsv());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/ledger-template.json') {
+    const { operationsPack, headers, rows } = paperWatchLedgerTemplateRows();
+    sendText(
+      res,
+      'm-quant-paper-watch-ledger-template-20260709.json',
+      `${JSON.stringify({
+        source: 'm_quant_paper_watch_ledger_template',
+        data_policy: '从模拟观察运行包生成的账本填写模板；不生成收益、净值、成交或持仓。',
+        operations_pack_status: operationsPack.status || 'missing',
+        fields: headers,
+        rows,
+      }, null, 2)}\n`,
+      'application/json; charset=utf-8',
+    );
     return true;
   }
 

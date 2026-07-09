@@ -216,3 +216,4 @@
 - 新增 `/paper-watch-api/import-ledger` 与 `/paper-watch-api/ledger`，账本记录和因子/策略回测、交易可行性复核分开保存。
 - 导入校验：资金袖必须来自运行包，`planned_weight` 必须在 0-1 之间；未通过准入的资金袖不能导入大于 0 的观察权重。
 - `模拟观察清单` 新增账本回填框和已导入账本数量展示；该功能只接收真实观察记录，不生成收益、净值、成交或持仓。
+- 新增 `/paper-watch-api/ledger-template.csv` 与 `/paper-watch-api/ledger-template.json`，模板来自运行包初始账本行，便于后续真实观察记录填写；模板本身不算导入记录。
