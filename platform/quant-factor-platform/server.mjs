@@ -5336,6 +5336,28 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'POST' && pathname === '/backtest-api/validate-tradeability-review') {
+    const body = await readJsonBody(req);
+    if (!isTradeabilityReviewPayload(body)) {
+      sendError(res, '这里只校验 JoinQuant 交易可行性复核 JSON。');
+      return true;
+    }
+    const checked = normalizeTradeabilityReview(body, new Date().toISOString());
+    sendJson(res, {
+      dataPolicy: '只校验交易可行性复核 JSON；不写入复核库，不刷新运行包，不生成收益、净值、成交或持仓。',
+      message: `交易可行性复核 JSON 校验通过：${checked.tradable_count}/${checked.candidate_count} 可交易，结论 ${checked.decision}。尚未导入。`,
+      result: {
+        blocked_count: checked.blocked_count,
+        candidate_count: checked.candidate_count,
+        decision: checked.decision,
+        signal_date: checked.signal_date,
+        strategy_id: checked.strategy_id,
+        tradable_count: checked.tradable_count,
+      },
+    });
+    return true;
+  }
+
   if (req.method === 'POST' && pathname === '/backtest-api/import-results') {
     const body = await readJsonBody(req);
     const importedAt = new Date().toISOString();

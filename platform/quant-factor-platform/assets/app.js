@@ -120,6 +120,7 @@ const elements = {
   strategyStrongCount: document.querySelector('#strategy-strong-count'),
   strategyUnavailableList: document.querySelector('#strategy-unavailable-list'),
   universe: document.querySelector('#universe'),
+  validateTradeabilityReview: document.querySelector('#validate-tradeability-review'),
   validFactorCount: document.querySelector('#valid-factor-count'),
   validatedBestHorizon: document.querySelector('#validated-best-horizon'),
   validatedFactorDirectory: document.querySelector('#validated-factor-directory'),
@@ -2562,6 +2563,21 @@ elements.refreshBacktestCenter?.addEventListener('click', async () => {
     elements.backtestImportMessage.dataset.tone = 'success';
   } catch (error) {
     elements.backtestImportMessage.textContent = `刷新失败：${error.message}`;
+    elements.backtestImportMessage.dataset.tone = 'error';
+  }
+});
+
+elements.validateTradeabilityReview?.addEventListener('click', async () => {
+  try {
+    const payload = JSON.parse(elements.backtestResultJson.value || '{}');
+    const response = await request('/backtest-api/validate-tradeability-review', {
+      body: JSON.stringify(payload),
+      method: 'POST',
+    });
+    elements.backtestImportMessage.textContent = response.message;
+    elements.backtestImportMessage.dataset.tone = 'success';
+  } catch (error) {
+    elements.backtestImportMessage.textContent = `校验失败：${error.message}`;
     elements.backtestImportMessage.dataset.tone = 'error';
   }
 });
