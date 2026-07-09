@@ -887,6 +887,20 @@ function buildDataCoverageRisks() {
   ];
 }
 
+function buildPaperWatchRoutes() {
+  const pack = readJsonFile(paperWatchRoutesPath, {});
+  const routes = Array.isArray(pack.routes) ? pack.routes : [];
+  return {
+    generatedAt: pack.generated_at || '',
+    dataPolicy: pack.data_policy || '只展示已通过真实回测审计的受控模拟观察路线。',
+    requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
+    routeCount: Number(pack.route_count || routes.length || 0),
+    routes,
+    selectionPolicy: pack.selection_policy || '',
+    status: pack.status || 'not_ready',
+  };
+}
+
 function toNumber(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -4373,6 +4387,11 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'GET' && pathname === '/api/risk') {
     sendJson(res, buildDataCoverageRisks());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/paper-watch-routes') {
+    sendJson(res, buildPaperWatchRoutes());
     return true;
   }
 

@@ -1176,6 +1176,56 @@ td small {
   color: var(--warning);
 }
 
+.paper-watch-list {
+  display: grid;
+  gap: 10px;
+}
+
+.paper-watch-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.paper-watch-item div:first-child {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.paper-watch-item span,
+.paper-watch-item p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.paper-watch-metrics {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.compact-details {
+  margin-top: 12px;
+}
+
+.compact-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.text-list {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
 meter {
   height: 12px;
   width: 100%;
