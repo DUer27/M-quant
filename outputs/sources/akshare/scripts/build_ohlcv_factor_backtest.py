@@ -435,6 +435,8 @@ def main() -> int:
         "min_stock_history_rows": int(eligible.min()),
         "max_stock_history_rows": int(eligible.max()),
         "min_stocks_per_day_required": int(args.min_stocks),
+        "top_n": int(args.top_n),
+        "cost_per_rebalance": float(args.cost),
         "factor_count": len(FACTOR_DEFS),
         "factor_result_count": len(factor_results),
         "strategy_result_count": len(strategy_results),
