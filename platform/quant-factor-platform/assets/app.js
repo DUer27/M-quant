@@ -277,10 +277,33 @@ function renderPaperWatchRoutes(pack) {
           <p>${escapeHtml(independence.summary)}</p>
         </div>
       ` : ''}
+      ${pack.localBacktest?.tradeabilityReviewScriptEndpoint ? `
+        <div class="paper-watch-note">
+          <strong>AkShare 最新信号需 JoinQuant 复核</strong>
+          <span>${pack.localBacktest.latestTradeabilityReview ? '已有导入复核' : '等待真实复核 JSON'}</span>
+          <p>本地 OHLCV 只证明策略历史表现，最新开仓前还要用 JoinQuant 检查停牌、ST、涨跌停、行业和市值暴露。</p>
+          <a class="inline-link" href="${escapeHtml(pack.localBacktest.tradeabilityReviewScriptEndpoint)}">下载复核脚本</a>
+        </div>
+      ` : ''}
       ${routes.map((route) => {
       const execution = route.execution || {};
       const readiness = route.readiness || {};
       const signal = route.signal || {};
+      const tradeabilityReview = route.tradeability_review || null;
+      const tradeabilityTone = tradeabilityReview?.decision === 'tradeability_review_passed'
+        ? 'good'
+        : tradeabilityReview?.decision === 'tradeability_review_failed'
+          ? 'watch'
+          : signal.action === 'paper_watch_open_allowed'
+            ? 'pending'
+            : 'neutral';
+      const tradeabilityLabel = tradeabilityReview?.decision === 'tradeability_review_passed'
+        ? '复核通过'
+        : tradeabilityReview?.decision === 'tradeability_review_failed'
+          ? '复核未过'
+          : signal.action === 'paper_watch_open_allowed'
+            ? '待聚宽复核'
+            : '';
       const failedChecks = (readiness.checks || []).filter((item) => !item.passed);
       const readinessTone = readiness.decision === 'ready_controlled_paper_watch' || readiness.decision === 'ready_local_paper_watch'
         ? 'good'
@@ -300,6 +323,7 @@ function renderPaperWatchRoutes(pack) {
             <span class="tag ${readinessTone}">${escapeHtml(readiness.decision || route.layer || '-')}</span>
             <span class="tag neutral">${escapeHtml(evidenceSystem)}</span>
             ${executionRoleLabel ? `<span class="tag neutral">${escapeHtml(executionRoleLabel)}</span>` : ''}
+            ${tradeabilityLabel ? `<span class="tag ${tradeabilityTone}">${escapeHtml(tradeabilityLabel)}</span>` : ''}
           </div>
           <div class="paper-watch-metrics">
             <span>收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>
@@ -315,8 +339,22 @@ function renderPaperWatchRoutes(pack) {
               <span>入选 ${escapeHtml(signal.selected_count ?? 0)}</span>
             </div>
           ` : ''}
+          ${tradeabilityReview ? `
+            <div class="paper-watch-metrics">
+              <span>可交易 ${escapeHtml(tradeabilityReview.tradable_count ?? 0)}/${escapeHtml(tradeabilityReview.candidate_count ?? 0)}</span>
+              <span>阻塞 ${escapeHtml(tradeabilityReview.blocked_count ?? 0)}</span>
+              <span>复核 ${escapeHtml(tradeabilityReview.signal_date || '-')}</span>
+              <span>${escapeHtml(tradeabilityReview.decision || '-')}</span>
+            </div>
+          ` : signal.action === 'paper_watch_open_allowed' ? `
+            <div class="paper-watch-metrics">
+              <span>交易复核 待导入</span>
+              <span>需 JoinQuant 真实 JSON</span>
+            </div>
+          ` : ''}
           <p>${escapeHtml(route.paper_scope || '')}</p>
           ${signal.reason ? `<p>${escapeHtml(signal.reason)}</p>` : ''}
+          ${tradeabilityReview?.decision_reason ? `<p>${escapeHtml(tradeabilityReview.decision_reason)}</p>` : ''}
           ${readiness.decision_reason ? `<p>${escapeHtml(readiness.decision_reason)}</p>` : ''}
           <details class="compact-details">
             <summary>执行与审计规则</summary>
@@ -339,6 +377,14 @@ function renderPaperWatchRoutes(pack) {
               ${renderTextList((execution.pause_rules || []).map((item) => item.meaning || item.rule))}
               <strong>最新候选</strong>
               ${renderTextList((signal.selected || []).slice(0, 20).map((item) => `${item.code} ${item.name || ''} score ${Number(item.score || 0).toFixed(3)}`))}
+              <strong>JoinQuant 交易复核</strong>
+              ${renderTextList(tradeabilityReview ? [
+                `结论：${tradeabilityReview.decision}`,
+                `可交易：${tradeabilityReview.tradable_count}/${tradeabilityReview.candidate_count}`,
+                `数据边界：${tradeabilityReview.data_policy || 'JoinQuant 真实交易状态复核'}`,
+              ] : signal.action === 'paper_watch_open_allowed' ? [
+                '尚未导入 JoinQuant 复核 JSON，不能把本地最新信号视为已可开仓。',
+              ] : [])}
             </div>
           </details>
         </article>

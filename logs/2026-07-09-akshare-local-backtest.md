@@ -175,3 +175,10 @@
 - 平台新增下载入口 `/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py`。
 - 脚本只复核 2026-07-09 已触发的 15 只候选，检查 JoinQuant 真实交易状态、ST、停牌、涨跌停、行业、市值和换手率；不生成收益、不替代策略回测。
 - 通过门槛：可交易候选不少于 10 只，输出 `decision=tradeability_review_passed` 后，才允许继续进入模拟观察记录。
+
+## 追加：交易可行性复核独立入库
+
+- 平台新增 `data/imported-tradeability-reviews.json` 作为 JoinQuant 交易可行性复核结果库，避免复核 JSON 污染因子 IC 或策略收益结果。
+- `/backtest-api/import-results` 现在会识别 `source=joinquant_akshare_latest_signal_tradeability_review`，校验 `strategy_id`、`signal_date`、`decision` 和 `records` 后单独入库。
+- 新增 `/strategy-api/tradeability-reviews` 只读接口，并在 `模拟观察清单` 中显示 `待聚宽复核/复核通过/复核未过`、可交易数量和脚本下载入口。
+- 当前尚未导入真实 JoinQuant 复核 JSON，因此最新 AkShare 触发信号仍显示为 `待聚宽复核`，不得视为已可开仓。

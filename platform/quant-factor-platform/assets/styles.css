@@ -1210,6 +1210,17 @@ td small {
   margin: 0;
 }
 
+.inline-link {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.inline-link:hover {
+  text-decoration: underline;
+}
+
 .paper-watch-item div:first-child {
   align-items: center;
   display: flex;
