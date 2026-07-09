@@ -31,6 +31,7 @@ const capitalFactorSummaryPath = outputPath('capital-flow-factors', 'yiwan-capit
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
 const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
 const importedTradeabilityReviewsPath = join(dataDir, 'imported-tradeability-reviews.json');
+const importedPaperWatchLedgerPath = join(dataDir, 'imported-paper-watch-ledger.json');
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
@@ -913,6 +914,7 @@ function buildPaperWatchRoutes() {
   const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
   const independenceAudit = readJsonFile(paperWatchIndependenceAuditPath, {});
   const operationsPack = readJsonFile(paperWatchOperationsPackPath, null);
+  const paperWatchLedger = readImportedPaperWatchLedger();
   const akshareReadinessAudit = readJsonFile(aksharePaperWatchReadinessAuditPath, {});
   const akshareExecutionPack = readJsonFile(aksharePaperWatchExecutionPackPath, {});
   const akshareLatestSignal = readJsonFile(aksharePaperWatchLatestSignalPath, {});
@@ -1037,7 +1039,13 @@ function buildPaperWatchRoutes() {
           : '',
       ].filter(Boolean).join(' '),
     },
-    operationsPack,
+    operationsPack: operationsPack
+      ? {
+        ...operationsPack,
+        importedLedgerCount: paperWatchLedger.length,
+        latestLedgerRows: paperWatchLedger.slice(0, 5),
+      }
+      : null,
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
     readinessCounts: recommendedReadinessCounts,
     readinessDecisionCounts: readinessCounts,
@@ -2872,6 +2880,54 @@ function readImportedTradeabilityReviews() {
   return readJsonFile(importedTradeabilityReviewsPath, []);
 }
 
+function readImportedPaperWatchLedger() {
+  return readJsonFile(importedPaperWatchLedgerPath, []);
+}
+
+function normalizePaperWatchLedgerRows(payload, importedAt) {
+  const body = payload || {};
+  const rawRows = Array.isArray(body)
+    ? body
+    : Array.isArray(body.records)
+      ? body.records
+      : Array.isArray(body.rows)
+        ? body.rows
+        : [body];
+  const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
+  const allowedSleeves = new Map((operationsPack.capital_sleeves || []).map((item) => [item.sleeve_id, item]));
+  const templateFields = new Set((operationsPack.daily_ledger_template || []).map((item) => item.field));
+  const requiredFields = ['date', 'sleeve_id', 'strategy_id', 'signal_state', 'gate_status', 'paper_action', 'planned_weight'];
+
+  return rawRows
+    .filter((row) => row && typeof row === 'object')
+    .map((row) => {
+      const missing = requiredFields.filter((field) => row[field] === undefined || row[field] === null || row[field] === '');
+      if (missing.length) {
+        throw new Error(`模拟观察账本缺少字段：${missing.join(', ')}`);
+      }
+      if (!allowedSleeves.has(row.sleeve_id)) {
+        throw new Error(`未知模拟观察资金袖：${row.sleeve_id}`);
+      }
+      const sleeve = allowedSleeves.get(row.sleeve_id);
+      const plannedWeight = Number(row.planned_weight);
+      if (!Number.isFinite(plannedWeight) || plannedWeight < 0 || plannedWeight > 1) {
+        throw new Error('planned_weight 必须是 0 到 1 之间的数字。');
+      }
+      if (!sleeve.can_start_observation && plannedWeight > 0) {
+        throw new Error(`${row.sleeve_id} 当前未通过准入门槛，planned_weight 必须为 0。`);
+      }
+      const unknownFields = Object.keys(row).filter((field) => !templateFields.has(field));
+      return {
+        ...row,
+        planned_weight: plannedWeight,
+        unknown_fields: unknownFields,
+        importedAt,
+        source: 'paper_watch_manual_ledger',
+        data_policy: '用户导入的模拟观察账本记录；平台只校验准入和字段，不生成收益、净值、成交或持仓。',
+      };
+    });
+}
+
 function isTradeabilityReviewPayload(payload) {
   return payload?.source === akshareLatestSignalTradeabilityReviewSource
     || payload?.result_type === 'tradeability_review';
@@ -4601,11 +4657,37 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'GET' && pathname === '/strategy-api/paper-watch-operations-pack') {
-    sendJson(res, readJsonFile(paperWatchOperationsPackPath, {
+    const operationsPack = readJsonFile(paperWatchOperationsPackPath, {
       source: 'm_quant_paper_watch_operations_pack',
       status: 'missing',
       data_policy: '尚未生成模拟观察运行包。',
-    }));
+    });
+    sendJson(res, {
+      ...operationsPack,
+      importedLedgerCount: readImportedPaperWatchLedger().length,
+    });
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/ledger') {
+    sendJson(res, {
+      dataPolicy: '只展示用户导入的模拟观察账本记录；不生成收益、净值、成交或持仓。',
+      records: readImportedPaperWatchLedger(),
+    });
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/paper-watch-api/import-ledger') {
+    const body = await readJsonBody(req);
+    const importedAt = new Date().toISOString();
+    const rows = normalizePaperWatchLedgerRows(body, importedAt);
+    const nextLedger = [...rows, ...readImportedPaperWatchLedger()].slice(0, 500);
+    writeFileSync(importedPaperWatchLedgerPath, `${JSON.stringify(nextLedger, null, 2)}\n`);
+    sendJson(res, {
+      message: `模拟观察账本已导入 ${rows.length} 条；本接口不生成收益或净值。`,
+      importedCount: rows.length,
+      records: nextLedger,
+    }, 201);
     return true;
   }
 
@@ -5016,7 +5098,8 @@ createServer(async (req, res) => {
     || pathname.startsWith('/backtest-api/')
     || pathname.startsWith('/market-api/')
     || pathname.startsWith('/research-api/')
-    || pathname.startsWith('/strategy-api/');
+    || pathname.startsWith('/strategy-api/')
+    || pathname.startsWith('/paper-watch-api/');
 
   if (isApiRequest) {
     try {

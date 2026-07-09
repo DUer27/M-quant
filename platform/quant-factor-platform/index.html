@@ -207,6 +207,17 @@
               </div>
               <div id="paper-watch-list" class="paper-watch-list"></div>
               <details class="compact-details">
+                <summary>账本回填</summary>
+                <div class="ledger-import">
+                  <label>
+                    粘贴模拟观察账本 JSON
+                    <textarea id="paper-watch-ledger-json" rows="5" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
+                  </label>
+                  <button id="import-paper-watch-ledger" class="primary" type="button">导入账本</button>
+                  <p id="paper-watch-ledger-message" class="form-message">只导入真实观察记录；平台不生成收益或净值。</p>
+                </div>
+              </details>
+              <details class="compact-details">
                 <summary>运行约束</summary>
                 <ul id="paper-watch-controls" class="text-list"></ul>
               </details>

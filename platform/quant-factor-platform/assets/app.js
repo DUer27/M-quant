@@ -73,8 +73,11 @@ const elements = {
   libraryUnavailableCount: document.querySelector('#library-unavailable-count'),
   navButtons: document.querySelectorAll('.nav button[data-view-target]'),
   paperWatchControls: document.querySelector('#paper-watch-controls'),
+  paperWatchLedgerJson: document.querySelector('#paper-watch-ledger-json'),
+  paperWatchLedgerMessage: document.querySelector('#paper-watch-ledger-message'),
   paperWatchList: document.querySelector('#paper-watch-list'),
   paperWatchStatus: document.querySelector('#paper-watch-status'),
+  importPaperWatchLedger: document.querySelector('#import-paper-watch-ledger'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
   askResearchAssistant: document.querySelector('#ask-research-assistant'),
@@ -312,12 +315,21 @@ function renderPaperWatchRoutes(pack) {
           <strong>模拟观察运行包</strong>
           <span>${escapeHtml(pack.operationsPack.ready_sleeve_count ?? 0)} 可观察 / ${escapeHtml(pack.operationsPack.sleeve_count ?? 0)} 资金袖</span>
           <p>${escapeHtml(pack.operationsPack.data_policy || '')}</p>
+          <p>已导入账本 ${escapeHtml(pack.operationsPack.importedLedgerCount ?? 0)} 条。</p>
           <p>
             初始账本：
             ${(pack.operationsPack.initial_ledger_rows || []).map((row) => (
               `${escapeHtml(row.sleeve_id || '-')}: ${escapeHtml(row.paper_action || '-')} / ${escapeHtml(row.gate_status || '-')}`
             )).join('；')}
           </p>
+          ${(pack.operationsPack.latestLedgerRows || []).length ? `
+            <p>
+              最近记录：
+              ${(pack.operationsPack.latestLedgerRows || []).map((row) => (
+                `${escapeHtml(row.date || '-')}/${escapeHtml(row.sleeve_id || '-')}/${escapeHtml(row.paper_action || '-')}/权重 ${escapeHtml(row.planned_weight ?? '-')}`
+              )).join('；')}
+            </p>
+          ` : ''}
         </div>
       ` : ''}
       ${routes.map((route) => {
@@ -2450,6 +2462,23 @@ elements.importBacktestResult?.addEventListener('click', async () => {
   } catch (error) {
     elements.backtestImportMessage.textContent = `导入失败：${error.message}`;
     elements.backtestImportMessage.dataset.tone = 'error';
+  }
+});
+
+elements.importPaperWatchLedger?.addEventListener('click', async () => {
+  try {
+    const payload = JSON.parse(elements.paperWatchLedgerJson.value || '{}');
+    const response = await request('/paper-watch-api/import-ledger', {
+      body: JSON.stringify(payload),
+      method: 'POST',
+    });
+    elements.paperWatchLedgerMessage.textContent = response.message;
+    elements.paperWatchLedgerMessage.dataset.tone = 'success';
+    elements.paperWatchLedgerJson.value = '';
+    await refreshDashboard();
+  } catch (error) {
+    elements.paperWatchLedgerMessage.textContent = `导入失败：${error.message}`;
+    elements.paperWatchLedgerMessage.dataset.tone = 'error';
   }
 });
 
