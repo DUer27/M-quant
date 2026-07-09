@@ -37,6 +37,7 @@ const akshareStrategyValidationPath = outputPath('sources', 'akshare', 'results'
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
+const akshareCandidateReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_ohlcv_candidate_review.py');
 const joinquantFactorTestScriptPath = outputPath('joinquant', 'm_quant_joinquant_factor_test.py');
 const primaryStrategyHorizons = [5, 10, 20];
 
@@ -3711,10 +3712,23 @@ function buildLiveStrategySignals() {
   ];
   const strictAudit = readStrictFactorAudit();
   const strictAuditRoute = strictAudit?.strategyRoutes?.find((route) => route.strategyId === 'jq_quality_profit_liquidity_v1');
+  const akshareCandidateValidation = readJsonFile(akshareStrategyValidationPath, {});
+  const akshareReviewCandidateCount = Number(
+    akshareCandidateValidation.joinquant_review_candidate_count
+    || akshareCandidateValidation.paper_watch_candidate_count
+    || 0,
+  );
   const jqQualityRouteFactors = [
     strategyFactor('profit_growth_jq', '进攻核心', 0.40),
     strategyFactor('quality_growth_jq', '质量确认', 0.35),
     strategyFactor('liquidity_quality_jq', '可交易性过滤', 0.25),
+  ];
+  const akshareReviewFactors = [
+    strategyFactor('ak_mean_reversion_quality_combo', '高波动回归核心', 0.34),
+    strategyFactor('ak_defensive_quality_combo', '低波动防守确认', 0.42),
+    strategyFactor('ak_volume_trend_quality_combo', '低波动量价趋势', 0.32),
+    strategyFactor('ak_anti_crowding_reversal_combo', '反拥挤回归', 0.38),
+    strategyFactor('ak_crowding_risk', '拥挤风险过滤', -0.18),
   ];
   const jqBlockedFactors = strictAuditRoute?.blockedFactors || [];
 
@@ -3914,7 +3928,7 @@ function buildLiveStrategySignals() {
       rows: coreRows.length + capitalSignalRows.length,
     },
     metrics: {
-      draftStrategies: 6,
+      draftStrategies: 7,
       executableStrategies: [
         coreStrategyValidated,
         capitalStrategyValidated,
@@ -4046,6 +4060,44 @@ function buildLiveStrategySignals() {
         exportStatus: jqQualityStrategyValidated
           ? '已有真实策略级结果，仍需交易成本和样本外审计'
           : '路线已生成；等待 JoinQuant 策略级实测',
+      },
+      {
+        id: 'akshare_ohlcv_candidate_review_pack',
+        name: 'AkShare强分层候选复核包',
+        pool: 'draft',
+        status: 'ready_for_joinquant_strategy_backtest',
+        validationState: akshareReviewCandidateCount
+          ? `本地 AkShare 300股/608日 OHLCV 稳定性验证筛出 ${akshareReviewCandidateCount} 条待复核候选；尚未导入 JoinQuant 真实复核结果。`
+          : '等待 AkShare 本地候选稳定性验证结果。',
+        role: '待聚宽复核的候选策略包',
+        objective: '把本地强分层路线迁移到 JoinQuant，用真实 OHLCV、沪深300波动、市值、成交额和换手率复核目标路线与波动×市值交叉层。',
+        dataBasis: akshareReviewCandidateCount
+          ? `AkShare 本地验证 ${akshareCandidateValidation.unique_stocks || 0} 股 / ${akshareCandidateValidation.unique_dates || 0} 日；候选 ${akshareReviewCandidateCount} 条`
+          : '等待 AkShare 候选验证文件',
+        factorState: akshareReviewFactors,
+        rankingFormula: '按每条本地候选路线分别复核：高波动均值回归、低波动防守确认、低波动量价趋势、高波动反拥挤；不合并展示未实测收益。',
+        entryRules: [
+          '只复核本地已通过年度/样本外/回撤/Sharpe 门槛的候选',
+          '目标路线保留本地高/低波动与中流动性约束',
+          '额外输出高/中/低波动 × 大/中/小市值交叉层',
+          '每期 Top20，5日等权调仓',
+        ],
+        riskFilters: [
+          '未导入 JoinQuant 结果前，不进入正式策略池',
+          '腾讯源缺成交额的本地流动性兜底会被 JoinQuant money_ma20 替换',
+          '使用 valuation.market_cap 做市值层，使用 valuation.turnover_ratio 做拥挤风险复核',
+        ],
+        portfolioRules: [
+          '脚本输出事件回测 5/10/20 日结果',
+          '脚本输出 5日调仓交易净值、成本、滑点、换手和最大回撤',
+          '默认包含目标路线、市值层、波动×市值交叉层',
+        ],
+        nextAction: '下载聚宽复核脚本，在 JoinQuant Python3 研究环境运行，回填 JSON 后再筛选是否升级为正式候选。',
+        candidateCount: akshareReviewCandidateCount,
+        computedSignalCount: akshareCandidateValidation.rows || 0,
+        exportable: false,
+        specialBacktestScriptEndpoint: '/strategy-api/joinquant-akshare-candidate-review-script.py',
+        exportStatus: '已生成 JoinQuant 复核脚本；等待真实结果回填',
       },
       {
         id: 'money_flow_kline_confirmation_v0',
@@ -4447,6 +4499,17 @@ async function handleApi(req, res, pathname) {
     sendText(
       res,
       'm-quant-jq-quality-profit-liquidity-strategy-backtest.py',
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-akshare-candidate-review-script.py') {
+    const script = readFileSync(akshareCandidateReviewScriptPath, 'utf8');
+    sendText(
+      res,
+      'm-quant-akshare-ohlcv-candidate-review.py',
       script,
       'text/x-python; charset=utf-8',
     );
