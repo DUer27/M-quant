@@ -258,6 +258,59 @@ function renderRisk(risks) {
     .join('');
 }
 
+function renderMaturityMatrix(matrix) {
+  if (!matrix) return '';
+  const entries = Array.isArray(matrix.entries) ? matrix.entries : [];
+  const blockers = Array.isArray(matrix.blockers) ? matrix.blockers : [];
+  const actions = Array.isArray(matrix.next_actions) ? matrix.next_actions : [];
+  const goalMet = matrix.goal_status === 'target_met';
+  return `
+    <div class="paper-watch-note">
+      <strong>成熟策略推进矩阵</strong>
+      <span class="tag ${goalMet ? 'good' : 'watch'}">
+        ${escapeHtml(matrix.ready_strategy_count ?? 0)} / ${escapeHtml(matrix.target_ready_strategy_count ?? 2)}
+      </span>
+      <p>${escapeHtml(matrix.goal_status_name || '等待矩阵生成')}</p>
+      ${blockers.length ? `<p>${escapeHtml(blockers.join('；'))}</p>` : ''}
+      <details class="compact-details">
+        <summary>查看策略成熟度明细</summary>
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>策略</th>
+              <th>类型</th>
+              <th>决策</th>
+              <th>计入</th>
+              <th>收益</th>
+              <th>回撤</th>
+              <th>Sharpe</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${entries.map((item) => `
+              <tr>
+                <td>${escapeHtml(item.strategy_name || item.id || '-')}</td>
+                <td>${escapeHtml(item.category || '-')}</td>
+                <td>${escapeHtml(item.decision_name || item.decision || '-')}</td>
+                <td>${item.counts_toward_two_strategy_goal ? '是' : '否'}</td>
+                <td>${formatPercent(item.strategy_return, 2)}</td>
+                <td>${formatPercent(item.max_drawdown, 2)}</td>
+                <td>${formatNumber(item.sharpe, 2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="paper-watch-rules">
+          <strong>下一步</strong>
+          ${renderTextList(actions.map((item) => `${item.priority}. ${item.action} ${item.reason}`))}
+          <strong>数据原则</strong>
+          ${renderTextList([matrix.data_policy || '只读取已有真实证据，不生成收益。'])}
+        </div>
+      </details>
+    </div>
+  `;
+}
+
 function renderPaperWatchRoutes(pack) {
   if (!elements.paperWatchList) return;
   const routes = Array.isArray(pack.routes) ? pack.routes : [];
@@ -312,6 +365,7 @@ function renderPaperWatchRoutes(pack) {
           <p>${escapeHtml(pack.localBacktest.regimeSwitch.paper_scope || '进入模拟观察前仍需交易可行性复核。')}</p>
         </div>
       ` : ''}
+      ${renderMaturityMatrix(pack.maturityMatrix)}
       ${pack.operationsPack ? `
         <div class="paper-watch-note">
           <strong>模拟观察运行包</strong>
