@@ -158,6 +158,23 @@
 - 入选代码：`002001, 000568, 000858, 000425, 000338, 000651, 000001, 002142, 000776, 002027, 002241, 002179, 002230, 002415, 002714`。
 - 平台 `模拟观察清单` 已显示最新信号日期、动作、候选数、入选数和 Top20 明细。
 
+## 最新信号 JoinQuant 交易可行性复核
+
+当前产物：
+
+- `outputs/sources/joinquant/scripts/m_quant_akshare_latest_signal_tradeability_review_20260709.py`
+- `outputs/_docs/akshare-latest-signal-tradeability-review-20260709.md`
+
+平台下载入口：
+
+- `/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py`
+
+复核内容：
+
+- 只针对 2026-07-09 已触发的 `AkShare高波动均值回归-中流动性观察策略` 15 只候选。
+- 在 JoinQuant 真实研究环境检查停牌、ST、涨跌停、行业、市值、换手率和可交易数量。
+- 该脚本不生成收益，不替代策略回测；只有 `decision=tradeability_review_passed` 且可交易候选不少于 10 只，才允许继续推进模拟观察。
+
 ## 新因子探测
 
 - `scripts/probe_ohlcv_factor_candidates.py`：使用本地真实 AkShare OHLCV 历史探测新增候选因子。

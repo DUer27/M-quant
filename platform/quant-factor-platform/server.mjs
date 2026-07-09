@@ -43,6 +43,7 @@ const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'p
 const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_readiness_audit_20260709.json');
 const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_execution_pack_20260709.json');
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
+const akshareLatestSignalTradeabilityReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_latest_signal_tradeability_review_20260709.py');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -996,6 +997,7 @@ function buildPaperWatchRoutes() {
       latestSignalOpenAllowedCount: Number(akshareLatestSignal.open_allowed_count || 0),
       paperWatchRouteCount: Number(akshareExecutionPack.paper_watch_route_count || 0),
       recommendedRouteCount: Number(akshareReadinessAudit.recommended_route_count || akshareRecommendedRoutes.length || 0),
+      tradeabilityReviewScriptEndpoint: '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py',
       source: akshareReadinessAudit.source || '',
     },
     independence: {
@@ -4711,6 +4713,17 @@ async function handleApi(req, res, pathname) {
     sendText(
       res,
       'm-quant-akshare-ohlcv-candidate-review.py',
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py') {
+    const script = readFileSync(akshareLatestSignalTradeabilityReviewScriptPath, 'utf8');
+    sendText(
+      res,
+      'm-quant-akshare-latest-signal-tradeability-review-20260709.py',
       script,
       'text/x-python; charset=utf-8',
     );

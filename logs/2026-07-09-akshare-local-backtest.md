@@ -167,3 +167,11 @@
 - 2026-07-09 当前本地市场状态为高波动，低波动主观察路线不触发；`AkShare高波动均值回归-中流动性观察策略` 触发 `paper_watch_open_allowed`。
 - 当期候选 15 只、入选 15 只，涨跌停代理 0、停牌代理 0；入选代码为 `002001, 000568, 000858, 000425, 000338, 000651, 000001, 002142, 000776, 002027, 002241, 002179, 002230, 002415, 002714`。
 - 平台 `模拟观察清单` 已接入最新信号，展示信号动作、日期、候选数、入选数和 Top20 明细。
+
+## 追加：最新信号 JoinQuant 交易可行性复核脚本
+
+- 新增 `outputs/sources/joinquant/scripts/m_quant_akshare_latest_signal_tradeability_review_20260709.py`。
+- 新增说明 `outputs/_docs/akshare-latest-signal-tradeability-review-20260709.md`。
+- 平台新增下载入口 `/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py`。
+- 脚本只复核 2026-07-09 已触发的 15 只候选，检查 JoinQuant 真实交易状态、ST、停牌、涨跌停、行业、市值和换手率；不生成收益、不替代策略回测。
+- 通过门槛：可交易候选不少于 10 只，输出 `decision=tradeability_review_passed` 后，才允许继续进入模拟观察记录。
