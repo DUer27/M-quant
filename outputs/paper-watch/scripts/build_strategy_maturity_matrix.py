@@ -137,6 +137,19 @@ def controlled_route_entry(route: dict) -> dict:
     }
 
 
+def promoted_candidate_route_entry(route: dict, candidate: dict) -> dict:
+    entry = controlled_route_entry(route)
+    entry.update({
+        "category": "mutually_exclusive_route_candidate",
+        "decision": candidate.get("decision"),
+        "decision_name": candidate.get("decision_name"),
+        "blocked_reasons": candidate.get("blocked_reasons", []),
+        "next_action": "补最新信号、执行配置和晋级确认；通过前不计入第二成熟策略。",
+        "independence_evidence": candidate.get("independence_evidence"),
+    })
+    return entry
+
+
 def akshare_review_gap_entry(ak_audit: dict, switch: dict, robustness: dict, reviews: list[dict]) -> dict:
     latest_signal = (switch.get("latest_signal") or {}) if switch else {}
     signal_date = latest_signal.get("signal_date", "")
@@ -183,10 +196,19 @@ def build_matrix() -> dict:
     sleeve_strategy_ids = {item.get("strategy_id") for item in operations.get("capital_sleeves", [])}
     monitor_strategy_ids = {item.get("strategy_id") for item in operations.get("monitors", [])}
     known_strategy_ids = sleeve_strategy_ids | monitor_strategy_ids | {"regime_switch_quality_kline_v1"}
+    candidate_lookup = {
+        item.get("candidate_id"): item
+        for item in independent_sleeve_audit.get("candidates", [])
+    }
     for route in jq_maturity.get("controlled_routes", []):
         if route.get("strategy_id") in known_strategy_ids:
             continue
-        entries.append(controlled_route_entry(route))
+        candidate_id = f"{route.get('strategy_id')}::{route.get('layer')}"
+        matched_candidate = candidate_lookup.get(candidate_id)
+        if matched_candidate and matched_candidate.get("decision") == "mutually_exclusive_candidate_needs_promotion":
+            entries.append(promoted_candidate_route_entry(route, matched_candidate))
+        else:
+            entries.append(controlled_route_entry(route))
 
     entries.append(akshare_review_gap_entry(ak_audit, ak_switch, ak_robustness, tradeability_reviews))
 
@@ -206,23 +228,35 @@ def build_matrix() -> dict:
         if item not in blockers:
             blockers.append(item)
 
-    next_actions = [
-        {
+    candidate_audit_items = independent_sleeve_audit.get("candidates", [])
+    has_mutually_exclusive_candidate = any(
+        item.get("decision") == "mutually_exclusive_candidate_needs_promotion"
+        for item in candidate_audit_items
+    )
+    next_actions = []
+    if has_mutually_exclusive_candidate:
+        next_actions.append({
             "priority": 1,
+            "action": "确认是否将核心量价趋势策略 v1 的中波动/小市值路线晋级为第二模拟观察资金袖。",
+            "reason": "该路线来自 JoinQuant 真实分层交易回测，且与主控制器中波动空仓逻辑互斥；晋级前仍需最新信号和执行配置。",
+        })
+    next_actions.extend([
+        {
+            "priority": 2 if has_mutually_exclusive_candidate else 1,
             "action": "运行并回填 AkShare 最新信号 JoinQuant 交易可行性复核脚本。",
             "reason": "这是把 AkShare 本地切换策略从 record_only 升级为可观察资金袖的最近阻塞项。",
         },
         {
-            "priority": 2,
+            "priority": 3 if has_mutually_exclusive_candidate else 2,
             "action": "运行 AkShare 强分层候选 JoinQuant 批量复核并回填 records。",
             "reason": "用于判断本地 6 条强候选能否在 JoinQuant OHLCV/valuation 口径下继续保留。",
         },
         {
-            "priority": 3,
+            "priority": 4 if has_mutually_exclusive_candidate else 3,
             "action": "对 jq_controller 开始真实模拟观察账本记录。",
             "reason": "当前唯一已准入资金袖需要样本外观察数据，而不是继续只看历史回测。",
         },
-    ]
+    ])
 
     return {
         "source": "m_quant_strategy_maturity_matrix",
