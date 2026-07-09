@@ -15,24 +15,28 @@ const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 5555);
 const dataDir = join(root, 'data');
 const statePath = join(dataDir, 'state.json');
-const realFactorResultsPath =
-  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/real-factors/yiwan-real-factor-results.json';
-const realFactorSummaryPath =
-  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/real-factors/yiwan-real-factor-summary.json';
-const researchFactorResultsPath =
-  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-results.json';
-const researchFactorSummaryPath =
-  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-summary.json';
-const capitalFactorResultsPath =
-  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/capital-flow-factors/yiwan-capital-factor-results.json';
-const capitalFactorSummaryPath =
-  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/capital-flow-factors/yiwan-capital-factor-summary.json';
+const projectRootCandidates = [
+  process.env.M_QUANT_DATA_ROOT,
+  join(root, '..', '..'),
+  join(root, '..', '..', '..'),
+].filter(Boolean).map((path) => normalize(path));
+const projectRoot = projectRootCandidates.find((path) => existsSync(join(path, 'outputs'))) || projectRootCandidates[0];
+const outputPath = (...parts) => join(projectRoot, 'outputs', ...parts);
+const realFactorResultsPath = outputPath('real-factors', 'yiwan-real-factor-results.json');
+const realFactorSummaryPath = outputPath('real-factors', 'yiwan-real-factor-summary.json');
+const researchFactorResultsPath = outputPath('research-factor-pipeline', 'yiwan-research-factor-results.json');
+const researchFactorSummaryPath = outputPath('research-factor-pipeline', 'yiwan-research-factor-summary.json');
+const capitalFactorResultsPath = outputPath('capital-flow-factors', 'yiwan-capital-factor-results.json');
+const capitalFactorSummaryPath = outputPath('capital-flow-factors', 'yiwan-capital-factor-summary.json');
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
 const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
-const strictFactorAuditPath =
-  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/factors/joinquant/m_quant_strict_factor_audit_20260708.json';
-const jqQualityProfitLiquidityBacktestScriptPath =
-  '/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/sources/joinquant/scripts/m_quant_jq_quality_profit_liquidity_strategy_backtest.py';
+const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
+const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
+const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
+const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
+const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
+const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
+const joinquantFactorTestScriptPath = outputPath('joinquant', 'm_quant_joinquant_factor_test.py');
 const primaryStrategyHorizons = [5, 10, 20];
 
 const contentTypes = {
@@ -690,6 +694,126 @@ function getUniverses() {
   ];
 }
 
+function distinctDateCount(rows) {
+  return new Set(rows.map((row) => dateOnly(row.date || row.stock_date)).filter(Boolean)).size;
+}
+
+function distinctStockCount(rows) {
+  return new Set(rows.map((row) => row.stock_code || row.code || row.security).filter(Boolean)).size;
+}
+
+function buildDataCoverageSnapshot() {
+  const primaryRows = readPrimaryFactorRows();
+  const capitalRows = readCapitalFactorRows();
+  const akshareSummary = readJsonFile(akshareHistorySummaryPath, {});
+  const akshareBacktest = readJsonFile(akshareOhlcvBacktestPath, {});
+  const allRawRows = [...primaryRows, ...capitalRows];
+  const importedFactorResults = readImportedFactorResults();
+  const importedStrategyResults = readImportedStrategyResults();
+  const jqSampleDates = importedFactorResults
+    .map((item) => Number(item.sample_dates))
+    .filter(Number.isFinite);
+  const maxJqSampleDates = jqSampleDates.length ? Math.max(...jqSampleDates) : 0;
+  const rawDateCount = distinctDateCount(allRawRows);
+
+  return {
+    rawDateCount,
+    rawRows: allRawRows.length,
+    rawStockCount: distinctStockCount(allRawRows),
+    primaryDateCount: distinctDateCount(primaryRows),
+    primaryRows: primaryRows.length,
+    capitalDateCount: distinctDateCount(capitalRows),
+    capitalRows: capitalRows.length,
+    importedFactorResultCount: importedFactorResults.length,
+    importedStrategyResultCount: importedStrategyResults.length,
+    akshareDates: Number(akshareSummary.dates || 0),
+    akshareFailures: Array.isArray(akshareSummary.failures) ? akshareSummary.failures.length : 0,
+    akshareOutput: akshareSummary.output || '',
+    akshareRows: Number(akshareSummary.rows || 0),
+    akshareStocksRequested: Number(akshareSummary.stocks_requested || 0),
+    akshareStocksSuccess: Number(akshareSummary.stocks_success || 0),
+    akshareBacktestFactorResults: Number(akshareBacktest.factor_result_count || 0),
+    akshareBacktestPolicy: akshareBacktest.data_policy || '',
+    akshareBacktestStrategyResults: Number(akshareBacktest.strategy_result_count || 0),
+    maxJqSampleDates,
+    localBacktestReady: rawDateCount >= 60,
+    minimumLocalDays: 60,
+    preferredLocalDays: 240,
+  };
+}
+
+function buildDataCoverageRisks() {
+  const coverage = buildDataCoverageSnapshot();
+  return [
+    {
+      detail: `Yiwan 原始因子截面：${coverage.rawRows} 行 / ${coverage.rawStockCount} 只股票。`,
+      limit: coverage.minimumLocalDays,
+      name: '原始截面天数',
+      nextAction: coverage.localBacktestReady
+        ? '已达到本地最低回测天数，下一步检查未来收益标签和停牌涨跌停处理。'
+        : '继续补连续历史；最低 60 日，专业建议 120-240 日。',
+      status: coverage.localBacktestReady ? 'ready' : 'blocked',
+      value: coverage.rawDateCount,
+      valueText: `${coverage.rawDateCount}日`,
+    },
+    {
+      detail: `技术/指标样本 ${coverage.primaryRows} 行，资金样本 ${coverage.capitalRows} 行。`,
+      limit: 1,
+      name: '数据口径拆分',
+      nextAction: '技术截面、资金截面、JoinQuant历史结果必须分开解读，不再混为同一证据。',
+      status: 'watch',
+      value: Math.min(100, coverage.primaryDateCount + coverage.capitalDateCount),
+      valueText: `技术${coverage.primaryDateCount}日 / 资金${coverage.capitalDateCount}日`,
+    },
+    {
+      detail: `已导入因子结果 ${coverage.importedFactorResultCount} 条，策略结果 ${coverage.importedStrategyResultCount} 条。`,
+      limit: 60,
+      name: 'JoinQuant历史实测',
+      nextAction: '短期继续把严肃 IC、分组收益、策略净值交给 JoinQuant 生成真实结果。',
+      status: coverage.maxJqSampleDates >= 60 ? 'ready' : 'watch',
+      value: coverage.maxJqSampleDates,
+      valueText: `${coverage.maxJqSampleDates}样本日`,
+    },
+    {
+      detail: coverage.akshareRows
+        ? `AkShare 已落地 ${coverage.akshareRows} 行 OHLCV，${coverage.akshareStocksSuccess}/${coverage.akshareStocksRequested} 只股票成功；失败 ${coverage.akshareFailures} 只。输出：${coverage.akshareOutput}`
+        : '尚未成功落地 AkShare 历史 OHLCV。',
+      limit: coverage.preferredLocalDays,
+      name: 'AkShare历史行情',
+      nextAction: coverage.akshareStocksSuccess >= 50
+        ? '可开始做本地多股票横截面验证，但仍要继续扩股票池和复核复权口径。'
+        : '当前只证明通道可用；下一步按批次扩到至少50-300只股票，再做本地因子检验。',
+      status: coverage.akshareDates >= 240 && coverage.akshareStocksSuccess >= 50 ? 'ready' : (coverage.akshareRows ? 'watch' : 'blocked'),
+      value: coverage.akshareDates,
+      valueText: coverage.akshareRows ? `${coverage.akshareDates}日 / ${coverage.akshareStocksSuccess}股` : '未落地',
+    },
+    {
+      detail: coverage.akshareBacktestFactorResults
+        ? `${coverage.akshareBacktestPolicy} 当前已有因子结果 ${coverage.akshareBacktestFactorResults} 条、策略结果 ${coverage.akshareBacktestStrategyResults} 条。`
+        : '尚未生成 AkShare 本地 OHLCV 因子回测。',
+      limit: 50,
+      name: 'AkShare本地回测',
+      nextAction: coverage.akshareBacktestStrategyResults
+        ? '把正结果继续扩到更大股票池和分层检验；负结果直接记录，不进入模拟盘候选。'
+        : '先运行 AkShare OHLCV 因子回测脚本，生成真实 IC、RankIC、多空收益和组合净值。',
+      status: coverage.akshareBacktestStrategyResults ? 'watch' : 'blocked',
+      value: coverage.akshareBacktestFactorResults + coverage.akshareBacktestStrategyResults,
+      valueText: coverage.akshareBacktestStrategyResults ? `${coverage.akshareBacktestFactorResults}因子 / ${coverage.akshareBacktestStrategyResults}策略` : '未回测',
+    },
+    {
+      detail: coverage.localBacktestReady
+        ? '本地历史长度达到最低门槛，但仍要处理复权、停牌、涨跌停和未来收益。'
+        : '当前本地原始历史太短，不能在项目内独立计算稳定 IC 或净值曲线。',
+      limit: coverage.minimumLocalDays,
+      name: '本地回测能力',
+      nextAction: '补 AkShare/JoinQuant 连续 OHLCV、估值、行业、市值数据后再开启本地回测。',
+      status: coverage.localBacktestReady ? 'ready' : 'blocked',
+      value: coverage.rawDateCount,
+      valueText: coverage.localBacktestReady ? '可准备' : '未就绪',
+    },
+  ];
+}
+
 function toNumber(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -803,6 +927,12 @@ const exportableBacktestFactors = [
     name: '资金过热风险',
     direction: 'negative',
     usage: '验证高换手、高热度、高涨幅并伴随反向流压力时的回撤风险。',
+  },
+  {
+    id: 'sentiment_overheat_factor',
+    name: '情绪过热因子',
+    direction: 'negative',
+    usage: '当前可回测版本使用真实已计算字段：价格热度、交易拥挤、爆量风险、成交拥挤，作为原始情绪过热公式缺字段时的代理风险因子。',
   },
   {
     id: 'capital_persistence_2d',
@@ -2169,289 +2299,362 @@ result_json = run_regime_market_cap_cross()
   return baseScript.replace(/\nresult_json = run\(\)\s*$/, crossExtension);
 }
 
+function appendJoinQuantTradingSimulation(baseScript, strategy, sourceTag) {
+  const extension = `
+
+# --- M-quant trading net-value simulation package ---
+# 口径：复用上方同一套真实 JoinQuant 因子和候选池逻辑，按5个交易日等权调仓。
+# 输出：事件回测 + 未分层交易净值 + 高/中/低波动 + 大/中/小市值 + 9个交叉层。
+
+TRADING_REBALANCE_DAYS = 5
+TRADING_COST_RATE = 0.0015
+TRADING_SLIPPAGE_RATE = 0.0002
+TRADING_TOP_N = TOP_N
+TRADING_SOURCE = '${sourceTag}'
+
+
+def mq_normalize_index_price_frame(price):
+    if price is None or len(price) == 0:
+        return pd.DataFrame()
+    df = price.copy()
+    if "time" not in df.columns:
+        df = df.reset_index()
+        if "index" in df.columns and "time" not in df.columns:
+            df = df.rename(columns={"index": "time"})
+    df["date"] = pd.to_datetime(df["time"]).dt.normalize()
+    return df[["date", "close"]].dropna().sort_values("date")
+
+
+def mq_build_base_factor_table():
+    try:
+        built = build_factor_table()
+    except NameError:
+        built = build_historical_factor_table()
+    if isinstance(built, tuple):
+        return built[0], built[1] if len(built) > 1 and isinstance(built[1], dict) else {}
+    return built, {}
+
+
+def mq_build_market_regimes():
+    index_price = get_price(
+        "000300.XSHG",
+        start_date=PRICE_START,
+        end_date=END_LIMIT,
+        frequency="daily",
+        fields=["close"],
+        panel=False,
+        fq="pre",
+    )
+    index_price = mq_normalize_index_price_frame(index_price)
+    if index_price.empty:
+        return pd.DataFrame(columns=["date", "market_vol_20d", "market_regime", "market_regime_name"])
+    index_price["index_return"] = index_price["close"].pct_change()
+    index_price["market_vol_20d"] = index_price["index_return"].rolling(20, min_periods=20).std() * math.sqrt(252)
+    index_price["vol_p30"] = index_price["market_vol_20d"].rolling(252, min_periods=60).quantile(0.30).shift(1)
+    index_price["vol_p70"] = index_price["market_vol_20d"].rolling(252, min_periods=60).quantile(0.70).shift(1)
+    valid = index_price.dropna(subset=["market_vol_20d", "vol_p30", "vol_p70"]).copy()
+    valid["market_regime"] = "medium_volatility"
+    valid.loc[valid["market_vol_20d"] >= valid["vol_p70"], "market_regime"] = "high_volatility"
+    valid.loc[valid["market_vol_20d"] <= valid["vol_p30"], "market_regime"] = "low_volatility"
+    valid["market_regime_name"] = valid["market_regime"].map({
+        "high_volatility": "高波动",
+        "medium_volatility": "中波动",
+        "low_volatility": "低波动",
+    })
+    return valid[["date", "market_vol_20d", "market_regime", "market_regime_name"]]
+
+
+def mq_build_market_cap_buckets(factor_table):
+    rows = []
+    for day, frame in factor_table.groupby("date"):
+        codes = sorted(frame["code"].dropna().unique().tolist())
+        if len(codes) < MIN_CROSS_SECTION:
+            continue
+        fundamentals = get_fundamentals(
+            query(valuation.code, valuation.market_cap).filter(valuation.code.in_(codes)),
+            date=pd.Timestamp(day).strftime("%Y-%m-%d"),
+        )
+        if fundamentals is None or fundamentals.empty:
+            continue
+        cap = fundamentals[["code", "market_cap"]].dropna().copy()
+        if len(cap) < MIN_CROSS_SECTION:
+            continue
+        cap["date"] = pd.Timestamp(day).normalize()
+        cap["market_cap_rank_pct"] = cap["market_cap"].rank(pct=True, method="average")
+        cap["market_cap_bucket"] = "mid_cap"
+        cap.loc[cap["market_cap_rank_pct"] >= 0.67, "market_cap_bucket"] = "large_cap"
+        cap.loc[cap["market_cap_rank_pct"] <= 0.33, "market_cap_bucket"] = "small_cap"
+        cap["market_cap_bucket_name"] = cap["market_cap_bucket"].map({
+            "large_cap": "大市值",
+            "mid_cap": "中市值",
+            "small_cap": "小市值",
+        })
+        rows.append(cap[["date", "code", "market_cap", "market_cap_rank_pct", "market_cap_bucket", "market_cap_bucket_name"]])
+    if not rows:
+        return pd.DataFrame(columns=["date", "code", "market_cap", "market_cap_bucket", "market_cap_bucket_name"])
+    return pd.concat(rows, ignore_index=True)
+
+
+def mq_max_drawdown(values):
+    if not values:
+        return None
+    peak = values[0]
+    max_dd = 0.0
+    for value in values:
+        peak = max(peak, value)
+        if peak > 0:
+            max_dd = min(max_dd, value / peak - 1)
+    return float(max_dd)
+
+
+def mq_simulate_portfolio(candidates, label, layer_meta=None):
+    layer_meta = layer_meta or {}
+    if candidates is None or candidates.empty:
+        return None
+    if "future_return_5" not in candidates.columns:
+        return None
+
+    nav = 1.0
+    previous_weights = {}
+    period_returns = []
+    gross_returns = []
+    turnover_values = []
+    curve = []
+    sample_trades = 0
+
+    for day, frame in candidates.sort_values(["date", "strategy_score"], ascending=[True, False]).groupby("date"):
+        picked = frame.dropna(subset=["future_return_5"]).sort_values("strategy_score", ascending=False).head(TRADING_TOP_N).copy()
+        if picked.empty:
+            continue
+        weight = 1.0 / float(len(picked))
+        current_weights = dict((code, weight) for code in picked["code"].tolist())
+        all_codes = set(previous_weights.keys()) | set(current_weights.keys())
+        traded_notional = sum(abs(current_weights.get(code, 0.0) - previous_weights.get(code, 0.0)) for code in all_codes)
+        gross_return = float((picked["future_return_5"] * weight).sum())
+        cost = traded_notional * (TRADING_COST_RATE + TRADING_SLIPPAGE_RATE)
+        net_return = gross_return - cost
+        nav *= (1 + net_return)
+        sample_trades += int(len(picked))
+        period_returns.append(net_return)
+        gross_returns.append(gross_return)
+        turnover_values.append(traded_notional)
+        curve.append({
+            "date": pd.Timestamp(day).strftime("%Y-%m-%d"),
+            "net_value": float(nav),
+            "period_return": float(net_return),
+            "gross_return": float(gross_return),
+            "cost": float(cost),
+            "turnover": float(traded_notional),
+            "selected_count": int(len(picked)),
+        })
+        previous_weights = current_weights
+
+    if not period_returns:
+        return None
+
+    periods = len(period_returns)
+    annual_scale = 252.0 / float(TRADING_REBALANCE_DAYS)
+    annual_return = float(nav ** (annual_scale / periods) - 1) if nav > 0 else None
+    period_std = float(np.std(period_returns, ddof=1)) if periods > 1 else 0.0
+    sharpe = None
+    if period_std > 0:
+        sharpe = float(np.mean(period_returns) / period_std * math.sqrt(annual_scale))
+
+    record = {
+        "result_type": "strategy_trading_backtest",
+        "strategy_id": "${strategy.id}",
+        "strategy_name": ${JSON.stringify(strategy.name)},
+        "horizon": "5日调仓交易",
+        "layer": label,
+        "sample_dates": int(periods),
+        "sample_trades": int(sample_trades),
+        "trade_count": int(sample_trades),
+        "strategy_return": float(nav - 1),
+        "strategy_annual_return": annual_return,
+        "annual_return": annual_return,
+        "final_net_value": float(nav),
+        "max_drawdown": mq_max_drawdown([item["net_value"] for item in curve]),
+        "sharpe": sharpe,
+        "daily_win_rate": float(np.mean([ret > 0 for ret in period_returns])),
+        "period_mean_return": float(np.mean(period_returns)),
+        "gross_mean_return": float(np.mean(gross_returns)),
+        "avg_turnover": float(np.mean(turnover_values)),
+        "total_turnover": float(np.sum(turnover_values)),
+        "cost_rate": TRADING_COST_RATE,
+        "slippage_rate": TRADING_SLIPPAGE_RATE,
+        "date_range": "%s 至 %s" % (curve[0]["date"], curve[-1]["date"]),
+        "source": TRADING_SOURCE,
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+        "net_value_curve": curve[-80:],
+    }
+    record.update(layer_meta)
+    return record
+
+
+def mq_trading_records(factor_table, candidates):
+    records = []
+    base = mq_simulate_portfolio(candidates, "未分层")
+    if base:
+        records.append(base)
+
+    regimes = mq_build_market_regimes()
+    caps = mq_build_market_cap_buckets(factor_table)
+    layered = candidates.copy()
+    if not regimes.empty:
+        layered = layered.merge(regimes, on="date", how="left")
+    if not caps.empty:
+        layered = layered.merge(caps, on=["date", "code"], how="left")
+
+    regime_order = [
+        ("high_volatility", "高波动"),
+        ("medium_volatility", "中波动"),
+        ("low_volatility", "低波动"),
+    ]
+    bucket_order = [
+        ("large_cap", "大市值"),
+        ("mid_cap", "中市值"),
+        ("small_cap", "小市值"),
+    ]
+
+    if "market_regime" in layered.columns:
+        for regime_id, regime_name in regime_order:
+            part = layered[layered["market_regime"] == regime_id].copy()
+            item = mq_simulate_portfolio(part, regime_name, {
+                "market_regime": regime_id,
+                "market_regime_name": regime_name,
+                "market_vol_mean": None if part.empty or part["market_vol_20d"].dropna().empty else float(part["market_vol_20d"].mean()),
+            })
+            if item:
+                records.append(item)
+
+    if "market_cap_bucket" in layered.columns:
+        for bucket_id, bucket_name in bucket_order:
+            part = layered[layered["market_cap_bucket"] == bucket_id].copy()
+            item = mq_simulate_portfolio(part, bucket_name, {
+                "market_cap_bucket": bucket_id,
+                "market_cap_bucket_name": bucket_name,
+                "market_cap_mean": None if part.empty or part["market_cap"].dropna().empty else float(part["market_cap"].mean()),
+            })
+            if item:
+                records.append(item)
+
+    if "market_regime" in layered.columns and "market_cap_bucket" in layered.columns:
+        for regime_id, regime_name in regime_order:
+            for bucket_id, bucket_name in bucket_order:
+                part = layered[(layered["market_regime"] == regime_id) & (layered["market_cap_bucket"] == bucket_id)].copy()
+                item = mq_simulate_portfolio(part, "%s/%s" % (regime_name, bucket_name), {
+                    "market_regime": regime_id,
+                    "market_regime_name": regime_name,
+                    "market_cap_bucket": bucket_id,
+                    "market_cap_bucket_name": bucket_name,
+                    "market_vol_mean": None if part.empty or part["market_vol_20d"].dropna().empty else float(part["market_vol_20d"].mean()),
+                    "market_cap_mean": None if part.empty or part["market_cap"].dropna().empty else float(part["market_cap"].mean()),
+                })
+                if item:
+                    records.append(item)
+
+    return records
+
+
+def run_m_quant_trading_package():
+    factor_table, base_config = mq_build_base_factor_table()
+    candidates, diagnostics = select_candidates(factor_table)
+    event_summary = summarize_strategy(candidates)
+    trading = mq_trading_records(factor_table, candidates)
+    records = []
+    records.extend(event_summary)
+    records.extend(trading)
+    output = {
+        "result_type": "strategy_trading_package",
+        "strategy_id": "${strategy.id}",
+        "strategy_name": ${JSON.stringify(strategy.name)},
+        "source": TRADING_SOURCE,
+        "data_policy": "真实 JoinQuant 数据；同一候选池同时输出事件收益和5日调仓交易净值；含未分层、市值分层、波动分层、波动×市值交叉层。",
+        "config": {
+            "rebalance_days": TRADING_REBALANCE_DAYS,
+            "top_n": TRADING_TOP_N,
+            "cost_rate": TRADING_COST_RATE,
+            "slippage_rate": TRADING_SLIPPAGE_RATE,
+            "base_config": base_config,
+        },
+        "sample": {
+            "factor_rows": int(factor_table.shape[0]),
+            "candidate_rows": int(candidates.shape[0]) if candidates is not None else 0,
+            "test_dates": int(factor_table["date"].nunique()),
+            "selected_dates": int(candidates["date"].nunique()) if candidates is not None and not candidates.empty else 0,
+            "records": int(len(records)),
+        },
+        "diagnostics_tail": diagnostics[-20:],
+        "records": records,
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2, default=str))
+    return output
+
+
+result_json = run_m_quant_trading_package()
+`;
+
+  const replaced = baseScript.replace(/\nresult_json = run\(\)\s*$/m, extension);
+  return replaced === baseScript ? `${baseScript}\n${extension}` : replaced;
+}
+
 function buildJoinQuantTradingBacktestScript(strategyId) {
   const pack = buildJoinQuantStrategyPackage(strategyId);
   if (!pack) return null;
   const strategy = pack.route;
 
-  return `# M-quant JoinQuant trading backtest script
-# Strategy: ${strategy.name}
-# Generated: ${pack.generatedAt}
-# Policy: 这是给 JoinQuant “策略回测”页面使用的交易脚本；只使用 JoinQuant 历史 OHLCV 重建可复现信号，不生成虚构绩效。
+  const baseByStrategy = {
+    capital_follow_v0: () => readFileSync(capitalFollowBacktestScriptPath, 'utf8'),
+    jq_quality_profit_liquidity_v1: () => readFileSync(jqQualityProfitLiquidityBacktestScriptPath, 'utf8'),
+    kline_assisted_confirmation: () => readFileSync(klineAssistedBacktestScriptPath, 'utf8'),
+  };
+  const baseScript = baseByStrategy[strategyId]
+    ? baseByStrategy[strategyId]()
+    : buildJoinQuantStrategyHistoricalScript(strategyId);
+  if (!baseScript) return null;
 
-import numpy as np
-import pandas as pd
-
-
-def initialize(context):
-    set_benchmark('000300.XSHG')
-    set_option('use_real_price', True)
-    set_order_cost(OrderCost(open_tax=0, close_tax=0.001, open_commission=0.0003, close_commission=0.0003, min_commission=5), type='stock')
-
-    g.index_code = '000300.XSHG'
-    g.max_hold = 30
-    g.min_cross_section = 80
-    g.lookback = 270
-    g.rebalance_days = 5
-    g.day_count = 0
-
-    run_daily(rebalance, time='14:50')
-
-
-def clip01(value):
-    return value.clip(lower=0, upper=1)
-
-
-def bounded_peak_score(series, target, width):
-    return clip01(1 - (series - target).abs() / width)
-
-
-def safe_ratio(a, b):
-    return a / b.replace(0, np.nan)
-
-
-def rank_pct(series):
-    return series.rank(pct=True)
-
-
-def normalize_price_frame(price):
-    if price is None or len(price) == 0:
-        return pd.DataFrame()
-    df = price.copy()
-    if 'time' not in df.columns:
-        df = df.reset_index()
-        if 'index' in df.columns and 'time' not in df.columns:
-            df = df.rename(columns={'index': 'time'})
-    if 'code' not in df.columns and 'security' in df.columns:
-        df = df.rename(columns={'security': 'code'})
-    df['date'] = pd.to_datetime(df['time']).dt.normalize()
-    return df
-
-
-def build_signal_table(context):
-    today = context.previous_date
-    stocks = get_index_stocks(g.index_code, date=today)
-    current_data = get_current_data()
-    stocks = [
-        stock for stock in stocks
-        if stock in current_data
-        and not current_data[stock].paused
-        and not current_data[stock].is_st
-        and 'ST' not in current_data[stock].name
-    ]
-    if len(stocks) < g.min_cross_section:
-        return pd.DataFrame()
-
-    price = get_price(
-        stocks,
-        end_date=today,
-        count=g.lookback,
-        frequency='daily',
-        fields=['open', 'high', 'low', 'close', 'volume', 'money'],
-        panel=False,
-        fq='pre',
-    )
-    price = normalize_price_frame(price)
-    if price.empty:
-        return pd.DataFrame()
-
-    price = price.sort_values(['code', 'date']).copy()
-    group = price.groupby('code', group_keys=False)
-    price['prev_close'] = group['close'].shift(1)
-    price['change_pct'] = (price['close'] / price['prev_close'] - 1) * 100
-    price['amplitude'] = (price['high'] - price['low']) / price['prev_close'].replace(0, np.nan) * 100
-    price['volume_ma20'] = group['volume'].rolling(20, min_periods=10).mean().reset_index(level=0, drop=True)
-    price['volume_ratio'] = price['volume'] / price['volume_ma20'].replace(0, np.nan)
-
-    for window in [5, 10, 13, 20, 30, 60, 120, 250]:
-        price['ma%d' % window] = group['close'].rolling(window, min_periods=max(5, window // 2)).mean().reset_index(level=0, drop=True)
-        price['ma%d_dir' % window] = price.groupby('code')['ma%d' % window].transform(lambda s: s.diff())
-    for window in [5, 10]:
-        price['mavol%d' % window] = group['volume'].rolling(window, min_periods=max(3, window // 2)).mean().reset_index(level=0, drop=True)
-        price['mavol%d_dir' % window] = price.groupby('code')['mavol%d' % window].transform(lambda s: s.diff())
-
-    latest_date = price['date'].max()
-    part = price[price['date'] == latest_date].drop_duplicates('code').copy()
-    if len(part) < g.min_cross_section:
-        return pd.DataFrame()
-
-    day_range = (part['high'] - part['low']).replace(0, np.nan)
-    signed_body = (part['close'] - part['open']) / day_range
-    body_ratio = ((part['close'] - part['open']).abs() / day_range).clip(0, 1).fillna(0)
-    upper_ratio = ((part['high'] - np.maximum(part['open'], part['close'])) / day_range).clip(0, 1).fillna(0)
-    lower_ratio = ((np.minimum(part['open'], part['close']) - part['low']) / day_range).clip(0, 1).fillna(0)
-    close_position = ((part['close'] - part['low']) / day_range).clip(0, 1).fillna(0.5)
-
-    change_rank = rank_pct(part['change_pct'])
-    amplitude_rank = rank_pct(part['amplitude'])
-    volume_ratio_rank = rank_pct(part['volume_ratio'])
-    amount_rank = rank_pct(part['money'])
-
-    bullish_body_score = clip01((signed_body + 1) / 2).fillna(0.5)
-    candle_quality = clip01(0.45 * close_position + 0.25 * bullish_body_score + 0.20 * lower_ratio + 0.10 * (1 - upper_ratio))
-    upper_shadow_pressure = clip01(0.65 * upper_ratio + 0.35 * (((upper_ratio > lower_ratio) & (close_position < 0.55)).astype(float)))
-
-    trend_dir_score = (
-        0.22 * (part['ma5_dir'] > 0).astype(float)
-        + 0.18 * (part['ma13_dir'] > 0).astype(float)
-        + 0.16 * (part['ma20_dir'] > 0).astype(float)
-        + 0.14 * (part['ma30_dir'] > 0).astype(float)
-        + 0.12 * (part['ma60_dir'] > 0).astype(float)
-        + 0.10 * (part['ma120_dir'] > 0).astype(float)
-        + 0.08 * (part['ma250_dir'] > 0).astype(float)
-    )
-    trend_position_score = (
-        0.24 * (part['close'] > part['ma5']).astype(float)
-        + 0.20 * (part['close'] > part['ma13']).astype(float)
-        + 0.17 * (part['close'] > part['ma20']).astype(float)
-        + 0.14 * (part['close'] > part['ma30']).astype(float)
-        + 0.11 * (part['close'] > part['ma60']).astype(float)
-        + 0.08 * (part['close'] > part['ma120']).astype(float)
-        + 0.06 * (part['close'] > part['ma250']).astype(float)
-    )
-    trend_stack_score = (
-        0.35 * (part['ma5'] > part['ma20']).astype(float)
-        + 0.30 * (part['ma20'] > part['ma60']).astype(float)
-        + 0.20 * (part['ma60'] > part['ma120']).astype(float)
-        + 0.15 * (part['ma120'] > part['ma250']).astype(float)
-    )
-    short_medium_spread = safe_ratio(part['ma5'], part['ma20'])
-    medium_long_spread = safe_ratio(part['ma20'], part['ma60'])
-    trend_maturity = clip01(0.55 * bounded_peak_score(short_medium_spread, 1.035, 0.11) + 0.45 * bounded_peak_score(medium_long_spread, 1.045, 0.13))
-    price_ma_distance = safe_ratio(part['close'], part['ma20']) - 1
-    trend_extension_risk = clip01(((price_ma_distance.abs() - 0.035) / 0.14).fillna(0.5))
-    trend_alignment = clip01(0.30 * trend_dir_score + 0.25 * trend_position_score + 0.20 * trend_stack_score + 0.15 * trend_maturity + 0.10 * (1 - trend_extension_risk))
-
-    volume_quality = bounded_peak_score(part['volume_ratio'], 1.8, 2.2)
-    volume_support = clip01(0.36 * (part['mavol5_dir'] > 0).astype(float) + 0.28 * (part['mavol10_dir'] > 0).astype(float) + 0.20 * volume_quality + 0.16 * amount_rank)
-    price_action_quality = clip01(0.34 * change_rank + 0.30 * close_position + 0.22 * bullish_body_score + 0.14 * (1 - upper_shadow_pressure))
-    volume_price_sync = clip01(
-        0.35 * ((part['change_pct'] > 0) & (close_position >= 0.62)).astype(float)
-        + 0.25 * ((part['volume_ratio'] >= 0.8) & (part['volume_ratio'] <= 3.2)).astype(float)
-        + 0.20 * amount_rank
-        + 0.20 * ((part['mavol5_dir'] > 0) | (part['mavol10_dir'] > 0)).astype(float)
-    )
-    volume_price_divergence_risk = clip01(
-        0.30 * ((part['change_pct'] <= 0) & (volume_ratio_rank >= 0.65)).astype(float)
-        + 0.25 * ((close_position <= 0.42) & (volume_ratio_rank >= 0.65)).astype(float)
-        + 0.22 * upper_shadow_pressure
-        + 0.13 * ((part['volume_ratio'] > 3.5) & (part['change_pct'] < 2)).astype(float)
-        + 0.10 * ((part['amplitude'] > 10) & (close_position < 0.55)).astype(float)
-    )
-    blowoff_penalty = clip01(
-        0.50 * (part['volume_ratio'] > 4).astype(float)
-        + 0.25 * (upper_ratio > 0.45).astype(float)
-        + 0.25 * (part['amplitude'] > 12).astype(float)
-    )
-    volume_price_confirmation = clip01(
-        0.24 * volume_support
-        + 0.22 * price_action_quality
-        + 0.20 * volume_price_sync
-        + 0.18 * trend_alignment
-        + 0.08 * amount_rank
-        + 0.08 * candle_quality
-        - 0.22 * volume_price_divergence_risk
-        - 0.10 * blowoff_penalty
-    )
-
-    transaction_crowding_risk = clip01(0.46 * volume_ratio_rank + 0.42 * amount_rank + 0.12 * (part['volume_ratio'] >= 3).astype(float))
-    price_heat_risk = clip01(0.34 * change_rank + 0.26 * amplitude_rank + 0.22 * trend_extension_risk + 0.18 * (close_position >= 0.9).astype(float))
-    candle_distribution_risk = clip01(
-        0.45 * upper_shadow_pressure
-        + 0.22 * ((close_position < 0.45) & (volume_ratio_rank > 0.65)).astype(float)
-        + 0.18 * ((body_ratio <= 0.18) & (amplitude_rank > 0.65)).astype(float)
-        + 0.15 * ((lower_ratio < 0.12) & (close_position < 0.35)).astype(float)
-    )
-    crowding_risk = clip01(0.34 * transaction_crowding_risk + 0.24 * price_heat_risk + 0.20 * candle_distribution_risk + 0.16 * volume_price_divergence_risk + 0.06 * (part['change_pct'] >= 9.5).astype(float))
-
-    signed_return = (part['close'] - part['open']) / part['open'].replace(0, np.nan)
-    up_context = (part['close'] > part['ma20']) & (part['ma20_dir'] > 0)
-    spinning_top = (body_ratio > 0.08) & (body_ratio <= 0.35) & (upper_ratio >= 0.20) & (lower_ratio >= 0.20)
-    high_volume = (part['volume_ratio'] >= 1.5) | (volume_ratio_rank >= 0.80)
-    long_lower = (lower_ratio >= 0.55) & (upper_ratio <= 0.18) & (body_ratio <= 0.35)
-    long_upper = (upper_ratio >= 0.55) & (lower_ratio <= 0.18) & (body_ratio <= 0.35)
-    kline_event_score = pd.Series(0.0, index=part.index)
-    kline_event_score += ((part['close'] > part['open']) & (upper_ratio <= 0.08) & (lower_ratio <= 0.08) & (body_ratio >= 0.82)).astype(float) * 2
-    kline_event_score += ((part['close'] < part['open']) & (upper_ratio <= 0.08) & (lower_ratio <= 0.08) & (body_ratio >= 0.82)).astype(float) * -2
-    kline_event_score += ((signed_return >= 0.05) & (body_ratio >= 0.65)).astype(float) * 2
-    kline_event_score += ((signed_return <= -0.05) & (body_ratio >= 0.65)).astype(float) * 2
-    kline_event_score += (long_lower & ~up_context).astype(float) * -3
-    kline_event_score += (spinning_top & high_volume).astype(float) * -1
-    kline_event_score += (long_lower & up_context).astype(float) * 2
-    kline_event_score += (long_upper & up_context).astype(float) * 2
-    doji = body_ratio <= 0.08
-    kline_event_score += doji.astype(float) * 1
-    kline_event_score += (doji & (lower_ratio >= 0.60) & (upper_ratio <= 0.12)).astype(float) * 2
-    kline_event_score += (doji & (upper_ratio >= 0.60) & (lower_ratio <= 0.12)).astype(float) * -2
-
-    intraday_strength = clip01(0.34 * change_rank + 0.26 * candle_quality + 0.16 * volume_quality + 0.14 * amount_rank + 0.10 * (1 - upper_ratio))
-    technical_composite = clip01(0.30 * trend_alignment + 0.27 * volume_price_confirmation + 0.18 * intraday_strength + 0.10 * (kline_event_score.rank(pct=True)) - 0.15 * crowding_risk)
-
-    out = part[['code']].copy()
-    out['volume_price_confirmation'] = volume_price_confirmation
-    out['trend_alignment'] = trend_alignment
-    out['technical_composite'] = technical_composite
-    out['kline_event_score'] = kline_event_score
-    out['crowding_risk'] = crowding_risk
-    out['volume_price_divergence_risk'] = volume_price_divergence_risk
-    out['trend_extension_risk'] = trend_extension_risk
-
-    out = out[
-        (out['trend_alignment'] >= 0.60)
-        & (out['volume_price_confirmation'] >= 0.60)
-        & (out['crowding_risk'] <= 0.55)
-        & (out['volume_price_divergence_risk'] <= 0.45)
-        & (out['trend_extension_risk'] <= 0.75)
-    ].copy()
-    if out.empty:
-        return out
-
-    score = pd.Series(0.0, index=out.index)
-    weights = {
-        'volume_price_confirmation': 0.35,
-        'trend_alignment': 0.30,
-        'technical_composite': 0.15,
-        'kline_event_score': 0.10,
-        'crowding_risk': -0.20,
-        'volume_price_divergence_risk': -0.15,
-        'trend_extension_risk': -0.10,
-    }
-    for factor, weight in weights.items():
-        ranked = out[factor].rank(pct=True)
-        if weight < 0:
-            ranked = 1 - ranked
-        score += abs(weight) * ranked.fillna(0.5)
-    out['strategy_score'] = score
-    return out.sort_values('strategy_score', ascending=False)
-
-
-def rebalance(context):
-    g.day_count += 1
-    if g.day_count % g.rebalance_days != 1:
-        return
-
-    signal = build_signal_table(context)
-    targets = list(signal.head(g.max_hold)['code']) if not signal.empty else []
-    current_positions = list(context.portfolio.positions.keys())
-
-    for stock in current_positions:
-        if stock not in targets:
-            order_target_value(stock, 0)
-
-    if not targets:
-        log.info('M-quant: no target stocks on %s' % context.current_dt.date())
-        return
-
-    cash_per_stock = context.portfolio.total_value / len(targets)
-    for stock in targets:
-        order_target_value(stock, cash_per_stock)
-
-    log.info('M-quant targets %d: %s' % (len(targets), ','.join(targets[:10])))
-`;
+  return appendJoinQuantTradingSimulation(
+    baseScript,
+    strategy,
+    `joinquant_${safeFilename(strategyId)}_trading_simulation_v1`,
+  );
 }
 
 function readImportedBacktestResults() {
   return readJsonFile(importedBacktestResultsPath, []);
+}
+
+function readAkshareLocalBacktestRecords() {
+  const pack = readJsonFile(akshareOhlcvBacktestPath, null);
+  if (!pack) return [];
+  const meta = {
+    importedAt: pack.generated_at,
+    local_sample_policy: pack.data_policy,
+    local_sample_stocks: pack.unique_stocks,
+    local_sample_dates: pack.unique_dates,
+    source: 'akshare_local_ohlcv_backtest',
+  };
+  const factorRecords = (pack.factor_results || []).map((result) => ({
+    ...result,
+    ...meta,
+    source: result.source || meta.source,
+  }));
+  const strategyRecords = (pack.strategy_results || []).map((result) => ({
+    ...result,
+    ...meta,
+    horizon: result.horizon || '5日调仓',
+    sample_dates: result.sample_dates || result.sample_trades || 0,
+    trade_count: result.trade_count || result.sample_trades || 0,
+    source: result.source || meta.source,
+  }));
+  return [...factorRecords, ...strategyRecords];
+}
+
+function readBacktestResultsForDisplay() {
+  return [
+    ...readImportedBacktestResults(),
+    ...readAkshareLocalBacktestRecords(),
+  ];
 }
 
 function isStrategyBacktestRecord(result) {
@@ -2460,6 +2663,7 @@ function isStrategyBacktestRecord(result) {
     || result?.result_type === 'strategy_size_backtest'
     || result?.result_type === 'strategy_regime_size_backtest'
     || result?.result_type === 'trading_backtest'
+    || result?.result_type === 'local_strategy_backtest'
     || result?.result_type === 'strategy_trading_backtest'
     || Array.isArray(result?.summary) && result.summary.some((item) => item?.result_type === 'strategy_backtest'
       || item?.result_type === 'strategy_regime_backtest'
@@ -2498,7 +2702,7 @@ function flattenStrategyResultRecords(results = readImportedStrategyResults()) {
         }));
     }
 
-    if (result?.result_type === 'trading_backtest' || result?.result_type === 'strategy_trading_backtest') {
+    if (result?.result_type === 'trading_backtest' || result?.result_type === 'strategy_trading_backtest' || result?.result_type === 'local_strategy_backtest') {
       return [{
         ...result,
         horizon: result.horizon || '交易回测',
@@ -2580,17 +2784,24 @@ function buildStrategyValidation(stats, label = '策略') {
 
 function buildLayeredStrategyValidation(stats, label = '策略') {
   const layeredResults = (stats?.all || [])
-    .filter((result) => result.result_type === 'strategy_regime_size_backtest')
+    .filter((result) => result.result_type === 'strategy_regime_size_backtest'
+      || (result.result_type === 'strategy_trading_backtest' && result.market_regime && result.market_cap_bucket))
     .filter((result) => primaryStrategyHorizons.includes(toNumber(result.horizon, 0)));
+  const tradingLayeredResults = (stats?.all || [])
+    .filter((result) => result.result_type === 'strategy_trading_backtest' && result.market_regime && result.market_cap_bucket);
   const layerKeys = new Set(layeredResults
     .filter((result) => result.market_regime && result.market_cap_bucket)
     .map((result) => `${result.market_regime}|${result.market_cap_bucket}`));
+  tradingLayeredResults
+    .filter((result) => result.market_regime && result.market_cap_bucket)
+    .forEach((result) => layerKeys.add(`${result.market_regime}|${result.market_cap_bucket}`));
   const horizons = new Set(layeredResults.map((result) => toNumber(result.horizon, 0)));
   const bestResult = layeredResults
     .sort((left, right) => strategyPrimaryScore(right) - strategyPrimaryScore(left))[0] || null;
-  const validated = layerKeys.size >= 9 && primaryStrategyHorizons.every((horizon) => horizons.has(horizon));
+  const validated = layerKeys.size >= 9
+    && (primaryStrategyHorizons.every((horizon) => horizons.has(horizon)) || tradingLayeredResults.length >= 9);
   const evidence = validated
-    ? `已完成 ${layerKeys.size} 个高/中/低波动 × 大/中/小市值交叉层，覆盖 ${Array.from(horizons).sort((a, b) => a - b).join('/')} 日周期。`
+    ? `已完成 ${layerKeys.size} 个高/中/低波动 × 大/中/小市值交叉层，覆盖 ${Array.from(horizons).sort((a, b) => a - b).join('/') || '交易净值'} 日周期。`
     : `尚未完成${label}的高/中/低波动 × 大/中/小市值交叉分层。`;
 
   return {
@@ -2598,6 +2809,34 @@ function buildLayeredStrategyValidation(stats, label = '策略') {
     evidence,
     layerCount: layerKeys.size,
     layeredResults,
+    validated,
+  };
+}
+
+function buildTradingStrategyValidation(stats, label = '策略') {
+  const tradingResult = (stats?.all || []).find((result) => (
+    result.result_type === 'strategy_trading_backtest'
+    && !result.market_regime
+    && !result.market_cap_bucket
+  )) || null;
+  const strategyReturn = Number(tradingResult?.strategy_return);
+  const annualReturn = Number(tradingResult?.strategy_annual_return ?? tradingResult?.annual_return);
+  const maxDrawdown = Number(tradingResult?.max_drawdown);
+  const validated = Boolean(tradingResult)
+    && Number.isFinite(strategyReturn)
+    && strategyReturn > 0
+    && Number.isFinite(annualReturn)
+    && annualReturn > 0
+    && Number.isFinite(maxDrawdown)
+    && maxDrawdown > -0.25;
+  const evidence = tradingResult
+    ? `交易净值：总收益 ${(strategyReturn * 100).toFixed(2)}%，年化 ${(annualReturn * 100).toFixed(2)}%，最大回撤 ${(maxDrawdown * 100).toFixed(2)}%，Sharpe ${Number.isFinite(Number(tradingResult.sharpe)) ? Number(tradingResult.sharpe).toFixed(2) : '-'}。`
+    : `尚未完成${label}未分层交易净值回测。`;
+  return {
+    evidence,
+    maxDrawdown,
+    strategyReturn,
+    tradingResult,
     validated,
   };
 }
@@ -2610,11 +2849,40 @@ function readCapitalFactorRows() {
   return readJsonFile(capitalFactorResultsPath, []);
 }
 
+function deriveSentimentOverheatFactor(row) {
+  const parts = [
+    ['price_heat_risk', 0.35],
+    ['crowding_risk', 0.30],
+    ['transaction_crowding_risk', 0.20],
+    ['volume_blowoff_risk', 0.15],
+  ];
+  const usable = parts
+    .map(([field, weight]) => {
+      const value = toNumber(row[field], null);
+      return Number.isFinite(value) ? { value, weight } : null;
+    })
+    .filter(Boolean);
+
+  if (usable.length < 3) return null;
+
+  const weightSum = usable.reduce((sum, item) => sum + item.weight, 0);
+  const score = usable.reduce((sum, item) => sum + item.value * item.weight, 0) / weightSum;
+  return Number(score.toFixed(6));
+}
+
+function enrichDerivedBacktestFactors(row) {
+  const sentimentOverheat = row.sentiment_overheat_factor ?? deriveSentimentOverheatFactor(row);
+  return {
+    ...row,
+    sentiment_overheat_factor: sentimentOverheat,
+  };
+}
+
 function readBacktestFactorRows() {
   return [
     ...readPrimaryFactorRows(),
     ...readCapitalFactorRows(),
-  ];
+  ].map(enrichDerivedBacktestFactors);
 }
 
 function readCombinedFactorSummary() {
@@ -2659,15 +2927,18 @@ function buildBacktestResearchStatus() {
   const uniqueDates = new Set(rows.map((row) => dateOnly(row.date || row.stock_date)).filter(Boolean));
   const uniqueStocks = new Set(rows.map((row) => row.stock_code || row.code).filter(Boolean));
   const exportRows = buildJoinQuantFactorRows();
-  const importedResults = readImportedBacktestResults();
+  const importedResults = readBacktestResultsForDisplay();
   const importedFactorResults = readImportedFactorResults();
   const importedStrategyResults = readImportedStrategyResults();
+  const localAkshareResults = readAkshareLocalBacktestRecords();
+  const localAkshareFactorResults = localAkshareResults.filter((result) => !isStrategyBacktestRecord(result));
+  const localAkshareStrategyResults = localAkshareResults.filter(isStrategyBacktestRecord);
 
   const canRunLocalValidatedBacktest = uniqueDates.size >= 60;
 
   return {
     generatedAt: new Date().toISOString(),
-    dataPolicy: '复测中心只展示真实数据状态、导出包和外部实跑结果；没有未来收益时不生成IC、胜率、年化收益。',
+    dataPolicy: '复测中心只展示真实数据状态、导出包、外部实跑结果和本地真实OHLCV回测；没有未来收益时不生成IC、胜率、年化收益。',
     source: {
       file: summary.source_file || researchFactorResultsPath,
       inputKind: summary.input_kind || 'unknown',
@@ -2679,8 +2950,10 @@ function buildBacktestResearchStatus() {
       exportableRows: exportRows.length,
       exportableFactors: exportableBacktestFactors.length,
       importedResultCount: importedResults.length,
-      importedFactorResultCount: importedFactorResults.length,
-      importedStrategyResultCount: importedStrategyResults.length,
+      importedFactorResultCount: importedFactorResults.length + localAkshareFactorResults.length,
+      importedStrategyResultCount: importedStrategyResults.length + localAkshareStrategyResults.length,
+      localAkshareFactorResultCount: localAkshareFactorResults.length,
+      localAkshareStrategyResultCount: localAkshareStrategyResults.length,
       localStatus: canRunLocalValidatedBacktest ? 'ready_for_local_factor_test' : 'blocked',
       externalStatus: 'joinquant_ready',
       requiredTradingDays: 60,
@@ -3429,26 +3702,40 @@ function buildLiveStrategySignals() {
   const coreStrategyStats = strategyResultStats.core_volume_price_trend_v1;
   const coreValidation = buildStrategyValidation(coreStrategyStats, '策略');
   const coreLayeredValidation = buildLayeredStrategyValidation(coreStrategyStats, '核心量价趋势策略');
-  const coreStrategyValidated = coreValidation.validated && coreLayeredValidation.validated;
+  const coreTradingValidation = buildTradingStrategyValidation(coreStrategyStats, '核心量价趋势策略');
+  const coreStrategyValidated = coreValidation.validated && coreLayeredValidation.validated && coreTradingValidation.validated;
   const coreStrategyEvidence = coreValidation.bestResult
     ? coreValidation.evidence.replace('真实策略结果；', '真实策略结果；正式候选只采用未分层整体回测，')
     : coreValidation.evidence;
   const jqQualityStrategyStats = strategyResultStats.jq_quality_profit_liquidity_v1;
   const jqQualityValidation = buildStrategyValidation(jqQualityStrategyStats, '策略');
   const jqQualityLayeredValidation = buildLayeredStrategyValidation(jqQualityStrategyStats, 'JQ质量利润流动性策略');
-  const jqQualityStrategyValidated = jqQualityValidation.validated && jqQualityLayeredValidation.validated;
+  const jqQualityTradingValidation = buildTradingStrategyValidation(jqQualityStrategyStats, 'JQ质量利润流动性策略');
+  const jqQualityStrategyValidated = jqQualityValidation.validated && jqQualityLayeredValidation.validated && jqQualityTradingValidation.validated;
   const capitalStrategyStats = strategyResultStats.capital_follow_v0;
   const capitalValidation = buildStrategyValidation(capitalStrategyStats, '策略');
   const capitalLayeredValidation = buildLayeredStrategyValidation(capitalStrategyStats, '资金跟随策略');
-  const capitalStrategyValidated = capitalValidation.validated && capitalLayeredValidation.validated;
+  const capitalTradingValidation = buildTradingStrategyValidation(capitalStrategyStats, '资金跟随策略');
+  const capitalStrategyValidated = capitalValidation.validated && capitalLayeredValidation.validated && capitalTradingValidation.validated;
+  const comboStrategyStats = strategyResultStats.money_flow_kline_confirmation_v0;
+  const comboValidation = buildStrategyValidation(comboStrategyStats, '策略');
+  const comboTradingResult = (comboStrategyStats?.all || []).find((result) => (
+    result.result_type === 'strategy_trading_backtest'
+    && !result.market_regime
+    && !result.market_cap_bucket
+  ));
+  const comboTradingPassed = Number(comboTradingResult?.strategy_return) > 0
+    && Number(comboTradingResult?.strategy_annual_return) > 0
+    && Number(comboTradingResult?.max_drawdown) > -0.20;
   const klineStrategyStats = strategyResultStats.kline_assisted_confirmation;
   const klineValidation = buildStrategyValidation(klineStrategyStats, '策略');
   const klineLayeredValidation = buildLayeredStrategyValidation(klineStrategyStats, 'K线辅助确认策略');
-  const klineStrategyValidated = klineValidation.validated && klineLayeredValidation.validated;
+  const klineTradingValidation = buildTradingStrategyValidation(klineStrategyStats, 'K线辅助确认策略');
+  const klineStrategyValidated = klineValidation.validated && klineLayeredValidation.validated && klineTradingValidation.validated;
   const marketRegimeStats = strategyResultStats.market_capital_regime_position;
   const marketRegimeValidation = buildStrategyValidation(marketRegimeStats, '仓位模块');
   const marketRegimeTested = Boolean(marketRegimeValidation.bestResult);
-  const formalStrategies = [
+  const formalStrategiesUnsorted = [
     ...(coreStrategyValidated
       ? [
       {
@@ -3456,7 +3743,7 @@ function buildLiveStrategySignals() {
         name: '核心量价趋势策略 v1',
         pool: 'formal_candidate',
         status: 'real_strategy_backtested',
-        validationState: `${coreStrategyEvidence} ${coreLayeredValidation.evidence} 口径为 JoinQuant OHLCV 历史重建，非 Yiwan 全字段等价复刻。`,
+        validationState: `${coreStrategyEvidence} ${coreLayeredValidation.evidence} ${coreTradingValidation.evidence} 口径为 JoinQuant OHLCV 历史重建，非 Yiwan 全字段等价复刻。`,
         role: '已实测正式候选',
         objective: '用趋势质量确认方向，用量价确认验证成交质量，再用拥挤、背离、过伸做硬过滤。',
         dataBasis: `JoinQuant 策略级结果 ${coreStrategyStats.all.length} 条；技术截面 ${coreRows.length} 条`,
@@ -3489,7 +3776,7 @@ function buildLiveStrategySignals() {
           name: '资金跟随策略 v0',
           pool: 'formal_candidate',
           status: 'real_strategy_backtested',
-          validationState: `${capitalValidation.evidence} ${capitalLayeredValidation.evidence} 口径为 JoinQuant money_flow/OHLCV 事件回测，未复刻 Yiwan 暗盘字段。`,
+          validationState: `${capitalValidation.evidence} ${capitalLayeredValidation.evidence} ${capitalTradingValidation.evidence} 口径为 JoinQuant money_flow/OHLCV 事件回测，未复刻 Yiwan 暗盘字段。`,
           role: '已实测正式候选',
           objective: '用主力资金净流入、超大/大单同步、资金持续性确认候选，并过滤过热资金。',
           dataBasis: `JoinQuant 策略级结果 ${capitalStrategyStats.all.length} 条；候选样本 ${capitalValidation.bestResult?.packetSample?.candidate_rows || 0} 条`,
@@ -3520,9 +3807,9 @@ function buildLiveStrategySignals() {
           id: 'kline_assisted_confirmation',
           name: 'K线辅助确认策略',
           pool: 'formal_candidate',
-          status: 'real_strategy_backtested',
-          validationState: `${klineValidation.evidence} ${klineLayeredValidation.evidence} 口径为 JoinQuant OHLCV 情绪系数加权K线事件回测，未使用研报不可得字段。`,
-          role: '已实测辅助候选',
+          status: 'paper_trade_candidate',
+          validationState: `${klineValidation.evidence} ${klineLayeredValidation.evidence} ${klineTradingValidation.evidence} 口径为 JoinQuant OHLCV 情绪系数加权K线事件回测，未使用研报不可得字段。`,
+          role: '准模拟盘候选：仅低波动/大市值优先',
           objective: '用单根K线事件、收盘位置、上下影线、趋势背景和240日量能情绪系数做入场确认。',
           dataBasis: `JoinQuant 策略级结果 ${klineStrategyStats.all.length} 条；候选样本 ${klineValidation.bestResult?.packetSample?.candidate_rows || 0} 条`,
           factorState: klineRouteFactors,
@@ -3539,7 +3826,7 @@ function buildLiveStrategySignals() {
             'K线更适合作为确认/过滤模块，独立实盘前还需交易成本和样本外检验',
           ],
           portfolioRules: ['候选池排序前30只', '已完成 5/10/20 日策略级事件回测', '优先和核心量价趋势做交集或加权确认'],
-          nextAction: '继续测试与核心量价趋势、资金跟随策略的组合效果，补交易净值和回撤。',
+          nextAction: '进入受控模拟盘前，只允许低波动环境和大市值优先；继续测试与核心量价趋势、资金跟随策略的组合效果。',
           candidateCount: klineValidation.bestResult?.packetSample?.candidate_rows || klineRows.length,
           computedSignalCount: klineValidation.bestResult?.packetSample?.factor_rows || coreRows.length,
           exportStatus: '已有真实策略级结果，建议作为辅助确认模块继续组合回测',
@@ -3552,9 +3839,9 @@ function buildLiveStrategySignals() {
           id: 'jq_quality_profit_liquidity_v1',
           name: 'JQ质量利润流动性策略 v1',
           pool: 'formal_candidate',
-          status: 'real_strategy_backtested',
-          validationState: `${jqQualityValidation.evidence} ${jqQualityLayeredValidation.evidence} 口径为 JoinQuant valuation/indicator/OHLCV 事件回测，尚未包含交易成本、换手和最大回撤。`,
-          role: '已实测正式候选',
+          status: 'paper_trade_candidate',
+          validationState: `${jqQualityValidation.evidence} ${jqQualityLayeredValidation.evidence} ${jqQualityTradingValidation.evidence} 口径为 JoinQuant valuation/indicator/OHLCV 事件回测。`,
+          role: '准模拟盘候选：当前最完整路线',
           objective: '用利润增长做进攻核心，用质量成长确认基本面质量，用流动性质量约束可交易性。',
           dataBasis: `JoinQuant 策略级结果 ${jqQualityStrategyStats.all.length} 条；严格审计入选 ${strictAudit?.counts.selectedFactors || 3} 个因子`,
           factorState: jqQualityRouteFactors,
@@ -3579,6 +3866,15 @@ function buildLiveStrategySignals() {
       ]
       : []),
   ];
+  const formalStrategyPriority = {
+    jq_quality_profit_liquidity_v1: 0,
+    kline_assisted_confirmation: 1,
+    core_volume_price_trend_v1: 2,
+    capital_follow_v0: 3,
+  };
+  const formalStrategies = [...formalStrategiesUnsorted].sort((left, right) => (
+    (formalStrategyPriority[left.id] ?? 99) - (formalStrategyPriority[right.id] ?? 99)
+  ));
 
   return {
     generatedAt: new Date().toISOString(),
@@ -3594,7 +3890,7 @@ function buildLiveStrategySignals() {
       rows: coreRows.length + capitalSignalRows.length,
     },
     metrics: {
-      draftStrategies: 5,
+      draftStrategies: 6,
       executableStrategies: [
         coreStrategyValidated,
         capitalStrategyValidated,
@@ -3726,6 +4022,49 @@ function buildLiveStrategySignals() {
         exportStatus: jqQualityStrategyValidated
           ? '已有真实策略级结果，仍需交易成本和样本外审计'
           : '路线已生成；等待 JoinQuant 策略级实测',
+      },
+      {
+        id: 'money_flow_kline_confirmation_v0',
+        name: '主力资金广度K线确认策略 v0',
+        pool: 'draft',
+        status: comboTradingPassed ? 'real_strategy_backtested' : 'hold',
+        validationState: comboTradingResult
+          ? `已完成真实 JoinQuant 交易回测：总收益 ${(Number(comboTradingResult.strategy_return) * 100).toFixed(2)}%，年化 ${(Number(comboTradingResult.strategy_annual_return) * 100).toFixed(2)}%，最大回撤 ${(Number(comboTradingResult.max_drawdown) * 100).toFixed(2)}%，Sharpe ${Number(comboTradingResult.sharpe).toFixed(2)}。事件回测为正，但交易净值未通过。`
+          : '由真实因子结果组合生成，等待交易回测。',
+        role: '真实回测观察草案',
+        objective: '把20日表现相对靠前的主力一致性、资金来源广度、资金跟随、主反向背离和单根K线评分做交叉确认。',
+        dataBasis: comboStrategyStats?.all?.length
+          ? `JoinQuant money_flow/OHLCV 真实策略结果 ${comboStrategyStats.all.length} 条；未使用 Yiwan 暗盘原字段。`
+          : '等待 JoinQuant 真实策略结果。',
+        factorState: [
+          strategyFactor('main_force_alignment', '主力一致确认', 0.25),
+          strategyFactor('capital_source_count', '资金来源广度', 0.20),
+          strategyFactor('capital_follow_signal', '资金主信号', 0.20),
+          strategyFactor('institutional_contra_divergence', '主反向背离确认', 0.15),
+          strategyFactor('kline_event_score', 'K线确认', 0.10),
+          strategyFactor('active_large_order_accumulation', '超大/大单吸筹代理', 0.10),
+          strategyFactor('capital_overheat_risk', '资金过热过滤', -0.20),
+        ],
+        rankingFormula: '0.25*主力一致 + 0.20*资金来源数 + 0.20*资金跟随 + 0.15*主反向背离 + 0.10*K线评分 + 0.10*大单吸筹 - 0.20*资金过热',
+        entryRules: [
+          'main_force_alignment >= 0.55',
+          'capital_source_count >= 2',
+          'capital_follow_signal >= 0.55',
+          'capital_overheat_risk <= 0.72',
+          'kline_event_score >= 0',
+        ],
+        riskFilters: [
+          '完整交易净值未通过，不进入正式策略池',
+          'active_large_order_accumulation 是 JoinQuant 超大/大单代理，不等价于 Yiwan 暗盘吸筹',
+          '后续若要继续研究，应先降低换手、提高资金过热惩罚或只作为核心策略确认过滤器',
+        ],
+        portfolioRules: ['候选池排序前30只', '5日调仓', '默认已完成未分层/波动/市值/交叉分层交易回测'],
+        nextAction: comboTradingPassed
+          ? '继续做样本外和成本敏感性。'
+          : '不建议独立使用；下一步只测试作为核心量价趋势策略的确认过滤器，而不是独立选股策略。',
+        candidateCount: comboTradingResult?.sample_trades || 0,
+        computedSignalCount: comboValidation.bestResult?.sample_trades || 0,
+        exportStatus: '已有真实策略级结果；交易净值未通过',
       },
       {
         id: 'kline_assisted_confirmation',
@@ -3906,7 +4245,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'GET' && pathname === '/api/risk') {
-    sendJson(res, state.risk);
+    sendJson(res, buildDataCoverageRisks());
     return true;
   }
 
@@ -4169,18 +4508,40 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/backtest-api/joinquant-factor-test-script.py') {
+    const script = readFileSync(joinquantFactorTestScriptPath, 'utf8');
+    sendText(
+      res,
+      'm-quant-joinquant-factor-test.py',
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
   if (req.method === 'POST' && pathname === '/backtest-api/import-results') {
     const body = await readJsonBody(req);
-    const nextResult = {
-      ...body,
-      importedAt: new Date().toISOString(),
-      source: body.source || 'joinquant',
-    };
-    const nextResults = [nextResult, ...readImportedBacktestResults()].slice(0, 50);
+    const importedAt = new Date().toISOString();
+    const rawItems = Array.isArray(body)
+      ? body
+      : Array.isArray(body.records)
+        ? body.records
+        : Array.isArray(body.results)
+          ? body.results
+          : [body];
+    const nextItems = rawItems
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => ({
+        ...item,
+        importedAt,
+        source: item.source || body.source || 'joinquant',
+      }));
+    const nextResults = [...nextItems, ...readImportedBacktestResults()].slice(0, 300);
     writeFileSync(importedBacktestResultsPath, `${JSON.stringify(nextResults, null, 2)}\n`);
     sendJson(res, {
-      message: '复测结果已导入；本平台只展示你外部实跑的真实结果。',
-      result: nextResult,
+      message: `复测结果已导入 ${nextItems.length} 条；本平台只展示你外部实跑的真实结果。`,
+      result: nextItems[0] || null,
+      importedCount: nextItems.length,
       results: nextResults,
     }, 201);
     return true;

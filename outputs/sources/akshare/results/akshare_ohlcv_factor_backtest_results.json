@@ -1,0 +1,1167 @@
+{
+  "source": "akshare_ohlcv_factor_backtest",
+  "data_policy": "真实 AkShare OHLCV 本地回测；不填补缺失股票；不生成虚构绩效；50股样本不足以直接实盘。",
+  "generated_at": "2026-07-09T11:25:42",
+  "input": "outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv",
+  "rows": 30380,
+  "factor_rows": 27174,
+  "unique_stocks": 50,
+  "unique_dates": 608,
+  "min_stock_history_rows": 598,
+  "max_stock_history_rows": 608,
+  "min_stocks_per_day_required": 30,
+  "factor_count": 9,
+  "factor_result_count": 27,
+  "strategy_result_count": 4,
+  "factor_definitions": [
+    {
+      "id": "ak_volume_price_confirmation",
+      "name": "AkShare量价确认",
+      "direction": "positive",
+      "description": "20日价格趋势、成交量/成交额放大和当日收盘质量共同确认。"
+    },
+    {
+      "id": "ak_trend_quality",
+      "name": "AkShare趋势质量",
+      "direction": "positive",
+      "description": "20日收益、MA20/MA60结构和价格相对MA20位置共同衡量趋势。"
+    },
+    {
+      "id": "ak_low_volatility_quality",
+      "name": "AkShare低波动质量",
+      "direction": "positive",
+      "description": "20日波动、60日回撤越低，防守质量越高。"
+    },
+    {
+      "id": "ak_kline_confirmation",
+      "name": "AkShareK线确认",
+      "direction": "positive",
+      "description": "阳线实体、收盘位置和上影压力衡量单日K线确认度。"
+    },
+    {
+      "id": "ak_crowding_risk",
+      "name": "AkShare拥挤风险",
+      "direction": "negative",
+      "description": "高换手、高量比、短期涨幅和均线过伸共同识别拥挤风险。"
+    },
+    {
+      "id": "ak_volume_trend_quality_combo",
+      "name": "AkShare量价趋势质量组合",
+      "direction": "positive",
+      "description": "量价确认、趋势质量、低波动质量、K线确认减拥挤风险。"
+    },
+    {
+      "id": "ak_defensive_quality_combo",
+      "name": "AkShare防守质量确认组合",
+      "direction": "positive",
+      "description": "低波动质量为核心，叠加趋势和量价确认并扣除拥挤风险。"
+    },
+    {
+      "id": "ak_mean_reversion_quality_combo",
+      "name": "AkShare均值回归质量组合",
+      "direction": "positive",
+      "description": "在核心流动性样本中反向检验趋势/量价过热，寻找低趋势延伸、低量价追高且K线不过强的回归机会。"
+    },
+    {
+      "id": "ak_anti_crowding_reversal_combo",
+      "name": "AkShare反拥挤回归组合",
+      "direction": "positive",
+      "description": "低拥挤、低短线追涨和不过度强K线的反向确认组合。"
+    }
+  ],
+  "factor_results": [
+    {
+      "factor_name": "ak_volume_price_confirmation",
+      "factor_display_name": "AkShare量价确认",
+      "direction": "positive",
+      "horizon": 5,
+      "sample_dates": 583,
+      "avg_stocks": 49.95540308747856,
+      "ic_mean": -0.015150437102414262,
+      "rank_ic_mean": -0.026031624355161823,
+      "rank_ic_t": -3.0658206882172143,
+      "long_short_mean": 0.0005095443836077178,
+      "long_short_positive_ratio": 0.47855917667238423,
+      "top_return_mean": 0.0027970817636191955,
+      "bottom_return_mean": 0.0022875373800114772,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_volume_price_confirmation",
+      "factor_display_name": "AkShare量价确认",
+      "direction": "positive",
+      "horizon": 10,
+      "sample_dates": 578,
+      "avg_stocks": 49.95501730103806,
+      "ic_mean": -0.009068539637825015,
+      "rank_ic_mean": -0.018125394543944896,
+      "rank_ic_t": -2.125851343524534,
+      "long_short_mean": 0.0006706614200046043,
+      "long_short_positive_ratio": 0.47231833910034604,
+      "top_return_mean": 0.004815356892054093,
+      "bottom_return_mean": 0.004144695472049488,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_volume_price_confirmation",
+      "factor_display_name": "AkShare量价确认",
+      "direction": "positive",
+      "horizon": 20,
+      "sample_dates": 568,
+      "avg_stocks": 49.95422535211268,
+      "ic_mean": -0.0030601088014573477,
+      "rank_ic_mean": -0.009513147023074969,
+      "rank_ic_t": -1.184578623471018,
+      "long_short_mean": 0.00018624209533101577,
+      "long_short_positive_ratio": 0.49471830985915494,
+      "top_return_mean": 0.008204511971141725,
+      "bottom_return_mean": 0.008018269875810707,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_trend_quality",
+      "factor_display_name": "AkShare趋势质量",
+      "direction": "positive",
+      "horizon": 5,
+      "sample_dates": 544,
+      "avg_stocks": 49.963235294117645,
+      "ic_mean": -0.00471283955690873,
+      "rank_ic_mean": -0.023702432863252684,
+      "rank_ic_t": -2.229115685197541,
+      "long_short_mean": 4.505705562662739e-05,
+      "long_short_positive_ratio": 0.4889705882352941,
+      "top_return_mean": 0.0017414788842709233,
+      "bottom_return_mean": 0.0016964218286442956,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_trend_quality",
+      "factor_display_name": "AkShare趋势质量",
+      "direction": "positive",
+      "horizon": 10,
+      "sample_dates": 539,
+      "avg_stocks": 49.962894248608535,
+      "ic_mean": -0.008135750817523577,
+      "rank_ic_mean": -0.026728529825691412,
+      "rank_ic_t": -2.669239306575042,
+      "long_short_mean": -0.0009419232569644871,
+      "long_short_positive_ratio": 0.46567717996289426,
+      "top_return_mean": 0.002870951669320054,
+      "bottom_return_mean": 0.0038128749262845425,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_trend_quality",
+      "factor_display_name": "AkShare趋势质量",
+      "direction": "positive",
+      "horizon": 20,
+      "sample_dates": 529,
+      "avg_stocks": 49.96219281663516,
+      "ic_mean": -0.006669104902045932,
+      "rank_ic_mean": -0.0347910887998882,
+      "rank_ic_t": -3.4365776366117515,
+      "long_short_mean": -0.0038196949801718293,
+      "long_short_positive_ratio": 0.4839319470699433,
+      "top_return_mean": 0.004942641950642925,
+      "bottom_return_mean": 0.008762336930814754,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_low_volatility_quality",
+      "factor_display_name": "AkShare低波动质量",
+      "direction": "positive",
+      "horizon": 5,
+      "sample_dates": 544,
+      "avg_stocks": 49.963235294117645,
+      "ic_mean": -0.008774661271649038,
+      "rank_ic_mean": -0.00378327567954962,
+      "rank_ic_t": -0.3321103119576983,
+      "long_short_mean": -0.003236099893492264,
+      "long_short_positive_ratio": 0.47610294117647056,
+      "top_return_mean": 8.276653218498281e-05,
+      "bottom_return_mean": 0.003318866425677247,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_low_volatility_quality",
+      "factor_display_name": "AkShare低波动质量",
+      "direction": "positive",
+      "horizon": 10,
+      "sample_dates": 539,
+      "avg_stocks": 49.962894248608535,
+      "ic_mean": -0.016746212813753165,
+      "rank_ic_mean": -0.014064038967670677,
+      "rank_ic_t": -1.2951769448962753,
+      "long_short_mean": -0.005770118885946615,
+      "long_short_positive_ratio": 0.44712430426716143,
+      "top_return_mean": 0.0010337193306626464,
+      "bottom_return_mean": 0.0068038382166092605,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_low_volatility_quality",
+      "factor_display_name": "AkShare低波动质量",
+      "direction": "positive",
+      "horizon": 20,
+      "sample_dates": 529,
+      "avg_stocks": 49.96219281663516,
+      "ic_mean": -0.018323994909030437,
+      "rank_ic_mean": -0.014601400537741473,
+      "rank_ic_t": -1.3922996982323614,
+      "long_short_mean": -0.009978947676731437,
+      "long_short_positive_ratio": 0.44801512287334594,
+      "top_return_mean": 0.0024193125100667465,
+      "bottom_return_mean": 0.012398260186798182,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_kline_confirmation",
+      "factor_display_name": "AkShareK线确认",
+      "direction": "positive",
+      "horizon": 5,
+      "sample_dates": 603,
+      "avg_stocks": 49.956882255389715,
+      "ic_mean": -0.008145389144502744,
+      "rank_ic_mean": -0.007131345213069514,
+      "rank_ic_t": -0.826995132301997,
+      "long_short_mean": -0.001264689952182069,
+      "long_short_positive_ratio": 0.4709784411276949,
+      "top_return_mean": 0.001423701494640047,
+      "bottom_return_mean": 0.002688391446822115,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_kline_confirmation",
+      "factor_display_name": "AkShareK线确认",
+      "direction": "positive",
+      "horizon": 10,
+      "sample_dates": 598,
+      "avg_stocks": 49.95652173913044,
+      "ic_mean": -0.011529646246780139,
+      "rank_ic_mean": -0.012214150236292581,
+      "rank_ic_t": -1.4372742520235313,
+      "long_short_mean": -0.003670387459630125,
+      "long_short_positive_ratio": 0.45819397993311034,
+      "top_return_mean": 0.001959908429112435,
+      "bottom_return_mean": 0.005630295888742559,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_kline_confirmation",
+      "factor_display_name": "AkShareK线确认",
+      "direction": "positive",
+      "horizon": 20,
+      "sample_dates": 588,
+      "avg_stocks": 49.95578231292517,
+      "ic_mean": -0.0012697149338937522,
+      "rank_ic_mean": 6.455214412863348e-05,
+      "rank_ic_t": 0.007613798380560599,
+      "long_short_mean": -0.0009720011082397685,
+      "long_short_positive_ratio": 0.5119047619047619,
+      "top_return_mean": 0.007867533196962491,
+      "bottom_return_mean": 0.008839534305202257,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_crowding_risk",
+      "factor_display_name": "AkShare拥挤风险",
+      "direction": "negative",
+      "horizon": 5,
+      "sample_dates": 584,
+      "avg_stocks": 49.965753424657535,
+      "ic_mean": 0.009927514072934608,
+      "rank_ic_mean": 0.018694937543337238,
+      "rank_ic_t": 2.245508586964436,
+      "long_short_mean": -0.0005470638306350674,
+      "long_short_positive_ratio": 0.5291095890410958,
+      "top_return_mean": 0.002601429507590302,
+      "bottom_return_mean": 0.0031484933382253683,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_crowding_risk",
+      "factor_display_name": "AkShare拥挤风险",
+      "direction": "negative",
+      "horizon": 10,
+      "sample_dates": 579,
+      "avg_stocks": 49.96545768566494,
+      "ic_mean": 0.0038309443648680075,
+      "rank_ic_mean": 0.010389972616558149,
+      "rank_ic_t": 1.258944797866678,
+      "long_short_mean": -0.0005760718296300629,
+      "long_short_positive_ratio": 0.538860103626943,
+      "top_return_mean": 0.004536042047706092,
+      "bottom_return_mean": 0.005112113877336153,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_crowding_risk",
+      "factor_display_name": "AkShare拥挤风险",
+      "direction": "negative",
+      "horizon": 20,
+      "sample_dates": 569,
+      "avg_stocks": 49.96485061511424,
+      "ic_mean": -0.001097749009175772,
+      "rank_ic_mean": 0.0034175580497060264,
+      "rank_ic_t": 0.4416070686275259,
+      "long_short_mean": -0.0009340944597963737,
+      "long_short_positive_ratio": 0.5131810193321616,
+      "top_return_mean": 0.00811739326829485,
+      "bottom_return_mean": 0.009051487728091225,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_volume_trend_quality_combo",
+      "factor_display_name": "AkShare量价趋势质量组合",
+      "direction": "positive",
+      "horizon": 5,
+      "sample_dates": 544,
+      "avg_stocks": 49.95220588235294,
+      "ic_mean": -0.012244653315893845,
+      "rank_ic_mean": -0.022008737458125066,
+      "rank_ic_t": -2.1407776632107987,
+      "long_short_mean": -0.0008748768795442925,
+      "long_short_positive_ratio": 0.48161764705882354,
+      "top_return_mean": 0.0014806384272494982,
+      "bottom_return_mean": 0.002355515306793791,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_volume_trend_quality_combo",
+      "factor_display_name": "AkShare量价趋势质量组合",
+      "direction": "positive",
+      "horizon": 10,
+      "sample_dates": 539,
+      "avg_stocks": 49.95176252319109,
+      "ic_mean": -0.01511819755324648,
+      "rank_ic_mean": -0.02366351116458326,
+      "rank_ic_t": -2.4666493884375043,
+      "long_short_mean": -0.0014901676089833402,
+      "long_short_positive_ratio": 0.4489795918367347,
+      "top_return_mean": 0.0030744267268679416,
+      "bottom_return_mean": 0.0045645943358512825,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_volume_trend_quality_combo",
+      "factor_display_name": "AkShare量价趋势质量组合",
+      "direction": "positive",
+      "horizon": 20,
+      "sample_dates": 529,
+      "avg_stocks": 49.95085066162571,
+      "ic_mean": -0.010399801057307782,
+      "rank_ic_mean": -0.024175763087536217,
+      "rank_ic_t": -2.5362514049135414,
+      "long_short_mean": -0.0037191645398975963,
+      "long_short_positive_ratio": 0.46313799621928164,
+      "top_return_mean": 0.004694608728221323,
+      "bottom_return_mean": 0.008413773268118919,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_defensive_quality_combo",
+      "factor_display_name": "AkShare防守质量确认组合",
+      "direction": "positive",
+      "horizon": 5,
+      "sample_dates": 544,
+      "avg_stocks": 49.95220588235294,
+      "ic_mean": -0.010596045204207538,
+      "rank_ic_mean": -0.012914773840974158,
+      "rank_ic_t": -1.194227330968023,
+      "long_short_mean": -0.0012163307211653432,
+      "long_short_positive_ratio": 0.4852941176470588,
+      "top_return_mean": 0.0008810896356232031,
+      "bottom_return_mean": 0.0020974203567885466,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_defensive_quality_combo",
+      "factor_display_name": "AkShare防守质量确认组合",
+      "direction": "positive",
+      "horizon": 10,
+      "sample_dates": 539,
+      "avg_stocks": 49.95176252319109,
+      "ic_mean": -0.017383172946627393,
+      "rank_ic_mean": -0.020606847397136016,
+      "rank_ic_t": -2.0159761109748544,
+      "long_short_mean": -0.0028238130116578623,
+      "long_short_positive_ratio": 0.45269016697588127,
+      "top_return_mean": 0.002389834795317059,
+      "bottom_return_mean": 0.005213647806974921,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_defensive_quality_combo",
+      "factor_display_name": "AkShare防守质量确认组合",
+      "direction": "positive",
+      "horizon": 20,
+      "sample_dates": 529,
+      "avg_stocks": 49.95085066162571,
+      "ic_mean": -0.016200515670093937,
+      "rank_ic_mean": -0.022414674247506053,
+      "rank_ic_t": -2.2325657681358977,
+      "long_short_mean": -0.0066624791492499655,
+      "long_short_positive_ratio": 0.4725897920604915,
+      "top_return_mean": 0.0031477515530970277,
+      "bottom_return_mean": 0.009810230702346994,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_mean_reversion_quality_combo",
+      "factor_display_name": "AkShare均值回归质量组合",
+      "direction": "positive",
+      "horizon": 5,
+      "sample_dates": 544,
+      "avg_stocks": 49.95220588235294,
+      "ic_mean": 0.014794148500773449,
+      "rank_ic_mean": 0.03395670730165986,
+      "rank_ic_t": 3.6697159683500904,
+      "long_short_mean": -0.0012075994122133337,
+      "long_short_positive_ratio": 0.5147058823529411,
+      "top_return_mean": 0.0010169668624033239,
+      "bottom_return_mean": 0.0022245662746166583,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_mean_reversion_quality_combo",
+      "factor_display_name": "AkShare均值回归质量组合",
+      "direction": "positive",
+      "horizon": 10,
+      "sample_dates": 539,
+      "avg_stocks": 49.95176252319109,
+      "ic_mean": 0.009944592182020361,
+      "rank_ic_mean": 0.02558734232450089,
+      "rank_ic_t": 2.7895374722971433,
+      "long_short_mean": -0.0013543066219192273,
+      "long_short_positive_ratio": 0.5157699443413729,
+      "top_return_mean": 0.0022874979373676703,
+      "bottom_return_mean": 0.0036418045592868983,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_mean_reversion_quality_combo",
+      "factor_display_name": "AkShare均值回归质量组合",
+      "direction": "positive",
+      "horizon": 20,
+      "sample_dates": 529,
+      "avg_stocks": 49.95085066162571,
+      "ic_mean": -6.903191225268057e-05,
+      "rank_ic_mean": 0.021191690130188377,
+      "rank_ic_t": 2.341514464597065,
+      "long_short_mean": -0.0036928839661846723,
+      "long_short_positive_ratio": 0.4933837429111531,
+      "top_return_mean": 0.004228076921725303,
+      "bottom_return_mean": 0.007920960887909974,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_anti_crowding_reversal_combo",
+      "factor_display_name": "AkShare反拥挤回归组合",
+      "direction": "positive",
+      "horizon": 5,
+      "sample_dates": 544,
+      "avg_stocks": 49.95220588235294,
+      "ic_mean": 0.014661486476185629,
+      "rank_ic_mean": 0.02726000835782987,
+      "rank_ic_t": 3.18646688848531,
+      "long_short_mean": -0.0006568312734394443,
+      "long_short_positive_ratio": 0.5386029411764706,
+      "top_return_mean": 0.0013524180428876101,
+      "bottom_return_mean": 0.0020092493163270542,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_anti_crowding_reversal_combo",
+      "factor_display_name": "AkShare反拥挤回归组合",
+      "direction": "positive",
+      "horizon": 10,
+      "sample_dates": 539,
+      "avg_stocks": 49.95176252319109,
+      "ic_mean": 0.007546754625682525,
+      "rank_ic_mean": 0.01695233759100072,
+      "rank_ic_t": 1.962691759504173,
+      "long_short_mean": -0.0011468303245517255,
+      "long_short_positive_ratio": 0.5269016697588126,
+      "top_return_mean": 0.0024474378571173222,
+      "bottom_return_mean": 0.003594268181669047,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    },
+    {
+      "factor_name": "ak_anti_crowding_reversal_combo",
+      "factor_display_name": "AkShare反拥挤回归组合",
+      "direction": "positive",
+      "horizon": 20,
+      "sample_dates": 529,
+      "avg_stocks": 49.95085066162571,
+      "ic_mean": -0.003472773828941014,
+      "rank_ic_mean": 0.007644093996443911,
+      "rank_ic_t": 0.9325415995079296,
+      "long_short_mean": -0.0032762218731597578,
+      "long_short_positive_ratio": 0.5066162570888468,
+      "top_return_mean": 0.005439543831714321,
+      "bottom_return_mean": 0.00871576570487408,
+      "data_source": "akshare.stock_zh_a_hist",
+      "result_type": "local_factor_backtest"
+    }
+  ],
+  "strategy_results": [
+    {
+      "strategy_id": "ak_volume_trend_quality_combo",
+      "strategy_name": "AkShare量价趋势质量策略 v0",
+      "result_type": "local_strategy_backtest",
+      "data_source": "akshare.stock_zh_a_hist",
+      "sample_trades": 109,
+      "top_n": 10,
+      "cost_per_rebalance": 0.001,
+      "strategy_return": -0.3164500892066222,
+      "strategy_annual_return": -0.16131248078336835,
+      "max_drawdown": -0.3414049554742672,
+      "sharpe": -0.7078370302774805,
+      "positive_trade_ratio": 0.44954128440366975,
+      "first_trade_date": "2024-04-02",
+      "last_trade_date": "2026-06-29",
+      "daily_records_preview": [
+        {
+          "date": "2024-04-02",
+          "gross_return_5d": 0.007283403783940068,
+          "net_return_5d": 0.006283403783940068,
+          "stock_count": 10,
+          "codes": "000338,000786,002601,002714,000725,000625,000425,300014,000157,000333"
+        },
+        {
+          "date": "2024-04-11",
+          "gross_return_5d": 0.012087630017378314,
+          "net_return_5d": 0.011087630017378315,
+          "stock_count": 10,
+          "codes": "000157,000425,000338,000625,002027,002601,002594,000999,000858,000568"
+        },
+        {
+          "date": "2024-04-18",
+          "gross_return_5d": -0.020110371026000363,
+          "net_return_5d": -0.021110371026000364,
+          "stock_count": 10,
+          "codes": "000786,002601,000333,002714,000166,000538,000001,000425,000651,002594"
+        },
+        {
+          "date": "2024-04-25",
+          "gross_return_5d": 0.04032700972505837,
+          "net_return_5d": 0.03932700972505837,
+          "stock_count": 10,
+          "codes": "000999,002001,000333,002714,002142,000725,000001,000166,002601,000963"
+        },
+        {
+          "date": "2024-05-07",
+          "gross_return_5d": 0.0036670056851747625,
+          "net_return_5d": 0.0026670056851747625,
+          "stock_count": 10,
+          "codes": "002001,000999,002594,002714,000596,000538,000001,000568,002601,002179"
+        },
+        {
+          "date": "2024-05-14",
+          "gross_return_5d": -0.00042416088634053,
+          "net_return_5d": -0.0014241608863405299,
+          "stock_count": 10,
+          "codes": "002001,000538,000999,001979,000963,000786,002714,002007,002352,000166"
+        },
+        {
+          "date": "2024-05-21",
+          "gross_return_5d": -0.03766944562485819,
+          "net_return_5d": -0.03866944562485819,
+          "stock_count": 10,
+          "codes": "002352,002142,000001,000876,002475,000858,000002,002601,002001,002714"
+        },
+        {
+          "date": "2024-05-28",
+          "gross_return_5d": -0.005501068301552147,
+          "net_return_5d": -0.0065010683015521474,
+          "stock_count": 10,
+          "codes": "000999,002142,002714,000001,000333,000651,000425,002475,002352,002415"
+        },
+        {
+          "date": "2024-06-04",
+          "gross_return_5d": -0.0138832832226486,
+          "net_return_5d": -0.014883283222648602,
+          "stock_count": 10,
+          "codes": "000999,002714,300014,002179,002241,000963,002475,002594,000538,002271"
+        },
+        {
+          "date": "2024-06-12",
+          "gross_return_5d": 0.015912422908459244,
+          "net_return_5d": 0.014912422908459243,
+          "stock_count": 10,
+          "codes": "002475,000425,002179,000999,002594,002241,002601,000063,300014,002415"
+        },
+        {
+          "date": "2024-06-19",
+          "gross_return_5d": -0.030210221109618275,
+          "net_return_5d": -0.031210221109618276,
+          "stock_count": 10,
+          "codes": "002475,000063,000999,002241,000333,002352,000651,002179,000938,002049"
+        },
+        {
+          "date": "2024-06-26",
+          "gross_return_5d": -0.014725870311395528,
+          "net_return_5d": -0.015725870311395527,
+          "stock_count": 10,
+          "codes": "002241,002475,000063,002179,002001,000938,002230,002594,000166,300014"
+        },
+        {
+          "date": "2024-07-03",
+          "gross_return_5d": 0.0002193741798511284,
+          "net_return_5d": -0.0007806258201488716,
+          "stock_count": 10,
+          "codes": "002241,000725,002027,002594,000063,002001,002179,002230,000100,002415"
+        },
+        {
+          "date": "2024-07-10",
+          "gross_return_5d": 0.020421577930590008,
+          "net_return_5d": 0.019421577930590007,
+          "stock_count": 10,
+          "codes": "002241,002001,000725,000977,002475,000063,000001,000876,000776,000895"
+        },
+        {
+          "date": "2024-07-17",
+          "gross_return_5d": -0.047435226596799385,
+          "net_return_5d": -0.048435226596799386,
+          "stock_count": 10,
+          "codes": "000001,000538,002142,000938,002594,002352,000876,002241,002475,002714"
+        },
+        {
+          "date": "2024-07-24",
+          "gross_return_5d": 0.006752753826219404,
+          "net_return_5d": 0.005752753826219404,
+          "stock_count": 10,
+          "codes": "002001,002179,000625,002241,002475,002594,000977,000538,000776,002714"
+        },
+        {
+          "date": "2024-07-31",
+          "gross_return_5d": -0.038117106899990684,
+          "net_return_5d": -0.039117106899990685,
+          "stock_count": 10,
+          "codes": "002001,000166,000776,002179,000938,002007,300015,000333,002049,002241"
+        },
+        {
+          "date": "2024-08-07",
+          "gross_return_5d": -0.012898754956546365,
+          "net_return_5d": -0.013898754956546366,
+          "stock_count": 10,
+          "codes": "002001,002179,000651,000166,300014,000876,000963,000538,000858,001979"
+        },
+        {
+          "date": "2024-08-14",
+          "gross_return_5d": -0.03339861963591947,
+          "net_return_5d": -0.03439861963591947,
+          "stock_count": 10,
+          "codes": "000651,002027,000166,002179,002714,000538,000876,000999,300014,002241"
+        },
+        {
+          "date": "2024-08-21",
+          "gross_return_5d": -0.012067807875608794,
+          "net_return_5d": -0.013067807875608795,
+          "stock_count": 10,
+          "codes": "000001,000333,000651,001979,000166,002241,002594,000963,000538,002475"
+        }
+      ]
+    },
+    {
+      "strategy_id": "ak_defensive_quality_combo",
+      "strategy_name": "AkShare防守质量确认策略 v0",
+      "result_type": "local_strategy_backtest",
+      "data_source": "akshare.stock_zh_a_hist",
+      "sample_trades": 109,
+      "top_n": 10,
+      "cost_per_rebalance": 0.001,
+      "strategy_return": -0.2724866321942647,
+      "strategy_annual_return": -0.1367883437801728,
+      "max_drawdown": -0.29777701354190855,
+      "sharpe": -0.6288939477008648,
+      "positive_trade_ratio": 0.44036697247706424,
+      "first_trade_date": "2024-04-02",
+      "last_trade_date": "2026-06-29",
+      "daily_records_preview": [
+        {
+          "date": "2024-04-02",
+          "gross_return_5d": -0.0034760726035839573,
+          "net_return_5d": -0.004476072603583957,
+          "stock_count": 10,
+          "codes": "000338,000786,002601,002714,000333,000157,000596,000725,000425,000858"
+        },
+        {
+          "date": "2024-04-11",
+          "gross_return_5d": 0.02112751457496721,
+          "net_return_5d": 0.02012751457496721,
+          "stock_count": 10,
+          "codes": "000157,000338,000425,002027,000625,002601,002594,000786,000596,000538"
+        },
+        {
+          "date": "2024-04-18",
+          "gross_return_5d": -0.021856874364711544,
+          "net_return_5d": -0.022856874364711545,
+          "stock_count": 10,
+          "codes": "000786,002601,000333,000166,000538,000338,002714,000001,002027,000157"
+        },
+        {
+          "date": "2024-04-25",
+          "gross_return_5d": 0.02508283144507457,
+          "net_return_5d": 0.02408283144507457,
+          "stock_count": 10,
+          "codes": "000999,002001,000333,002714,000166,000725,002027,000001,002142,000538"
+        },
+        {
+          "date": "2024-05-07",
+          "gross_return_5d": 0.008822404970456854,
+          "net_return_5d": 0.007822404970456855,
+          "stock_count": 10,
+          "codes": "002001,000999,000001,002594,000538,000596,002714,000333,002142,000568"
+        },
+        {
+          "date": "2024-05-14",
+          "gross_return_5d": 0.012538685762862278,
+          "net_return_5d": 0.011538685762862277,
+          "stock_count": 10,
+          "codes": "002001,000538,000999,000963,002714,000786,002142,000166,002601,000876"
+        },
+        {
+          "date": "2024-05-21",
+          "gross_return_5d": -0.03680924092094606,
+          "net_return_5d": -0.03780924092094606,
+          "stock_count": 10,
+          "codes": "002352,002142,000001,000858,000876,002475,002714,002001,000568,002179"
+        },
+        {
+          "date": "2024-05-28",
+          "gross_return_5d": -0.009187659744953636,
+          "net_return_5d": -0.010187659744953635,
+          "stock_count": 10,
+          "codes": "000999,002142,000001,002714,002352,000333,002415,000651,002001,000425"
+        },
+        {
+          "date": "2024-06-04",
+          "gross_return_5d": -0.006823087534881067,
+          "net_return_5d": -0.007823087534881066,
+          "stock_count": 10,
+          "codes": "000999,002714,002179,300014,002475,002241,002594,000963,000538,002415"
+        },
+        {
+          "date": "2024-06-12",
+          "gross_return_5d": 0.021549099581102737,
+          "net_return_5d": 0.020549099581102737,
+          "stock_count": 10,
+          "codes": "002475,002179,000999,002594,002415,002241,000938,002352,000425,002001"
+        },
+        {
+          "date": "2024-06-19",
+          "gross_return_5d": -0.030063774796535346,
+          "net_return_5d": -0.031063774796535347,
+          "stock_count": 10,
+          "codes": "002475,002241,000063,002594,000999,000938,002179,002415,002352,300014"
+        },
+        {
+          "date": "2024-06-26",
+          "gross_return_5d": -0.01005491995106369,
+          "net_return_5d": -0.01105491995106369,
+          "stock_count": 10,
+          "codes": "002241,002475,002179,002594,002001,000063,000166,300014,000538,000938"
+        },
+        {
+          "date": "2024-07-03",
+          "gross_return_5d": 0.01532434672909414,
+          "net_return_5d": 0.014324346729094141,
+          "stock_count": 10,
+          "codes": "002241,002594,000063,000725,002027,002475,002001,000001,002179,002415"
+        },
+        {
+          "date": "2024-07-10",
+          "gross_return_5d": 0.019553594062715663,
+          "net_return_5d": 0.018553594062715662,
+          "stock_count": 10,
+          "codes": "002241,002001,002475,000725,000977,000063,000001,002594,000166,000876"
+        },
+        {
+          "date": "2024-07-17",
+          "gross_return_5d": -0.045416039317010416,
+          "net_return_5d": -0.04641603931701042,
+          "stock_count": 10,
+          "codes": "002594,000001,002475,002001,000938,000538,002241,000063,002714,000876"
+        },
+        {
+          "date": "2024-07-24",
+          "gross_return_5d": 0.007976813445876373,
+          "net_return_5d": 0.006976813445876373,
+          "stock_count": 10,
+          "codes": "002001,002179,002594,002241,000977,000538,000063,000776,002475,000625"
+        },
+        {
+          "date": "2024-07-31",
+          "gross_return_5d": -0.04868612050501283,
+          "net_return_5d": -0.04968612050501283,
+          "stock_count": 10,
+          "codes": "002001,000166,002179,000776,000938,000063,002241,002594,000001,000977"
+        },
+        {
+          "date": "2024-08-07",
+          "gross_return_5d": -0.01313181030443079,
+          "net_return_5d": -0.014131810304430791,
+          "stock_count": 10,
+          "codes": "002179,002001,000166,000651,000876,000776,000538,000963,300014,002352"
+        },
+        {
+          "date": "2024-08-14",
+          "gross_return_5d": -0.017377138916768065,
+          "net_return_5d": -0.018377138916768065,
+          "stock_count": 10,
+          "codes": "000651,002179,000166,000538,002027,000876,002714,000776,000963,000333"
+        },
+        {
+          "date": "2024-08-21",
+          "gross_return_5d": -0.01258177745322977,
+          "net_return_5d": -0.01358177745322977,
+          "stock_count": 10,
+          "codes": "000651,000001,000166,000333,000538,001979,000963,002594,002241,000776"
+        }
+      ]
+    },
+    {
+      "strategy_id": "ak_mean_reversion_quality_combo",
+      "strategy_name": "AkShare均值回归质量策略 v0",
+      "result_type": "local_strategy_backtest",
+      "data_source": "akshare.stock_zh_a_hist",
+      "sample_trades": 109,
+      "top_n": 10,
+      "cost_per_rebalance": 0.001,
+      "strategy_return": 0.03767301982560878,
+      "strategy_annual_return": 0.017246375188685326,
+      "max_drawdown": -0.1817233485850227,
+      "sharpe": 0.18848315442025676,
+      "positive_trade_ratio": 0.46788990825688076,
+      "first_trade_date": "2024-04-02",
+      "last_trade_date": "2026-06-29",
+      "daily_records_preview": [
+        {
+          "date": "2024-04-02",
+          "gross_return_5d": -0.06312048655266488,
+          "net_return_5d": -0.06412048655266488,
+          "stock_count": 10,
+          "codes": "002236,300015,002049,002230,002179,300033,002841,000938,002415,000001"
+        },
+        {
+          "date": "2024-04-11",
+          "gross_return_5d": 0.004111393907381256,
+          "net_return_5d": 0.0031113939073812557,
+          "stock_count": 10,
+          "codes": "002007,002241,300015,002129,002049,000963,002236,002475,000776,002179"
+        },
+        {
+          "date": "2024-04-18",
+          "gross_return_5d": -0.020960002525581157,
+          "net_return_5d": -0.021960002525581158,
+          "stock_count": 10,
+          "codes": "001979,002129,002241,002179,000596,002230,000977,002475,300014,000938"
+        },
+        {
+          "date": "2024-04-25",
+          "gross_return_5d": 0.06320174063282676,
+          "net_return_5d": 0.062201740632826755,
+          "stock_count": 10,
+          "codes": "000977,000776,002236,000895,000938,300033,002049,000651,000002,000876"
+        },
+        {
+          "date": "2024-05-07",
+          "gross_return_5d": -0.02106160386439353,
+          "net_return_5d": -0.02206160386439353,
+          "stock_count": 10,
+          "codes": "002466,002049,300033,002415,002460,002129,002230,000938,002236,002007"
+        },
+        {
+          "date": "2024-05-14",
+          "gross_return_5d": -0.015623779083864387,
+          "net_return_5d": -0.016623779083864386,
+          "stock_count": 10,
+          "codes": "002460,002812,002129,000100,002466,300014,002236,000625,002594,002049"
+        },
+        {
+          "date": "2024-05-21",
+          "gross_return_5d": -0.03638025621073586,
+          "net_return_5d": -0.03738025621073586,
+          "stock_count": 10,
+          "codes": "002230,002027,002129,002812,002466,002049,000157,300015,002460,002236"
+        },
+        {
+          "date": "2024-05-28",
+          "gross_return_5d": 0.009584352147516583,
+          "net_return_5d": 0.008584352147516582,
+          "stock_count": 10,
+          "codes": "000063,000538,000963,002027,002466,000776,002304,002460,002601,002812"
+        },
+        {
+          "date": "2024-06-04",
+          "gross_return_5d": -0.017305067222801417,
+          "net_return_5d": -0.018305067222801417,
+          "stock_count": 10,
+          "codes": "002230,000776,002466,000977,000895,000063,002236,002460,000001,002812"
+        },
+        {
+          "date": "2024-06-12",
+          "gross_return_5d": -0.02134988419725341,
+          "net_return_5d": -0.022349884197253412,
+          "stock_count": 10,
+          "codes": "000338,000963,002007,000100,000538,000977,002352,002714,002129,002304"
+        },
+        {
+          "date": "2024-06-19",
+          "gross_return_5d": -0.022702264901656843,
+          "net_return_5d": -0.023702264901656844,
+          "stock_count": 10,
+          "codes": "002271,000002,002601,002466,000776,000876,000568,002714,002129,000338"
+        },
+        {
+          "date": "2024-06-26",
+          "gross_return_5d": -0.0030876269463110174,
+          "net_return_5d": -0.004087626946311018,
+          "stock_count": 10,
+          "codes": "000858,000568,000001,000895,002129,000999,002142,001979,000002,000333"
+        },
+        {
+          "date": "2024-07-03",
+          "gross_return_5d": -0.030592825893960583,
+          "net_return_5d": -0.031592825893960584,
+          "stock_count": 10,
+          "codes": "002601,002841,000596,000568,002714,000895,002129,000858,000166,300014"
+        },
+        {
+          "date": "2024-07-10",
+          "gross_return_5d": 0.039294384820265836,
+          "net_return_5d": 0.038294384820265835,
+          "stock_count": 10,
+          "codes": "000999,002601,300033,000596,002049,002304,000568,000333,000963,002841"
+        },
+        {
+          "date": "2024-07-17",
+          "gross_return_5d": -0.020245920133926197,
+          "net_return_5d": -0.021245920133926198,
+          "stock_count": 10,
+          "codes": "300033,002230,002236,002466,002049,000425,002460,000166,000999,000338"
+        },
+        {
+          "date": "2024-07-24",
+          "gross_return_5d": 0.04855329673439539,
+          "net_return_5d": 0.04755329673439539,
+          "stock_count": 10,
+          "codes": "002230,002466,300033,300015,000786,002460,000002,002027,000425,000963"
+        },
+        {
+          "date": "2024-07-31",
+          "gross_return_5d": -0.045425464825798775,
+          "net_return_5d": -0.046425464825798776,
+          "stock_count": 10,
+          "codes": "002027,000725,000157,000100,002601,002230,002714,000977,002594,300014"
+        },
+        {
+          "date": "2024-08-07",
+          "gross_return_5d": -0.003784257242735678,
+          "net_return_5d": -0.004784257242735678,
+          "stock_count": 10,
+          "codes": "000100,000063,000725,002027,000977,002475,000338,002601,002049,000001"
+        },
+        {
+          "date": "2024-08-14",
+          "gross_return_5d": -0.005433640165792264,
+          "net_return_5d": -0.006433640165792264,
+          "stock_count": 10,
+          "codes": "000938,000977,000063,000100,002049,000725,000338,002475,000568,000786"
+        },
+        {
+          "date": "2024-08-21",
+          "gross_return_5d": -0.024995808105918626,
+          "net_return_5d": -0.025995808105918627,
+          "stock_count": 10,
+          "codes": "000977,000938,002179,002049,000625,000596,002304,000999,000568,000063"
+        }
+      ]
+    },
+    {
+      "strategy_id": "ak_anti_crowding_reversal_combo",
+      "strategy_name": "AkShare反拥挤回归策略 v0",
+      "result_type": "local_strategy_backtest",
+      "data_source": "akshare.stock_zh_a_hist",
+      "sample_trades": 109,
+      "top_n": 10,
+      "cost_per_rebalance": 0.001,
+      "strategy_return": 0.12404972117904123,
+      "strategy_annual_return": 0.055558919751889535,
+      "max_drawdown": -0.16127959504389633,
+      "sharpe": 0.33175006715811456,
+      "positive_trade_ratio": 0.48623853211009177,
+      "first_trade_date": "2024-04-02",
+      "last_trade_date": "2026-06-29",
+      "daily_records_preview": [
+        {
+          "date": "2024-04-02",
+          "gross_return_5d": -0.06351742481236533,
+          "net_return_5d": -0.06451742481236533,
+          "stock_count": 10,
+          "codes": "002236,300015,002230,002049,000938,300033,002179,000063,002241,002129"
+        },
+        {
+          "date": "2024-04-11",
+          "gross_return_5d": 0.0076169857890220904,
+          "net_return_5d": 0.00661698578902209,
+          "stock_count": 10,
+          "codes": "002007,002129,002236,002475,002241,000963,002049,300015,000596,000786"
+        },
+        {
+          "date": "2024-04-18",
+          "gross_return_5d": -0.020103568843955543,
+          "net_return_5d": -0.021103568843955544,
+          "stock_count": 10,
+          "codes": "000596,000977,002230,002129,001979,002475,002027,002241,300014,000876"
+        },
+        {
+          "date": "2024-04-25",
+          "gross_return_5d": 0.03990310439059741,
+          "net_return_5d": 0.03890310439059741,
+          "stock_count": 10,
+          "codes": "000977,000895,000938,000776,000651,000876,002236,000338,002027,000596"
+        },
+        {
+          "date": "2024-05-07",
+          "gross_return_5d": -0.013307935182982122,
+          "net_return_5d": -0.014307935182982123,
+          "stock_count": 10,
+          "codes": "002415,002466,002460,300033,002049,002007,002142,002812,002129,300014"
+        },
+        {
+          "date": "2024-05-14",
+          "gross_return_5d": -0.014104116393749833,
+          "net_return_5d": -0.015104116393749832,
+          "stock_count": 10,
+          "codes": "002812,002460,002129,002466,002594,002179,300014,000625,000100,000725"
+        },
+        {
+          "date": "2024-05-21",
+          "gross_return_5d": -0.029897420320642,
+          "net_return_5d": -0.030897420320642,
+          "stock_count": 10,
+          "codes": "002230,002812,002027,002129,000425,000157,300015,300033,002460,002001"
+        },
+        {
+          "date": "2024-05-28",
+          "gross_return_5d": 0.004995607360655474,
+          "net_return_5d": 0.003995607360655474,
+          "stock_count": 10,
+          "codes": "000538,000963,002601,000063,000776,300015,002027,002460,000166,002304"
+        },
+        {
+          "date": "2024-06-04",
+          "gross_return_5d": -0.010143519356577669,
+          "net_return_5d": -0.011143519356577668,
+          "stock_count": 10,
+          "codes": "000776,000895,000977,000938,000063,000001,002001,002304,002230,002466"
+        },
+        {
+          "date": "2024-06-12",
+          "gross_return_5d": -0.034787264931503546,
+          "net_return_5d": -0.03578726493150355,
+          "stock_count": 10,
+          "codes": "000338,002352,000963,002129,001979,002714,002001,002271,000002,000776"
+        },
+        {
+          "date": "2024-06-19",
+          "gross_return_5d": -0.024851546292992344,
+          "net_return_5d": -0.025851546292992345,
+          "stock_count": 10,
+          "codes": "002271,000002,000876,002129,002601,000776,002714,000425,002415,000538"
+        },
+        {
+          "date": "2024-06-26",
+          "gross_return_5d": -0.003987696326324586,
+          "net_return_5d": -0.004987696326324586,
+          "stock_count": 10,
+          "codes": "000858,000895,000001,001979,002129,000002,000876,000568,002594,000999"
+        },
+        {
+          "date": "2024-07-03",
+          "gross_return_5d": -0.018500400982967524,
+          "net_return_5d": -0.019500400982967524,
+          "stock_count": 10,
+          "codes": "002601,002841,000895,002714,002129,000166,000568,000596,000876,000938"
+        },
+        {
+          "date": "2024-07-10",
+          "gross_return_5d": 0.03783586156980916,
+          "net_return_5d": 0.036835861569809156,
+          "stock_count": 10,
+          "codes": "002601,000999,000333,002841,002049,000596,000938,300033,002304,002230"
+        },
+        {
+          "date": "2024-07-17",
+          "gross_return_5d": -0.020245920133926197,
+          "net_return_5d": -0.021245920133926198,
+          "stock_count": 10,
+          "codes": "002236,002230,300033,000425,002466,000999,002460,000166,000338,002049"
+        },
+        {
+          "date": "2024-07-24",
+          "gross_return_5d": 0.04963324101648099,
+          "net_return_5d": 0.04863324101648099,
+          "stock_count": 10,
+          "codes": "002230,002466,300015,000786,002027,002460,000963,000002,300033,000001"
+        },
+        {
+          "date": "2024-07-31",
+          "gross_return_5d": -0.03852597813132001,
+          "net_return_5d": -0.039525978131320014,
+          "stock_count": 10,
+          "codes": "000725,002027,002594,000977,002714,300014,000157,002241,002601,000876"
+        },
+        {
+          "date": "2024-08-07",
+          "gross_return_5d": 0.002093085057659372,
+          "net_return_5d": 0.0010930850576593718,
+          "stock_count": 10,
+          "codes": "000100,002027,002475,000063,000725,002601,002049,002241,000001,000338"
+        },
+        {
+          "date": "2024-08-14",
+          "gross_return_5d": 0.0006103343452865562,
+          "net_return_5d": -0.0003896656547134438,
+          "stock_count": 10,
+          "codes": "000938,002049,000100,000063,000977,002475,000338,000333,001979,000002"
+        },
+        {
+          "date": "2024-08-21",
+          "gross_return_5d": -0.02715656715311866,
+          "net_return_5d": -0.02815656715311866,
+          "stock_count": 10,
+          "codes": "000938,000977,000999,002179,000596,002352,002049,000568,002304,300015"
+        }
+      ]
+    }
+  ]
+}

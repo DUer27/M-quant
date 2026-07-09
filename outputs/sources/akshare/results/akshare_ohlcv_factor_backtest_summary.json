@@ -1,0 +1,72 @@
+{
+  "source": "akshare_ohlcv_factor_backtest",
+  "data_policy": "真实 AkShare OHLCV 本地回测；不填补缺失股票；不生成虚构绩效；50股样本不足以直接实盘。",
+  "generated_at": "2026-07-09T11:25:42",
+  "input": "outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv",
+  "rows": 30380,
+  "factor_rows": 27174,
+  "unique_stocks": 50,
+  "unique_dates": 608,
+  "min_stock_history_rows": 598,
+  "max_stock_history_rows": 608,
+  "min_stocks_per_day_required": 30,
+  "factor_count": 9,
+  "factor_result_count": 27,
+  "strategy_result_count": 4,
+  "factor_definitions": [
+    {
+      "id": "ak_volume_price_confirmation",
+      "name": "AkShare量价确认",
+      "direction": "positive",
+      "description": "20日价格趋势、成交量/成交额放大和当日收盘质量共同确认。"
+    },
+    {
+      "id": "ak_trend_quality",
+      "name": "AkShare趋势质量",
+      "direction": "positive",
+      "description": "20日收益、MA20/MA60结构和价格相对MA20位置共同衡量趋势。"
+    },
+    {
+      "id": "ak_low_volatility_quality",
+      "name": "AkShare低波动质量",
+      "direction": "positive",
+      "description": "20日波动、60日回撤越低，防守质量越高。"
+    },
+    {
+      "id": "ak_kline_confirmation",
+      "name": "AkShareK线确认",
+      "direction": "positive",
+      "description": "阳线实体、收盘位置和上影压力衡量单日K线确认度。"
+    },
+    {
+      "id": "ak_crowding_risk",
+      "name": "AkShare拥挤风险",
+      "direction": "negative",
+      "description": "高换手、高量比、短期涨幅和均线过伸共同识别拥挤风险。"
+    },
+    {
+      "id": "ak_volume_trend_quality_combo",
+      "name": "AkShare量价趋势质量组合",
+      "direction": "positive",
+      "description": "量价确认、趋势质量、低波动质量、K线确认减拥挤风险。"
+    },
+    {
+      "id": "ak_defensive_quality_combo",
+      "name": "AkShare防守质量确认组合",
+      "direction": "positive",
+      "description": "低波动质量为核心，叠加趋势和量价确认并扣除拥挤风险。"
+    },
+    {
+      "id": "ak_mean_reversion_quality_combo",
+      "name": "AkShare均值回归质量组合",
+      "direction": "positive",
+      "description": "在核心流动性样本中反向检验趋势/量价过热，寻找低趋势延伸、低量价追高且K线不过强的回归机会。"
+    },
+    {
+      "id": "ak_anti_crowding_reversal_combo",
+      "name": "AkShare反拥挤回归组合",
+      "direction": "positive",
+      "description": "低拥挤、低短线追涨和不过度强K线的反向确认组合。"
+    }
+  ]
+}
