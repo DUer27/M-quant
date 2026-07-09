@@ -3004,21 +3004,62 @@ function isTradeabilityReviewPayload(payload) {
     || payload?.result_type === 'tradeability_review';
 }
 
+function localAshareCode(code) {
+  const text = String(code || '').trim();
+  const match = text.match(/\d{6}/);
+  return match ? match[0] : text;
+}
+
+function sortedUnique(values) {
+  return Array.from(new Set(values.filter(Boolean))).sort();
+}
+
+function assertSameStringSet(actual, expected, label) {
+  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) {
+    throw new Error(`${label} 不匹配：期望 ${expected.join(', ')}，实际 ${actual.join(', ')}。`);
+  }
+}
+
 function normalizeTradeabilityReview(payload, importedAt) {
   if (payload?.source !== akshareLatestSignalTradeabilityReviewSource) {
     throw new Error('交易可行性复核 source 不匹配，不能导入。');
   }
+  const taskPack = readJsonFile(tradeabilityReviewTaskPackPath, null);
+  const target = taskPack?.target || null;
   if (!payload.strategy_id || !payload.signal_date || !payload.decision) {
     throw new Error('交易可行性复核缺少 strategy_id、signal_date 或 decision。');
   }
   if (!Array.isArray(payload.records) || payload.records.length === 0) {
     throw new Error('交易可行性复核必须包含 JoinQuant 输出的 records 明细。');
   }
+  if (target) {
+    if (payload.strategy_id !== target.strategy_id) {
+      throw new Error(`交易可行性复核 strategy_id 与当前任务包不匹配：期望 ${target.strategy_id}，实际 ${payload.strategy_id}。`);
+    }
+    if (dateOnly(payload.signal_date) !== dateOnly(target.signal_date)) {
+      throw new Error(`交易可行性复核 signal_date 与当前任务包不匹配：期望 ${target.signal_date}，实际 ${payload.signal_date}。`);
+    }
+  }
 
   const candidateCount = Number(payload.candidate_count ?? payload.records.length);
   const tradableCount = Number(payload.tradable_count ?? payload.records.filter((row) => row?.tradable).length);
   if (!Number.isFinite(candidateCount) || !Number.isFinite(tradableCount)) {
     throw new Error('交易可行性复核 candidate_count 或 tradable_count 非法。');
+  }
+  if (candidateCount !== payload.records.length) {
+    throw new Error(`交易可行性复核 candidate_count 与 records 数量不一致：${candidateCount} / ${payload.records.length}。`);
+  }
+  if (target) {
+    const expectedCount = Number(target.selected_count ?? target.candidate_count ?? 0);
+    if (Number.isFinite(expectedCount) && expectedCount > 0 && candidateCount !== expectedCount) {
+      throw new Error(`交易可行性复核 candidate_count 与当前任务包不匹配：期望 ${expectedCount}，实际 ${candidateCount}。`);
+    }
+    const expectedCodes = sortedUnique((target.selected_codes || []).map(localAshareCode));
+    const actualCodes = sortedUnique(payload.records.map((row) => localAshareCode(row?.local_code || row?.code)));
+    assertSameStringSet(actualCodes, expectedCodes, '交易可行性复核候选代码集合');
+  }
+  if (tradableCount !== payload.records.filter((row) => row?.tradable).length) {
+    throw new Error('交易可行性复核 tradable_count 与 records 中 tradable=true 数量不一致。');
   }
 
   const allowedDecisions = new Set(['tradeability_review_passed', 'tradeability_review_failed']);

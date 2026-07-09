@@ -1,6 +1,6 @@
 {
   "source": "m_quant_tradeability_review_task_pack",
-  "generated_at": "2026-07-10T01:46:45",
+  "generated_at": "2026-07-10T01:52:03",
   "status": "waiting_for_joinquant_review",
   "data_policy": "只整理已有 AkShare 本地最新信号、运行包和成熟策略矩阵；不调用 JoinQuant，不生成交易可行性、收益、净值、成交或持仓。",
   "target": {
@@ -78,7 +78,14 @@
       "records"
     ],
     "import_endpoint": "/backtest-api/import-results",
-    "after_import_expected_effect": "平台会把复核结果写入 imported-tradeability-reviews.json；只有 decision=tradeability_review_passed 且运行包重建后，akshare_local_switch 才可能从 record_only 进入可观察资金袖。"
+    "after_import_expected_effect": "平台会把复核结果写入 imported-tradeability-reviews.json；只有 decision=tradeability_review_passed 且运行包重建后，akshare_local_switch 才可能从 record_only 进入可观察资金袖。",
+    "strict_import_checks": [
+      "source 必须为 joinquant_akshare_latest_signal_tradeability_review。",
+      "strategy_id 和 signal_date 必须匹配当前任务包目标信号。",
+      "candidate_count 必须等于 records 数量，也必须等于当前任务包 selected_count。",
+      "records 中的 code/local_code 六位代码集合必须与当前任务包 selected_codes 完全一致。",
+      "tradable_count 必须等于 records 中 tradable=true 的数量。"
+    ]
   },
   "steps": [
     "打开 JoinQuant Python3 研究环境。",
