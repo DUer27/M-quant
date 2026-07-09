@@ -1,6 +1,6 @@
 # 成熟策略推进矩阵
 
-- 生成时间：2026-07-10T01:46:45
+- 生成时间：2026-07-10T02:12:21
 - 目标：至少 2 条完整回测且可进入模拟观察的策略。
 - 当前：1 条。
 - 状态：`not_met` / 尚未满足两条成熟策略目标
@@ -24,6 +24,28 @@
 | K线辅助确认策略 | controlled_route_candidate | 分层路线通过但非独立资金袖 | 否 | 26.24% | -7.31% | 1.27 | 作为控制器组件、候选池或参数来源；不要重复计算独立资金袖数量。 |
 | 主力资金广度K线确认策略 v0 | controlled_route_candidate | 分层路线通过但非独立资金袖 | 否 | 20.54% | -12.01% | 1.28 | 作为控制器组件、候选池或参数来源；不要重复计算独立资金袖数量。 |
 | AkShare本地高低波动切换策略 v1 | maturity_gap | 缺聚宽准入复核 | 否 | NA | NA | NA | 先运行并回填最新信号交易可行性复核；再运行 AkShare 强分层候选 JoinQuant 批量复核，决定是否升级第二资金袖。 |
+
+## 独立资金袖候选
+
+- 准入：1
+- 阻塞候选：13
+
+| 候选 | 决策 | 计入目标 | 缺口 |
+| --- | --- | --- | --- |
+| 市场状态切换策略 v1 | 已准入独立资金袖 | 是 |  |
+| AkShare本地高低波动切换策略 v1 | 待交易可行性复核 | 否 | 最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。 |
+| JQ质量利润流动性策略 v1 | 组件重叠，仅监控 | 否 | 与市场状态切换策略共享高波动组件，不能作为独立资金袖重复满仓。 |
+| K线辅助确认策略 | 路线候选，需独立性复核 | 否 | 该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。 |
+| K线辅助确认策略 | 路线候选，需独立性复核 | 否 | 该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。 |
+| 核心量价趋势策略 v1 | 路线候选，需独立性复核 | 否 | 该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。 |
+| K线辅助确认策略 | 路线候选，需独立性复核 | 否 | 该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。 |
+| 主力资金广度K线确认策略 v0 | 路线候选，需独立性复核 | 否 | 该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。 |
+| akshare_candidate::ak_high_vol_mean_reversion_mid_liquidity | 待交易可行性复核 | 否 | 本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。 |
+| akshare_candidate::ak_low_vol_defensive_mid_liquidity | 待交易可行性复核 | 否 | 本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。 |
+| akshare_candidate::ak_low_vol_volume_trend_mid_liquidity | 待交易可行性复核 | 否 | 本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。 |
+| akshare_candidate::ak_high_vol_anti_crowding_mid_liquidity | 待交易可行性复核 | 否 | 本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。 |
+| akshare_candidate::ak_low_vol_contraction_breakout_mid_liquidity | 待交易可行性复核 | 否 | 本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。 |
+| akshare_candidate::ak_low_vol_trend_pullback_mid_liquidity | 待交易可行性复核 | 否 | 本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。 |
 
 ## 下一步
 

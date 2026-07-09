@@ -48,6 +48,7 @@ const strategyMaturityMatrixPath = outputPath('paper-watch', 'results', 'strateg
 const tradeabilityReviewTaskPackPath = outputPath('paper-watch', 'results', 'tradeability_review_task_pack_20260710.json');
 const paperWatchDerivedScriptPaths = [
   outputPath('paper-watch', 'scripts', 'build_paper_watch_operations_pack.py'),
+  outputPath('paper-watch', 'scripts', 'audit_independent_sleeve_candidates.py'),
   outputPath('paper-watch', 'scripts', 'build_strategy_maturity_matrix.py'),
   outputPath('paper-watch', 'scripts', 'build_tradeability_review_task_pack.py'),
 ];
