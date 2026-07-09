@@ -44,6 +44,7 @@ const paperWatchReadinessAuditPath = outputPath('strategies', 'joinquant', 'pape
 const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_independence_audit_20260709.json');
 const paperWatchOperationsPackPath = outputPath('paper-watch', 'results', 'paper_watch_operations_pack_20260709.json');
 const strategyMaturityMatrixPath = outputPath('paper-watch', 'results', 'strategy_maturity_matrix_20260710.json');
+const tradeabilityReviewTaskPackPath = outputPath('paper-watch', 'results', 'tradeability_review_task_pack_20260710.json');
 const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_readiness_audit_20260709.json');
 const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_execution_pack_20260709.json');
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
@@ -931,6 +932,7 @@ function buildPaperWatchRoutes() {
   const akshareRegimeSwitch = readJsonFile(akshareRegimeSwitchPaperWatchPath, null);
   const akshareRegimeSwitchRobustness = readJsonFile(akshareRegimeSwitchRobustnessAuditPath, null);
   const strategyMaturityMatrix = readJsonFile(strategyMaturityMatrixPath, null);
+  const tradeabilityReviewTaskPack = readJsonFile(tradeabilityReviewTaskPackPath, null);
   const tradeabilityReviews = readImportedTradeabilityReviews();
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
@@ -1058,6 +1060,7 @@ function buildPaperWatchRoutes() {
       }
       : null,
     maturityMatrix: strategyMaturityMatrix,
+    tradeabilityReviewTaskPack,
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
     readinessCounts: recommendedReadinessCounts,
     readinessDecisionCounts: readinessCounts,
@@ -4865,6 +4868,15 @@ async function handleApi(req, res, pathname) {
       entries: [],
     });
     sendJson(res, matrix);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/tradeability-review-task-pack') {
+    const taskPack = readJsonFile(tradeabilityReviewTaskPackPath, {
+      source: 'm_quant_tradeability_review_task_pack',
+      status: 'missing',
+    });
+    sendJson(res, taskPack);
     return true;
   }
 
