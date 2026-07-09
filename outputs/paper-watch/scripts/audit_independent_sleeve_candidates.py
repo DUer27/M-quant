@@ -56,10 +56,30 @@ def decision_name(decision: str) -> str:
         "eligible_primary_sleeve": "已准入独立资金袖",
         "blocked_pending_tradeability": "待交易可行性复核",
         "monitor_only_component_overlap": "组件重叠，仅监控",
+        "mutually_exclusive_candidate_needs_promotion": "互斥候选，待晋级确认",
         "route_candidate_needs_independence_review": "路线候选，需独立性复核",
         "rejected_or_rework": "暂缓或重做",
     }
     return names.get(decision, decision)
+
+
+def is_medium_vol_small_cap_core(route: dict) -> bool:
+    return (
+        route.get("strategy_id") == "core_volume_price_trend_v1"
+        and route.get("market_regime") == "medium_volatility"
+        and route.get("market_cap_bucket") == "small_cap"
+    )
+
+
+def controlled_gate_checks(route: dict) -> dict:
+    return {
+        "sample_dates": int(route.get("sample_dates") or 0) >= 30,
+        "strategy_return": float(route.get("strategy_return") or 0) >= 0.20,
+        "annual_return": float(route.get("annual_return") or 0) >= 0.20,
+        "max_drawdown": float(route.get("max_drawdown") or -1) >= -0.15,
+        "sharpe": float(route.get("sharpe") or 0) >= 1.20,
+        "win_rate": float(route.get("win_rate") or 0) >= 0.52,
+    }
 
 
 def build_candidates() -> dict:
@@ -122,6 +142,40 @@ def build_candidates() -> dict:
     for route in maturity.get("controlled_routes", []):
         strategy_id = str(route.get("strategy_id"))
         if strategy_id in used_keys or strategy_id == "regime_switch_quality_kline_v1":
+            continue
+        if is_medium_vol_small_cap_core(route):
+            checks = controlled_gate_checks(route)
+            candidates.append({
+                "candidate_id": f"{route.get('strategy_id')}::{route.get('layer')}",
+                "strategy_id": route.get("strategy_id"),
+                "strategy_name": route.get("strategy_name"),
+                "evidence_system": "JoinQuant",
+                "role": "mutually_exclusive_controlled_route_candidate",
+                "layer": route.get("layer"),
+                "market_regime": route.get("market_regime"),
+                "market_cap_bucket": route.get("market_cap_bucket"),
+                "decision": "mutually_exclusive_candidate_needs_promotion",
+                "decision_name": decision_name("mutually_exclusive_candidate_needs_promotion"),
+                "counts_as_independent_sleeve": False,
+                "can_start_observation": False,
+                "metrics": metric_block(route),
+                "gate_checks": checks,
+                "independence_evidence": {
+                    "primary_controller_medium_volatility_logic": "cash_watch",
+                    "component_overlap": False,
+                    "reason": "市场状态切换策略 v1 在中波动环境默认空仓；该路线只允许 medium_volatility/small_cap，因此具备互斥晋级潜力。",
+                },
+                "blocked_reasons": [
+                    "已找到与主控制器市场状态互斥的真实 JoinQuant 分层路线，但尚未写入模拟观察运行包。",
+                    "缺少最新一期中波动/小市值候选信号、执行配置和人工晋级确认，因此暂不计入两条成熟策略目标。",
+                ],
+                "required_next_evidence": [
+                    "确认是否允许把该受控分层路线升级为第二模拟观察资金袖。",
+                    "补充最新一期候选池/入选股票与中波动/小市值状态校验。",
+                    "写入运行包后仍只能在 medium_volatility/small_cap 条件满足时开仓。",
+                ],
+                "data_policy": route.get("data_policy"),
+            })
             continue
         candidates.append({
             "candidate_id": f"{route.get('strategy_id')}::{route.get('layer')}",

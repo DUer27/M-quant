@@ -4,6 +4,15 @@
 
 ## 2026-07-10
 
+### Identify mutually exclusive second-sleeve candidate
+- 在独立资金袖候选审计中细分 `核心量价趋势策略 v1 / 中波动/小市值`：
+  - 真实 JoinQuant 分层交易回测：样本 45、收益 43.30%、最大回撤 -9.34%、Sharpe 1.39、胜率 55.56%。
+  - 与主控制器具备互斥基础：`市场状态切换策略 v1` 在中波动环境为 `cash_watch`，该候选只允许 `medium_volatility/small_cap`。
+  - 当前结论为 `互斥候选，待晋级确认`，不计入两条成熟策略目标。
+- 成熟策略推进矩阵的第一优先级调整为：确认是否将该路线晋级为第二模拟观察资金袖，并补最新信号和执行配置。
+- Data honesty note: 本次只改变候选分类和下一步优先级；没有把该路线写入运行包，没有生成收益、净值、成交、持仓或交易可行性结论。
+- Detail log: `logs/2026-07-10-mutually-exclusive-sleeve-candidate.md`
+
 ### Add independent sleeve candidate audit
 - 新增 `独立资金袖候选审计`，专门判断哪些策略/路线能计入“两条成熟可模拟策略”目标。
 - 当前真实结论保持严格：

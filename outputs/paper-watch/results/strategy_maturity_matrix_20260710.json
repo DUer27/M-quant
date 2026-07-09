@@ -1,6 +1,6 @@
 {
   "source": "m_quant_strategy_maturity_matrix",
-  "generated_at": "2026-07-10T02:12:21",
+  "generated_at": "2026-07-10T02:28:28",
   "target_ready_strategy_count": 2,
   "ready_strategy_count": 1,
   "goal_status": "not_met",
@@ -151,10 +151,10 @@
       "id": "core_volume_price_trend_v1::中波动/小市值",
       "strategy_id": "core_volume_price_trend_v1",
       "strategy_name": "核心量价趋势策略 v1",
-      "category": "controlled_route_candidate",
+      "category": "mutually_exclusive_route_candidate",
       "evidence_system": "JoinQuant",
-      "decision": "route_passed_but_not_independent_sleeve",
-      "decision_name": "分层路线通过但非独立资金袖",
+      "decision": "mutually_exclusive_candidate_needs_promotion",
+      "decision_name": "互斥候选，待晋级确认",
       "counts_toward_two_strategy_goal": false,
       "can_start_observation": false,
       "operational_status": "candidate_route",
@@ -168,10 +168,16 @@
       "sharpe": 1.3930551667201772,
       "win_rate": 0.5555555555555556,
       "blocked_reasons": [
-        "已被市场状态切换控制器吸收或仍需独立性审计，不能直接算作第二个独立成熟策略。"
+        "已找到与主控制器市场状态互斥的真实 JoinQuant 分层路线，但尚未写入模拟观察运行包。",
+        "缺少最新一期中波动/小市值候选信号、执行配置和人工晋级确认，因此暂不计入两条成熟策略目标。"
       ],
-      "next_action": "作为控制器组件、候选池或参数来源；不要重复计算独立资金袖数量。",
-      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+      "next_action": "补最新信号、执行配置和晋级确认；通过前不计入第二成熟策略。",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "independence_evidence": {
+        "primary_controller_medium_volatility_logic": "cash_watch",
+        "component_overlap": false,
+        "reason": "市场状态切换策略 v1 在中波动环境默认空仓；该路线只允许 medium_volatility/small_cap，因此具备互斥晋级潜力。"
+      }
     },
     {
       "id": "kline_assisted_confirmation::低波动/中市值",
@@ -392,12 +398,12 @@
         "strategy_id": "core_volume_price_trend_v1",
         "strategy_name": "核心量价趋势策略 v1",
         "evidence_system": "JoinQuant",
-        "role": "controlled_route_candidate",
+        "role": "mutually_exclusive_controlled_route_candidate",
         "layer": "中波动/小市值",
         "market_regime": "medium_volatility",
         "market_cap_bucket": "small_cap",
-        "decision": "route_candidate_needs_independence_review",
-        "decision_name": "路线候选，需独立性复核",
+        "decision": "mutually_exclusive_candidate_needs_promotion",
+        "decision_name": "互斥候选，待晋级确认",
         "counts_as_independent_sleeve": false,
         "can_start_observation": false,
         "metrics": {
@@ -408,12 +414,27 @@
           "sharpe": 1.3930551667201772,
           "win_rate": 0.5555555555555556
         },
+        "gate_checks": {
+          "sample_dates": true,
+          "strategy_return": true,
+          "annual_return": true,
+          "max_drawdown": true,
+          "sharpe": true,
+          "win_rate": true
+        },
+        "independence_evidence": {
+          "primary_controller_medium_volatility_logic": "cash_watch",
+          "component_overlap": false,
+          "reason": "市场状态切换策略 v1 在中波动环境默认空仓；该路线只允许 medium_volatility/small_cap，因此具备互斥晋级潜力。"
+        },
         "blocked_reasons": [
-          "该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。"
+          "已找到与主控制器市场状态互斥的真实 JoinQuant 分层路线，但尚未写入模拟观察运行包。",
+          "缺少最新一期中波动/小市值候选信号、执行配置和人工晋级确认，因此暂不计入两条成熟策略目标。"
         ],
         "required_next_evidence": [
-          "补充与主控制器的组件重叠、日期重叠、持仓重叠和市场状态互斥检查。",
-          "若重叠明显，只能作为组件或备选，不计入第二成熟策略。"
+          "确认是否允许把该受控分层路线升级为第二模拟观察资金袖。",
+          "补充最新一期候选池/入选股票与中波动/小市值状态校验。",
+          "写入运行包后仍只能在 medium_volatility/small_cap 条件满足时开仓。"
         ],
         "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
       },
@@ -639,16 +660,21 @@
   "next_actions": [
     {
       "priority": 1,
+      "action": "确认是否将核心量价趋势策略 v1 的中波动/小市值路线晋级为第二模拟观察资金袖。",
+      "reason": "该路线来自 JoinQuant 真实分层交易回测，且与主控制器中波动空仓逻辑互斥；晋级前仍需最新信号和执行配置。"
+    },
+    {
+      "priority": 2,
       "action": "运行并回填 AkShare 最新信号 JoinQuant 交易可行性复核脚本。",
       "reason": "这是把 AkShare 本地切换策略从 record_only 升级为可观察资金袖的最近阻塞项。"
     },
     {
-      "priority": 2,
+      "priority": 3,
       "action": "运行 AkShare 强分层候选 JoinQuant 批量复核并回填 records。",
       "reason": "用于判断本地 6 条强候选能否在 JoinQuant OHLCV/valuation 口径下继续保留。"
     },
     {
-      "priority": 3,
+      "priority": 4,
       "action": "对 jq_controller 开始真实模拟观察账本记录。",
       "reason": "当前唯一已准入资金袖需要样本外观察数据，而不是继续只看历史回测。"
     }

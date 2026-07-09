@@ -1,6 +1,6 @@
 {
   "source": "m_quant_independent_sleeve_candidate_audit",
-  "generated_at": "2026-07-10T02:10:24",
+  "generated_at": "2026-07-10T02:25:06",
   "data_policy": "只读取已审计 JoinQuant、AkShare 与用户导入复核文件；不生成收益、净值、成交、持仓或交易可行性结论。",
   "target_independent_sleeves": 2,
   "eligible_independent_sleeve_count": 1,
@@ -150,12 +150,12 @@
       "strategy_id": "core_volume_price_trend_v1",
       "strategy_name": "核心量价趋势策略 v1",
       "evidence_system": "JoinQuant",
-      "role": "controlled_route_candidate",
+      "role": "mutually_exclusive_controlled_route_candidate",
       "layer": "中波动/小市值",
       "market_regime": "medium_volatility",
       "market_cap_bucket": "small_cap",
-      "decision": "route_candidate_needs_independence_review",
-      "decision_name": "路线候选，需独立性复核",
+      "decision": "mutually_exclusive_candidate_needs_promotion",
+      "decision_name": "互斥候选，待晋级确认",
       "counts_as_independent_sleeve": false,
       "can_start_observation": false,
       "metrics": {
@@ -166,12 +166,27 @@
         "sharpe": 1.3930551667201772,
         "win_rate": 0.5555555555555556
       },
+      "gate_checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "independence_evidence": {
+        "primary_controller_medium_volatility_logic": "cash_watch",
+        "component_overlap": false,
+        "reason": "市场状态切换策略 v1 在中波动环境默认空仓；该路线只允许 medium_volatility/small_cap，因此具备互斥晋级潜力。"
+      },
       "blocked_reasons": [
-        "该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。"
+        "已找到与主控制器市场状态互斥的真实 JoinQuant 分层路线，但尚未写入模拟观察运行包。",
+        "缺少最新一期中波动/小市值候选信号、执行配置和人工晋级确认，因此暂不计入两条成熟策略目标。"
       ],
       "required_next_evidence": [
-        "补充与主控制器的组件重叠、日期重叠、持仓重叠和市场状态互斥检查。",
-        "若重叠明显，只能作为组件或备选，不计入第二成熟策略。"
+        "确认是否允许把该受控分层路线升级为第二模拟观察资金袖。",
+        "补充最新一期候选池/入选股票与中波动/小市值状态校验。",
+        "写入运行包后仍只能在 medium_volatility/small_cap 条件满足时开仓。"
       ],
       "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
     },
