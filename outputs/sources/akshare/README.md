@@ -99,6 +99,25 @@
 
 当前 6 条强分层策略通过本地年度、前后半段、2025-07-01 后样本外、回撤和 Sharpe 门槛，状态为 `joinquant_review_candidate`。这只表示可以进入 JoinQuant 复核，不代表已经可以实盘或模拟盘。
 
+## 本地模拟观察严格审计
+
+```bash
+/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 \
+  outputs/sources/akshare/scripts/audit_akshare_paper_watch_readiness.py
+```
+
+当前产物：
+
+- `outputs/sources/akshare/results/akshare_paper_watch_readiness_audit_20260709.json`
+- `outputs/_docs/akshare-paper-watch-readiness-audit-20260709.md`
+
+当前严格审计结论：
+
+- 6 条 AkShare 本地路线均通过 `ready_local_paper_watch`。
+- 最优 Sharpe 路线：`AkShare低波动收缩突破-中流动性观察策略`，39 次调仓，收益 84.95%，最大回撤 -4.19%，Sharpe 3.23，2.0x 成本压力收益 77.98%。
+- 该结果只证明 AkShare 本地真实 OHLCV 路线可进入受控模拟观察，不等同于 JoinQuant 原生实测；后续仍需补行业暴露、市值、涨跌停/停牌、JoinQuant 复核和样本外跟踪。
+- 平台 `模拟观察清单` 已接入这些本地路线，并单独标记 `AkShare本地OHLCV`，不得和 JoinQuant 证据混用。
+
 ## 新因子探测
 
 - `scripts/probe_ohlcv_factor_candidates.py`：使用本地真实 AkShare OHLCV 历史探测新增候选因子。

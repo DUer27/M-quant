@@ -258,11 +258,13 @@ function renderPaperWatchRoutes(pack) {
   const routes = Array.isArray(pack.routes) ? pack.routes : [];
   const counts = pack.readinessCounts || {};
   const independence = pack.independence || {};
+  const readyCount = Number(pack.readyRouteCount ?? ((counts.ready_controlled_paper_watch || 0) + (counts.ready_local_paper_watch || 0)));
+  const conditionalCount = Number(pack.conditionalRouteCount ?? ((counts.conditional_paper_watch || 0) + (counts.conditional_local_paper_watch || 0)));
   const ready = pack.readinessStatus === 'ready_controlled_paper_watch';
   const conditional = pack.readinessStatus === 'conditional_paper_watch';
   if (elements.paperWatchStatus) {
     elements.paperWatchStatus.textContent = ready || conditional
-      ? `${counts.ready_controlled_paper_watch || 0}就绪/${counts.conditional_paper_watch || 0}条件`
+      ? `${readyCount || 0}就绪/${conditionalCount || 0}条件`
       : '未就绪';
     elements.paperWatchStatus.className = `tag ${ready ? 'good' : conditional ? 'pending' : 'watch'}`;
   }
@@ -279,21 +281,24 @@ function renderPaperWatchRoutes(pack) {
       const execution = route.execution || {};
       const readiness = route.readiness || {};
       const failedChecks = (readiness.checks || []).filter((item) => !item.passed);
-      const readinessTone = readiness.decision === 'ready_controlled_paper_watch'
+      const readinessTone = readiness.decision === 'ready_controlled_paper_watch' || readiness.decision === 'ready_local_paper_watch'
         ? 'good'
         : readiness.decision === 'not_ready'
           ? 'watch'
           : 'pending';
+      const evidenceSystem = route.evidence_system || (route.is_local_backtest ? 'AkShare本地OHLCV' : 'JoinQuant');
       return `
         <article class="paper-watch-item">
           <div>
             <strong>${escapeHtml(route.strategy_name || route.strategy_id)}</strong>
             <span class="tag ${readinessTone}">${escapeHtml(readiness.decision || route.layer || '-')}</span>
+            <span class="tag neutral">${escapeHtml(evidenceSystem)}</span>
           </div>
           <div class="paper-watch-metrics">
             <span>收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>
             <span>回撤 ${(Number(route.max_drawdown || 0) * 100).toFixed(2)}%</span>
             <span>Sharpe ${Number(route.sharpe || 0).toFixed(2)}</span>
+            ${route.avg_selected_count ? `<span>平均入选 ${Number(route.avg_selected_count || 0).toFixed(0)}</span>` : ''}
           </div>
           <p>${escapeHtml(route.paper_scope || '')}</p>
           ${readiness.decision_reason ? `<p>${escapeHtml(readiness.decision_reason)}</p>` : ''}
@@ -301,7 +306,10 @@ function renderPaperWatchRoutes(pack) {
             <summary>执行与审计规则</summary>
             <div class="paper-watch-rules">
               <strong>开仓边界</strong>
-              ${renderTextList(execution.entry_gate || [])}
+              ${renderTextList(execution.entry_gate || [
+                route.paper_scope || '只允许在本路线审计通过的分层和股票池内观察',
+                route.is_local_backtest ? '本路线来自 AkShare 本地真实OHLCV回测，需独立记录样本外净值并等待后续 JoinQuant/模拟盘复核。' : '',
+              ].filter(Boolean))}
               <strong>就绪检查</strong>
               ${renderTextList(failedChecks.length
                 ? failedChecks.map((item) => `${item.name}: ${item.detail}`)

@@ -143,3 +143,11 @@
 - 生成 `paper_watch_independence_audit_20260709.json` 和 `paper-watch-independence-audit-20260709.md`。
 - 结论：当前 2 条 ready 推荐路线共享 `JQ质量利润流动性策略 v1` 高波动组件，不能作为两笔独立资金同时满仓；独立资金袖数量为 1。
 - 运用建议：以 `市场状态切换策略 v1` 作为组合控制器；`JQ质量利润流动性策略 v1 - 高波动` 作为组件监控/备选。平台总览已接入独立性提示和重叠警告。
+
+## 追加：AkShare 本地模拟观察严格审计
+
+- 新增 `outputs/sources/akshare/scripts/audit_akshare_paper_watch_readiness.py`，只读取 `akshare_strategy_candidate_validation.json` 中真实 AkShare OHLCV 候选交易记录，重算 1.5x/2.0x 成本压力、年度分段、前后半段、2025-07-01 后样本外和近期触发。
+- 生成 `outputs/sources/akshare/results/akshare_paper_watch_readiness_audit_20260709.json` 与 `outputs/_docs/akshare-paper-watch-readiness-audit-20260709.md`。
+- 严格门槛：调仓次数 >= 30，收益 >= 20%，Sharpe >= 1.2，最大回撤 >= -15%，胜率 >= 55%，平均入选 >= 15，近 2026 年至少 3 次触发，1.5x/2.0x 成本压力收益为正，年度分段和样本外收益为正。
+- 审计结果：6 条 AkShare 本地路线全部为 `ready_local_paper_watch`。其中 `AkShare低波动收缩突破-中流动性观察策略` Sharpe 3.23、收益 84.95%、最大回撤 -4.19%、2.0x 成本压力收益 77.98%。
+- 平台 `模拟观察清单` 已接入 AkShare 本地路线，并单独标记 `AkShare本地OHLCV`。这是第二类独立证据源，可作为寻找第二个独立模拟观察策略的候选，但仍需继续补 JoinQuant 复核、行业暴露、市值、涨跌停/停牌约束。
