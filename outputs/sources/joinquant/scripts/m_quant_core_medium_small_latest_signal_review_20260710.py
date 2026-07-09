@@ -27,6 +27,7 @@ SLEEVE_ID = "jq_medium_vol_small_cap_core"
 INDEX_CODE = "000300.XSHG"
 PRICE_START = "2022-12-01"
 SIGNAL_END_DATE = None
+SIGNAL_LOOKBACK_DAYS = 10
 TOP_N = 30
 MIN_CROSS_SECTION = 80
 MIN_SELECTED_COUNT = 10
@@ -89,6 +90,16 @@ def latest_trade_day():
     if not days:
         raise ValueError("无法取得最新交易日。")
     return pd.Timestamp(days[-1]).normalize()
+
+
+def candidate_signal_days():
+    if SIGNAL_END_DATE:
+        days = list(get_trade_days(end_date=SIGNAL_END_DATE, count=SIGNAL_LOOKBACK_DAYS))
+    else:
+        days = list(get_trade_days(count=SIGNAL_LOOKBACK_DAYS))
+    if not days:
+        raise ValueError("无法取得候选交易日。")
+    return [pd.Timestamp(day).normalize() for day in reversed(days)]
 
 
 def classify_market_regime(signal_date):
@@ -321,8 +332,7 @@ def market_cap_bucketize(frame):
     return out
 
 
-def review_latest_signal():
-    signal_date = latest_trade_day()
+def review_for_signal_date(signal_date):
     regime = classify_market_regime(signal_date)
     factors = market_cap_bucketize(build_factor_table(signal_date))
     entry = factors[
@@ -388,6 +398,31 @@ def review_latest_signal():
         "records": records,
         "data_policy": "JoinQuant 真实 OHLCV、沪深300成分股、valuation.market_cap 和当日交易状态代理；不生成未来收益或模拟盘结果。",
     }
+
+
+def review_latest_signal():
+    attempts = []
+    for signal_date in candidate_signal_days():
+        try:
+            output = review_for_signal_date(signal_date)
+            output["latest_available_signal_date"] = output["signal_date"]
+            output["attempted_signal_dates"] = attempts + [{
+                "signal_date": str(pd.Timestamp(signal_date).date()),
+                "status": "used",
+            }]
+            if SIGNAL_END_DATE is None and output["attempted_signal_dates"][0]["signal_date"] != output["signal_date"]:
+                output["decision_reason"] = (
+                    output["decision_reason"]
+                    + " 最新交易日数据不完整，已回退到 JoinQuant valuation/OHLCV 均可用的最近交易日。"
+                )
+            return output
+        except Exception as exc:
+            attempts.append({
+                "signal_date": str(pd.Timestamp(signal_date).date()),
+                "status": "skipped",
+                "reason": str(exc),
+            })
+    raise ValueError("最近 %d 个交易日都无法形成核心量价最新信号复核：%s" % (SIGNAL_LOOKBACK_DAYS, attempts))
 
 
 print(json.dumps(review_latest_signal(), ensure_ascii=False, indent=2))

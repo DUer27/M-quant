@@ -1,16 +1,16 @@
 # 核心量价中波动小市值晋级任务包
 
-- 生成时间：2026-07-10T02:59:42
-- 状态：`waiting_for_joinquant_latest_signal_review`
+- 生成时间：2026-07-10T03:12:42
+- 状态：`signal_not_ready_imported`
 - 数据原则：只生成 JoinQuant 最新信号复核任务；不生成收益、净值、成交、持仓、交易可行性或模拟盘结果。
-- 已导入复核：0
+- 已导入复核：1
 
 ## 目标候选
 
 - 资金袖：`jq_medium_vol_small_cap_core`
 - 策略：核心量价趋势策略 v1
 - 分层：中波动/小市值
-- 当前决策：互斥候选，待晋级确认
+- 当前决策：最新信号未通过
 - 历史收益：43.30%
 - 历史回撤：-9.34%
 - Sharpe：1.3930551667201772
@@ -23,6 +23,13 @@
 - `required_market_cap_bucket`：small_cap
 - `min_selected_count`：10
 - `after_pass_next_action`：再写入模拟观察运行包；写入前仍不计入 2/2 成熟策略目标。
+
+## 最新导入复核
+
+- 日期：2026-07-09
+- 结论：`promotion_signal_not_ready`
+- 市场状态：high_volatility
+- 入选数量：7
 
 ## 步骤
 

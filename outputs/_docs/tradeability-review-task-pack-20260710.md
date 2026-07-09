@@ -1,7 +1,7 @@
 # JoinQuant 交易可行性复核任务包
 
-- 生成时间：2026-07-10T03:00:03
-- 状态：`waiting_for_joinquant_review`
+- 生成时间：2026-07-10T03:12:42
+- 状态：`review_passed`
 - 数据原则：只整理已有 AkShare 本地最新信号、运行包和成熟策略矩阵；不调用 JoinQuant，不生成交易可行性、收益、净值、成交或持仓。
 
 ## 目标信号
@@ -15,9 +15,8 @@
 
 ## 当前阻塞
 
-- 运行状态：`ready_local_switch_pending_tradeability_review`
-- 可进入观察：False
-- 阻塞原因：最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。
+- 运行状态：`ready_for_controlled_paper_watch`
+- 可进入观察：True
 
 ## 执行步骤
 

@@ -1,10 +1,10 @@
 {
   "source": "m_quant_strategy_maturity_matrix",
-  "generated_at": "2026-07-10T02:59:52",
+  "generated_at": "2026-07-10T03:12:42",
   "target_ready_strategy_count": 2,
-  "ready_strategy_count": 1,
-  "goal_status": "not_met",
-  "goal_status_name": "尚未满足两条成熟策略目标",
+  "ready_strategy_count": 2,
+  "goal_status": "target_met",
+  "goal_status_name": "已满足两条成熟策略目标",
   "data_policy": "只读取已审计 JoinQuant 策略结果、模拟观察运行包、AkShare 本地稳健性结果和用户导入的交易复核；不生成收益、净值、成交、持仓或交易可行性结论。",
   "inputs": {
     "operations_pack": "outputs/paper-watch/results/paper_watch_operations_pack_20260709.json",
@@ -21,18 +21,15 @@
     "joinquant_strategy_count": 5,
     "joinquant_controlled_route_count": 9,
     "joinquant_independent_capital_sleeves": 1,
-    "eligible_independent_sleeve_count": 1,
-    "blocked_independent_sleeve_candidate_count": 13,
-    "operations_ready_sleeve_count": 1,
+    "eligible_independent_sleeve_count": 2,
+    "blocked_independent_sleeve_candidate_count": 12,
+    "operations_ready_sleeve_count": 2,
     "operations_blocked_sleeve_count": 1,
     "akshare_awaiting_joinquant_candidate_count": 6,
-    "tradeability_review_count": 0,
-    "core_medium_small_signal_review_count": 0
+    "tradeability_review_count": 1,
+    "core_medium_small_signal_review_count": 1
   },
-  "blockers": [
-    "独立可观察资金袖只有 1 个，目标为 2 个。",
-    "尚未导入任何 JoinQuant 最新信号复核 JSON。"
-  ],
+  "blockers": [],
   "entries": [
     {
       "id": "jq_controller",
@@ -56,26 +53,47 @@
       "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。"
     },
     {
+      "id": "jq_medium_vol_small_cap_core",
+      "strategy_id": "core_volume_price_trend_v1",
+      "strategy_name": "核心量价趋势策略 v1",
+      "category": "paper_watch_capital_sleeve",
+      "evidence_system": "JoinQuant historical route + imported latest signal review",
+      "decision": "blocked_before_paper_watch",
+      "decision_name": "准入阻塞",
+      "counts_toward_two_strategy_goal": false,
+      "can_start_observation": false,
+      "operational_status": "blocked_by_latest_signal_review",
+      "role": "mutually_exclusive_medium_volatility_small_cap_sleeve",
+      "sample_dates": 45,
+      "strategy_return": 0.4330085735791378,
+      "max_drawdown": -0.09339761818584269,
+      "sharpe": 1.3930551667201772,
+      "win_rate": 0.5555555555555556,
+      "blocked_reasons": [
+        "已导入核心量价中波动/小市值最新信号复核，但未达到 promotion_signal_ready 门槛。"
+      ],
+      "next_action": "补齐 blocked_reasons 中列出的准入证据后再允许 planned_weight 大于 0。",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
       "id": "akshare_local_switch",
       "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
       "strategy_name": "AkShare本地高低波动切换策略 v1",
       "category": "paper_watch_capital_sleeve",
       "evidence_system": "AkShare local OHLCV",
-      "decision": "blocked_before_paper_watch",
-      "decision_name": "准入阻塞",
-      "counts_toward_two_strategy_goal": false,
-      "can_start_observation": false,
-      "operational_status": "ready_local_switch_pending_tradeability_review",
+      "decision": "ready_for_paper_watch",
+      "decision_name": "可进入模拟观察",
+      "counts_toward_two_strategy_goal": true,
+      "can_start_observation": true,
+      "operational_status": "ready_for_controlled_paper_watch",
       "role": "local_independent_candidate",
       "sample_dates": 72,
       "strategy_return": 1.740866685270742,
       "max_drawdown": -0.06597592399323748,
       "sharpe": 3.14203779176307,
       "win_rate": 0.6805555555555556,
-      "blocked_reasons": [
-        "最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。"
-      ],
-      "next_action": "补齐 blocked_reasons 中列出的准入证据后再允许 planned_weight 大于 0。",
+      "blocked_reasons": [],
+      "next_action": "开始真实模拟观察账本记录，并按运行包暂停规则监控。",
       "data_policy": "只组合 AkShare 本地真实 OHLCV 已生成的执行组件 trade_records；不新增收益、不扩展未审计分层、不伪造交易状态。"
     },
     {
@@ -148,38 +166,6 @@
       ],
       "next_action": "作为控制器组件、候选池或参数来源；不要重复计算独立资金袖数量。",
       "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
-    },
-    {
-      "id": "core_volume_price_trend_v1::中波动/小市值",
-      "strategy_id": "core_volume_price_trend_v1",
-      "strategy_name": "核心量价趋势策略 v1",
-      "category": "mutually_exclusive_route_candidate",
-      "evidence_system": "JoinQuant",
-      "decision": "mutually_exclusive_candidate_needs_promotion",
-      "decision_name": "互斥候选，待晋级确认",
-      "counts_toward_two_strategy_goal": false,
-      "can_start_observation": false,
-      "operational_status": "candidate_route",
-      "layer": "中波动/小市值",
-      "market_regime": "medium_volatility",
-      "market_cap_bucket": "small_cap",
-      "sample_dates": 45,
-      "strategy_return": 0.4330085735791378,
-      "annual_return": 0.49623098235046603,
-      "max_drawdown": -0.09339761818584269,
-      "sharpe": 1.3930551667201772,
-      "win_rate": 0.5555555555555556,
-      "blocked_reasons": [
-        "已找到与主控制器市场状态互斥的真实 JoinQuant 分层路线，但尚未写入模拟观察运行包。",
-        "缺少最新一期中波动/小市值候选信号、执行配置和人工晋级确认，因此暂不计入两条成熟策略目标。"
-      ],
-      "next_action": "补最新信号、执行配置和晋级确认；通过前不计入第二成熟策略。",
-      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
-      "independence_evidence": {
-        "primary_controller_medium_volatility_logic": "cash_watch",
-        "component_overlap": false,
-        "reason": "市场状态切换策略 v1 在中波动环境默认空仓；该路线只允许 medium_volatility/small_cap，因此具备互斥晋级潜力。"
-      }
     },
     {
       "id": "kline_assisted_confirmation::低波动/中市值",
@@ -257,9 +243,9 @@
   ],
   "independent_sleeve_candidate_audit": {
     "source": "m_quant_independent_sleeve_candidate_audit",
-    "goal_status": "not_met",
-    "eligible_independent_sleeve_count": 1,
-    "blocked_candidate_count": 13,
+    "goal_status": "target_met",
+    "eligible_independent_sleeve_count": 2,
+    "blocked_candidate_count": 12,
     "candidates": [
       {
         "candidate_id": "jq_controller",
@@ -285,15 +271,42 @@
         "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。"
       },
       {
+        "candidate_id": "jq_medium_vol_small_cap_core",
+        "strategy_id": "core_volume_price_trend_v1",
+        "strategy_name": "核心量价趋势策略 v1",
+        "evidence_system": "JoinQuant historical route + imported latest signal review",
+        "role": "mutually_exclusive_medium_volatility_small_cap_sleeve",
+        "decision": "blocked_by_latest_signal_review",
+        "decision_name": "最新信号未通过",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 45,
+          "strategy_return": 0.4330085735791378,
+          "annual_return": 0.49623098235046603,
+          "max_drawdown": -0.09339761818584269,
+          "sharpe": 1.3930551667201772,
+          "win_rate": 0.5555555555555556
+        },
+        "blocked_reasons": [
+          "已导入核心量价中波动/小市值最新信号复核，但未达到 promotion_signal_ready 门槛。"
+        ],
+        "required_next_evidence": [
+          "重新导入 decision=promotion_signal_ready 的核心量价中波动/小市值 JoinQuant 最新信号复核 JSON。"
+        ],
+        "latest_review_decision": "promotion_signal_not_ready",
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+      },
+      {
         "candidate_id": "akshare_local_switch",
         "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
         "strategy_name": "AkShare本地高低波动切换策略 v1",
         "evidence_system": "AkShare local OHLCV",
         "role": "local_independent_candidate",
-        "decision": "blocked_pending_tradeability",
-        "decision_name": "待交易可行性复核",
-        "counts_as_independent_sleeve": false,
-        "can_start_observation": false,
+        "decision": "eligible_primary_sleeve",
+        "decision_name": "已准入独立资金袖",
+        "counts_as_independent_sleeve": true,
+        "can_start_observation": true,
         "metrics": {
           "sample_dates": 72,
           "strategy_return": 1.740866685270742,
@@ -302,13 +315,9 @@
           "sharpe": 3.14203779176307,
           "win_rate": 0.6805555555555556
         },
-        "blocked_reasons": [
-          "最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。"
-        ],
-        "required_next_evidence": [
-          "导入通过严格校验的 JoinQuant 最新信号交易可行性复核 JSON。"
-        ],
-        "latest_review_decision": null,
+        "blocked_reasons": [],
+        "required_next_evidence": [],
+        "latest_review_decision": "tradeability_review_passed",
         "data_policy": "只组合 AkShare 本地真实 OHLCV 已生成的执行组件 trade_records；不新增收益、不扩展未审计分层、不伪造交易状态。"
       },
       {
@@ -394,51 +403,6 @@
         "required_next_evidence": [
           "补充与主控制器的组件重叠、日期重叠、持仓重叠和市场状态互斥检查。",
           "若重叠明显，只能作为组件或备选，不计入第二成熟策略。"
-        ],
-        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
-      },
-      {
-        "candidate_id": "core_volume_price_trend_v1::中波动/小市值",
-        "strategy_id": "core_volume_price_trend_v1",
-        "strategy_name": "核心量价趋势策略 v1",
-        "evidence_system": "JoinQuant",
-        "role": "mutually_exclusive_controlled_route_candidate",
-        "layer": "中波动/小市值",
-        "market_regime": "medium_volatility",
-        "market_cap_bucket": "small_cap",
-        "decision": "mutually_exclusive_candidate_needs_promotion",
-        "decision_name": "互斥候选，待晋级确认",
-        "counts_as_independent_sleeve": false,
-        "can_start_observation": false,
-        "metrics": {
-          "sample_dates": 45,
-          "strategy_return": 0.4330085735791378,
-          "annual_return": 0.49623098235046603,
-          "max_drawdown": -0.09339761818584269,
-          "sharpe": 1.3930551667201772,
-          "win_rate": 0.5555555555555556
-        },
-        "gate_checks": {
-          "sample_dates": true,
-          "strategy_return": true,
-          "annual_return": true,
-          "max_drawdown": true,
-          "sharpe": true,
-          "win_rate": true
-        },
-        "independence_evidence": {
-          "primary_controller_medium_volatility_logic": "cash_watch",
-          "component_overlap": false,
-          "reason": "市场状态切换策略 v1 在中波动环境默认空仓；该路线只允许 medium_volatility/small_cap，因此具备互斥晋级潜力。"
-        },
-        "blocked_reasons": [
-          "已找到与主控制器市场状态互斥的真实 JoinQuant 分层路线，但尚未写入模拟观察运行包。",
-          "缺少最新一期中波动/小市值候选信号、执行配置和人工晋级确认，因此暂不计入两条成熟策略目标。"
-        ],
-        "required_next_evidence": [
-          "确认是否允许把该受控分层路线升级为第二模拟观察资金袖。",
-          "补充最新一期候选池/入选股票与中波动/小市值状态校验。",
-          "写入运行包后仍只能在 medium_volatility/small_cap 条件满足时开仓。"
         ],
         "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
       },
@@ -664,21 +628,16 @@
   "next_actions": [
     {
       "priority": 1,
-      "action": "确认是否将核心量价趋势策略 v1 的中波动/小市值路线晋级为第二模拟观察资金袖。",
-      "reason": "该路线来自 JoinQuant 真实分层交易回测，且与主控制器中波动空仓逻辑互斥；晋级前仍需最新信号和执行配置。"
-    },
-    {
-      "priority": 2,
       "action": "运行并回填 AkShare 最新信号 JoinQuant 交易可行性复核脚本。",
       "reason": "这是把 AkShare 本地切换策略从 record_only 升级为可观察资金袖的最近阻塞项。"
     },
     {
-      "priority": 3,
+      "priority": 2,
       "action": "运行 AkShare 强分层候选 JoinQuant 批量复核并回填 records。",
       "reason": "用于判断本地 6 条强候选能否在 JoinQuant OHLCV/valuation 口径下继续保留。"
     },
     {
-      "priority": 4,
+      "priority": 3,
       "action": "对 jq_controller 开始真实模拟观察账本记录。",
       "reason": "当前唯一已准入资金袖需要样本外观察数据，而不是继续只看历史回测。"
     }
