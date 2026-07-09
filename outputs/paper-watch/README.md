@@ -25,6 +25,7 @@
 - 查看：`/paper-watch-api/ledger`
 - CSV 模板：`/paper-watch-api/ledger-template.csv`
 - JSON 模板：`/paper-watch-api/ledger-template.json`
+- 回填框支持粘贴 JSON 或 CSV，二者使用同一套服务端准入校验。
 - `sleeve_id` 必须来自运行包。
 - `planned_weight` 必须在 0 到 1 之间。
 - 未通过准入门槛的资金袖，例如当前 `akshare_local_switch`，只能导入 `planned_weight=0` 的记录。

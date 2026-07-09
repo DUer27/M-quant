@@ -611,6 +611,15 @@ function sendError(res, message, status = 400) {
 }
 
 async function readJsonBody(req) {
+  const text = await readTextBody(req);
+  if (!text) {
+    return {};
+  }
+
+  return JSON.parse(text);
+}
+
+async function readTextBody(req) {
   const chunks = [];
 
   for await (const chunk of req) {
@@ -618,10 +627,10 @@ async function readJsonBody(req) {
   }
 
   if (chunks.length === 0) {
-    return {};
+    return '';
   }
 
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 function classifyFactor(factor) {
@@ -2884,6 +2893,56 @@ function readImportedPaperWatchLedger() {
   return readJsonFile(importedPaperWatchLedgerPath, []);
 }
 
+function parseCsvLine(line) {
+  const cells = [];
+  let current = '';
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+    if (char === '"' && quoted && next === '"') {
+      current += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === ',' && !quoted) {
+      cells.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current);
+  return cells;
+}
+
+function parsePaperWatchLedgerCsv(text) {
+  const lines = text
+    .replace(/^\ufeff/, '')
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== '');
+  if (lines.length < 2) {
+    throw new Error('CSV 账本至少需要表头和一行记录。');
+  }
+  const headers = parseCsvLine(lines[0]).map((header) => header.trim());
+  return lines.slice(1).map((line) => {
+    const cells = parseCsvLine(line);
+    return headers.reduce((row, header, index) => {
+      row[header] = cells[index] ?? '';
+      return row;
+    }, {});
+  });
+}
+
+function parsePaperWatchLedgerPayload(text) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return {};
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return JSON.parse(trimmed);
+  }
+  return parsePaperWatchLedgerCsv(trimmed);
+}
+
 function normalizePaperWatchLedgerRows(payload, importedAt) {
   const body = payload || {};
   const rawRows = Array.isArray(body)
@@ -4721,7 +4780,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'POST' && pathname === '/paper-watch-api/import-ledger') {
-    const body = await readJsonBody(req);
+    const body = parsePaperWatchLedgerPayload(await readTextBody(req));
     const importedAt = new Date().toISOString();
     const rows = normalizePaperWatchLedgerRows(body, importedAt);
     const nextLedger = [...rows, ...readImportedPaperWatchLedger()].slice(0, 500);

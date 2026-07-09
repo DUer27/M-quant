@@ -2469,9 +2469,9 @@ elements.importBacktestResult?.addEventListener('click', async () => {
 
 elements.importPaperWatchLedger?.addEventListener('click', async () => {
   try {
-    const payload = JSON.parse(elements.paperWatchLedgerJson.value || '{}');
     const response = await request('/paper-watch-api/import-ledger', {
-      body: JSON.stringify(payload),
+      body: elements.paperWatchLedgerJson.value || '',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       method: 'POST',
     });
     elements.paperWatchLedgerMessage.textContent = response.message;
