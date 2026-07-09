@@ -11,16 +11,16 @@
 
 ## 当前已验证通道
 
-2026-07-09 已用 AkShare 真实接口完成小批量验证，并复用本地 raw 已落盘 134 股：
+2026-07-09 已用 AkShare 真实接口完成小批量验证，并补齐沪深300 300 股本地样本：
 
 - 周期：2024-01-01 至 2026-07-09
 - 复权：前复权 `qfq`
-- 股票数：134 只
-- 行数：80619 行
+- 股票数：300 只
+- 行数：180816 行
 - 交易日：608 日
 - 输出：`outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv`
 
-这证明本地 OHLCV 长历史采集通道可用；134 只股票可用于方向性研究，但仍不足以形成全市场成熟策略结论。
+这证明本地 OHLCV 长历史采集通道可用；沪深300 300 股可用于方向性研究，但仍不足以形成成熟策略结论。
 
 ## 断点续跑命令
 
@@ -29,14 +29,11 @@
   outputs/sources/akshare/scripts/fetch_a_share_history.py \
   --start 20240101 \
   --end 20260709 \
-  --symbols-file outputs/sources/akshare/processed/a_share_csi300_missing_pool.csv \
+  --symbols-file outputs/sources/akshare/processed/a_share_csi300_pool.csv \
   --skip-existing \
-  --sleep 0.3 \
-  --retries 2 \
-  --retry-sleep 1.0 \
-  --provider tx \
-  --pool-output a_share_csi300_retry_next_pool.csv \
-  --output-name a_share_daily_retry_next_temp.csv
+  --combine-only \
+  --pool-output a_share_csi300_pool.csv \
+  --output-name a_share_daily_20240101_20260709_qfq.csv
 ```
 
 只合并本地 raw 已有数据、不请求网络：
@@ -67,8 +64,8 @@
 /Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 \
   outputs/sources/akshare/scripts/build_ohlcv_factor_backtest.py \
   --input outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv \
-  --min-stocks 120 \
-  --top-n 10 \
+  --min-stocks 270 \
+  --top-n 20 \
   --cost 0.001
 ```
 
@@ -81,5 +78,5 @@
 当前结果边界：
 
 - 未分层策略仍不够成熟，不能直接模拟盘。
-- `AkShare拥挤风险`、`AkShare反拥挤回归组合` 的 5 日 RankIC 通过本地初筛。
-- 分层后低波动×中流动性的量价趋势路线、高波动×低流动性的均值回归路线表现更强，但只有 33-40 次样本交易，必须扩样本和 JoinQuant 复核。
+- `AkShare拥挤风险`、`AkShare反拥挤回归组合`、`AkShare均值回归质量组合` 的 5 日 RankIC 通过本地初筛。
+- 分层后高波动×中/低流动性的均值回归路线、低波动×中流动性的防守/量价确认路线表现更强，但只有 33-39 次样本交易，必须做 JoinQuant 复核、年度分段和行业暴露检查。
