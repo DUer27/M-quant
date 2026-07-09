@@ -43,6 +43,7 @@ const paperWatchExecutionPackPath = outputPath('strategies', 'joinquant', 'paper
 const paperWatchReadinessAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_readiness_audit_20260709.json');
 const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_independence_audit_20260709.json');
 const paperWatchOperationsPackPath = outputPath('paper-watch', 'results', 'paper_watch_operations_pack_20260709.json');
+const strategyMaturityMatrixPath = outputPath('paper-watch', 'results', 'strategy_maturity_matrix_20260710.json');
 const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_readiness_audit_20260709.json');
 const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_execution_pack_20260709.json');
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
@@ -929,6 +930,7 @@ function buildPaperWatchRoutes() {
   const akshareLatestSignal = readJsonFile(aksharePaperWatchLatestSignalPath, {});
   const akshareRegimeSwitch = readJsonFile(akshareRegimeSwitchPaperWatchPath, null);
   const akshareRegimeSwitchRobustness = readJsonFile(akshareRegimeSwitchRobustnessAuditPath, null);
+  const strategyMaturityMatrix = readJsonFile(strategyMaturityMatrixPath, null);
   const tradeabilityReviews = readImportedTradeabilityReviews();
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
@@ -1055,6 +1057,7 @@ function buildPaperWatchRoutes() {
         latestLedgerRows: paperWatchLedger.slice(0, 5),
       }
       : null,
+    maturityMatrix: strategyMaturityMatrix,
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
     readinessCounts: recommendedReadinessCounts,
     readinessDecisionCounts: readinessCounts,
@@ -4852,6 +4855,16 @@ async function handleApi(req, res, pathname) {
       ...operationsPack,
       importedLedgerCount: readImportedPaperWatchLedger().length,
     });
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/strategy-maturity-matrix') {
+    const matrix = readJsonFile(strategyMaturityMatrixPath, {
+      source: 'm_quant_strategy_maturity_matrix',
+      goal_status: 'missing',
+      entries: [],
+    });
+    sendJson(res, matrix);
     return true;
   }
 
