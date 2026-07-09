@@ -138,6 +138,26 @@
 - 其余 4 条只做候选监控，不默认开仓。
 - 执行包明确开仓边界、Top20 等权、单票 5% 上限、5 日调仓、暂停规则和每日观察字段。
 
+## 最新模拟观察信号
+
+```bash
+/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 \
+  outputs/sources/akshare/scripts/generate_akshare_paper_watch_signal.py
+```
+
+当前产物：
+
+- `outputs/sources/akshare/results/akshare_paper_watch_latest_signal_20260709.json`
+- `outputs/_docs/akshare-paper-watch-latest-signal-20260709.md`
+
+2026-07-09 信号结论：
+
+- 最新市场状态为高波动，本地低波动主观察路线不触发，只记录信号。
+- `AkShare高波动均值回归-中流动性观察策略` 触发 `paper_watch_open_allowed`。
+- 当期候选 15 只、入选 15 只，涨跌停代理 0、停牌代理 0。
+- 入选代码：`002001, 000568, 000858, 000425, 000338, 000651, 000001, 002142, 000776, 002027, 002241, 002179, 002230, 002415, 002714`。
+- 平台 `模拟观察清单` 已显示最新信号日期、动作、候选数、入选数和 Top20 明细。
+
 ## 新因子探测
 
 - `scripts/probe_ohlcv_factor_candidates.py`：使用本地真实 AkShare OHLCV 历史探测新增候选因子。

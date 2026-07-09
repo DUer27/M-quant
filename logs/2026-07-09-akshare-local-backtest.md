@@ -159,3 +159,11 @@
 - 6 条本地就绪路线中，2 条进入执行包：`AkShare低波动收缩突破-中流动性观察策略` 为主观察，`AkShare高波动均值回归-中流动性观察策略` 为高波动备选；其余 4 条只做候选监控。
 - 执行包只读取严格审计结果，不新增收益；新增开仓边界、Top20 等权、单票 5% 上限、5日调仓、暂停规则和每日观察字段。
 - 平台 `模拟观察清单` 已接入 AkShare execution pack，展开后可看到本地路线的真实执行规则，并用 `主观察`、`高波动备选`、`候选监控` 区分可用程度。
+
+## 追加：AkShare 最新模拟观察信号
+
+- 新增 `outputs/sources/akshare/scripts/generate_akshare_paper_watch_signal.py`，复用本地真实 AkShare OHLCV 与已审计执行包生成最新信号；不使用未来收益。
+- 生成 `outputs/sources/akshare/results/akshare_paper_watch_latest_signal_20260709.json` 与 `outputs/_docs/akshare-paper-watch-latest-signal-20260709.md`。
+- 2026-07-09 当前本地市场状态为高波动，低波动主观察路线不触发；`AkShare高波动均值回归-中流动性观察策略` 触发 `paper_watch_open_allowed`。
+- 当期候选 15 只、入选 15 只，涨跌停代理 0、停牌代理 0；入选代码为 `002001, 000568, 000858, 000425, 000338, 000651, 000001, 002142, 000776, 002027, 002241, 002179, 002230, 002415, 002714`。
+- 平台 `模拟观察清单` 已接入最新信号，展示信号动作、日期、候选数、入选数和 Top20 明细。

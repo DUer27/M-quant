@@ -42,6 +42,7 @@ const paperWatchReadinessAuditPath = outputPath('strategies', 'joinquant', 'pape
 const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_independence_audit_20260709.json');
 const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_readiness_audit_20260709.json');
 const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_execution_pack_20260709.json');
+const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -721,6 +722,7 @@ function buildDataCoverageSnapshot() {
   const akshareFactorQualityAudit = readJsonFile(akshareFactorQualityAuditPath, {});
   const aksharePaperWatchReadinessAudit = readJsonFile(aksharePaperWatchReadinessAuditPath, {});
   const aksharePaperWatchExecutionPack = readJsonFile(aksharePaperWatchExecutionPackPath, {});
+  const aksharePaperWatchLatestSignal = readJsonFile(aksharePaperWatchLatestSignalPath, {});
   const strategyMaturityAudit = readJsonFile(strategyMaturityAuditPath, {});
   const paperWatchRoutes = readJsonFile(paperWatchRoutesPath, {});
   const allRawRows = [...primaryRows, ...capitalRows];
@@ -766,6 +768,7 @@ function buildDataCoverageSnapshot() {
     akshareAuditWatch: Number(akshareFactorQualityAudit.factor_decision_counts?.watch || 0),
     aksharePaperWatchReadyCount: Number(aksharePaperWatchReadinessAudit.decision_counts?.ready_local_paper_watch || 0),
     aksharePaperWatchExecutableCount: Number(aksharePaperWatchExecutionPack.paper_watch_route_count || 0),
+    aksharePaperWatchOpenAllowedCount: Number(aksharePaperWatchLatestSignal.open_allowed_count || 0),
     aksharePaperWatchRecommendedCount: Number(aksharePaperWatchReadinessAudit.recommended_route_count || 0),
     aksharePaperWatchPolicy: aksharePaperWatchReadinessAudit.data_policy || '',
     controlledPaperWatchRouteCount: Number(strategyMaturityAudit.controlled_route_count || 0),
@@ -841,7 +844,7 @@ function buildDataCoverageRisks() {
     },
     {
       detail: coverage.akshareStrategyValidationCandidates
-        ? `${coverage.akshareStrategyValidationPolicy} 已做候选稳定性验证 ${coverage.akshareStrategyValidationCandidates} 条；严格模拟观察审计通过 ${coverage.aksharePaperWatchReadyCount} 条，其中 ${coverage.aksharePaperWatchExecutableCount} 条进入本地受控执行包。`
+        ? `${coverage.akshareStrategyValidationPolicy} 已做候选稳定性验证 ${coverage.akshareStrategyValidationCandidates} 条；严格模拟观察审计通过 ${coverage.aksharePaperWatchReadyCount} 条，其中 ${coverage.aksharePaperWatchExecutableCount} 条进入本地受控执行包，最新信号 ${coverage.aksharePaperWatchOpenAllowedCount} 条允许开仓观察。`
         : '尚未对 AkShare 本地强分层策略做候选稳定性验证。',
       limit: 2,
       name: 'AkShare候选复核',
@@ -851,7 +854,7 @@ function buildDataCoverageRisks() {
       status: coverage.aksharePaperWatchReadyCount >= 1 ? 'ready' : (coverage.akshareStrategyValidationReviewCandidates >= 2 ? 'watch' : 'blocked'),
       value: coverage.aksharePaperWatchReadyCount || coverage.akshareStrategyValidationReviewCandidates,
       valueText: coverage.akshareStrategyValidationCandidates
-        ? `${coverage.aksharePaperWatchExecutableCount}执行/${coverage.aksharePaperWatchReadyCount}就绪`
+        ? `${coverage.aksharePaperWatchOpenAllowedCount}触发/${coverage.aksharePaperWatchExecutableCount}执行`
         : '未验证',
     },
     {
@@ -905,6 +908,7 @@ function buildPaperWatchRoutes() {
   const independenceAudit = readJsonFile(paperWatchIndependenceAuditPath, {});
   const akshareReadinessAudit = readJsonFile(aksharePaperWatchReadinessAuditPath, {});
   const akshareExecutionPack = readJsonFile(aksharePaperWatchExecutionPackPath, {});
+  const akshareLatestSignal = readJsonFile(aksharePaperWatchLatestSignalPath, {});
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
     : [];
@@ -944,6 +948,11 @@ function buildPaperWatchRoutes() {
     `${route.strategy_id || ''}::${route.allowed_layer || ''}`,
     route,
   ]));
+  const akshareSignalRoutes = Array.isArray(akshareLatestSignal.routes) ? akshareLatestSignal.routes : [];
+  const akshareSignalByRoute = new Map(akshareSignalRoutes.map((route) => [
+    `${route.strategy_id || ''}::${route.allowed_market_regime || ''}::${route.allowed_liquidity_bucket || ''}`,
+    route,
+  ]));
   const enrichedRoutes = routes.map((route) => ({
     ...route,
     evidence_system: route.evidence_system || 'JoinQuant',
@@ -953,6 +962,7 @@ function buildPaperWatchRoutes() {
     ...route,
     execution: akshareExecutionByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
     readiness: akshareReadinessByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || route,
+    signal: akshareSignalByRoute.get(`${route.strategy_id || ''}::${route.market_regime || ''}::${route.liquidity_bucket || ''}`) || null,
   })));
   const readinessCounts = readinessAudit.decision_counts || {};
   const akshareReadinessCounts = akshareReadinessAudit.decision_counts || {};
@@ -982,6 +992,8 @@ function buildPaperWatchRoutes() {
       decisionCounts: akshareReadinessCounts,
       executionDataPolicy: akshareExecutionPack.data_policy || '',
       executionStatus: akshareExecutionPack.status || 'not_ready',
+      latestSignalDate: akshareLatestSignal.signal_date || '',
+      latestSignalOpenAllowedCount: Number(akshareLatestSignal.open_allowed_count || 0),
       paperWatchRouteCount: Number(akshareExecutionPack.paper_watch_route_count || 0),
       recommendedRouteCount: Number(akshareReadinessAudit.recommended_route_count || akshareRecommendedRoutes.length || 0),
       source: akshareReadinessAudit.source || '',
