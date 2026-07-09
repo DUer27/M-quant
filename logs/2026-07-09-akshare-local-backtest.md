@@ -51,3 +51,12 @@
   - 低波动量价趋势-中流动性：39 次交易，总收益 97.76%，最大回撤 -10.92%，Sharpe 2.69。
   - 高波动反拥挤-中流动性：33 次交易，总收益 42.13%，最大回撤 -4.47%，Sharpe 2.56。
 - 平台数据可信度接口新增 `AkShare候选复核` 项，用于提示本地候选数量和下一步 JoinQuant 复核要求。
+
+## 追加：JoinQuant 复核脚本
+
+- 新增 `outputs/sources/joinquant/scripts/m_quant_akshare_ohlcv_candidate_review.py`。
+- 平台策略草案池新增 `AkShare强分层候选复核包`，按钮可直接下载聚宽复核脚本。
+- 复核对象：本地 4 条 `joinquant_review_candidate`，不新增未验证收益展示。
+- 脚本输出：5/10/20 日事件收益、5日调仓交易净值、目标路线、市值层和高/中/低波动 × 大/中/小市值交叉层。
+- 真实数据替换：JoinQuant `money_ma20` 替代本地腾讯源成交量兜底；`valuation.market_cap` 做市值层；`valuation.turnover_ratio` 参与拥挤风险复核。
+- 边界：脚本生成不代表策略有效，只有把 JoinQuant 实跑 JSON 回填并通过收益、回撤、Sharpe、样本外和成本审计后，才允许升级为正式候选。
