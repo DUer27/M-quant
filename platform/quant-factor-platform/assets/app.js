@@ -407,6 +407,7 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
   const baseline = target.baseline || {};
   const gate = pack.pass_gate || {};
   const script = pack.joinquant_script || {};
+  const review = pack.latest_review || null;
   const steps = Array.isArray(pack.steps) ? pack.steps : [];
   return `
     <div class="paper-watch-note">
@@ -425,6 +426,14 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
         市场状态 ${escapeHtml(gate.required_market_regime || '-')}，
         入选不少于 ${escapeHtml(gate.min_selected_count ?? 10)} 只。
       </p>
+      ${review ? `
+        <p>
+          最新导入：${escapeHtml(review.signal_date || '-')}，
+          ${escapeHtml(review.market_regime || '-')}，
+          入选 ${escapeHtml(review.selected_count ?? 0)}，
+          结论 ${escapeHtml(review.decision || '-')}。
+        </p>
+      ` : ''}
       <div class="inline-actions">
         ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载核心量价复核脚本</a>` : ''}
       </div>

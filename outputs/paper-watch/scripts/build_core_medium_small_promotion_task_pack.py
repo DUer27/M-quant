@@ -18,6 +18,7 @@ DOCS_DIR = ROOT / "outputs" / "_docs"
 
 CANDIDATE_AUDIT_PATH = RESULTS_DIR / "independent_sleeve_candidate_audit_20260710.json"
 SCRIPT_PATH = ROOT / "outputs" / "sources" / "joinquant" / "scripts" / "m_quant_core_medium_small_latest_signal_review_20260710.py"
+IMPORTED_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-core-medium-small-signal-reviews.json"
 RESULT_PATH = RESULTS_DIR / "core_medium_small_promotion_task_pack_20260710.json"
 DOC_PATH = DOCS_DIR / "core-medium-small-promotion-task-pack-20260710.md"
 
@@ -39,16 +40,30 @@ def pct(value) -> str:
 
 def build_pack() -> dict:
     audit = read_json(CANDIDATE_AUDIT_PATH, {})
+    imported_reviews = read_json(IMPORTED_REVIEWS_PATH, [])
     candidate = next(
         (item for item in audit.get("candidates", []) if item.get("strategy_id") == STRATEGY_ID),
         {},
     )
+    matching_reviews = [
+        item for item in imported_reviews
+        if item.get("strategy_id") == STRATEGY_ID and item.get("sleeve_id") == SLEEVE_ID
+    ]
+    latest_review = sorted(matching_reviews, key=lambda item: item.get("importedAt", ""), reverse=True)[0] if matching_reviews else None
+    if latest_review and latest_review.get("decision") == "promotion_signal_ready":
+        status = "signal_ready_imported_waiting_for_operations_pack_promotion"
+    elif latest_review:
+        status = "signal_not_ready_imported"
+    else:
+        status = "waiting_for_joinquant_latest_signal_review"
     metrics = candidate.get("metrics", {})
     return {
         "source": "m_quant_core_medium_small_promotion_task_pack",
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "status": "waiting_for_joinquant_latest_signal_review",
+        "status": status,
         "data_policy": "只生成 JoinQuant 最新信号复核任务；不生成收益、净值、成交、持仓、交易可行性或模拟盘结果。",
+        "imported_review_count": len(matching_reviews),
+        "latest_review": latest_review,
         "target": {
             "sleeve_id": SLEEVE_ID,
             "strategy_id": STRATEGY_ID,
@@ -75,6 +90,12 @@ def build_pack() -> dict:
             "download_endpoint": "/strategy-api/joinquant-core-medium-small-latest-signal-review.py",
             "expected_source": "joinquant_core_medium_small_latest_signal_review",
         },
+        "import": {
+            "validate_endpoint": "/backtest-api/validate-core-medium-small-signal-review",
+            "import_endpoint": "/backtest-api/import-results",
+            "storage": str(IMPORTED_REVIEWS_PATH.relative_to(ROOT)),
+            "after_import_expected_effect": "平台会把复核结果写入 imported-core-medium-small-signal-reviews.json；即使 signal_ready，通过前仍需下一步写入运行包。",
+        },
         "steps": [
             "在 M-quant 页面下载核心量价中波动小市值最新信号复核脚本。",
             "粘贴到 JoinQuant Python3 研究环境运行。",
@@ -94,6 +115,7 @@ def write_doc(pack: dict) -> None:
         f"- 生成时间：{pack['generated_at']}",
         f"- 状态：`{pack['status']}`",
         f"- 数据原则：{pack['data_policy']}",
+        f"- 已导入复核：{pack['imported_review_count']}",
         "",
         "## 目标候选",
         "",
@@ -111,6 +133,17 @@ def write_doc(pack: dict) -> None:
     gate = pack["pass_gate"]
     for key, value in gate.items():
         lines.append(f"- `{key}`：{value}")
+    if pack.get("latest_review"):
+        review = pack["latest_review"]
+        lines.extend([
+            "",
+            "## 最新导入复核",
+            "",
+            f"- 日期：{review.get('signal_date')}",
+            f"- 结论：`{review.get('decision')}`",
+            f"- 市场状态：{review.get('market_regime')}",
+            f"- 入选数量：{review.get('selected_count')}",
+        ])
     lines.extend(["", "## 步骤", ""])
     for index, step in enumerate(pack["steps"], 1):
         lines.append(f"{index}. {step}")
