@@ -334,7 +334,10 @@ function renderTradeabilityReviewTaskPack(pack) {
         通过门槛：可交易数量不少于 ${escapeHtml(passGate.min_tradable_count ?? 10)}，
         decision 必须为 ${escapeHtml(passGate.required_decision || 'tradeability_review_passed')}。
       </p>
-      ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载交易复核脚本</a>` : ''}
+      <div class="inline-actions">
+        ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载交易复核脚本</a>` : ''}
+        <button type="button" data-paper-watch-rebuild="true">刷新派生包</button>
+      </div>
       <details class="compact-details">
         <summary>查看复核步骤和候选</summary>
         <div class="paper-watch-rules">
@@ -2528,6 +2531,20 @@ elements.strategyLiveList?.addEventListener('click', (event) => {
   });
   panel.hidden = !shouldOpen;
   button.classList.toggle('active', shouldOpen);
+});
+
+elements.paperWatchList?.addEventListener('click', async (event) => {
+  const rebuildButton = event.target.closest('[data-paper-watch-rebuild]');
+  if (!rebuildButton) return;
+  rebuildButton.disabled = true;
+  rebuildButton.textContent = '刷新中';
+  try {
+    await request('/paper-watch-api/rebuild-derived-packs', { method: 'POST' });
+    await refreshDashboard();
+  } catch (error) {
+    rebuildButton.disabled = false;
+    rebuildButton.textContent = `刷新失败：${error.message}`;
+  }
 });
 
 elements.downloadJoinquantCsv?.addEventListener('click', () => {

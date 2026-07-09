@@ -6,6 +6,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,6 +46,11 @@ const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'p
 const paperWatchOperationsPackPath = outputPath('paper-watch', 'results', 'paper_watch_operations_pack_20260709.json');
 const strategyMaturityMatrixPath = outputPath('paper-watch', 'results', 'strategy_maturity_matrix_20260710.json');
 const tradeabilityReviewTaskPackPath = outputPath('paper-watch', 'results', 'tradeability_review_task_pack_20260710.json');
+const paperWatchDerivedScriptPaths = [
+  outputPath('paper-watch', 'scripts', 'build_paper_watch_operations_pack.py'),
+  outputPath('paper-watch', 'scripts', 'build_strategy_maturity_matrix.py'),
+  outputPath('paper-watch', 'scripts', 'build_tradeability_review_task_pack.py'),
+];
 const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_readiness_audit_20260709.json');
 const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_execution_pack_20260709.json');
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
@@ -3037,6 +3043,44 @@ function latestTradeabilityReviewFor(reviews, strategyId, signalDate) {
     .sort((left, right) => String(right.importedAt || '').localeCompare(String(left.importedAt || '')))[0] || null;
 }
 
+function rebuildPaperWatchDerivedArtifacts() {
+  const startedAt = new Date().toISOString();
+  const scripts = paperWatchDerivedScriptPaths.map((scriptPath) => {
+    const relativePath = scriptPath.startsWith(projectRoot)
+      ? scriptPath.slice(projectRoot.length + 1)
+      : scriptPath;
+    if (!existsSync(scriptPath)) {
+      return {
+        ok: false,
+        path: relativePath,
+        status: 'missing_script',
+        stdout: '',
+        stderr: '脚本不存在。',
+      };
+    }
+    const result = spawnSync('python3', [scriptPath], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      timeout: 120_000,
+    });
+    return {
+      ok: result.status === 0,
+      path: relativePath,
+      signal: result.signal || '',
+      status: result.status,
+      stderr: String(result.stderr || '').trim(),
+      stdout: String(result.stdout || '').trim(),
+    };
+  });
+  return {
+    data_policy: '只重建本地派生 JSON/Markdown：运行包、成熟策略矩阵和交易复核任务包；不生成收益、净值、成交、持仓或交易可行性结论。',
+    finished_at: new Date().toISOString(),
+    ok: scripts.every((item) => item.ok),
+    scripts,
+    started_at: startedAt,
+  };
+}
+
 function paperWatchLedgerTemplateRows() {
   const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
   const templateFields = (operationsPack.daily_ledger_template || []).map((item) => item.field);
@@ -4880,6 +4924,15 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'POST' && pathname === '/paper-watch-api/rebuild-derived-packs') {
+    const refresh = rebuildPaperWatchDerivedArtifacts();
+    sendJson(res, {
+      message: refresh.ok ? '模拟观察派生包刷新完成。' : '模拟观察派生包刷新存在失败，请查看 scripts 明细。',
+      refresh,
+    }, refresh.ok ? 200 : 500);
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/paper-watch-api/ledger') {
     sendJson(res, {
       dataPolicy: '只展示用户导入的模拟观察账本记录；不生成收益、净值、成交或持仓。',
@@ -5249,8 +5302,10 @@ async function handleApi(req, res, pathname) {
       const nextItem = normalizeTradeabilityReview(body, importedAt);
       const nextReviews = [nextItem, ...readImportedTradeabilityReviews()].slice(0, 100);
       writeFileSync(importedTradeabilityReviewsPath, `${JSON.stringify(nextReviews, null, 2)}\n`);
+      const refresh = rebuildPaperWatchDerivedArtifacts();
       sendJson(res, {
-        message: `交易可行性复核已导入：${nextItem.tradable_count}/${nextItem.candidate_count} 可交易，结论 ${nextItem.decision}。`,
+        message: `交易可行性复核已导入：${nextItem.tradable_count}/${nextItem.candidate_count} 可交易，结论 ${nextItem.decision}。派生包刷新${refresh.ok ? '完成' : '存在失败'}。`,
+        refresh,
         result: nextItem,
         importedCount: 1,
         results: nextReviews,
