@@ -99,6 +99,18 @@
 
 当前 6 条强分层策略通过本地年度、前后半段、2025-07-01 后样本外、回撤和 Sharpe 门槛，状态为 `joinquant_review_candidate`。这只表示可以进入 JoinQuant 复核，不代表已经可以实盘或模拟盘。
 
+## 新因子探测
+
+- `scripts/probe_ohlcv_factor_candidates.py`：使用本地真实 AkShare OHLCV 历史探测新增候选因子。
+- `results/akshare_new_factor_probe_20260709.json`：5 个候选因子的 RankIC、多空收益和决策。
+
+本轮探测没有新增正式因子：
+
+- `ak_vol_adj_momentum`、`ak_price_volume_elasticity`、`ak_orderly_trend`：多空收益为正，但 RankIC 稳定性不足，只能观察。
+- `ak_volume_dry_up_reversal`、`ak_gap_repair_quality`：弱信号拒绝。
+
+这些候选未进入正式因子库，也不会用于生成正式策略。
+
 追加通过的两条候选：
 
 - `AkShare低波动收缩突破-中流动性观察策略`

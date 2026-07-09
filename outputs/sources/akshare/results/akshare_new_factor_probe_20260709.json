@@ -1,0 +1,250 @@
+{
+  "source": "akshare_new_factor_probe",
+  "generated_at": "2026-07-09T14:48:38",
+  "input": "outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv",
+  "data_policy": "只使用本地已落地 AkShare 真实 OHLCV 历史；候选因子只用当日及以前数据；未通过门槛不入正式因子库。",
+  "gates": {
+    "min_sample_dates": 120,
+    "min_rank_ic": 0.015,
+    "min_rank_ic_t": 2.0,
+    "min_long_short": 0.0,
+    "min_long_short_positive_ratio": 0.53
+  },
+  "candidate_count": 5,
+  "decision_counts": {
+    "watch_long_short_only": 3,
+    "reject_weak_signal": 2
+  },
+  "candidates": [
+    {
+      "factor_id": "ak_vol_adj_momentum",
+      "name": "AkShare波动调整动量",
+      "hypothesis": "20日趋势若能用更低波动实现，持续性应更高。",
+      "decision": "watch_long_short_only",
+      "decision_name": "仅多空观察",
+      "decision_reason": "多空收益为正，但 RankIC 稳定性不足，只能继续观察。",
+      "best_result": {
+        "horizon": 20,
+        "sample_dates": 568,
+        "avg_stocks": 297.2112676056338,
+        "rank_ic_mean": 0.00923726646516291,
+        "rank_ic_t": 1.1690633800110335,
+        "long_short_mean": 0.018160503088281574,
+        "long_short_positive_ratio": 0.6390845070422535
+      },
+      "all_results": [
+        {
+          "horizon": 5,
+          "sample_dates": 583,
+          "avg_stocks": 297.2830188679245,
+          "rank_ic_mean": -0.005627060109574392,
+          "rank_ic_t": -0.6376727414852386,
+          "long_short_mean": 0.004382521768122571,
+          "long_short_positive_ratio": 0.6003430531732419
+        },
+        {
+          "horizon": 10,
+          "sample_dates": 578,
+          "avg_stocks": 297.25951557093424,
+          "rank_ic_mean": 0.00026893629260371296,
+          "rank_ic_t": 0.0316519897896864,
+          "long_short_mean": 0.009472303755053951,
+          "long_short_positive_ratio": 0.5865051903114187
+        },
+        {
+          "horizon": 20,
+          "sample_dates": 568,
+          "avg_stocks": 297.2112676056338,
+          "rank_ic_mean": 0.00923726646516291,
+          "rank_ic_t": 1.1690633800110335,
+          "long_short_mean": 0.018160503088281574,
+          "long_short_positive_ratio": 0.6390845070422535
+        }
+      ]
+    },
+    {
+      "factor_id": "ak_volume_dry_up_reversal",
+      "name": "AkShare缩量回撤反转",
+      "hypothesis": "短线回撤、缩量和下影承接共同刻画抛压衰减后的反转。",
+      "decision": "reject_weak_signal",
+      "decision_name": "弱信号拒绝",
+      "decision_reason": "RankIC 和多空收益均未达到入库门槛。",
+      "best_result": {
+        "horizon": 5,
+        "sample_dates": 584,
+        "avg_stocks": 297.28767123287673,
+        "rank_ic_mean": 0.013587034013152378,
+        "rank_ic_t": 2.0695004064268114,
+        "long_short_mean": -0.0008689201793045195,
+        "long_short_positive_ratio": 0.4708904109589041
+      },
+      "all_results": [
+        {
+          "horizon": 5,
+          "sample_dates": 584,
+          "avg_stocks": 297.28767123287673,
+          "rank_ic_mean": 0.013587034013152378,
+          "rank_ic_t": 2.0695004064268114,
+          "long_short_mean": -0.0008689201793045195,
+          "long_short_positive_ratio": 0.4708904109589041
+        },
+        {
+          "horizon": 10,
+          "sample_dates": 579,
+          "avg_stocks": 297.2642487046632,
+          "rank_ic_mean": 0.006980362223158654,
+          "rank_ic_t": 1.0775656626690497,
+          "long_short_mean": -0.002910156524248079,
+          "long_short_positive_ratio": 0.4835924006908463
+        },
+        {
+          "horizon": 20,
+          "sample_dates": 569,
+          "avg_stocks": 297.2161687170474,
+          "rank_ic_mean": -0.005129723834768878,
+          "rank_ic_t": -0.8184409021312102,
+          "long_short_mean": -0.007839718749343168,
+          "long_short_positive_ratio": 0.4165202108963093
+        }
+      ]
+    },
+    {
+      "factor_id": "ak_price_volume_elasticity",
+      "name": "AkShare价量弹性",
+      "hypothesis": "同等成交活跃度下更高价格推进代表更高趋势效率。",
+      "decision": "watch_long_short_only",
+      "decision_name": "仅多空观察",
+      "decision_reason": "多空收益为正，但 RankIC 稳定性不足，只能继续观察。",
+      "best_result": {
+        "horizon": 20,
+        "sample_dates": 557,
+        "avg_stocks": 122.02333931777379,
+        "rank_ic_mean": 0.010373265217056647,
+        "rank_ic_t": 1.1601025817710957,
+        "long_short_mean": 0.01720185227876063,
+        "long_short_positive_ratio": 0.6050269299820467
+      },
+      "all_results": [
+        {
+          "horizon": 5,
+          "sample_dates": 572,
+          "avg_stocks": 122.88286713286713,
+          "rank_ic_mean": -0.005887570072248158,
+          "rank_ic_t": -0.635335285507483,
+          "long_short_mean": 0.0027946330793190725,
+          "long_short_positive_ratio": 0.5699300699300699
+        },
+        {
+          "horizon": 10,
+          "sample_dates": 568,
+          "avg_stocks": 122.41725352112677,
+          "rank_ic_mean": -0.0031921873002280026,
+          "rank_ic_t": -0.3446642731995131,
+          "long_short_mean": 0.006879595673939355,
+          "long_short_positive_ratio": 0.5669014084507042
+        },
+        {
+          "horizon": 20,
+          "sample_dates": 557,
+          "avg_stocks": 122.02333931777379,
+          "rank_ic_mean": 0.010373265217056647,
+          "rank_ic_t": 1.1601025817710957,
+          "long_short_mean": 0.01720185227876063,
+          "long_short_positive_ratio": 0.6050269299820467
+        }
+      ]
+    },
+    {
+      "factor_id": "ak_orderly_trend",
+      "name": "AkShare有序趋势",
+      "hypothesis": "趋势收益扣除波动和过度乖离后，筛出更稳的上行结构。",
+      "decision": "watch_long_short_only",
+      "decision_name": "仅多空观察",
+      "decision_reason": "多空收益为正，但 RankIC 稳定性不足，只能继续观察。",
+      "best_result": {
+        "horizon": 20,
+        "sample_dates": 568,
+        "avg_stocks": 297.2112676056338,
+        "rank_ic_mean": 0.007217240266351385,
+        "rank_ic_t": 0.828145432083861,
+        "long_short_mean": 0.012339735134242842,
+        "long_short_positive_ratio": 0.6355633802816901
+      },
+      "all_results": [
+        {
+          "horizon": 5,
+          "sample_dates": 583,
+          "avg_stocks": 297.2830188679245,
+          "rank_ic_mean": -0.0044956741381915865,
+          "rank_ic_t": -0.49315377066546223,
+          "long_short_mean": 0.0029788294627078275,
+          "long_short_positive_ratio": 0.5694682675814752
+        },
+        {
+          "horizon": 10,
+          "sample_dates": 578,
+          "avg_stocks": 297.25951557093424,
+          "rank_ic_mean": 0.0004820645665596011,
+          "rank_ic_t": 0.053803194785570024,
+          "long_short_mean": 0.006687454840844879,
+          "long_short_positive_ratio": 0.5622837370242214
+        },
+        {
+          "horizon": 20,
+          "sample_dates": 568,
+          "avg_stocks": 297.2112676056338,
+          "rank_ic_mean": 0.007217240266351385,
+          "rank_ic_t": 0.828145432083861,
+          "long_short_mean": 0.012339735134242842,
+          "long_short_positive_ratio": 0.6355633802816901
+        }
+      ]
+    },
+    {
+      "factor_id": "ak_gap_repair_quality",
+      "name": "AkShare日内修复质量",
+      "hypothesis": "高收盘位置、下影承接和低上影压力代表日内修复质量。",
+      "decision": "reject_weak_signal",
+      "decision_name": "弱信号拒绝",
+      "decision_reason": "RankIC 和多空收益均未达到入库门槛。",
+      "best_result": {
+        "horizon": 5,
+        "sample_dates": 603,
+        "avg_stocks": 297.3731343283582,
+        "rank_ic_mean": -0.009551061549370892,
+        "rank_ic_t": -1.5168053184838537,
+        "long_short_mean": -0.002290867003114163,
+        "long_short_positive_ratio": 0.46766169154228854
+      },
+      "all_results": [
+        {
+          "horizon": 5,
+          "sample_dates": 603,
+          "avg_stocks": 297.3731343283582,
+          "rank_ic_mean": -0.009551061549370892,
+          "rank_ic_t": -1.5168053184838537,
+          "long_short_mean": -0.002290867003114163,
+          "long_short_positive_ratio": 0.46766169154228854
+        },
+        {
+          "horizon": 10,
+          "sample_dates": 598,
+          "avg_stocks": 297.3511705685619,
+          "rank_ic_mean": -0.007374525250256366,
+          "rank_ic_t": -1.1647229011638889,
+          "long_short_mean": -0.002552802590101217,
+          "long_short_positive_ratio": 0.45652173913043476
+        },
+        {
+          "horizon": 20,
+          "sample_dates": 588,
+          "avg_stocks": 297.3061224489796,
+          "rank_ic_mean": -0.007351613826517293,
+          "rank_ic_t": -1.2178444927351055,
+          "long_short_mean": -0.004282519090052661,
+          "long_short_positive_ratio": 0.47278911564625853
+        }
+      ]
+    }
+  ]
+}
