@@ -280,6 +280,7 @@ function renderPaperWatchRoutes(pack) {
       ${routes.map((route) => {
       const execution = route.execution || {};
       const readiness = route.readiness || {};
+      const signal = route.signal || {};
       const failedChecks = (readiness.checks || []).filter((item) => !item.passed);
       const readinessTone = readiness.decision === 'ready_controlled_paper_watch' || readiness.decision === 'ready_local_paper_watch'
         ? 'good'
@@ -306,7 +307,16 @@ function renderPaperWatchRoutes(pack) {
             <span>Sharpe ${Number(route.sharpe || 0).toFixed(2)}</span>
             ${route.avg_selected_count ? `<span>平均入选 ${Number(route.avg_selected_count || 0).toFixed(0)}</span>` : ''}
           </div>
+          ${signal.action ? `
+            <div class="paper-watch-metrics">
+              <span>信号 ${escapeHtml(signal.action)}</span>
+              <span>日期 ${escapeHtml(signal.signal_date || '-')}</span>
+              <span>候选 ${escapeHtml(signal.candidate_count ?? 0)}</span>
+              <span>入选 ${escapeHtml(signal.selected_count ?? 0)}</span>
+            </div>
+          ` : ''}
           <p>${escapeHtml(route.paper_scope || '')}</p>
+          ${signal.reason ? `<p>${escapeHtml(signal.reason)}</p>` : ''}
           ${readiness.decision_reason ? `<p>${escapeHtml(readiness.decision_reason)}</p>` : ''}
           <details class="compact-details">
             <summary>执行与审计规则</summary>
@@ -327,6 +337,8 @@ function renderPaperWatchRoutes(pack) {
               ] : [])}
               <strong>暂停规则</strong>
               ${renderTextList((execution.pause_rules || []).map((item) => item.meaning || item.rule))}
+              <strong>最新候选</strong>
+              ${renderTextList((signal.selected || []).slice(0, 20).map((item) => `${item.code} ${item.name || ''} score ${Number(item.score || 0).toFixed(3)}`))}
             </div>
           </details>
         </article>
