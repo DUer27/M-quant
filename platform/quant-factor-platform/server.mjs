@@ -33,6 +33,7 @@ const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.jso
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
+const akshareStrategyValidationPath = outputPath('sources', 'akshare', 'results', 'akshare_strategy_candidate_validation.json');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -707,6 +708,7 @@ function buildDataCoverageSnapshot() {
   const capitalRows = readCapitalFactorRows();
   const akshareSummary = readJsonFile(akshareHistorySummaryPath, {});
   const akshareBacktest = readJsonFile(akshareOhlcvBacktestPath, {});
+  const akshareStrategyValidation = readJsonFile(akshareStrategyValidationPath, {});
   const allRawRows = [...primaryRows, ...capitalRows];
   const importedFactorResults = readImportedFactorResults();
   const importedStrategyResults = readImportedStrategyResults();
@@ -735,6 +737,13 @@ function buildDataCoverageSnapshot() {
     akshareBacktestFactorResults: Number(akshareBacktest.factor_result_count || 0),
     akshareBacktestPolicy: akshareBacktest.data_policy || '',
     akshareBacktestStrategyResults: Number(akshareBacktest.strategy_result_count || 0),
+    akshareStrategyValidationCandidates: Number(akshareStrategyValidation.candidate_count || 0),
+    akshareStrategyValidationPolicy: akshareStrategyValidation.data_policy || '',
+    akshareStrategyValidationReviewCandidates: Number(
+      akshareStrategyValidation.joinquant_review_candidate_count
+      || akshareStrategyValidation.paper_watch_candidate_count
+      || 0,
+    ),
     maxJqSampleDates,
     localBacktestReady: rawDateCount >= 60,
     minimumLocalDays: 60,
@@ -799,6 +808,21 @@ function buildDataCoverageRisks() {
       status: coverage.akshareBacktestStrategyResults ? 'watch' : 'blocked',
       value: coverage.akshareBacktestFactorResults + coverage.akshareBacktestStrategyResults,
       valueText: coverage.akshareBacktestStrategyResults ? `${coverage.akshareBacktestFactorResults}因子 / ${coverage.akshareBacktestStrategyResults}策略` : '未回测',
+    },
+    {
+      detail: coverage.akshareStrategyValidationCandidates
+        ? `${coverage.akshareStrategyValidationPolicy} 已做候选稳定性验证 ${coverage.akshareStrategyValidationCandidates} 条，其中 ${coverage.akshareStrategyValidationReviewCandidates} 条通过本地门槛，状态仅为待 JoinQuant 复核。`
+        : '尚未对 AkShare 本地强分层策略做候选稳定性验证。',
+      limit: 2,
+      name: 'AkShare候选复核',
+      nextAction: coverage.akshareStrategyValidationReviewCandidates
+        ? '把通过本地门槛的候选迁移到 JoinQuant，补真实成交额、换手率、市值、行业暴露后再决定是否进入模拟盘观察。'
+        : '先做年度分段、样本外切分和成本后净值稳定性验证。',
+      status: coverage.akshareStrategyValidationReviewCandidates >= 2 ? 'watch' : 'blocked',
+      value: coverage.akshareStrategyValidationReviewCandidates,
+      valueText: coverage.akshareStrategyValidationCandidates
+        ? `${coverage.akshareStrategyValidationReviewCandidates}/${coverage.akshareStrategyValidationCandidates}待复核`
+        : '未验证',
     },
     {
       detail: coverage.localBacktestReady
