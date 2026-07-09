@@ -126,3 +126,13 @@
   - `JQ质量利润流动性策略 v1`：高波动，ready，收益 35.13%，最大回撤 -10.27%，Sharpe 1.74，平均入选 30 只，最近触发至 2026-06-08。
   - `K线辅助确认策略`：低波动，conditional，收益 35.64%，最大回撤 -4.11%，Sharpe 1.86，平均入选 28.55 只，最近触发至 2025-08-13。
 - `paper_watch_execution_pack_20260709.json` 与平台总览改为优先使用就绪审计推荐路线；页面已验证显示 `1就绪/1条件`。
+
+## 追加：市场状态切换策略
+
+- 新增 `outputs/strategies/joinquant/build_regime_switch_quality_kline_strategy.py`。
+- 组合逻辑：高波动使用 `JQ质量利润流动性策略 v1`，低波动使用 `K线辅助确认策略`，中波动默认空仓/观察。
+- 数据原则：只组合已导入 JoinQuant 真实交易曲线中的单期 `gross_return/cost/turnover`，不生成虚构收益；结果标记为 `derived_from_joinquant_real_trading_curves`。
+- 生成 `regime_switch_quality_kline_v1_20260709.json` 和 `regime-switch-quality-kline-v1-20260709.md`。
+- 组合策略结果：70 期，收益 83.29%，最大回撤 -9.07%，Sharpe 1.80，平均入选 29.36 只；1.5x 成本压力收益 74.03%，2.0x 成本压力收益 65.22%。
+- 重新审计后：2 条 `ready_controlled_paper_watch`、2 条 `conditional_paper_watch`、3 条 `conditional_recheck_required`、3 条 `not_ready`。
+- 当前平台总览已验证显示 `2就绪/0条件`：`JQ质量利润流动性策略 v1 - 高波动` 与 `市场状态切换策略 v1 - 高低波动切换`。

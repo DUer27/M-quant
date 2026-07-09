@@ -1,16 +1,16 @@
 # 受控模拟观察就绪审计
 
-- 生成时间：2026-07-09T15:07:33
+- 生成时间：2026-07-09T15:18:38
 - 数据原则：只读取已导入 JoinQuant 真实交易回测净值曲线；成本压力和分段收益由曲线中的真实 gross_return/cost/turnover 重算，不生成虚构收益。
-- 路线数量：9
-- 决策分布：{'not_ready': 3, 'conditional_recheck_required': 3, 'conditional_paper_watch': 2, 'ready_controlled_paper_watch': 1}
+- 路线数量：10
+- 决策分布：{'not_ready': 3, 'conditional_recheck_required': 3, 'conditional_paper_watch': 2, 'ready_controlled_paper_watch': 2}
 
 ## 路线结论
 
 ## 推荐进入观察配置
 
 - `JQ质量利润流动性策略 v1`：高波动，决策 `ready_controlled_paper_watch`，收益 35.13%，回撤 -10.27%，Sharpe 1.74。
-- `K线辅助确认策略`：低波动，决策 `conditional_paper_watch`，收益 35.64%，回撤 -4.11%，Sharpe 1.86。
+- `市场状态切换策略 v1`：高低波动切换，决策 `ready_controlled_paper_watch`，收益 83.29%，回撤 -9.07%，Sharpe 1.80。
 
 ### K线辅助确认策略 - 低波动/大市值
 
@@ -236,3 +236,28 @@
 - 未通过 `first_half_positive`：-0.0255 > 0
 - 通过 `second_half_positive`：0.2369 > 0
 - 未通过 `recent_layer_activity`：330 <= 180 days
+
+### 市场状态切换策略 v1 - 高低波动切换
+
+- 决策：ready_controlled_paper_watch
+- 原因：硬门槛、成本压力、前后半段和近期触发均通过。
+- 真实收益：83.29%
+- 最大回撤：-9.07%
+- Sharpe：1.80
+- 1.5x 成本压力收益：74.03%
+- 2.0x 成本压力收益：65.22%
+- 前半段收益：25.33%
+- 后半段收益：46.25%
+- 日期：2024-01-02 至 2026-06-08
+
+检查项：
+- 通过 `periods`：70 >= 30
+- 通过 `strategy_return`：0.8329 >= 0.2000
+- 通过 `max_drawdown`：-0.0907 >= -0.1500
+- 通过 `sharpe`：1.8039 >= 1.2000
+- 通过 `win_rate`：0.6286 >= 0.5200
+- 通过 `stress_1_5_return`：0.7403 > 0
+- 通过 `avg_selected_count`：29.36 >= 10
+- 通过 `first_half_positive`：0.2533 > 0
+- 通过 `second_half_positive`：0.4625 > 0
+- 通过 `recent_layer_activity`：31 <= 180 days
