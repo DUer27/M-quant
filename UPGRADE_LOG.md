@@ -4,6 +4,26 @@
 
 ## 2026-07-10
 
+### Import real JoinQuant latest-signal reviews and reach 2/2
+- 在 JoinQuant 研究环境实跑并导入两份真实复核 JSON：
+  - `核心量价趋势策略 v1 / 中波动小市值` 最新信号复核。
+  - `AkShare高波动均值回归-中流动性观察策略` 最新信号交易可行性复核。
+- 核心量价复核真实结论：
+  - 2026-07-10 的 JoinQuant `valuation` 暂不可用，脚本回退到最近可用日 2026-07-09，并在 JSON 中记录回退原因。
+  - 2026-07-09 市场状态为 `high_volatility`，小市值入选 7 只。
+  - 结论：`promotion_signal_not_ready`，不晋级，不计入 2/2。
+- AkShare 最新信号交易复核真实结论：
+  - 信号日：2026-07-09。
+  - 候选 15 只，JoinQuant 复核可交易 15 只。
+  - 结论：`tradeability_review_passed`。
+- 模拟观察运行包刷新后：
+  - `jq_controller / 市场状态切换策略 v1` 可观察。
+  - `akshare_local_switch / AkShare本地高低波动切换策略 v1` 可观察。
+  - `jq_medium_vol_small_cap_core` 保持阻塞。
+- 成熟策略矩阵刷新为 `target_met`，`ready_strategy_count=2 / 2`。
+- Data honesty note: 本次所有结论来自 JoinQuant 研究环境真实输出和平台严格导入校验；没有生成收益、净值、成交、持仓或虚构晋级结论。
+- Detail log: `logs/2026-07-10-real-latest-signal-reviews-2of2.md`
+
 ### Add conditional operations-pack promotion gate
 - 模拟观察运行包接入 `核心量价趋势策略 v1 / 中波动/小市值` 条件晋级逻辑。
 - 只有导入真实 JoinQuant 最新信号复核，且满足以下门槛时，才会写入 `jq_medium_vol_small_cap_core` 资金袖并计入 `2/2`：

@@ -1,9 +1,9 @@
 # 模拟观察运行包
 
-- 生成时间：2026-07-10T02:59:14
+- 生成时间：2026-07-10T03:12:42
 - 状态：`ready_with_blockers`
 - 数据原则：只读取已审计 JoinQuant 曲线、AkShare 本地 OHLCV 策略与已导入交易复核；不生成收益、净值、成交或持仓。
-- 可观察资金袖：1 / 2
+- 可观察资金袖：2 / 3
 
 ## 资金袖
 
@@ -17,16 +17,26 @@
 - 回撤证据：-9.07%
 - Sharpe：1.8039399491070465
 
+### 核心量价趋势策略 v1
+
+- 资金袖：`jq_medium_vol_small_cap_core`
+- 证据源：JoinQuant historical route + imported latest signal review
+- 状态：`blocked_by_latest_signal_review`
+- 可开始观察：False
+- 收益证据：43.30%
+- 回撤证据：-9.34%
+- Sharpe：1.3930551667201772
+- 阻塞：已导入核心量价中波动/小市值最新信号复核，但未达到 promotion_signal_ready 门槛。
+
 ### AkShare本地高低波动切换策略 v1
 
 - 资金袖：`akshare_local_switch`
 - 证据源：AkShare local OHLCV
-- 状态：`ready_local_switch_pending_tradeability_review`
-- 可开始观察：False
+- 状态：`ready_for_controlled_paper_watch`
+- 可开始观察：True
 - 收益证据：174.09%
 - 回撤证据：-6.60%
 - Sharpe：3.14203779176307
-- 阻塞：最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。
 
 ## 每日账本字段
 
