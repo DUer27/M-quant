@@ -1,8 +1,8 @@
 {
   "source": "joinquant_paper_watch_readiness_audit",
-  "generated_at": "2026-07-09T14:54:13",
+  "generated_at": "2026-07-09T15:07:33",
   "input": {
-    "execution_pack": "outputs/strategies/joinquant/paper_watch_execution_pack_20260709.json",
+    "maturity_audit": "outputs/strategies/joinquant/strategy_maturity_audit_20260709.json",
     "imported_backtests": "platform/quant-factor-platform/data/imported-backtest-results.json"
   },
   "data_policy": "只读取已导入 JoinQuant 真实交易回测净值曲线；成本压力和分段收益由曲线中的真实 gross_return/cost/turnover 重算，不生成虚构收益。",
@@ -16,10 +16,53 @@
     "min_avg_selected_count": 10,
     "max_recency_days": 180
   },
-  "route_count": 2,
+  "route_count": 9,
+  "recommended_route_count": 2,
+  "recommended_routes": [
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "layer": "高波动",
+      "market_regime": "high_volatility",
+      "market_cap_bucket": null,
+      "sample_dates": 39,
+      "strategy_return": 0.35130804884936606,
+      "annual_return": null,
+      "max_drawdown": -0.10268028853355404,
+      "sharpe": 1.7373322248071763,
+      "win_rate": 0.6153846153846154,
+      "avg_selected_count": 30.0,
+      "readiness_decision": "ready_controlled_paper_watch",
+      "readiness_reason": "硬门槛、成本压力、前后半段和近期触发均通过。",
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 高波动，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "layer": "低波动",
+      "market_regime": "low_volatility",
+      "market_cap_bucket": null,
+      "sample_dates": 31,
+      "strategy_return": 0.3563799970244368,
+      "annual_return": null,
+      "max_drawdown": -0.04105313516809139,
+      "sharpe": 1.8620972822480988,
+      "win_rate": 0.6451612903225806,
+      "avg_selected_count": 28.548387096774192,
+      "readiness_decision": "conditional_paper_watch",
+      "readiness_reason": "硬门槛、成本压力和前后半段通过，但近期未触发该分层，只能等环境出现后观察。",
+      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 低波动，不得扩展到未通过分层。"
+    }
+  ],
   "decision_counts": {
-    "conditional_paper_watch": 1,
-    "not_ready": 1
+    "not_ready": 3,
+    "conditional_recheck_required": 3,
+    "conditional_paper_watch": 2,
+    "ready_controlled_paper_watch": 1
   },
   "routes": [
     {
@@ -286,6 +329,937 @@
         }
       },
       "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "allowed_layer": "低波动",
+      "allowed_market_regime": "low_volatility",
+      "allowed_market_cap_bucket": null,
+      "decision": "conditional_paper_watch",
+      "decision_reason": "硬门槛、成本压力和前后半段通过，但近期未触发该分层，只能等环境出现后观察。",
+      "checks": [
+        {
+          "name": "periods",
+          "passed": true,
+          "detail": "31 >= 30"
+        },
+        {
+          "name": "strategy_return",
+          "passed": true,
+          "detail": "0.3564 >= 0.2000"
+        },
+        {
+          "name": "max_drawdown",
+          "passed": true,
+          "detail": "-0.0411 >= -0.1500"
+        },
+        {
+          "name": "sharpe",
+          "passed": true,
+          "detail": "1.8621 >= 1.2000"
+        },
+        {
+          "name": "win_rate",
+          "passed": true,
+          "detail": "0.6452 >= 0.5200"
+        },
+        {
+          "name": "stress_1_5_return",
+          "passed": true,
+          "detail": "0.3030 > 0"
+        },
+        {
+          "name": "avg_selected_count",
+          "passed": true,
+          "detail": "28.55 >= 10"
+        },
+        {
+          "name": "first_half_positive",
+          "passed": true,
+          "detail": "0.0079 > 0"
+        },
+        {
+          "name": "second_half_positive",
+          "passed": true,
+          "detail": "0.3457 > 0"
+        },
+        {
+          "name": "recent_layer_activity",
+          "passed": false,
+          "detail": "330 <= 180 days"
+        }
+      ],
+      "baseline": {
+        "periods": 31,
+        "first_date": "2024-03-27",
+        "last_date": "2025-08-13",
+        "strategy_return": 0.3563799970244368,
+        "max_drawdown": -0.04105313516809139,
+        "sharpe": 1.8620972822480988,
+        "win_rate": 0.6451612903225806,
+        "avg_turnover": 1.5356374807987723,
+        "avg_selected_count": 28.548387096774192
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.3563799970244368,
+          "max_drawdown": -0.04105313516809139,
+          "sharpe": 1.8620972822480988,
+          "win_rate": 0.6451612903225806,
+          "avg_turnover": 1.5356374807987723,
+          "avg_selected_count": 28.548387096774192
+        },
+        "cost_1_5x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.3030435470679349,
+          "max_drawdown": -0.05427646866163105,
+          "sharpe": 1.6330212125128145,
+          "win_rate": 0.5161290322580645,
+          "avg_turnover": 1.5356374807987723,
+          "avg_selected_count": 28.548387096774192
+        },
+        "cost_2_0x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.2517371837980307,
+          "max_drawdown": -0.06739264663953182,
+          "sharpe": 1.4038277771080732,
+          "win_rate": 0.5161290322580645,
+          "avg_turnover": 1.5356374807987723,
+          "avg_selected_count": 28.548387096774192
+        }
+      },
+      "split": {
+        "first_half": {
+          "periods": 15,
+          "first_date": "2024-03-27",
+          "last_date": "2024-09-12",
+          "strategy_return": 0.007908914182504834,
+          "max_drawdown": -0.04105313516809139,
+          "sharpe": 0.2569538315818396,
+          "win_rate": 0.5333333333333333,
+          "avg_turnover": 1.4580952380952394,
+          "avg_selected_count": 27.0
+        },
+        "second_half": {
+          "periods": 16,
+          "first_date": "2024-09-23",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.3457366811013569,
+          "max_drawdown": -0.02531012452404613,
+          "sharpe": 2.7024279457837914,
+          "win_rate": 0.75,
+          "avg_turnover": 1.6083333333333352,
+          "avg_selected_count": 30.0
+        }
+      },
+      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "allowed_layer": "高波动",
+      "allowed_market_regime": "high_volatility",
+      "allowed_market_cap_bucket": null,
+      "decision": "ready_controlled_paper_watch",
+      "decision_reason": "硬门槛、成本压力、前后半段和近期触发均通过。",
+      "checks": [
+        {
+          "name": "periods",
+          "passed": true,
+          "detail": "39 >= 30"
+        },
+        {
+          "name": "strategy_return",
+          "passed": true,
+          "detail": "0.3513 >= 0.2000"
+        },
+        {
+          "name": "max_drawdown",
+          "passed": true,
+          "detail": "-0.1027 >= -0.1500"
+        },
+        {
+          "name": "sharpe",
+          "passed": true,
+          "detail": "1.7373 >= 1.2000"
+        },
+        {
+          "name": "win_rate",
+          "passed": true,
+          "detail": "0.6154 >= 0.5200"
+        },
+        {
+          "name": "stress_1_5_return",
+          "passed": true,
+          "detail": "0.3355 > 0"
+        },
+        {
+          "name": "avg_selected_count",
+          "passed": true,
+          "detail": "30.00 >= 10"
+        },
+        {
+          "name": "first_half_positive",
+          "passed": true,
+          "detail": "0.0329 > 0"
+        },
+        {
+          "name": "second_half_positive",
+          "passed": true,
+          "detail": "0.3083 > 0"
+        },
+        {
+          "name": "recent_layer_activity",
+          "passed": true,
+          "detail": "31 <= 180 days"
+        }
+      ],
+      "baseline": {
+        "periods": 39,
+        "first_date": "2024-01-02",
+        "last_date": "2026-06-08",
+        "strategy_return": 0.35130804884936606,
+        "max_drawdown": -0.10268028853355404,
+        "sharpe": 1.7373322248071763,
+        "win_rate": 0.6153846153846154,
+        "avg_turnover": 0.3538461538461538,
+        "avg_selected_count": 30.0
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "periods": 39,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.35130804884936606,
+          "max_drawdown": -0.10268028853355404,
+          "sharpe": 1.7373322248071763,
+          "win_rate": 0.6153846153846154,
+          "avg_turnover": 0.3538461538461538,
+          "avg_selected_count": 30.0
+        },
+        "cost_1_5x": {
+          "periods": 39,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.3355444497866231,
+          "max_drawdown": -0.10576243288791609,
+          "sharpe": 1.6710622547708782,
+          "win_rate": 0.5897435897435898,
+          "avg_turnover": 0.3538461538461538,
+          "avg_selected_count": 30.0
+        },
+        "cost_2_0x": {
+          "periods": 39,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.31995777177950435,
+          "max_drawdown": -0.10883572129097419,
+          "sharpe": 1.6050019729681075,
+          "win_rate": 0.5897435897435898,
+          "avg_turnover": 0.3538461538461538,
+          "avg_selected_count": 30.0
+        }
+      },
+      "split": {
+        "first_half": {
+          "periods": 19,
+          "first_date": "2024-01-02",
+          "last_date": "2024-11-25",
+          "strategy_return": 0.03287770478069052,
+          "max_drawdown": -0.10268028853355404,
+          "sharpe": 0.4824867986553642,
+          "win_rate": 0.5263157894736842,
+          "avg_turnover": 0.368421052631579,
+          "avg_selected_count": 30.0
+        },
+        "second_half": {
+          "periods": 20,
+          "first_date": "2024-12-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.3082943339708233,
+          "max_drawdown": -0.06903764432911774,
+          "sharpe": 2.843475825809,
+          "win_rate": 0.7,
+          "avg_turnover": 0.34,
+          "avg_selected_count": 30.0
+        }
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "allowed_layer": "低波动/大市值",
+      "allowed_market_regime": "low_volatility",
+      "allowed_market_cap_bucket": "large_cap",
+      "decision": "conditional_recheck_required",
+      "decision_reason": "硬门槛通过，但分段或近期触发不足，模拟前需人工复核。",
+      "checks": [
+        {
+          "name": "periods",
+          "passed": true,
+          "detail": "31 >= 30"
+        },
+        {
+          "name": "strategy_return",
+          "passed": true,
+          "detail": "0.3482 >= 0.2000"
+        },
+        {
+          "name": "max_drawdown",
+          "passed": true,
+          "detail": "-0.1448 >= -0.1500"
+        },
+        {
+          "name": "sharpe",
+          "passed": true,
+          "detail": "1.4838 >= 1.2000"
+        },
+        {
+          "name": "win_rate",
+          "passed": true,
+          "detail": "0.5484 >= 0.5200"
+        },
+        {
+          "name": "stress_1_5_return",
+          "passed": true,
+          "detail": "0.3381 > 0"
+        },
+        {
+          "name": "avg_selected_count",
+          "passed": true,
+          "detail": "19.87 >= 10"
+        },
+        {
+          "name": "first_half_positive",
+          "passed": false,
+          "detail": "-0.1215 > 0"
+        },
+        {
+          "name": "second_half_positive",
+          "passed": true,
+          "detail": "0.5347 > 0"
+        },
+        {
+          "name": "recent_layer_activity",
+          "passed": false,
+          "detail": "330 <= 180 days"
+        }
+      ],
+      "baseline": {
+        "periods": 31,
+        "first_date": "2024-03-27",
+        "last_date": "2025-08-13",
+        "strategy_return": 0.348183947762847,
+        "max_drawdown": -0.14482222169408943,
+        "sharpe": 1.4838210455714396,
+        "win_rate": 0.5483870967741935,
+        "avg_turnover": 0.2853515281128949,
+        "avg_selected_count": 19.870967741935484
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.348183947762847,
+          "max_drawdown": -0.14482222169408943,
+          "sharpe": 1.4838210455714396,
+          "win_rate": 0.5483870967741935,
+          "avg_turnover": 0.2853515281128949,
+          "avg_selected_count": 19.870967741935484
+        },
+        "cost_1_5x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.33812759133507253,
+          "max_drawdown": -0.14774913519450372,
+          "sharpe": 1.449949290338447,
+          "win_rate": 0.5483870967741935,
+          "avg_turnover": 0.2853515281128949,
+          "avg_selected_count": 19.870967741935484
+        },
+        "cost_2_0x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.3281411955988971,
+          "max_drawdown": -0.15066730862269273,
+          "sharpe": 1.4160743265855196,
+          "win_rate": 0.5483870967741935,
+          "avg_turnover": 0.2853515281128949,
+          "avg_selected_count": 19.870967741935484
+        }
+      },
+      "split": {
+        "first_half": {
+          "periods": 15,
+          "first_date": "2024-03-27",
+          "last_date": "2024-09-12",
+          "strategy_return": -0.12151499172566849,
+          "max_drawdown": -0.14482222169408943,
+          "sharpe": -2.521431277349688,
+          "win_rate": 0.3333333333333333,
+          "avg_turnover": 0.3438032842057609,
+          "avg_selected_count": 18.066666666666666
+        },
+        "second_half": {
+          "periods": 16,
+          "first_date": "2024-09-23",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.5346692716033672,
+          "max_drawdown": -0.020994505673304076,
+          "sharpe": 3.1750183018265377,
+          "win_rate": 0.75,
+          "avg_turnover": 0.23055300677583285,
+          "avg_selected_count": 21.5625
+        }
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
+      "strategy_id": "core_volume_price_trend_v1",
+      "strategy_name": "核心量价趋势策略 v1",
+      "allowed_layer": "中波动/小市值",
+      "allowed_market_regime": "medium_volatility",
+      "allowed_market_cap_bucket": "small_cap",
+      "decision": "not_ready",
+      "decision_reason": "硬门槛未全部通过，不进入模拟观察。",
+      "checks": [
+        {
+          "name": "periods",
+          "passed": true,
+          "detail": "45 >= 30"
+        },
+        {
+          "name": "strategy_return",
+          "passed": true,
+          "detail": "0.4330 >= 0.2000"
+        },
+        {
+          "name": "max_drawdown",
+          "passed": true,
+          "detail": "-0.0934 >= -0.1500"
+        },
+        {
+          "name": "sharpe",
+          "passed": true,
+          "detail": "1.3931 >= 1.2000"
+        },
+        {
+          "name": "win_rate",
+          "passed": true,
+          "detail": "0.5556 >= 0.5200"
+        },
+        {
+          "name": "stress_1_5_return",
+          "passed": true,
+          "detail": "0.3360 > 0"
+        },
+        {
+          "name": "avg_selected_count",
+          "passed": false,
+          "detail": "5.58 >= 10"
+        },
+        {
+          "name": "first_half_positive",
+          "passed": true,
+          "detail": "0.0979 > 0"
+        },
+        {
+          "name": "second_half_positive",
+          "passed": true,
+          "detail": "0.3052 > 0"
+        },
+        {
+          "name": "recent_layer_activity",
+          "passed": true,
+          "detail": "45 <= 180 days"
+        }
+      ],
+      "baseline": {
+        "periods": 45,
+        "first_date": "2024-03-13",
+        "last_date": "2026-05-25",
+        "strategy_return": 0.4330085735791378,
+        "max_drawdown": -0.09339761818584269,
+        "sharpe": 1.3930551667201772,
+        "win_rate": 0.5555555555555556,
+        "avg_turnover": 1.8459783426450094,
+        "avg_selected_count": 5.5777777777777775
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "periods": 45,
+          "first_date": "2024-03-13",
+          "last_date": "2026-05-25",
+          "strategy_return": 0.4330085735791378,
+          "max_drawdown": -0.09339761818584269,
+          "sharpe": 1.3930551667201772,
+          "win_rate": 0.5555555555555556,
+          "avg_turnover": 1.8459783426450094,
+          "avg_selected_count": 5.5777777777777775
+        },
+        "cost_1_5x": {
+          "periods": 45,
+          "first_date": "2024-03-13",
+          "last_date": "2026-05-25",
+          "strategy_return": 0.33600913288949186,
+          "max_drawdown": -0.0962284454305462,
+          "sharpe": 1.1511297293322478,
+          "win_rate": 0.5333333333333333,
+          "avg_turnover": 1.8459783426450094,
+          "avg_selected_count": 5.5777777777777775
+        },
+        "cost_2_0x": {
+          "periods": 45,
+          "first_date": "2024-03-13",
+          "last_date": "2026-05-25",
+          "strategy_return": 0.24543763247822192,
+          "max_drawdown": -0.09905493767524987,
+          "sharpe": 0.9087569591947449,
+          "win_rate": 0.5333333333333333,
+          "avg_turnover": 1.8459783426450094,
+          "avg_selected_count": 5.5777777777777775
+        }
+      },
+      "split": {
+        "first_half": {
+          "periods": 22,
+          "first_date": "2024-03-13",
+          "last_date": "2025-10-09",
+          "strategy_return": 0.09794440789111714,
+          "max_drawdown": -0.09339761818584269,
+          "sharpe": 0.9174813612628473,
+          "win_rate": 0.6363636363636364,
+          "avg_turnover": 1.8178145087235995,
+          "avg_selected_count": 5.7272727272727275
+        },
+        "second_half": {
+          "periods": 23,
+          "first_date": "2025-10-16",
+          "last_date": "2026-05-25",
+          "strategy_return": 0.305174071910979,
+          "max_drawdown": -0.06214278325972311,
+          "sharpe": 1.7347779818380242,
+          "win_rate": 0.4782608695652174,
+          "avg_turnover": 1.872917662048097,
+          "avg_selected_count": 5.434782608695652
+        }
+      },
+      "source": "joinquant_core_volume_price_trend_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "allowed_layer": "高波动/大市值",
+      "allowed_market_regime": "high_volatility",
+      "allowed_market_cap_bucket": "large_cap",
+      "decision": "conditional_recheck_required",
+      "decision_reason": "硬门槛通过，但分段或近期触发不足，模拟前需人工复核。",
+      "checks": [
+        {
+          "name": "periods",
+          "passed": true,
+          "detail": "39 >= 30"
+        },
+        {
+          "name": "strategy_return",
+          "passed": true,
+          "detail": "0.2401 >= 0.2000"
+        },
+        {
+          "name": "max_drawdown",
+          "passed": true,
+          "detail": "-0.1280 >= -0.1500"
+        },
+        {
+          "name": "sharpe",
+          "passed": true,
+          "detail": "1.3410 >= 1.2000"
+        },
+        {
+          "name": "win_rate",
+          "passed": true,
+          "detail": "0.5897 >= 0.5200"
+        },
+        {
+          "name": "stress_1_5_return",
+          "passed": true,
+          "detail": "0.2243 > 0"
+        },
+        {
+          "name": "avg_selected_count",
+          "passed": true,
+          "detail": "20.10 >= 10"
+        },
+        {
+          "name": "first_half_positive",
+          "passed": false,
+          "detail": "-0.0120 > 0"
+        },
+        {
+          "name": "second_half_positive",
+          "passed": true,
+          "detail": "0.2552 > 0"
+        },
+        {
+          "name": "recent_layer_activity",
+          "passed": true,
+          "detail": "31 <= 180 days"
+        }
+      ],
+      "baseline": {
+        "periods": 39,
+        "first_date": "2024-01-02",
+        "last_date": "2026-06-08",
+        "strategy_return": 0.2401219047679799,
+        "max_drawdown": -0.12800768027034404,
+        "sharpe": 1.3409995039234317,
+        "win_rate": 0.5897435897435898,
+        "avg_turnover": 0.3880662011096793,
+        "avg_selected_count": 20.102564102564102
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "periods": 39,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.2401219047679799,
+          "max_drawdown": -0.12800768027034404,
+          "sharpe": 1.3409995039234317,
+          "win_rate": 0.5897435897435898,
+          "avg_turnover": 0.3880662011096793,
+          "avg_selected_count": 20.102564102564102
+        },
+        "cost_1_5x": {
+          "periods": 39,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.224258607221532,
+          "max_drawdown": -0.1348646893712354,
+          "sharpe": 1.2651568695768007,
+          "win_rate": 0.5897435897435898,
+          "avg_turnover": 0.3880662011096793,
+          "avg_selected_count": 20.102564102564102
+        },
+        "cost_2_0x": {
+          "periods": 39,
+          "first_date": "2024-01-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.20859068193272923,
+          "max_drawdown": -0.14167122935299858,
+          "sharpe": 1.1895440102026864,
+          "win_rate": 0.5641025641025641,
+          "avg_turnover": 0.3880662011096793,
+          "avg_selected_count": 20.102564102564102
+        }
+      },
+      "split": {
+        "first_half": {
+          "periods": 19,
+          "first_date": "2024-01-02",
+          "last_date": "2024-11-25",
+          "strategy_return": -0.01197781922672947,
+          "max_drawdown": -0.1270487414736048,
+          "sharpe": -0.061527142359637105,
+          "win_rate": 0.47368421052631576,
+          "avg_turnover": 0.3927186387020181,
+          "avg_selected_count": 20.105263157894736
+        },
+        "second_half": {
+          "periods": 20,
+          "first_date": "2024-12-02",
+          "last_date": "2026-06-08",
+          "strategy_return": 0.25515593566675276,
+          "max_drawdown": -0.08185903735615574,
+          "sharpe": 2.47012096903039,
+          "win_rate": 0.7,
+          "avg_turnover": 0.3836463853969575,
+          "avg_selected_count": 20.1
+        }
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "allowed_layer": "低波动/中市值",
+      "allowed_market_regime": "low_volatility",
+      "allowed_market_cap_bucket": "mid_cap",
+      "decision": "not_ready",
+      "decision_reason": "硬门槛未全部通过，不进入模拟观察。",
+      "checks": [
+        {
+          "name": "periods",
+          "passed": true,
+          "detail": "31 >= 30"
+        },
+        {
+          "name": "strategy_return",
+          "passed": true,
+          "detail": "0.2624 >= 0.2000"
+        },
+        {
+          "name": "max_drawdown",
+          "passed": true,
+          "detail": "-0.0731 >= -0.1500"
+        },
+        {
+          "name": "sharpe",
+          "passed": true,
+          "detail": "1.2728 >= 1.2000"
+        },
+        {
+          "name": "win_rate",
+          "passed": true,
+          "detail": "0.5484 >= 0.5200"
+        },
+        {
+          "name": "stress_1_5_return",
+          "passed": true,
+          "detail": "0.2091 > 0"
+        },
+        {
+          "name": "avg_selected_count",
+          "passed": false,
+          "detail": "9.32 >= 10"
+        },
+        {
+          "name": "first_half_positive",
+          "passed": true,
+          "detail": "0.0129 > 0"
+        },
+        {
+          "name": "second_half_positive",
+          "passed": true,
+          "detail": "0.2463 > 0"
+        },
+        {
+          "name": "recent_layer_activity",
+          "passed": false,
+          "detail": "330 <= 180 days"
+        }
+      ],
+      "baseline": {
+        "periods": 31,
+        "first_date": "2024-03-27",
+        "last_date": "2025-08-13",
+        "strategy_return": 0.26235027440604464,
+        "max_drawdown": -0.0730924421450857,
+        "sharpe": 1.2727941937750473,
+        "win_rate": 0.5483870967741935,
+        "avg_turnover": 1.6439426165232616,
+        "avg_selected_count": 9.32258064516129
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.26235027440604464,
+          "max_drawdown": -0.0730924421450857,
+          "sharpe": 1.2727941937750473,
+          "win_rate": 0.5483870967741935,
+          "avg_turnover": 1.6439426165232616,
+          "avg_selected_count": 9.32258064516129
+        },
+        "cost_1_5x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.20912143682014084,
+          "max_drawdown": -0.08713272688822948,
+          "sharpe": 1.064169267632671,
+          "win_rate": 0.5483870967741935,
+          "avg_turnover": 1.6439426165232616,
+          "avg_selected_count": 9.32258064516129
+        },
+        "cost_2_0x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.1580657967335095,
+          "max_drawdown": -0.10098001780580124,
+          "sharpe": 0.8556212291233466,
+          "win_rate": 0.5161290322580645,
+          "avg_turnover": 1.6439426165232616,
+          "avg_selected_count": 9.32258064516129
+        }
+      },
+      "split": {
+        "first_half": {
+          "periods": 15,
+          "first_date": "2024-03-27",
+          "last_date": "2024-09-12",
+          "strategy_return": 0.012859991822806949,
+          "max_drawdown": -0.0730924421450857,
+          "sharpe": 0.31098897875469966,
+          "win_rate": 0.4,
+          "avg_turnover": 1.5691053391053391,
+          "avg_selected_count": 9.133333333333333
+        },
+        "second_half": {
+          "periods": 16,
+          "first_date": "2024-09-23",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.24632257626667564,
+          "max_drawdown": -0.04878514823765445,
+          "sharpe": 1.7912061476600634,
+          "win_rate": 0.6875,
+          "avg_turnover": 1.7141025641025642,
+          "avg_selected_count": 9.5
+        }
+      },
+      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+    },
+    {
+      "strategy_id": "money_flow_kline_confirmation_v0",
+      "strategy_name": "主力资金广度K线确认策略 v0",
+      "allowed_layer": "低波动/大市值",
+      "allowed_market_regime": "low_volatility",
+      "allowed_market_cap_bucket": "large_cap",
+      "decision": "conditional_recheck_required",
+      "decision_reason": "硬门槛通过，但分段或近期触发不足，模拟前需人工复核。",
+      "checks": [
+        {
+          "name": "periods",
+          "passed": true,
+          "detail": "31 >= 30"
+        },
+        {
+          "name": "strategy_return",
+          "passed": true,
+          "detail": "0.2054 >= 0.2000"
+        },
+        {
+          "name": "max_drawdown",
+          "passed": true,
+          "detail": "-0.1201 >= -0.1500"
+        },
+        {
+          "name": "sharpe",
+          "passed": true,
+          "detail": "1.2830 >= 1.2000"
+        },
+        {
+          "name": "win_rate",
+          "passed": true,
+          "detail": "0.5484 >= 0.5200"
+        },
+        {
+          "name": "stress_1_5_return",
+          "passed": true,
+          "detail": "0.1539 > 0"
+        },
+        {
+          "name": "avg_selected_count",
+          "passed": true,
+          "detail": "12.29 >= 10"
+        },
+        {
+          "name": "first_half_positive",
+          "passed": false,
+          "detail": "-0.0255 > 0"
+        },
+        {
+          "name": "second_half_positive",
+          "passed": true,
+          "detail": "0.2369 > 0"
+        },
+        {
+          "name": "recent_layer_activity",
+          "passed": false,
+          "detail": "330 <= 180 days"
+        }
+      ],
+      "baseline": {
+        "periods": 31,
+        "first_date": "2024-03-27",
+        "last_date": "2025-08-13",
+        "strategy_return": 0.20535546400494908,
+        "max_drawdown": -0.12012624098308877,
+        "sharpe": 1.2829914674081908,
+        "win_rate": 0.5483870967741935,
+        "avg_turnover": 1.6655330806659083,
+        "avg_selected_count": 12.290322580645162
+      },
+      "cost_stress": {
+        "cost_1_0x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.20535546400494908,
+          "max_drawdown": -0.12012624098308877,
+          "sharpe": 1.2829914674081908,
+          "win_rate": 0.5483870967741935,
+          "avg_turnover": 1.6655330806659083,
+          "avg_selected_count": 12.290322580645162
+        },
+        "cost_1_5x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.1538727246200553,
+          "max_drawdown": -0.13414603212058518,
+          "sharpe": 1.0109989761358,
+          "win_rate": 0.45161290322580644,
+          "avg_turnover": 1.6655330806659083,
+          "avg_selected_count": 12.290322580645162
+        },
+        "cost_2_0x": {
+          "periods": 31,
+          "first_date": "2024-03-27",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.104519689049833,
+          "max_drawdown": -0.14796293929064475,
+          "sharpe": 0.7386025913712325,
+          "win_rate": 0.41935483870967744,
+          "avg_turnover": 1.6655330806659083,
+          "avg_selected_count": 12.290322580645162
+        }
+      },
+      "split": {
+        "first_half": {
+          "periods": 15,
+          "first_date": "2024-03-27",
+          "last_date": "2024-09-12",
+          "strategy_return": -0.02553183154967187,
+          "max_drawdown": -0.12012624098308877,
+          "sharpe": -0.32498192270160836,
+          "win_rate": 0.3333333333333333,
+          "avg_turnover": 1.657558922558923,
+          "avg_selected_count": 11.333333333333334
+        },
+        "second_half": {
+          "periods": 16,
+          "first_date": "2024-09-23",
+          "last_date": "2025-08-13",
+          "strategy_return": 0.23693672408180877,
+          "max_drawdown": -0.019689855292296166,
+          "sharpe": 2.362723333518176,
+          "win_rate": 0.75,
+          "avg_turnover": 1.6730088538912065,
+          "avg_selected_count": 13.1875
+        }
+      },
+      "source": "joinquant_money_flow_kline_confirmation_v0_trading_simulation_v1",
       "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
     }
   ]

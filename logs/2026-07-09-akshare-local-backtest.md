@@ -117,3 +117,12 @@
 - 生成 `paper_watch_readiness_audit_20260709.json` 和 `paper-watch-readiness-audit-20260709.md`。
 - 严格结论：`K线辅助确认策略` 低波动/大市值为条件模拟观察；`JQ质量利润流动性策略 v1` 高波动/中市值因平均入选 7.38 只，低于 10 只门槛，暂不进入模拟盘。
 - 平台总览的 `模拟观察清单` 接入就绪审计，展开后可看到失败检查项和 1.5x/2.0x 成本压力结果。
+
+## 追加：全量受控路线推荐清单
+
+- 修正 `audit_paper_watch_readiness.py`：从 `strategy_maturity_audit_20260709.json` 读取全部 9 条受控路线，而不是只审执行包中的 2 条；同时修正“只按波动分层、不按市值分层”的匹配。
+- 全量审计结果：1 条 `ready_controlled_paper_watch`、2 条 `conditional_paper_watch`、3 条 `conditional_recheck_required`、3 条 `not_ready`。
+- 当前推荐模拟观察清单更新为：
+  - `JQ质量利润流动性策略 v1`：高波动，ready，收益 35.13%，最大回撤 -10.27%，Sharpe 1.74，平均入选 30 只，最近触发至 2026-06-08。
+  - `K线辅助确认策略`：低波动，conditional，收益 35.64%，最大回撤 -4.11%，Sharpe 1.86，平均入选 28.55 只，最近触发至 2025-08-13。
+- `paper_watch_execution_pack_20260709.json` 与平台总览改为优先使用就绪审计推荐路线；页面已验证显示 `1就绪/1条件`。

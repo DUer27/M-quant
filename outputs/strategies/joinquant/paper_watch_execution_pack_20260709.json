@@ -1,8 +1,8 @@
 {
   "source": "joinquant_controlled_paper_watch_execution_pack",
-  "generated_at": "2026-07-09T14:37:25",
-  "input": "outputs/strategies/joinquant/paper_watch_routes_20260709.json",
-  "data_policy": "只从已审计通过的 JoinQuant 真实受控路线生成执行配置；不新增收益、不扩展未通过分层。",
+  "generated_at": "2026-07-09T15:10:58",
+  "input": "outputs/strategies/joinquant/paper_watch_readiness_audit_20260709.json",
+  "data_policy": "优先从模拟观察就绪审计推荐路线生成执行配置；不新增收益、不扩展未通过分层。",
   "status": "ready",
   "route_count": 2,
   "global_controls": [
@@ -13,26 +13,89 @@
   ],
   "routes": [
     {
-      "strategy_id": "kline_assisted_confirmation",
-      "strategy_name": "K线辅助确认策略",
-      "allowed_market_regime": "low_volatility",
-      "allowed_market_cap_bucket": "large_cap",
-      "allowed_layer": "低波动/大市值",
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "allowed_market_regime": "high_volatility",
+      "allowed_market_cap_bucket": null,
+      "allowed_layer": "高波动",
       "rebalance_days": 5,
       "position_mode": "equal_weight_top_30_or_available",
       "entry_gate": [
-        "只在 低波动/大市值 层开仓",
+        "只在 高波动 层开仓",
+        "只使用原策略交易包生成的候选池和排序分数",
+        "不得使用未通过 maturity audit 的市场波动/市值层",
+        "若当期候选少于 10 只，记录信号但不开新仓"
+      ],
+      "paper_watch_baseline": {
+        "sample_dates": 39,
+        "strategy_return": 0.35130804884936606,
+        "annual_return": null,
+        "max_drawdown": -0.10268028853355404,
+        "sharpe": 1.7373322248071763,
+        "win_rate": 0.6153846153846154,
+        "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1"
+      },
+      "pause_rules": [
+        {
+          "rule": "rolling_drawdown_guard",
+          "trigger": -0.12835,
+          "meaning": "模拟盘回撤超过历史该路线最大回撤的 1.25 倍，或超过 8%，先暂停新开仓。"
+        },
+        {
+          "rule": "three_rebalance_underperformance",
+          "trigger": "连续3个调仓周期跑输沪深300且命中率低于历史胜率",
+          "meaning": "说明样本外状态可能劣化，暂停并复核分层环境。"
+        },
+        {
+          "rule": "layer_violation",
+          "trigger": "市场波动层或市值层不等于 allowed_layer",
+          "meaning": "不满足受控路线，禁止开仓。"
+        }
+      ],
+      "daily_observation_fields": [
+        "date",
+        "strategy_id",
+        "market_regime",
+        "market_cap_bucket",
+        "candidate_count",
+        "selected_count",
+        "paper_nav",
+        "paper_daily_return",
+        "hs300_daily_return",
+        "rolling_drawdown",
+        "turnover",
+        "slippage",
+        "industry_top_exposure",
+        "pause_flag",
+        "notes"
+      ],
+      "evidence": {
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+        "paper_scope": "仅限 高波动，不得扩展到未通过分层。",
+        "checks": {}
+      }
+    },
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "allowed_market_regime": "low_volatility",
+      "allowed_market_cap_bucket": null,
+      "allowed_layer": "低波动",
+      "rebalance_days": 5,
+      "position_mode": "equal_weight_top_30_or_available",
+      "entry_gate": [
+        "只在 低波动 层开仓",
         "只使用原策略交易包生成的候选池和排序分数",
         "不得使用未通过 maturity audit 的市场波动/市值层",
         "若当期候选少于 10 只，记录信号但不开新仓"
       ],
       "paper_watch_baseline": {
         "sample_dates": 31,
-        "strategy_return": 0.4992595506771098,
-        "annual_return": 0.9317088757255843,
-        "max_drawdown": -0.03919115266187512,
-        "sharpe": 2.5191408980385095,
-        "win_rate": 0.5806451612903226,
+        "strategy_return": 0.3563799970244368,
+        "annual_return": null,
+        "max_drawdown": -0.04105313516809139,
+        "sharpe": 1.8620972822480988,
+        "win_rate": 0.6451612903225806,
         "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1"
       },
       "pause_rules": [
@@ -71,85 +134,8 @@
       ],
       "evidence": {
         "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
-        "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。",
-        "checks": {
-          "sample_dates": true,
-          "strategy_return": true,
-          "annual_return": true,
-          "max_drawdown": true,
-          "sharpe": true,
-          "win_rate": true
-        }
-      }
-    },
-    {
-      "strategy_id": "jq_quality_profit_liquidity_v1",
-      "strategy_name": "JQ质量利润流动性策略 v1",
-      "allowed_market_regime": "high_volatility",
-      "allowed_market_cap_bucket": "mid_cap",
-      "allowed_layer": "高波动/中市值",
-      "rebalance_days": 5,
-      "position_mode": "equal_weight_top_30_or_available",
-      "entry_gate": [
-        "只在 高波动/中市值 层开仓",
-        "只使用原策略交易包生成的候选池和排序分数",
-        "不得使用未通过 maturity audit 的市场波动/市值层",
-        "若当期候选少于 10 只，记录信号但不开新仓"
-      ],
-      "paper_watch_baseline": {
-        "sample_dates": 39,
-        "strategy_return": 0.5765921523017343,
-        "annual_return": 0.8010022295639585,
-        "max_drawdown": -0.10369602814399159,
-        "sharpe": 1.953540702514037,
-        "win_rate": 0.5641025641025641,
-        "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1"
-      },
-      "pause_rules": [
-        {
-          "rule": "rolling_drawdown_guard",
-          "trigger": -0.12962,
-          "meaning": "模拟盘回撤超过历史该路线最大回撤的 1.25 倍，或超过 8%，先暂停新开仓。"
-        },
-        {
-          "rule": "three_rebalance_underperformance",
-          "trigger": "连续3个调仓周期跑输沪深300且命中率低于历史胜率",
-          "meaning": "说明样本外状态可能劣化，暂停并复核分层环境。"
-        },
-        {
-          "rule": "layer_violation",
-          "trigger": "市场波动层或市值层不等于 allowed_layer",
-          "meaning": "不满足受控路线，禁止开仓。"
-        }
-      ],
-      "daily_observation_fields": [
-        "date",
-        "strategy_id",
-        "market_regime",
-        "market_cap_bucket",
-        "candidate_count",
-        "selected_count",
-        "paper_nav",
-        "paper_daily_return",
-        "hs300_daily_return",
-        "rolling_drawdown",
-        "turnover",
-        "slippage",
-        "industry_top_exposure",
-        "pause_flag",
-        "notes"
-      ],
-      "evidence": {
-        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
-        "paper_scope": "仅限 高波动/中市值，不得扩展到未通过分层。",
-        "checks": {
-          "sample_dates": true,
-          "strategy_return": true,
-          "annual_return": true,
-          "max_drawdown": true,
-          "sharpe": true,
-          "win_rate": true
-        }
+        "paper_scope": "仅限 低波动，不得扩展到未通过分层。",
+        "checks": {}
       }
     }
   ]

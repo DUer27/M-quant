@@ -893,7 +893,14 @@ function buildPaperWatchRoutes() {
   const pack = readJsonFile(paperWatchRoutesPath, {});
   const executionPack = readJsonFile(paperWatchExecutionPackPath, {});
   const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
-  const routes = Array.isArray(pack.routes) ? pack.routes : [];
+  const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
+    ? readinessAudit.recommended_routes
+    : [];
+  const routes = readinessRecommendedRoutes.length
+    ? readinessRecommendedRoutes
+    : Array.isArray(pack.routes)
+      ? pack.routes
+      : [];
   const executionRoutes = Array.isArray(executionPack.routes) ? executionPack.routes : [];
   const readinessRoutes = Array.isArray(readinessAudit.routes) ? readinessAudit.routes : [];
   const executionByRoute = new Map(executionRoutes.map((route) => [
@@ -910,6 +917,11 @@ function buildPaperWatchRoutes() {
     readiness: readinessByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
   }));
   const readinessCounts = readinessAudit.decision_counts || {};
+  const recommendedReadinessCounts = enrichedRoutes.reduce((acc, route) => {
+    const decision = route.readiness?.decision || route.readiness_decision || 'unknown';
+    acc[decision] = (acc[decision] || 0) + 1;
+    return acc;
+  }, {});
   return {
     generatedAt: pack.generated_at || '',
     dataPolicy: pack.data_policy || '只展示已通过真实回测审计的受控模拟观察路线。',
@@ -917,7 +929,8 @@ function buildPaperWatchRoutes() {
     executionStatus: executionPack.status || 'not_ready',
     globalControls: Array.isArray(executionPack.global_controls) ? executionPack.global_controls : [],
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
-    readinessCounts,
+    readinessCounts: recommendedReadinessCounts,
+    readinessDecisionCounts: readinessCounts,
     readinessDataPolicy: readinessAudit.data_policy || '',
     readinessStatus: readinessCounts.ready_controlled_paper_watch
       ? 'ready_controlled_paper_watch'
@@ -926,7 +939,7 @@ function buildPaperWatchRoutes() {
         : readinessCounts.conditional_recheck_required
           ? 'conditional_recheck_required'
           : 'not_ready',
-    routeCount: Number(pack.route_count || enrichedRoutes.length || 0),
+    routeCount: Number(readinessRecommendedRoutes.length || pack.route_count || enrichedRoutes.length || 0),
     routes: enrichedRoutes,
     selectionPolicy: pack.selection_policy || '',
     status: pack.status || 'not_ready',
