@@ -437,6 +437,9 @@ function strategyResultSizeBucket(result) {
   if (result.market_cap_bucket === 'large_cap') return '大市值';
   if (result.market_cap_bucket === 'mid_cap') return '中市值';
   if (result.market_cap_bucket === 'small_cap') return '小市值';
+  if (result.liquidity_bucket === 'high_liquidity') return '高流动性';
+  if (result.liquidity_bucket === 'mid_liquidity') return '中流动性';
+  if (result.liquidity_bucket === 'low_liquidity') return '低流动性';
   if (result.result_type === 'strategy_size_backtest') return '市值未标注';
   if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest') return '交易回测';
   return '未分层';
@@ -446,6 +449,9 @@ function strategyResultSizeKey(result) {
   if (result.market_cap_bucket === 'large_cap') return 'large_cap';
   if (result.market_cap_bucket === 'mid_cap') return 'mid_cap';
   if (result.market_cap_bucket === 'small_cap') return 'small_cap';
+  if (result.liquidity_bucket === 'high_liquidity') return 'high_liquidity';
+  if (result.liquidity_bucket === 'mid_liquidity') return 'mid_liquidity';
+  if (result.liquidity_bucket === 'low_liquidity') return 'low_liquidity';
   if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest') return 'trading_backtest';
   return 'unsegmented';
 }
@@ -457,11 +463,21 @@ function formatMarketCap(value) {
   return `${formatNumber(number, 1)}亿`;
 }
 
+function formatSizeOrLiquidityMeta(result) {
+  if (result.amount_ma20_mean !== null && result.amount_ma20_mean !== undefined && result.amount_ma20_mean !== '') {
+    return `成交额 ${formatMarketCap(Number(result.amount_ma20_mean) / 100000000)}`;
+  }
+  return formatMarketCap(result.market_cap_mean);
+}
+
 const strategySizeOptions = [
   { key: 'all', label: '全部', description: '所有真实结果' },
   { key: 'large_cap', label: '大市值', description: '当日沪深300市值高分位' },
   { key: 'mid_cap', label: '中市值', description: '当日沪深300市值中位区间' },
   { key: 'small_cap', label: '小市值', description: '当日沪深300市值低分位' },
+  { key: 'high_liquidity', label: '高流动性', description: 'AkShare 20日成交额高分位' },
+  { key: 'mid_liquidity', label: '中流动性', description: 'AkShare 20日成交额中位区间' },
+  { key: 'low_liquidity', label: '低流动性', description: 'AkShare 20日成交额低分位' },
   { key: 'unsegmented', label: '未分层/交易回测', description: '普通历史检验或交易回测' },
 ];
 
@@ -830,7 +846,7 @@ function renderStrategyResultSummary(rows) {
           <td><strong>${escapeHtml(strategyResultName(result))}</strong><br><small>${escapeHtml(resultStrategyId(result))}</small></td>
           <td>${escapeHtml(formatStrategyHorizon(result.horizon))}</td>
           <td>${escapeHtml(strategyResultMarketRegime(result))}<br><small>${formatPercent(result.market_vol_mean)}</small></td>
-          <td>${escapeHtml(strategyResultSizeBucket(result))}<br><small>${formatMarketCap(result.market_cap_mean)}</small></td>
+          <td>${escapeHtml(strategyResultSizeBucket(result))}<br><small>${formatSizeOrLiquidityMeta(result)}</small></td>
           <td>${escapeHtml(strategyResultPerformanceLabel(result))}</td>
           <td>${formatPercent(result.mean_return)}</td>
           <td>${formatPercent(result.daily_mean_return)}</td>
