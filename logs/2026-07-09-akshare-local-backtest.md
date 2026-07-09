@@ -71,3 +71,12 @@
   - `AkShare低波动收缩突破-中流动性观察策略`：39 次交易，总收益 84.95%，最大回撤 -4.19%，Sharpe 3.23。
   - `AkShare低波动趋势回踩-中流动性观察策略`：39 次交易，总收益 111.38%，最大回撤 -7.38%，Sharpe 2.84。
 - 聚宽复核脚本同步扩展为 6 条候选；这些仍不是正式策略，下一步必须回填 JoinQuant 真实结果再筛。
+
+## 追加：严格质量审计
+
+- 新增 `outputs/sources/akshare/scripts/audit_factor_quality.py`，只读取真实回测结果，不生成新收益。
+- 审计产物：`outputs/sources/akshare/results/akshare_factor_quality_audit.json` 与 `outputs/_docs/akshare-factor-quality-audit-20260709.md`。
+- 严格门槛：样本天数 >= 120，RankIC >= 0.015，RankIC t >= 2，多空收益 > 0，多空胜率 >= 53%。
+- 审计结论：15 个因子中 1 个单因子通过、3 个显著但不可单独交易、6 个继续观察、5 个暂缓单独使用。
+- 通过项：`ak_liquidity_stability`；其余本地强策略更多来自分层组合，不允许直接包装成单因子 alpha。
+- 平台数据可信度接口新增 `AkShare因子审计` 项，用于展示严格通过数量和待 JoinQuant 复核边界。

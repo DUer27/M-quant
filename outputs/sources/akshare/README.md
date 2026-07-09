@@ -103,3 +103,22 @@
 
 - `AkShare低波动收缩突破-中流动性观察策略`
 - `AkShare低波动趋势回踩-中流动性观察策略`
+
+## 因子质量审计
+
+```bash
+/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 \
+  outputs/sources/akshare/scripts/audit_factor_quality.py
+```
+
+当前产物：
+
+- `outputs/sources/akshare/results/akshare_factor_quality_audit.json`
+- `outputs/_docs/akshare-factor-quality-audit-20260709.md`
+
+当前严格审计结论：
+
+- 单因子通过：`ak_liquidity_stability`
+- 显著但不可单独交易：`ak_crowding_risk`、`ak_anti_crowding_reversal_combo`、`ak_mean_reversion_quality_combo`
+- 其余因子仅观察或暂缓单独使用
+- 6 条策略候选全部仍为待 JoinQuant 复核
