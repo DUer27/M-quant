@@ -13,8 +13,8 @@
 
 ## 回测产物
 
-- 因子结果：27 条
-- 策略结果：64 条，含未分层、市场波动分层、流动性分层、波动×流动性交叉层
+- 因子结果：45 条
+- 策略结果：96 条，含未分层、市场波动分层、流动性分层、波动×流动性交叉层
 - 结果文件：`outputs/sources/akshare/results/akshare_ohlcv_factor_backtest_results.json`
 - 策略调仓：5 日调仓，Top20，单次成本 0.10%
 
@@ -41,14 +41,16 @@
 
 ## 候选稳定性验证
 
-新增 `outputs/sources/akshare/scripts/validate_strategy_candidates.py` 后，对 4 条强分层候选做了年度分段、前后半段、2025-07-01 后样本外、成本后收益、回撤和 Sharpe 检查。
+新增 `outputs/sources/akshare/scripts/validate_strategy_candidates.py` 后，对 6 条强分层候选做了年度分段、前后半段、2025-07-01 后样本外、成本后收益、回撤和 Sharpe 检查。
 
 - 高波动均值回归-中流动性：33 次交易，总收益 48.19%，最大回撤 -4.89%，Sharpe 3.02。
 - 低波动防守确认-中流动性：39 次交易，总收益 96.89%，最大回撤 -5.49%，Sharpe 2.81。
 - 低波动量价趋势-中流动性：39 次交易，总收益 97.76%，最大回撤 -10.92%，Sharpe 2.69。
 - 高波动反拥挤-中流动性：33 次交易，总收益 42.13%，最大回撤 -4.47%，Sharpe 2.56。
+- 低波动收缩突破-中流动性：39 次交易，总收益 84.95%，最大回撤 -4.19%，Sharpe 3.23。
+- 低波动趋势回踩-中流动性：39 次交易，总收益 111.38%，最大回撤 -7.38%，Sharpe 2.84。
 
-这 4 条只标记为 `joinquant_review_candidate`：本地 AkShare OHLCV 稳定性初过关，但还没有完成 JoinQuant 成交额、换手率、市值、行业暴露复核。
+这 6 条只标记为 `joinquant_review_candidate`：本地 AkShare OHLCV 稳定性初过关，但还没有完成 JoinQuant 成交额、换手率、市值、行业暴露复核。
 
 ## 使用边界
 

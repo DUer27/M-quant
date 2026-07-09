@@ -67,6 +67,24 @@ CANDIDATES = [
         "liquidity_bucket": "mid_liquidity",
         "route": "高波动回归路线",
     },
+    {
+        "id": "ak_low_vol_contraction_breakout_mid_liquidity",
+        "name": "AkShare低波动收缩突破-中流动性观察策略",
+        "strategy_id": "ak_contraction_breakout_combo",
+        "score_col": "ak_contraction_breakout_combo",
+        "market_vol_regime": "low_volatility",
+        "liquidity_bucket": "mid_liquidity",
+        "route": "低波动确认路线",
+    },
+    {
+        "id": "ak_low_vol_trend_pullback_mid_liquidity",
+        "name": "AkShare低波动趋势回踩-中流动性观察策略",
+        "strategy_id": "ak_trend_pullback_reversal_combo",
+        "score_col": "ak_trend_pullback_reversal_combo",
+        "market_vol_regime": "low_volatility",
+        "liquidity_bucket": "mid_liquidity",
+        "route": "低波动确认路线",
+    },
 ]
 
 

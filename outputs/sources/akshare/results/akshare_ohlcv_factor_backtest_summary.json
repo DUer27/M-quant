@@ -1,7 +1,7 @@
 {
   "source": "akshare_ohlcv_factor_backtest",
   "data_policy": "真实 AkShare OHLCV 本地回测；不填补缺失股票；不生成虚构绩效；当前本地样本不足以直接实盘。",
-  "generated_at": "2026-07-09T12:54:07",
+  "generated_at": "2026-07-09T14:04:59",
   "input": "outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv",
   "rows": 180816,
   "source_counts": {
@@ -16,9 +16,9 @@
   "min_stocks_per_day_required": 270,
   "top_n": 20,
   "cost_per_rebalance": 0.001,
-  "factor_count": 9,
-  "factor_result_count": 27,
-  "strategy_result_count": 64,
+  "factor_count": 15,
+  "factor_result_count": 45,
+  "strategy_result_count": 96,
   "strategy_layer_policy": "本地分层只使用真实OHLCV可得字段：市场等权20日波动、20日成交额；成交额缺失时用真实成交量兜底；不伪造市值。",
   "factor_definitions": [
     {
@@ -52,6 +52,30 @@
       "description": "高换手、高量比、短期涨幅和均线过伸共同识别拥挤风险。"
     },
     {
+      "id": "ak_volatility_contraction_quality",
+      "name": "AkShare波动收缩质量",
+      "direction": "positive",
+      "description": "20/60日波动较低且成交活动更稳定时，视为收缩蓄势质量更高。"
+    },
+    {
+      "id": "ak_breakout_confirmation",
+      "name": "AkShare突破确认",
+      "direction": "positive",
+      "description": "价格相对20日前高突破、放量和强收盘共同确认突破有效性。"
+    },
+    {
+      "id": "ak_pullback_support_quality",
+      "name": "AkShare趋势回踩支撑",
+      "direction": "positive",
+      "description": "中期趋势仍在、价格贴近MA20、下影承接和短线不过热共同识别回踩支撑。"
+    },
+    {
+      "id": "ak_liquidity_stability",
+      "name": "AkShare流动性稳定",
+      "direction": "positive",
+      "description": "20日成交额/成交量越稳定，短期冲击成本和异常成交风险越低。"
+    },
+    {
       "id": "ak_volume_trend_quality_combo",
       "name": "AkShare量价趋势质量组合",
       "direction": "positive",
@@ -74,6 +98,18 @@
       "name": "AkShare反拥挤回归组合",
       "direction": "positive",
       "description": "低拥挤、低短线追涨和不过度强K线的反向确认组合。"
+    },
+    {
+      "id": "ak_contraction_breakout_combo",
+      "name": "AkShare收缩突破组合",
+      "direction": "positive",
+      "description": "波动收缩、突破确认、量价确认和流动性稳定共同确认，扣除拥挤风险。"
+    },
+    {
+      "id": "ak_trend_pullback_reversal_combo",
+      "name": "AkShare趋势回踩反转组合",
+      "direction": "positive",
+      "description": "趋势仍在、回踩接近MA20、低波动和K线承接共同确认，扣除拥挤风险。"
     }
   ]
 }

@@ -11,7 +11,7 @@
 
 ## 当前关键脚本
 
-- `scripts/m_quant_akshare_ohlcv_candidate_review.py`：复核 AkShare 本地 4 条强分层候选。输出 5/10/20 日事件收益、5日调仓交易净值、目标路线、市值层和高/中/低波动 × 大/中/小市值交叉层。
+- `scripts/m_quant_akshare_ohlcv_candidate_review.py`：复核 AkShare 本地 6 条强分层候选。输出 5/10/20 日事件收益、5日调仓交易净值、目标路线、市值层和高/中/低波动 × 大/中/小市值交叉层。
 - `scripts/m_quant_jq_quality_profit_liquidity_strategy_backtest.py`：复核 JQ质量利润流动性策略。
 - `scripts/m_quant_emotion_weighted_kline_strategy_backtest.py`：复核情绪系数加权 K 线策略。
 - `scripts/m_quant_capital_follow_strategy_backtest.py`：复核资金跟随策略。
@@ -24,6 +24,8 @@
 - 低波动防守确认-中流动性
 - 低波动量价趋势-中流动性
 - 高波动反拥挤-中流动性
+- 低波动收缩突破-中流动性
+- 低波动趋势回踩-中流动性
 
 JoinQuant 复核会替换本地不完整口径：
 

@@ -3728,6 +3728,9 @@ function buildLiveStrategySignals() {
     strategyFactor('ak_defensive_quality_combo', '低波动防守确认', 0.42),
     strategyFactor('ak_volume_trend_quality_combo', '低波动量价趋势', 0.32),
     strategyFactor('ak_anti_crowding_reversal_combo', '反拥挤回归', 0.38),
+    strategyFactor('ak_liquidity_stability', '新增流动性稳定', 0.12),
+    strategyFactor('ak_contraction_breakout_combo', '新增收缩突破', 0.30),
+    strategyFactor('ak_trend_pullback_reversal_combo', '新增趋势回踩', 0.30),
     strategyFactor('ak_crowding_risk', '拥挤风险过滤', -0.18),
   ];
   const jqBlockedFactors = strictAuditRoute?.blockedFactors || [];
@@ -4075,7 +4078,7 @@ function buildLiveStrategySignals() {
           ? `AkShare 本地验证 ${akshareCandidateValidation.unique_stocks || 0} 股 / ${akshareCandidateValidation.unique_dates || 0} 日；候选 ${akshareReviewCandidateCount} 条`
           : '等待 AkShare 候选验证文件',
         factorState: akshareReviewFactors,
-        rankingFormula: '按每条本地候选路线分别复核：高波动均值回归、低波动防守确认、低波动量价趋势、高波动反拥挤；不合并展示未实测收益。',
+        rankingFormula: '按每条本地候选路线分别复核：高波动均值回归、低波动防守确认、低波动量价趋势、高波动反拥挤、低波动收缩突破、低波动趋势回踩；不合并展示未实测收益。',
         entryRules: [
           '只复核本地已通过年度/样本外/回撤/Sharpe 门槛的候选',
           '目标路线保留本地高/低波动与中流动性约束',
