@@ -34,6 +34,7 @@ const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
 const akshareStrategyValidationPath = outputPath('sources', 'akshare', 'results', 'akshare_strategy_candidate_validation.json');
+const akshareFactorQualityAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_factor_quality_audit.json');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -710,6 +711,7 @@ function buildDataCoverageSnapshot() {
   const akshareSummary = readJsonFile(akshareHistorySummaryPath, {});
   const akshareBacktest = readJsonFile(akshareOhlcvBacktestPath, {});
   const akshareStrategyValidation = readJsonFile(akshareStrategyValidationPath, {});
+  const akshareFactorQualityAudit = readJsonFile(akshareFactorQualityAuditPath, {});
   const allRawRows = [...primaryRows, ...capitalRows];
   const importedFactorResults = readImportedFactorResults();
   const importedStrategyResults = readImportedStrategyResults();
@@ -745,6 +747,12 @@ function buildDataCoverageSnapshot() {
       || akshareStrategyValidation.paper_watch_candidate_count
       || 0,
     ),
+    akshareAuditAlphaCandidates: Number(akshareFactorQualityAudit.factor_decision_counts?.alpha_candidate || 0),
+    akshareAuditFactorCount: Number(akshareFactorQualityAudit.factor_count || 0),
+    akshareAuditNotTradeable: Number(akshareFactorQualityAudit.factor_decision_counts?.significant_not_tradeable || 0),
+    akshareAuditRejected: Number(akshareFactorQualityAudit.factor_decision_counts?.reject_standalone || 0),
+    akshareAuditStrategyReviewCandidates: Number(akshareFactorQualityAudit.strategy_decision_counts?.awaiting_joinquant_review || 0),
+    akshareAuditWatch: Number(akshareFactorQualityAudit.factor_decision_counts?.watch || 0),
     maxJqSampleDates,
     localBacktestReady: rawDateCount >= 60,
     minimumLocalDays: 60,
@@ -824,6 +832,21 @@ function buildDataCoverageRisks() {
       valueText: coverage.akshareStrategyValidationCandidates
         ? `${coverage.akshareStrategyValidationReviewCandidates}/${coverage.akshareStrategyValidationCandidates}待复核`
         : '未验证',
+    },
+    {
+      detail: coverage.akshareAuditFactorCount
+        ? `严格审计 ${coverage.akshareAuditFactorCount} 个 AkShare OHLCV 因子：${coverage.akshareAuditAlphaCandidates} 个单因子通过，${coverage.akshareAuditNotTradeable} 个显著但不可单独交易，${coverage.akshareAuditWatch} 个观察，${coverage.akshareAuditRejected} 个暂缓。`
+        : '尚未生成 AkShare 因子质量审计。',
+      limit: 1,
+      name: 'AkShare因子审计',
+      nextAction: coverage.akshareAuditStrategyReviewCandidates
+        ? '只允许单因子通过项进入组合研究；显著但不可交易项只能做风控或组合模块；6条策略候选必须等待 JoinQuant 复核。'
+        : '运行 AkShare 因子质量审计脚本，避免未过筛因子进入策略。',
+      status: coverage.akshareAuditAlphaCandidates >= 1 ? 'ready' : (coverage.akshareAuditFactorCount ? 'watch' : 'blocked'),
+      value: coverage.akshareAuditAlphaCandidates,
+      valueText: coverage.akshareAuditFactorCount
+        ? `${coverage.akshareAuditAlphaCandidates}/${coverage.akshareAuditFactorCount}通过`
+        : '未审计',
     },
     {
       detail: coverage.localBacktestReady
