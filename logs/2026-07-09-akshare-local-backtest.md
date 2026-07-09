@@ -191,3 +191,12 @@
 - 逻辑：只组合执行包里已审计的 `AkShare低波动收缩突破-中流动性观察策略` 与 `AkShare高波动均值回归-中流动性观察策略` 的真实 trade_records，形成一个高/低波动切换控制器。
 - 结果：72 次 5 日调仓，收益 174.09%，最大回撤 -6.60%，Sharpe 3.14，2.0x 成本压力收益 155.28%，决策 `ready_local_switch_paper_watch`。
 - 平台 `模拟观察清单` 已展示该本地切换控制器摘要，并保留边界：AkShare 本地 OHLCV 证据不等同于 JoinQuant 原生实测，最新开仓仍需交易可行性复核。
+
+## 追加：AkShare 本地切换策略稳健性审计
+
+- 新增 `outputs/sources/akshare/scripts/audit_akshare_regime_switch_robustness.py`。
+- 新增结果 `outputs/sources/akshare/results/akshare_regime_switch_robustness_audit_20260709.json`。
+- 新增说明 `outputs/_docs/akshare-regime-switch-robustness-audit-20260709.md`。
+- 审计只重建已有真实 trade_records，不生成新收益；检查组件占比、组件收益、年度正收益、留一年、滚动 12 期、最差滚动回撤、近期收益。
+- 结果：`robust_local_switch_paper_watch`，无失败项；年度正收益比例 100%，留一年最差收益 82.56%，留一年最差 Sharpe 2.78，滚动 12 期正收益比例 93.44%，最差滚动 12 期收益 -2.90%。
+- 平台 `模拟观察清单` 已展示稳健性摘要，但仍保留 JoinQuant 交易可行性复核门槛。
