@@ -2,6 +2,20 @@
 
 > This file is the human-readable upgrade ledger. Every meaningful platform, data, factor, or strategy change should be recorded here with the matching local git commit.
 
+## 2026-07-10
+
+### Add independent sleeve candidate audit
+- 新增 `独立资金袖候选审计`，专门判断哪些策略/路线能计入“两条成熟可模拟策略”目标。
+- 当前真实结论保持严格：
+  - 准入独立资金袖：1 个，`市场状态切换策略 v1`。
+  - 阻塞候选：13 个。
+  - `JQ质量利润流动性策略 v1` 与切换控制器共享高波动组件，只做组件监控，不计入第二资金袖。
+  - `AkShare本地高低波动切换策略 v1` 需要导入 JoinQuant 最新信号交易可行性复核 JSON 后，才可能升级为第二资金袖。
+- 成熟策略推进矩阵接入候选审计，页面新增折叠明细。
+- `刷新派生包` 会同步重建运行包、独立候选审计、成熟矩阵和交易复核任务包。
+- Data honesty note: 本次只汇总已审计 JoinQuant/AkShare/导入复核证据，不生成收益、净值、成交、持仓或交易可行性结论。
+- Detail log: `logs/2026-07-10-independent-sleeve-candidate-audit.md`
+
 ## 2026-07-08
 
 ### Add real JoinQuant volatility x market-cap strategy results

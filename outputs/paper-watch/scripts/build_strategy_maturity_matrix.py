@@ -23,6 +23,7 @@ AK_FACTOR_AUDIT_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "a
 AK_SWITCH_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "akshare_regime_switch_paper_watch_strategy_20260709.json"
 AK_ROBUSTNESS_PATH = ROOT / "outputs" / "sources" / "akshare" / "results" / "akshare_regime_switch_robustness_audit_20260709.json"
 TRADEABILITY_REVIEWS_PATH = ROOT / "platform" / "quant-factor-platform" / "data" / "imported-tradeability-reviews.json"
+INDEPENDENT_SLEEVE_AUDIT_PATH = RESULTS_DIR / "independent_sleeve_candidate_audit_20260710.json"
 
 RESULT_PATH = RESULTS_DIR / "strategy_maturity_matrix_20260710.json"
 DOC_PATH = DOCS_DIR / "strategy-maturity-matrix-20260710.md"
@@ -173,6 +174,7 @@ def build_matrix() -> dict:
     ak_switch = read_json(AK_SWITCH_PATH, {})
     ak_robustness = read_json(AK_ROBUSTNESS_PATH, {})
     tradeability_reviews = read_json(TRADEABILITY_REVIEWS_PATH, [])
+    independent_sleeve_audit = read_json(INDEPENDENT_SLEEVE_AUDIT_PATH, {})
 
     entries = []
     entries.extend(sleeve_entry(item) for item in operations.get("capital_sleeves", []))
@@ -196,6 +198,13 @@ def build_matrix() -> dict:
         )
     if not tradeability_reviews:
         blockers.append("尚未导入 JoinQuant 最新信号交易可行性复核 JSON。")
+    for item in independent_sleeve_audit.get("blocking_summary", []):
+        if "独立可观察资金袖" in item and any("独立可观察资金袖" in blocker for blocker in blockers):
+            continue
+        if "交易可行性复核" in item and any("交易可行性复核" in blocker for blocker in blockers):
+            continue
+        if item not in blockers:
+            blockers.append(item)
 
     next_actions = [
         {
@@ -231,11 +240,14 @@ def build_matrix() -> dict:
             "akshare_switch_strategy": str(AK_SWITCH_PATH.relative_to(ROOT)),
             "akshare_robustness_audit": str(AK_ROBUSTNESS_PATH.relative_to(ROOT)),
             "tradeability_reviews": str(TRADEABILITY_REVIEWS_PATH.relative_to(ROOT)),
+            "independent_sleeve_candidate_audit": str(INDEPENDENT_SLEEVE_AUDIT_PATH.relative_to(ROOT)),
         },
         "evidence_summary": {
             "joinquant_strategy_count": jq_maturity.get("strategy_count"),
             "joinquant_controlled_route_count": jq_maturity.get("controlled_route_count"),
             "joinquant_independent_capital_sleeves": independence.get("independent_capital_sleeves"),
+            "eligible_independent_sleeve_count": independent_sleeve_audit.get("eligible_independent_sleeve_count"),
+            "blocked_independent_sleeve_candidate_count": independent_sleeve_audit.get("blocked_candidate_count"),
             "operations_ready_sleeve_count": operations.get("ready_sleeve_count"),
             "operations_blocked_sleeve_count": operations.get("blocked_sleeve_count"),
             "akshare_awaiting_joinquant_candidate_count": len([
@@ -246,6 +258,14 @@ def build_matrix() -> dict:
         },
         "blockers": blockers,
         "entries": entries,
+        "independent_sleeve_candidate_audit": {
+            "source": independent_sleeve_audit.get("source"),
+            "goal_status": independent_sleeve_audit.get("goal_status"),
+            "eligible_independent_sleeve_count": independent_sleeve_audit.get("eligible_independent_sleeve_count"),
+            "blocked_candidate_count": independent_sleeve_audit.get("blocked_candidate_count"),
+            "candidates": independent_sleeve_audit.get("candidates", []),
+            "data_policy": independent_sleeve_audit.get("data_policy"),
+        },
         "next_actions": next_actions,
     }
 
@@ -281,6 +301,25 @@ def write_doc(matrix: dict) -> None:
             f"{item.get('decision_name')} | {'是' if item.get('counts_toward_two_strategy_goal') else '否'} | "
             f"{pct(item.get('strategy_return'))} | {pct(item.get('max_drawdown'))} | "
             f"{number(item.get('sharpe'))} | {item.get('next_action') or ''} |"
+        )
+
+    candidate_audit = matrix.get("independent_sleeve_candidate_audit") or {}
+    candidates = candidate_audit.get("candidates") or []
+    lines.extend([
+        "",
+        "## 独立资金袖候选",
+        "",
+        f"- 准入：{candidate_audit.get('eligible_independent_sleeve_count', 0)}",
+        f"- 阻塞候选：{candidate_audit.get('blocked_candidate_count', 0)}",
+        "",
+        "| 候选 | 决策 | 计入目标 | 缺口 |",
+        "| --- | --- | --- | --- |",
+    ])
+    for item in candidates:
+        gap = "；".join(item.get("blocked_reasons") or item.get("required_next_evidence") or [])
+        lines.append(
+            f"| {item.get('strategy_name') or item.get('candidate_id')} | {item.get('decision_name')} | "
+            f"{'是' if item.get('counts_as_independent_sleeve') else '否'} | {gap} |"
         )
 
     lines.extend([

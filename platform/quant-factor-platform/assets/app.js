@@ -264,6 +264,8 @@ function renderMaturityMatrix(matrix) {
   const entries = Array.isArray(matrix.entries) ? matrix.entries : [];
   const blockers = Array.isArray(matrix.blockers) ? matrix.blockers : [];
   const actions = Array.isArray(matrix.next_actions) ? matrix.next_actions : [];
+  const sleeveAudit = matrix.independent_sleeve_candidate_audit || {};
+  const sleeveCandidates = Array.isArray(sleeveAudit.candidates) ? sleeveAudit.candidates : [];
   const goalMet = matrix.goal_status === 'target_met';
   return `
     <div class="paper-watch-note">
@@ -302,6 +304,47 @@ function renderMaturityMatrix(matrix) {
           </tbody>
         </table>
         <div class="paper-watch-rules">
+          ${sleeveCandidates.length ? `
+            <details class="compact-details">
+              <summary>
+                独立资金袖候选：
+                ${escapeHtml(sleeveAudit.eligible_independent_sleeve_count ?? 0)} 个准入，
+                ${escapeHtml(sleeveAudit.blocked_candidate_count ?? 0)} 个阻塞
+              </summary>
+              <table class="mini-table">
+                <thead>
+                  <tr>
+                    <th>候选</th>
+                    <th>决策</th>
+                    <th>计入</th>
+                    <th>缺口</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${sleeveCandidates.map((item) => {
+                    const gaps = (Array.isArray(item.blocked_reasons) && item.blocked_reasons.length
+                      ? item.blocked_reasons
+                      : Array.isArray(item.required_next_evidence)
+                        ? item.required_next_evidence
+                        : []
+                    ).join('；');
+                    const candidateName = [
+                      item.strategy_name || item.candidate_id || '-',
+                      item.layer ? `(${item.layer})` : '',
+                    ].filter(Boolean).join(' ');
+                    return `
+                      <tr>
+                        <td>${escapeHtml(candidateName)}</td>
+                        <td>${escapeHtml(item.decision_name || item.decision || '-')}</td>
+                        <td>${item.counts_as_independent_sleeve ? '是' : '否'}</td>
+                        <td>${escapeHtml(gaps || '-')}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </details>
+          ` : ''}
           <strong>下一步</strong>
           ${renderTextList(actions.map((item) => `${item.priority}. ${item.action} ${item.reason}`))}
           <strong>数据原则</strong>

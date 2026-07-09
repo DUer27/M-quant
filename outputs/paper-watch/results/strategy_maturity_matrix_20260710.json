@@ -1,6 +1,6 @@
 {
   "source": "m_quant_strategy_maturity_matrix",
-  "generated_at": "2026-07-10T01:46:45",
+  "generated_at": "2026-07-10T02:12:21",
   "target_ready_strategy_count": 2,
   "ready_strategy_count": 1,
   "goal_status": "not_met",
@@ -13,12 +13,15 @@
     "akshare_factor_quality_audit": "outputs/sources/akshare/results/akshare_factor_quality_audit.json",
     "akshare_switch_strategy": "outputs/sources/akshare/results/akshare_regime_switch_paper_watch_strategy_20260709.json",
     "akshare_robustness_audit": "outputs/sources/akshare/results/akshare_regime_switch_robustness_audit_20260709.json",
-    "tradeability_reviews": "platform/quant-factor-platform/data/imported-tradeability-reviews.json"
+    "tradeability_reviews": "platform/quant-factor-platform/data/imported-tradeability-reviews.json",
+    "independent_sleeve_candidate_audit": "outputs/paper-watch/results/independent_sleeve_candidate_audit_20260710.json"
   },
   "evidence_summary": {
     "joinquant_strategy_count": 5,
     "joinquant_controlled_route_count": 9,
     "joinquant_independent_capital_sleeves": 1,
+    "eligible_independent_sleeve_count": 1,
+    "blocked_independent_sleeve_candidate_count": 13,
     "operations_ready_sleeve_count": 1,
     "operations_blocked_sleeve_count": 1,
     "akshare_awaiting_joinquant_candidate_count": 6,
@@ -244,6 +247,395 @@
       "data_policy": "只汇总已有本地 AkShare 与待导入 JoinQuant 证据；不生成新收益。"
     }
   ],
+  "independent_sleeve_candidate_audit": {
+    "source": "m_quant_independent_sleeve_candidate_audit",
+    "goal_status": "not_met",
+    "eligible_independent_sleeve_count": 1,
+    "blocked_candidate_count": 13,
+    "candidates": [
+      {
+        "candidate_id": "jq_controller",
+        "strategy_id": "regime_switch_quality_kline_v1",
+        "strategy_name": "市场状态切换策略 v1",
+        "evidence_system": "JoinQuant derived real curves",
+        "role": "primary_controller",
+        "decision": "eligible_primary_sleeve",
+        "decision_name": "已准入独立资金袖",
+        "counts_as_independent_sleeve": true,
+        "can_start_observation": true,
+        "metrics": {
+          "sample_dates": 70,
+          "strategy_return": 0.8328872072774001,
+          "annual_return": null,
+          "max_drawdown": -0.09068798084469964,
+          "sharpe": 1.8039399491070465,
+          "win_rate": 0.6285714285714286
+        },
+        "blocked_reasons": [],
+        "required_next_evidence": [],
+        "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。"
+      },
+      {
+        "candidate_id": "akshare_local_switch",
+        "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+        "strategy_name": "AkShare本地高低波动切换策略 v1",
+        "evidence_system": "AkShare local OHLCV",
+        "role": "local_independent_candidate",
+        "decision": "blocked_pending_tradeability",
+        "decision_name": "待交易可行性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 72,
+          "strategy_return": 1.740866685270742,
+          "annual_return": null,
+          "max_drawdown": -0.06597592399323748,
+          "sharpe": 3.14203779176307,
+          "win_rate": 0.6805555555555556
+        },
+        "blocked_reasons": [
+          "最新高波动触发信号尚未导入 JoinQuant 交易可行性复核 JSON。"
+        ],
+        "required_next_evidence": [
+          "导入通过严格校验的 JoinQuant 最新信号交易可行性复核 JSON。"
+        ],
+        "data_policy": "只组合 AkShare 本地真实 OHLCV 已生成的执行组件 trade_records；不新增收益、不扩展未审计分层、不伪造交易状态。"
+      },
+      {
+        "candidate_id": "jq_component_monitor",
+        "strategy_id": "jq_quality_profit_liquidity_v1",
+        "strategy_name": "JQ质量利润流动性策略 v1",
+        "evidence_system": "JoinQuant",
+        "role": "component_monitor",
+        "decision": "monitor_only_component_overlap",
+        "decision_name": "组件重叠，仅监控",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": null,
+          "strategy_return": 0.35130804884936606,
+          "annual_return": null,
+          "max_drawdown": -0.10268028853355404,
+          "sharpe": 1.7373322248071763,
+          "win_rate": null
+        },
+        "blocked_reasons": [
+          "与市场状态切换策略共享高波动组件，不能作为独立资金袖重复满仓。"
+        ],
+        "required_next_evidence": [
+          "如要独立开仓，必须证明与切换控制器不共享同一市场状态组件或采用互斥仓位控制。"
+        ],
+        "data_policy": "只读取模拟观察推荐路线和已生成的真实曲线组合策略组件；不生成收益或回测结果。"
+      },
+      {
+        "candidate_id": "kline_assisted_confirmation::低波动/大市值",
+        "strategy_id": "kline_assisted_confirmation",
+        "strategy_name": "K线辅助确认策略",
+        "evidence_system": "JoinQuant",
+        "role": "controlled_route_candidate",
+        "layer": "低波动/大市值",
+        "market_regime": "low_volatility",
+        "market_cap_bucket": "large_cap",
+        "decision": "route_candidate_needs_independence_review",
+        "decision_name": "路线候选，需独立性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 31,
+          "strategy_return": 0.4992595506771098,
+          "annual_return": 0.9317088757255843,
+          "max_drawdown": -0.03919115266187512,
+          "sharpe": 2.5191408980385095,
+          "win_rate": 0.5806451612903226
+        },
+        "blocked_reasons": [
+          "该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。"
+        ],
+        "required_next_evidence": [
+          "补充与主控制器的组件重叠、日期重叠、持仓重叠和市场状态互斥检查。",
+          "若重叠明显，只能作为组件或备选，不计入第二成熟策略。"
+        ],
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+      },
+      {
+        "candidate_id": "kline_assisted_confirmation::低波动",
+        "strategy_id": "kline_assisted_confirmation",
+        "strategy_name": "K线辅助确认策略",
+        "evidence_system": "JoinQuant",
+        "role": "controlled_route_candidate",
+        "layer": "低波动",
+        "market_regime": "low_volatility",
+        "market_cap_bucket": "",
+        "decision": "route_candidate_needs_independence_review",
+        "decision_name": "路线候选，需独立性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 31,
+          "strategy_return": 0.3563799970244368,
+          "annual_return": 0.6414456068636449,
+          "max_drawdown": -0.04105313516809139,
+          "sharpe": 1.8620972822480988,
+          "win_rate": 0.6451612903225806
+        },
+        "blocked_reasons": [
+          "该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。"
+        ],
+        "required_next_evidence": [
+          "补充与主控制器的组件重叠、日期重叠、持仓重叠和市场状态互斥检查。",
+          "若重叠明显，只能作为组件或备选，不计入第二成熟策略。"
+        ],
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+      },
+      {
+        "candidate_id": "core_volume_price_trend_v1::中波动/小市值",
+        "strategy_id": "core_volume_price_trend_v1",
+        "strategy_name": "核心量价趋势策略 v1",
+        "evidence_system": "JoinQuant",
+        "role": "controlled_route_candidate",
+        "layer": "中波动/小市值",
+        "market_regime": "medium_volatility",
+        "market_cap_bucket": "small_cap",
+        "decision": "route_candidate_needs_independence_review",
+        "decision_name": "路线候选，需独立性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 45,
+          "strategy_return": 0.4330085735791378,
+          "annual_return": 0.49623098235046603,
+          "max_drawdown": -0.09339761818584269,
+          "sharpe": 1.3930551667201772,
+          "win_rate": 0.5555555555555556
+        },
+        "blocked_reasons": [
+          "该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。"
+        ],
+        "required_next_evidence": [
+          "补充与主控制器的组件重叠、日期重叠、持仓重叠和市场状态互斥检查。",
+          "若重叠明显，只能作为组件或备选，不计入第二成熟策略。"
+        ],
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+      },
+      {
+        "candidate_id": "kline_assisted_confirmation::低波动/中市值",
+        "strategy_id": "kline_assisted_confirmation",
+        "strategy_name": "K线辅助确认策略",
+        "evidence_system": "JoinQuant",
+        "role": "controlled_route_candidate",
+        "layer": "低波动/中市值",
+        "market_regime": "low_volatility",
+        "market_cap_bucket": "mid_cap",
+        "decision": "route_candidate_needs_independence_review",
+        "decision_name": "路线候选，需独立性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 31,
+          "strategy_return": 0.26235027440604464,
+          "annual_return": 0.46049104924753537,
+          "max_drawdown": -0.0730924421450857,
+          "sharpe": 1.2727941937750473,
+          "win_rate": 0.5483870967741935
+        },
+        "blocked_reasons": [
+          "该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。"
+        ],
+        "required_next_evidence": [
+          "补充与主控制器的组件重叠、日期重叠、持仓重叠和市场状态互斥检查。",
+          "若重叠明显，只能作为组件或备选，不计入第二成熟策略。"
+        ],
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+      },
+      {
+        "candidate_id": "money_flow_kline_confirmation_v0::低波动/大市值",
+        "strategy_id": "money_flow_kline_confirmation_v0",
+        "strategy_name": "主力资金广度K线确认策略 v0",
+        "evidence_system": "JoinQuant",
+        "role": "controlled_route_candidate",
+        "layer": "低波动/大市值",
+        "market_regime": "low_volatility",
+        "market_cap_bucket": "large_cap",
+        "decision": "route_candidate_needs_independence_review",
+        "decision_name": "路线候选，需独立性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 31,
+          "strategy_return": 0.20535546400494908,
+          "annual_return": 0.35480727314370375,
+          "max_drawdown": -0.12012624098308877,
+          "sharpe": 1.2829914674081908,
+          "win_rate": 0.5483870967741935
+        },
+        "blocked_reasons": [
+          "该路线通过分层硬门槛，但当前未被证明能作为独立资金袖与主控制器并行。"
+        ],
+        "required_next_evidence": [
+          "补充与主控制器的组件重叠、日期重叠、持仓重叠和市场状态互斥检查。",
+          "若重叠明显，只能作为组件或备选，不计入第二成熟策略。"
+        ],
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
+      },
+      {
+        "candidate_id": "akshare_candidate::ak_high_vol_mean_reversion_mid_liquidity",
+        "strategy_id": "ak_high_vol_mean_reversion_mid_liquidity",
+        "strategy_name": null,
+        "evidence_system": "AkShare local OHLCV + pending JoinQuant",
+        "role": "local_candidate_waiting_external_review",
+        "decision": "blocked_pending_tradeability",
+        "decision_name": "待交易可行性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 33,
+          "strategy_return": 0.48191543140246806,
+          "annual_return": null,
+          "max_drawdown": -0.04892893054364811,
+          "sharpe": 3.0216827049654844,
+          "win_rate": null
+        },
+        "blocked_reasons": [
+          "本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。"
+        ],
+        "required_next_evidence": [
+          "运行 AkShare 强分层候选 JoinQuant 批量复核脚本并导入真实 records。"
+        ],
+        "data_policy": "只读取真实 AkShare 本地回测与候选验证结果；不生成虚构绩效；未导入 JoinQuant 结果前不升级成熟策略。"
+      },
+      {
+        "candidate_id": "akshare_candidate::ak_low_vol_defensive_mid_liquidity",
+        "strategy_id": "ak_low_vol_defensive_mid_liquidity",
+        "strategy_name": null,
+        "evidence_system": "AkShare local OHLCV + pending JoinQuant",
+        "role": "local_candidate_waiting_external_review",
+        "decision": "blocked_pending_tradeability",
+        "decision_name": "待交易可行性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 39,
+          "strategy_return": 0.9688941281691121,
+          "annual_return": null,
+          "max_drawdown": -0.05491428446661595,
+          "sharpe": 2.8073637156736986,
+          "win_rate": null
+        },
+        "blocked_reasons": [
+          "本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。"
+        ],
+        "required_next_evidence": [
+          "运行 AkShare 强分层候选 JoinQuant 批量复核脚本并导入真实 records。"
+        ],
+        "data_policy": "只读取真实 AkShare 本地回测与候选验证结果；不生成虚构绩效；未导入 JoinQuant 结果前不升级成熟策略。"
+      },
+      {
+        "candidate_id": "akshare_candidate::ak_low_vol_volume_trend_mid_liquidity",
+        "strategy_id": "ak_low_vol_volume_trend_mid_liquidity",
+        "strategy_name": null,
+        "evidence_system": "AkShare local OHLCV + pending JoinQuant",
+        "role": "local_candidate_waiting_external_review",
+        "decision": "blocked_pending_tradeability",
+        "decision_name": "待交易可行性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 39,
+          "strategy_return": 0.9776003088148422,
+          "annual_return": null,
+          "max_drawdown": -0.10921042463391195,
+          "sharpe": 2.6860659286271273,
+          "win_rate": null
+        },
+        "blocked_reasons": [
+          "本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。"
+        ],
+        "required_next_evidence": [
+          "运行 AkShare 强分层候选 JoinQuant 批量复核脚本并导入真实 records。"
+        ],
+        "data_policy": "只读取真实 AkShare 本地回测与候选验证结果；不生成虚构绩效；未导入 JoinQuant 结果前不升级成熟策略。"
+      },
+      {
+        "candidate_id": "akshare_candidate::ak_high_vol_anti_crowding_mid_liquidity",
+        "strategy_id": "ak_high_vol_anti_crowding_mid_liquidity",
+        "strategy_name": null,
+        "evidence_system": "AkShare local OHLCV + pending JoinQuant",
+        "role": "local_candidate_waiting_external_review",
+        "decision": "blocked_pending_tradeability",
+        "decision_name": "待交易可行性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 33,
+          "strategy_return": 0.4213370562466734,
+          "annual_return": null,
+          "max_drawdown": -0.04473056878321058,
+          "sharpe": 2.5585838165479964,
+          "win_rate": null
+        },
+        "blocked_reasons": [
+          "本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。"
+        ],
+        "required_next_evidence": [
+          "运行 AkShare 强分层候选 JoinQuant 批量复核脚本并导入真实 records。"
+        ],
+        "data_policy": "只读取真实 AkShare 本地回测与候选验证结果；不生成虚构绩效；未导入 JoinQuant 结果前不升级成熟策略。"
+      },
+      {
+        "candidate_id": "akshare_candidate::ak_low_vol_contraction_breakout_mid_liquidity",
+        "strategy_id": "ak_low_vol_contraction_breakout_mid_liquidity",
+        "strategy_name": null,
+        "evidence_system": "AkShare local OHLCV + pending JoinQuant",
+        "role": "local_candidate_waiting_external_review",
+        "decision": "blocked_pending_tradeability",
+        "decision_name": "待交易可行性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 39,
+          "strategy_return": 0.8495432513829866,
+          "annual_return": null,
+          "max_drawdown": -0.041902416191464065,
+          "sharpe": 3.2286751147990493,
+          "win_rate": null
+        },
+        "blocked_reasons": [
+          "本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。"
+        ],
+        "required_next_evidence": [
+          "运行 AkShare 强分层候选 JoinQuant 批量复核脚本并导入真实 records。"
+        ],
+        "data_policy": "只读取真实 AkShare 本地回测与候选验证结果；不生成虚构绩效；未导入 JoinQuant 结果前不升级成熟策略。"
+      },
+      {
+        "candidate_id": "akshare_candidate::ak_low_vol_trend_pullback_mid_liquidity",
+        "strategy_id": "ak_low_vol_trend_pullback_mid_liquidity",
+        "strategy_name": null,
+        "evidence_system": "AkShare local OHLCV + pending JoinQuant",
+        "role": "local_candidate_waiting_external_review",
+        "decision": "blocked_pending_tradeability",
+        "decision_name": "待交易可行性复核",
+        "counts_as_independent_sleeve": false,
+        "can_start_observation": false,
+        "metrics": {
+          "sample_dates": 39,
+          "strategy_return": 1.113801288133042,
+          "annual_return": null,
+          "max_drawdown": -0.07378817707287377,
+          "sharpe": 2.84331515528495,
+          "win_rate": null
+        },
+        "blocked_reasons": [
+          "本地证据不足以直接进入 M-quant 模拟观察目标；需要 JoinQuant 口径复核。"
+        ],
+        "required_next_evidence": [
+          "运行 AkShare 强分层候选 JoinQuant 批量复核脚本并导入真实 records。"
+        ],
+        "data_policy": "只读取真实 AkShare 本地回测与候选验证结果；不生成虚构绩效；未导入 JoinQuant 结果前不升级成熟策略。"
+      }
+    ],
+    "data_policy": "只读取已审计 JoinQuant、AkShare 与用户导入复核文件；不生成收益、净值、成交、持仓或交易可行性结论。"
+  },
   "next_actions": [
     {
       "priority": 1,
