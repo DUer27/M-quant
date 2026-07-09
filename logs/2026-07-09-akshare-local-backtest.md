@@ -97,3 +97,9 @@
 - 新增 `/strategy-api/paper-watch-routes`，直接读取 `paper_watch_routes_20260709.json`。
 - 总览页新增 `模拟观察清单` 面板，展示首批两条路线、收益、回撤、Sharpe 和运行约束。
 - 页面明确展示路线边界：只允许通过审计的市场波动/市值层，不能把同名策略整体放开。
+
+## 追加：受控模拟观察执行包
+
+- 新增 `outputs/strategies/joinquant/build_paper_watch_execution_pack.py`，从已审计 JoinQuant 路线生成执行包。
+- 生成 `paper_watch_execution_pack_20260709.json` 和 `paper-watch-execution-pack-20260709.md`，记录每条路线的开仓边界、5日调仓、暂停规则和每日观察字段。
+- 总览页 `模拟观察清单` 支持展开查看执行规则；继续强调这只是受控样本外观察配置，不是整策略实盘批准。

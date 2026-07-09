@@ -256,30 +256,43 @@ function renderRisk(risks) {
 function renderPaperWatchRoutes(pack) {
   if (!elements.paperWatchList) return;
   const routes = Array.isArray(pack.routes) ? pack.routes : [];
-  const ready = pack.status === 'ready_for_controlled_paper_watch';
+  const ready = pack.status === 'ready_for_controlled_paper_watch' && pack.executionStatus === 'ready';
   if (elements.paperWatchStatus) {
     elements.paperWatchStatus.textContent = ready
       ? `${routes.length}条受控路线`
       : '未就绪';
+    elements.paperWatchStatus.className = `tag ${ready ? 'good' : 'pending'}`;
   }
   elements.paperWatchList.innerHTML = routes.length
-    ? routes.map((route) => `
-      <article class="paper-watch-item">
-        <div>
-          <strong>${escapeHtml(route.strategy_name || route.strategy_id)}</strong>
-          <span>${escapeHtml(route.layer || '-')}</span>
-        </div>
-        <div class="paper-watch-metrics">
-          <span>收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>
-          <span>回撤 ${(Number(route.max_drawdown || 0) * 100).toFixed(2)}%</span>
-          <span>Sharpe ${Number(route.sharpe || 0).toFixed(2)}</span>
-        </div>
-        <p>${escapeHtml(route.paper_scope || '')}</p>
-      </article>
-    `).join('')
+    ? routes.map((route) => {
+      const execution = route.execution || {};
+      return `
+        <article class="paper-watch-item">
+          <div>
+            <strong>${escapeHtml(route.strategy_name || route.strategy_id)}</strong>
+            <span>${escapeHtml(route.layer || '-')}</span>
+          </div>
+          <div class="paper-watch-metrics">
+            <span>收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>
+            <span>回撤 ${(Number(route.max_drawdown || 0) * 100).toFixed(2)}%</span>
+            <span>Sharpe ${Number(route.sharpe || 0).toFixed(2)}</span>
+          </div>
+          <p>${escapeHtml(route.paper_scope || '')}</p>
+          <details class="compact-details">
+            <summary>执行规则</summary>
+            <div class="paper-watch-rules">
+              <strong>开仓边界</strong>
+              ${renderTextList(execution.entry_gate || [])}
+              <strong>暂停规则</strong>
+              ${renderTextList((execution.pause_rules || []).map((item) => item.meaning || item.rule))}
+            </div>
+          </details>
+        </article>
+      `;
+    }).join('')
     : '<div class="empty-state">暂无可进入模拟观察的受控路线。</div>';
   if (elements.paperWatchControls) {
-    elements.paperWatchControls.innerHTML = (pack.requiredControls || [])
+    elements.paperWatchControls.innerHTML = [...(pack.requiredControls || []), ...(pack.globalControls || [])]
       .map((item) => `<li>${escapeHtml(item)}</li>`)
       .join('');
   }

@@ -22,6 +22,8 @@ strategy_core_volume_trend_v1_large_cap_high_vol_20240101_20260701.json
 - `audit_strategy_maturity.py`：读取已导入的 JoinQuant 真实策略结果，审计整策略和受控分层路线成熟度。
 - `strategy_maturity_audit_20260709.json`：策略成熟度审计结果。
 - `paper_watch_routes_20260709.json`：首批受控模拟观察路线配置。
+- `build_paper_watch_execution_pack.py`：从首批路线生成模拟观察执行包。
+- `paper_watch_execution_pack_20260709.json`：模拟观察执行包，包含开仓边界、暂停规则和每日观察字段。
 
 当前首批只允许两条路线进入模拟观察：
 
