@@ -19,9 +19,12 @@ const categoryNames = {
   chip: '筹码',
   composite: '综合',
   event: '异动',
+  fundamental: '基本面',
+  liquidity: '流动性',
   market: '市场',
   momentum: '动能',
   price_volume: '量价',
+  risk: '风险',
   sector: '板块',
   sentiment: '情绪',
   trend: '趋势',
@@ -45,12 +48,14 @@ const elements = {
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
   demoFactorCount: document.querySelector('#demo-factor-count'),
   downloadJoinquantCsv: document.querySelector('#download-joinquant-csv'),
+  downloadJoinquantFactorScript: document.querySelector('#download-joinquant-factor-script'),
   draftStrategyJump: document.querySelector('#draft-strategy-jump'),
   draftStrategyPagination: document.querySelector('#draft-strategy-pagination'),
   draftStrategySearch: document.querySelector('#draft-strategy-search'),
   draftStrategyToggle: document.querySelector('#draft-strategy-toggle'),
   factorTable: document.querySelector('#factor-table'),
   factorLibraryTable: document.querySelector('#factor-library-table'),
+  factorRolePools: document.querySelector('#factor-role-pools'),
   fee: document.querySelector('#fee'),
   formMessage: document.querySelector('#form-message'),
   formalStrategyList: document.querySelector('#formal-strategy-list'),
@@ -232,12 +237,13 @@ function renderRisk(risks) {
   const riskList = document.querySelector('.risk-list');
   riskList.innerHTML = risks
     .map((risk) => {
-      const tone = risk.value > risk.limit ? 'watch' : 'good';
+      const tone = risk.status === 'ready' ? 'good' : risk.status === 'blocked' ? 'watch' : 'pending';
+      const max = Math.max(Number(risk.limit) || 100, Number(risk.value) || 0, 1);
       return `
         <div>
-          <span>${risk.name}</span>
-          <meter min="0" max="100" value="${risk.value}"></meter>
-          <strong class="${tone}">${risk.value}%</strong>
+          <span title="${escapeHtml(risk.detail || '')}">${escapeHtml(risk.name)}</span>
+          <meter min="0" max="${escapeHtml(max)}" value="${escapeHtml(risk.value ?? 0)}"></meter>
+          <strong class="${tone}" title="${escapeHtml(risk.nextAction || '')}">${escapeHtml(risk.valueText || risk.value)}</strong>
         </div>
       `;
     })
@@ -255,11 +261,17 @@ function labelForStatus(status) {
   if (status === 'market_state_only') return ['市场状态', 'pending'];
   if (status === 'strategy_waiting_backtest') return ['待策略复测', 'watch'];
   if (status === 'factor_tested_strategy_unvalidated') return ['因子已测策略待测', 'pending'];
+  if (status === 'real_strategy_backtested') return ['策略已实测', 'good'];
+  if (status === 'has_formal_candidates') return ['有正式候选', 'good'];
   if (status === 'exportable') return ['可导出', 'good'];
   if (status === 'partial_real_data') return ['部分可用', 'pending'];
   if (status === 'joinquant_ready') return ['聚宽可测', 'good'];
+  if (status === 'ready') return ['已就绪', 'good'];
+  if (status === 'paper_trade_candidate') return ['准模拟盘', 'good'];
   if (status === 'ready_for_local_factor_test') return ['本地可测', 'good'];
   if (status === 'handled_by_joinquant') return ['交由聚宽', 'pending'];
+  if (status === 'ready_for_joinquant_strategy_backtest') return ['待聚宽策略实测', 'pending'];
+  if (status === 'blocked_by_factor_screen') return ['因子筛选未过', 'watch'];
   if (status === 'insufficient_history' || status === 'blocked_by_resonance_history') return ['历史不足', 'watch'];
   if (status === 'requires_more_data') return ['待采集字段', 'watch'];
   if (status === 'requires_joinquant_or_history') return ['需外部复测', 'watch'];
@@ -283,9 +295,15 @@ function factorDisplayName(id) {
     low_emotion_score: '低情绪反向',
     macd_acceleration: 'MACD动能加速',
     professional_sub_factors: '专业解释子因子',
+    liquidity_quality_jq: '流动性质量_JQ',
+    low_volatility_quality_jq: '低波动质量_JQ',
+    market_sensitivity_risk_jq: '市场敏感风险_JQ',
+    profit_growth_jq: '利润增长_JQ',
+    quality_growth_jq: '质量成长_JQ',
     technical_composite: '技术综合强度',
     trend_alignment: '趋势排列',
     trend_extension_risk: '趋势过伸风险',
+    valuation_safety_jq: '估值安全垫_JQ',
     volume_price_confirmation: '量价确认',
     volume_price_divergence_risk: '量价背离风险',
     volume_price_resonance_60_5: '价量共振_60_5',
@@ -339,6 +357,7 @@ function isStrategyBacktestResult(result) {
     || result?.result_type === 'strategy_size_backtest'
     || result?.result_type === 'strategy_regime_size_backtest'
     || result?.result_type === 'trading_backtest'
+    || result?.result_type === 'local_strategy_backtest'
     || result?.result_type === 'strategy_trading_backtest'
     || Array.isArray(result?.summary) && result.summary.some((item) => item?.result_type === 'strategy_backtest' || item?.result_type === 'strategy_regime_backtest' || item?.result_type === 'strategy_size_backtest' || item?.result_type === 'strategy_regime_size_backtest');
 }
@@ -358,7 +377,7 @@ function flattenStrategyResults(results) {
         }));
     }
 
-    if (result?.result_type === 'trading_backtest' || result?.result_type === 'strategy_trading_backtest') {
+    if (result?.result_type === 'trading_backtest' || result?.result_type === 'strategy_trading_backtest' || result?.result_type === 'local_strategy_backtest') {
       return [{
         ...result,
         horizon: result.horizon || '交易回测',
@@ -393,7 +412,7 @@ function strategyResultMarketRegime(result) {
   if (result.market_regime === 'medium_volatility') return '中波动';
   if (result.market_regime === 'low_volatility') return '低波动';
   if (result.result_type === 'strategy_regime_backtest') return '分层未标注';
-  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') return '交易回测';
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest') return '交易回测';
   return '未分层';
 }
 
@@ -401,7 +420,7 @@ function strategyResultRegimeKey(result) {
   if (result.market_regime === 'high_volatility') return 'high_volatility';
   if (result.market_regime === 'medium_volatility') return 'medium_volatility';
   if (result.market_regime === 'low_volatility') return 'low_volatility';
-  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') return 'trading_backtest';
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest') return 'trading_backtest';
   return 'unsegmented';
 }
 
@@ -419,7 +438,7 @@ function strategyResultSizeBucket(result) {
   if (result.market_cap_bucket === 'mid_cap') return '中市值';
   if (result.market_cap_bucket === 'small_cap') return '小市值';
   if (result.result_type === 'strategy_size_backtest') return '市值未标注';
-  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') return '交易回测';
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest') return '交易回测';
   return '未分层';
 }
 
@@ -427,7 +446,7 @@ function strategyResultSizeKey(result) {
   if (result.market_cap_bucket === 'large_cap') return 'large_cap';
   if (result.market_cap_bucket === 'mid_cap') return 'mid_cap';
   if (result.market_cap_bucket === 'small_cap') return 'small_cap';
-  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') return 'trading_backtest';
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest') return 'trading_backtest';
   return 'unsegmented';
 }
 
@@ -447,7 +466,7 @@ const strategySizeOptions = [
 ];
 
 function strategyResultTone(result) {
-  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest') {
+  if (result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest') {
     const strategyReturn = Number(result.strategy_return ?? 0);
     const excessReturn = Number(result.excess_return ?? 0);
     if (strategyReturn > 0 && excessReturn > 0) return ['交易通过', 'good'];
@@ -463,6 +482,24 @@ function strategyResultTone(result) {
   if (meanReturn > 0 && positiveRatio >= 0.55) return ['可继续', 'good'];
   if (meanReturn > 0 && positiveRatio >= 0.5) return ['观察', 'pending'];
   return ['偏弱', 'watch'];
+}
+
+function isTradingStrategyResult(result) {
+  return result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest';
+}
+
+function strategyResultPerformanceLabel(result) {
+  if (!isTradingStrategyResult(result)) {
+    return result.date_range || `${result.sample_dates ?? '-'} 日 / ${result.sample_trades ?? '-'} 条`;
+  }
+
+  return [
+    `净值 ${formatNumber(result.final_net_value ?? (1 + Number(result.strategy_return || 0)), 3)}`,
+    `年化 ${formatPercent(result.strategy_annual_return ?? result.annual_return)}`,
+    `回撤 ${formatPercent(result.max_drawdown)}`,
+    `Sharpe ${formatNumber(result.sharpe, 2)}`,
+    `换手 ${formatNumber(result.avg_turnover ?? result.turnover, 2)}`,
+  ].join(' / ');
 }
 
 function renderStrategyResultDirectory(rows) {
@@ -794,7 +831,7 @@ function renderStrategyResultSummary(rows) {
           <td>${escapeHtml(formatStrategyHorizon(result.horizon))}</td>
           <td>${escapeHtml(strategyResultMarketRegime(result))}<br><small>${formatPercent(result.market_vol_mean)}</small></td>
           <td>${escapeHtml(strategyResultSizeBucket(result))}<br><small>${formatMarketCap(result.market_cap_mean)}</small></td>
-          <td>${escapeHtml(result.date_range || `${result.sample_dates ?? '-'} 日 / ${result.sample_trades ?? '-'} 条`)}</td>
+          <td>${escapeHtml(strategyResultPerformanceLabel(result))}</td>
           <td>${formatPercent(result.mean_return)}</td>
           <td>${formatPercent(result.daily_mean_return)}</td>
           <td>${formatPercent(result.daily_positive_ratio ?? result.positive_ratio)}</td>
@@ -900,12 +937,12 @@ function renderBacktestResultSummary(results) {
     `;
     elements.backtestResultSummary.innerHTML = `
       <div class="result-card">
-        <span>实测结果</span>
+        <span>因子回测</span>
         <strong>0</strong>
         <small>等待 JoinQuant 回填</small>
       </div>
     `;
-    elements.backtestResultTable.innerHTML = '<tr><td colspan="10">暂无实测结果。</td></tr>';
+    elements.backtestResultTable.innerHTML = '<tr><td colspan="10">暂无因子回测结果。</td></tr>';
     elements.backtestResultNotes.textContent = '当前只展示真实导入结果，不生成估算绩效。';
     return;
   }
@@ -1235,10 +1272,194 @@ function buildLibraryEntries(summary, factorDefinitions) {
   });
 }
 
-function renderFactorLibrary(summary, strategies, factorDefinitions) {
+const factorRoleMeta = {
+  main_signal: {
+    label: '主信号池',
+    type: '收益预测',
+    usage: '选股 / 加权',
+    horizon: '10/20日待测',
+    description: '优先回答“买什么、排第几”。',
+    tone: 'good',
+  },
+  confirmation: {
+    label: '确认信号池',
+    type: '确认',
+    usage: '策略确认 / 过滤',
+    horizon: '5/10日待测',
+    description: '减少假信号，提升入场质量。',
+    tone: 'pending',
+  },
+  risk_filter: {
+    label: '风险过滤池',
+    type: '风险过滤',
+    usage: '风控过滤 / 降权',
+    horizon: '5日待测',
+    description: '不直接追求高IC，重点看回撤和拥挤风险。',
+    tone: 'watch',
+  },
+  environment: {
+    label: '环境择时池',
+    type: '环境择时',
+    usage: '择时 / 仓位控制',
+    horizon: '20日待测',
+    description: '判断市场状态，决定是否开仓或降仓。',
+    tone: 'neutral',
+  },
+  fundamental: {
+    label: '基本面增强池',
+    type: '基本面增强',
+    usage: '中长期选股 / 质量增强',
+    horizon: '20/60日待测',
+    description: '用于质量、成长、估值等慢变量确认。',
+    tone: 'good',
+  },
+};
+
+function factorLibraryProfile(id, value, pipelineEntry) {
+  const category = String(value.category || pipelineEntry?.category || '').toLowerCase();
+  const identity = [
+    id,
+    value.displayName,
+    pipelineEntry?.name,
+  ].filter(Boolean).join(' ').toLowerCase();
+  const detailText = [
+    value.usage,
+    value.note,
+    value.signal,
+    value.formula,
+    pipelineEntry?.usage,
+    pipelineEntry?.formula,
+  ].filter(Boolean).join(' ').toLowerCase();
+  const explicitRoleMap = {
+    active_ap_accumulation: 'confirmation',
+    capital_follow_signal: 'main_signal',
+    capital_overheat_risk: 'risk_filter',
+    capital_persistence_2d: 'main_signal',
+    chip_health: 'risk_filter',
+    crowding_risk: 'risk_filter',
+    institutional_contra_divergence: 'confirmation',
+    kdj_momentum: 'confirmation',
+    kline_event_score: 'confirmation',
+    liquidity_quality_jq: 'risk_filter',
+    macd_acceleration: 'confirmation',
+    main_force_alignment: 'confirmation',
+    market_capital_regime: 'environment',
+    profit_growth_jq: 'fundamental',
+    quality_growth_jq: 'fundamental',
+    sentiment_overheat_factor: 'risk_filter',
+    technical_composite: 'main_signal',
+    trend_alignment: 'main_signal',
+    trend_extension_risk: 'risk_filter',
+    volume_price_confirmation: 'main_signal',
+    volume_price_divergence_risk: 'risk_filter',
+  };
+
+  let role = explicitRoleMap[id] || explicitRoleMap[value.definitionId] || 'main_signal';
+  if (explicitRoleMap[id] || explicitRoleMap[value.definitionId]) {
+    // Keep explicit project roles stable; these are named factors already used by策略/回测 modules.
+  } else if (
+    value.direction === 'negative'
+    || pipelineEntry?.direction === 'negative'
+    || category === 'risk'
+    || category === 'sentiment'
+    || category === 'liquidity'
+    || /risk|crowding|overheat|divergence|extension/.test(identity)
+    || /风险|拥挤|过热|背离|过伸/.test(identity)
+  ) {
+    role = 'risk_filter';
+  } else if (category === 'market' || /regime|market|volatility/.test(identity) || /环境|择时|波动/.test(identity)) {
+    role = 'environment';
+  } else if (
+    category === 'fundamental'
+    || /profit|quality|growth|valuation|fundamental/.test(identity)
+    || /盈利|质量|成长|估值|基本面/.test(identity)
+  ) {
+    role = 'fundamental';
+  } else if (
+    category === 'chip'
+    || category === 'sector'
+    || category === 'event'
+    || /confirm|alignment|kline|macd|kdj|chip|sector|event/.test(identity)
+    || /确认|形态|筹码|板块|异动/.test(detailText)
+  ) {
+    role = 'confirmation';
+  }
+
+  const meta = factorRoleMeta[role];
+  const bestHorizon = pipelineEntry?.test?.bestHorizon;
+  const horizon = bestHorizon ? `${bestHorizon}日（实测最佳）` : meta.horizon;
+  const evidence = pipelineEntry?.resultCount > 0
+    ? `JoinQuant 回填 ${pipelineEntry.resultCount} 条`
+    : pipelineEntry?.exportRows > 0
+      ? `可导出 ${pipelineEntry.exportRows} 行，待因子回测`
+    : value.status === 'computed'
+      ? '已有真实字段，待因子回测'
+      : '待补数据/待回测';
+
+  return {
+    ...meta,
+    evidence,
+    horizon,
+    role,
+    statusLabel: pipelineEntry?.decision || labelForStatus(value.status)[0],
+    statusTone: pipelineEntry?.decisionTone || labelForStatus(value.status)[1],
+  };
+}
+
+function renderFactorRolePools(entries, pipeline) {
+  if (!elements.factorRolePools) return;
+
+  const pipelineMap = new Map((pipeline?.entries || []).map((entry) => [entry.factorId, entry]));
+  const grouped = Object.fromEntries(Object.keys(factorRoleMeta).map((role) => [role, []]));
+
+  entries.forEach(([id, value]) => {
+    const pipelineEntry = pipelineMap.get(id) || pipelineMap.get(value.definitionId) || null;
+    const profile = factorLibraryProfile(id, value, pipelineEntry);
+    grouped[profile.role].push({
+      id,
+      name: value.displayName || factorDisplayName(id),
+      profile,
+      resultCount: pipelineEntry?.resultCount || 0,
+      status: value.status,
+    });
+  });
+
+  elements.factorRolePools.innerHTML = Object.entries(factorRoleMeta)
+    .map(([role, meta]) => {
+      const items = grouped[role].sort((left, right) => {
+        if (right.resultCount !== left.resultCount) return right.resultCount - left.resultCount;
+        return left.name.localeCompare(right.name, 'zh-CN');
+      });
+      const visible = items.slice(0, 5);
+
+      return `
+        <article class="factor-role-pool">
+          <div class="factor-role-pool-head">
+            <div>
+              <h3>${escapeHtml(meta.label)}</h3>
+              <p>${escapeHtml(meta.description)}</p>
+            </div>
+            <span class="tag ${escapeHtml(meta.tone)}">${items.length}</span>
+          </div>
+          <div class="factor-role-chip-list">
+            ${visible.length ? visible.map((item) => `
+              <span class="factor-role-chip">
+                <strong>${escapeHtml(item.name)}</strong>
+                <small>${escapeHtml(item.profile.horizon)} / ${escapeHtml(item.profile.statusLabel)}</small>
+              </span>
+            `).join('') : '<span class="factor-role-empty">暂无因子</span>'}
+          </div>
+        </article>
+      `;
+    })
+    .join('');
+}
+
+function renderFactorLibrary(summary, strategies, factorDefinitions, researchPipeline) {
   const meta = summary.factor_meta || {};
   const availability = meta.availability || {};
   const entries = buildLibraryEntries(summary, factorDefinitions);
+  const pipelineMap = new Map((researchPipeline?.entries || []).map((entry) => [entry.factorId, entry]));
   const computed = entries.filter(([, value]) => value.status === 'computed');
   const unavailable = entries.filter(([, value]) => value.status !== 'computed');
   const kline = availability.kline_event_score || {};
@@ -1253,12 +1474,15 @@ function renderFactorLibrary(summary, strategies, factorDefinitions) {
   elements.librarySourceFile.textContent = summary.source_file
     ? `当前数据源：${summary.source_file}`
     : '当前数据源：未加载';
+  renderFactorRolePools(entries, researchPipeline);
 
   elements.factorLibraryTable.innerHTML = entries
     .map(([id, value]) => {
       const [label, tone] = labelForStatus(value.status);
       const category = categoryNames[value.category] || value.category || '真实计算';
       const source = value.dataSource ? `来源：${value.dataSource}` : '';
+      const pipelineEntry = pipelineMap.get(id) || pipelineMap.get(value.definitionId) || null;
+      const profile = factorLibraryProfile(id, value, pipelineEntry);
       const fields = Array.isArray(value.fields) && value.fields.length > 0
         ? value.fields.join(', ')
         : Array.isArray(value.requiredFields) && value.requiredFields.length > 0
@@ -1273,11 +1497,22 @@ function renderFactorLibrary(summary, strategies, factorDefinitions) {
             <br><small>${escapeHtml(id)}</small>
             <br><small>${escapeHtml(category)}${source ? ` / ${escapeHtml(source)}` : ''}</small>
           </td>
-          <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
-          <td>${escapeHtml(fields)}</td>
           <td>
-            ${escapeHtml(note)}
+            <span class="tag ${escapeHtml(profile.tone)}">${escapeHtml(profile.type)}</span>
+            <br><small>${escapeHtml(profile.usage)}</small>
+          </td>
+          <td><strong>${escapeHtml(profile.horizon)}</strong></td>
+          <td>
+            <span class="tag ${escapeHtml(profile.statusTone || tone)}">${escapeHtml(profile.statusLabel || label)}</span>
+            <br><small>${escapeHtml(profile.evidence)}</small>
+          </td>
+          <td>
+            <span>${escapeHtml(note)}</span>
             ${value.usage ? `<br><small>${escapeHtml(value.usage)}</small>` : ''}
+            <details class="library-detail">
+              <summary>字段/口径</summary>
+              <small>${escapeHtml(fields)}</small>
+            </details>
           </td>
         </tr>
       `;
@@ -1523,16 +1758,26 @@ function renderStrategyCard(strategy) {
         <strong>下一步</strong>
         <span>${escapeHtml(strategy.nextAction || strategy.exportStatus || '-')}</span>
       </div>
-      <div class="strategy-export-actions">
-        <button type="button" data-strategy-download="${escapeHtml(exportBase)}">路线JSON</button>
-        <button type="button" data-strategy-download="${escapeHtml(exportCsv)}">策略CSV</button>
-        <button type="button" data-strategy-download="${escapeHtml(exportScript)}">聚宽脚本</button>
-        <button type="button" data-strategy-download="${escapeHtml(historicalScript)}">历史脚本</button>
-        <button type="button" data-strategy-download="${escapeHtml(volatilityRegimeScript)}">波动率脚本</button>
-        <button type="button" data-strategy-download="${escapeHtml(marketCapScript)}">市值脚本</button>
-        <button type="button" data-strategy-download="${escapeHtml(volatilitySizeScript)}">交叉脚本</button>
-        <button type="button" data-strategy-download="${escapeHtml(tradingBacktestScript)}">回测脚本</button>
-      </div>
+      ${strategy.exportable === false
+        ? `<div class="strategy-export-note">
+          <strong>导出状态</strong>
+          <span>${escapeHtml(strategy.exportStatus || '该策略路线等待专用 JoinQuant 重建脚本，不提供通用导出。')}</span>
+          ${strategy.specialBacktestScriptEndpoint ? `
+            <div class="strategy-export-actions inline-actions">
+              <button type="button" data-strategy-download="${escapeHtml(strategy.specialBacktestScriptEndpoint)}">聚宽实测脚本</button>
+            </div>
+          ` : ''}
+        </div>`
+        : `<div class="strategy-export-actions">
+          <button type="button" data-strategy-download="${escapeHtml(exportBase)}">路线JSON</button>
+          <button type="button" data-strategy-download="${escapeHtml(exportCsv)}">策略CSV</button>
+          <button type="button" data-strategy-download="${escapeHtml(exportScript)}">聚宽脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(historicalScript)}">历史脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(volatilityRegimeScript)}">波动率脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(marketCapScript)}">市值脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(volatilitySizeScript)}">交叉脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(tradingBacktestScript)}">回测脚本</button>
+        </div>`}
     </article>
   `;
 }
@@ -1865,7 +2110,7 @@ async function refreshDashboard() {
   renderFactors(factors);
   renderRisk(risks);
   drawChart(equity);
-  renderFactorLibrary(factorSummary, strategies, factorDefinitions);
+  renderFactorLibrary(factorSummary, strategies, factorDefinitions, researchPipeline);
   renderStrategyLibrary(strategies);
   renderLiveStrategies(liveStrategies);
   renderBacktestCenter(backtestStatus);
@@ -1966,6 +2211,10 @@ elements.strategyLiveList.addEventListener('click', (event) => {
 
 elements.downloadJoinquantCsv.addEventListener('click', () => {
   window.location.href = '/backtest-api/joinquant-factor-export.csv';
+});
+
+elements.downloadJoinquantFactorScript.addEventListener('click', () => {
+  window.location.href = '/backtest-api/joinquant-factor-test-script.py';
 });
 
 elements.refreshBacktestCenter.addEventListener('click', async () => {
