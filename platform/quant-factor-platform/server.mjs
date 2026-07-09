@@ -41,6 +41,7 @@ const paperWatchRoutesPath = outputPath('strategies', 'joinquant', 'paper_watch_
 const paperWatchExecutionPackPath = outputPath('strategies', 'joinquant', 'paper_watch_execution_pack_20260709.json');
 const paperWatchReadinessAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_readiness_audit_20260709.json');
 const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_independence_audit_20260709.json');
+const paperWatchOperationsPackPath = outputPath('paper-watch', 'results', 'paper_watch_operations_pack_20260709.json');
 const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_readiness_audit_20260709.json');
 const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_execution_pack_20260709.json');
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
@@ -911,6 +912,7 @@ function buildPaperWatchRoutes() {
   const executionPack = readJsonFile(paperWatchExecutionPackPath, {});
   const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
   const independenceAudit = readJsonFile(paperWatchIndependenceAuditPath, {});
+  const operationsPack = readJsonFile(paperWatchOperationsPackPath, null);
   const akshareReadinessAudit = readJsonFile(aksharePaperWatchReadinessAuditPath, {});
   const akshareExecutionPack = readJsonFile(aksharePaperWatchExecutionPackPath, {});
   const akshareLatestSignal = readJsonFile(aksharePaperWatchLatestSignalPath, {});
@@ -1035,6 +1037,7 @@ function buildPaperWatchRoutes() {
           : '',
       ].filter(Boolean).join(' '),
     },
+    operationsPack,
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
     readinessCounts: recommendedReadinessCounts,
     readinessDecisionCounts: readinessCounts,
@@ -4594,6 +4597,15 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'GET' && pathname === '/strategy-api/paper-watch-routes') {
     sendJson(res, buildPaperWatchRoutes());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/paper-watch-operations-pack') {
+    sendJson(res, readJsonFile(paperWatchOperationsPackPath, {
+      source: 'm_quant_paper_watch_operations_pack',
+      status: 'missing',
+      data_policy: '尚未生成模拟观察运行包。',
+    }));
     return true;
   }
 
