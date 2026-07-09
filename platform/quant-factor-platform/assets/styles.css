@@ -1209,6 +1209,21 @@ td small {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.paper-watch-rules {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.paper-watch-rules strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.paper-watch-rules .compact-list {
+  margin: 0;
+}
+
 .compact-details {
   margin-top: 12px;
 }
