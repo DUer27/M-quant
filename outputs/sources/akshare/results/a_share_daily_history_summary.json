@@ -1,13 +1,13 @@
 {
   "source": "akshare",
   "script": "outputs/sources/akshare/scripts/fetch_a_share_history.py",
-  "generated_at": "2026-07-09T12:08:48",
+  "generated_at": "2026-07-09T12:31:57",
   "start": "20240101",
   "end": "20260709",
   "adjust": "qfq",
-  "stocks_requested": 54,
-  "stocks_success": 54,
-  "rows": 32812,
+  "stocks_requested": 134,
+  "stocks_success": 134,
+  "rows": 80619,
   "dates": 608,
   "output": "outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv",
   "pool_source": [
@@ -15,8 +15,14 @@
   ],
   "pool_error": null,
   "retries": 2,
-  "reused_existing": 54,
+  "provider": "em",
+  "source_counts": {
+    "akshare.stock_zh_a_hist_tx": 47807,
+    "akshare.stock_zh_a_hist": 32812
+  },
+  "reused_existing": 134,
   "combine_only": true,
+  "interrupted": false,
   "failures_output": "outputs/sources/akshare/results/a_share_daily_history_failures.csv",
   "failures": []
 }

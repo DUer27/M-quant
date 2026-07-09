@@ -61,6 +61,12 @@ def jq_security(code: str) -> str:
     return f"{code}.{suffix}"
 
 
+def tx_security(code: str) -> str:
+    code = normalize_code(code)
+    prefix = "sh" if code.startswith("6") else "sz"
+    return f"{prefix}{code}"
+
+
 def pool_from_symbols(symbols: str) -> pd.DataFrame:
     records = []
     name_by_code = {code: name for code, name in SEED_SYMBOLS}
@@ -184,16 +190,69 @@ def fetch_one_stock(code: str, start: str, end: str, adjust: str) -> pd.DataFram
     return df
 
 
-def fetch_one_stock_with_retry(code: str, start: str, end: str, adjust: str, retries: int, retry_sleep: float) -> tuple[pd.DataFrame, str | None]:
+def fetch_one_stock_tx(code: str, start: str, end: str, adjust: str) -> pd.DataFrame:
+    raw = ak.stock_zh_a_hist_tx(
+        symbol=tx_security(code),
+        start_date=start,
+        end_date=end,
+        adjust=adjust,
+        timeout=15,
+    )
+    if raw.empty:
+        return raw
+
+    mapping = {
+        "date": "date",
+        "open": "open",
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        # 腾讯接口此列为成交量口径，不提供东方财富的成交额/换手率。
+        "amount": "volume",
+    }
+    df = raw.rename(columns=mapping).copy()
+    df["code"] = normalize_code(code)
+    df["security"] = df["code"].map(jq_security)
+    df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
+    if "volume" not in df.columns:
+        df["volume"] = pd.NA
+    df["amount"] = pd.NA
+    df["amplitude"] = pd.NA
+    df["change_pct"] = pd.NA
+    df["change_amount"] = pd.NA
+    df["turnover"] = pd.NA
+    df["source"] = "akshare.stock_zh_a_hist_tx"
+    df["adjust"] = adjust
+    return df
+
+
+def fetch_one_stock_by_provider(code: str, start: str, end: str, adjust: str, provider: str) -> pd.DataFrame:
+    if provider == "em":
+        return fetch_one_stock(code, start, end, adjust)
+    if provider == "tx":
+        return fetch_one_stock_tx(code, start, end, adjust)
+    raise ValueError(f"unknown provider: {provider}")
+
+
+def fetch_one_stock_with_retry(
+    code: str,
+    start: str,
+    end: str,
+    adjust: str,
+    retries: int,
+    retry_sleep: float,
+    providers: list[str],
+) -> tuple[pd.DataFrame, str | None]:
     last_error = None
     attempts = max(1, retries + 1)
-    for attempt in range(1, attempts + 1):
-        try:
-            return fetch_one_stock(code, start, end, adjust), None
-        except Exception as exc:  # noqa: BLE001
-            last_error = repr(exc)
-            if attempt < attempts:
-                time.sleep(retry_sleep * attempt)
+    for provider in providers:
+        for attempt in range(1, attempts + 1):
+            try:
+                return fetch_one_stock_by_provider(code, start, end, adjust, provider), None
+            except Exception as exc:  # noqa: BLE001
+                last_error = f"{provider}: {repr(exc)}"
+                if attempt < attempts:
+                    time.sleep(retry_sleep * attempt)
     return pd.DataFrame(), last_error
 
 
@@ -216,6 +275,14 @@ def existing_raw_frame(code: str, start: str, end: str, adjust: str) -> pd.DataF
     return window
 
 
+def safe_processed_path(filename: str, default_name: str) -> Path:
+    name = filename.strip() or default_name
+    path = Path(name)
+    if path.is_absolute() or ".." in path.parts:
+        raise SystemExit(f"输出文件名不安全：{filename}")
+    return PROCESSED_DIR / path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch A-share daily history from AkShare.")
     parser.add_argument("--start", default="20240101", help="开始日期，格式 YYYYMMDD")
@@ -231,6 +298,9 @@ def main() -> int:
     parser.add_argument("--symbols-file", default="", help="包含 code/name 列的 CSV 股票池文件；优先级高于 --symbols")
     parser.add_argument("--index-symbol", default="", help="指数成分股代码，例如 000300；优先级低于 --symbols-file，高于 --symbols")
     parser.add_argument("--pool-sort", default="code", choices=["code", "amount_desc"], help="未指定股票池文件时，股票池排序方式")
+    parser.add_argument("--pool-output", default="a_share_stock_pool.csv", help="股票池缓存文件名，保存到 processed 目录")
+    parser.add_argument("--output-name", default="", help="行情合并输出文件名，默认按日期和复权自动生成")
+    parser.add_argument("--provider", default="em", choices=["em", "tx", "em_tx"], help="行情源：东方财富、腾讯、或东方财富失败后腾讯兜底")
     parser.add_argument("--seed-fallback", action="store_true", help="股票池列表接口失败时，使用内置小股票池继续验证行情接口")
     args = parser.parse_args()
 
@@ -260,55 +330,71 @@ def main() -> int:
                 raise
             pool = seed_pool(args.limit or None)
 
-    pool_path = PROCESSED_DIR / "a_share_stock_pool.csv"
+    pool_path = safe_processed_path(args.pool_output, "a_share_stock_pool.csv")
     pool.to_csv(pool_path, index=False, encoding="utf-8-sig")
 
     frames = []
     failures = []
     reused = []
-    for index, row in pool.iterrows():
-        code = row["code"]
-        if args.skip_existing:
-            existing = existing_raw_frame(code, args.start, args.end, args.adjust)
-            if not existing.empty:
-                frames.append(existing)
-                reused.append(code)
-                print(f"[SKIP] {code} reused rows={len(existing)}")
+    providers = ["em", "tx"] if args.provider == "em_tx" else [args.provider]
+    interrupted = False
+    try:
+        for index, row in pool.iterrows():
+            code = row["code"]
+            if args.skip_existing:
+                existing = existing_raw_frame(code, args.start, args.end, args.adjust)
+                if not existing.empty:
+                    frames.append(existing)
+                    reused.append(code)
+                    print(f"[SKIP] {code} reused rows={len(existing)}")
+                    continue
+                if args.combine_only:
+                    failures.append({"code": code, "reason": "missing_raw"})
+                    continue
+
+            df, error = fetch_one_stock_with_retry(
+                code,
+                args.start,
+                args.end,
+                args.adjust,
+                retries=max(0, args.retries),
+                retry_sleep=max(0, args.retry_sleep),
+                providers=providers,
+            )
+            if error:
+                failures.append({"code": code, "reason": error})
+                print(f"[FAIL] {code}: {error}", file=sys.stderr)
                 continue
-            if args.combine_only:
-                failures.append({"code": code, "reason": "missing_raw"})
+            if df.empty:
+                failures.append({"code": code, "reason": "empty"})
                 continue
+            df["name"] = row["name"]
+            raw_path = RAW_DIR / f"{code}.csv"
+            df.to_csv(raw_path, index=False, encoding="utf-8-sig")
+            frames.append(df)
+            print(f"[{len(frames)}/{len(pool)}] {code} rows={len(df)} source={df['source'].iloc[0]}")
+            time.sleep(args.sleep)
+    except KeyboardInterrupt:
+        interrupted = True
+        print("[INTERRUPTED] 保存已完成的 raw 与 partial summary。", file=sys.stderr)
 
-        df, error = fetch_one_stock_with_retry(
-            code,
-            args.start,
-            args.end,
-            args.adjust,
-            retries=max(0, args.retries),
-            retry_sleep=max(0, args.retry_sleep),
-        )
-        if error:
-            failures.append({"code": code, "reason": error})
-            print(f"[FAIL] {code}: {error}", file=sys.stderr)
-            continue
-        if df.empty:
-            failures.append({"code": code, "reason": "empty"})
-            continue
-        df["name"] = row["name"]
-        raw_path = RAW_DIR / f"{code}.csv"
-        df.to_csv(raw_path, index=False, encoding="utf-8-sig")
-        frames.append(df)
-        print(f"[{len(frames)}/{len(pool)}] {code} rows={len(df)}")
-        time.sleep(args.sleep)
-
-    if not frames:
-        raise SystemExit("没有成功拉取任何股票历史数据。")
-
-    combined = pd.concat(frames, ignore_index=True)
-    output_path = PROCESSED_DIR / f"a_share_daily_{args.start}_{args.end}_{args.adjust or 'none'}.csv"
-    combined.to_csv(output_path, index=False, encoding="utf-8-sig")
+    default_output_name = f"a_share_daily_{args.start}_{args.end}_{args.adjust or 'none'}.csv"
+    output_path = safe_processed_path(args.output_name, default_output_name)
     failures_path = RESULTS_DIR / "a_share_daily_history_failures.csv"
     pd.DataFrame(failures).to_csv(failures_path, index=False, encoding="utf-8-sig")
+    if frames:
+        combined = pd.concat(frames, ignore_index=True)
+        combined.to_csv(output_path, index=False, encoding="utf-8-sig")
+        stocks_success = int(combined["code"].nunique())
+        row_count = int(len(combined))
+        date_count = int(combined["date"].nunique())
+        source_counts = combined["source"].value_counts(dropna=False).to_dict() if "source" in combined else {}
+    else:
+        combined = pd.DataFrame()
+        stocks_success = 0
+        row_count = 0
+        date_count = 0
+        source_counts = {}
 
     summary = {
         "source": "akshare",
@@ -318,21 +404,26 @@ def main() -> int:
         "end": args.end,
         "adjust": args.adjust,
         "stocks_requested": int(len(pool)),
-        "stocks_success": int(combined["code"].nunique()),
-        "rows": int(len(combined)),
-        "dates": int(combined["date"].nunique()),
-        "output": str(output_path.relative_to(ROOT)),
+        "stocks_success": stocks_success,
+        "rows": row_count,
+        "dates": date_count,
+        "output": str(output_path.relative_to(ROOT)) if frames else None,
         "pool_source": sorted(pool["pool_source"].dropna().unique().tolist()) if "pool_source" in pool.columns else [],
         "pool_error": pool_error,
         "retries": int(max(0, args.retries)),
+        "provider": args.provider,
+        "source_counts": source_counts,
         "reused_existing": len(reused),
         "combine_only": bool(args.combine_only),
+        "interrupted": interrupted,
         "failures_output": str(failures_path.relative_to(ROOT)),
         "failures": failures[:100],
     }
     summary_path = RESULTS_DIR / "a_share_daily_history_summary.json"
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if not frames:
+        raise SystemExit("没有成功拉取任何股票历史数据，已写入失败清单和 summary。")
     return 0
 
 

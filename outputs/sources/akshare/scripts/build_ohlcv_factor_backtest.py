@@ -153,13 +153,15 @@ def add_factor_columns(df: pd.DataFrame) -> pd.DataFrame:
     out["body_return"] = out["close"] / out["open"] - 1
     out["volume_ratio20"] = safe_div(out["volume"], out["volume_ma20"])
     out["amount_ratio20"] = safe_div(out["amount"], out["amount_ma20"])
+    out["activity_ratio20"] = out["amount_ratio20"].where(out["amount_ratio20"].notna(), out["volume_ratio20"])
+    out["liquidity_metric20"] = out["amount_ma20"].where(out["amount_ma20"].notna(), out["volume_ma20"])
     out["ma20_ma60_gap"] = safe_div(out["ma20"], out["ma60"]) - 1
     out["close_ma20_gap"] = safe_div(out["close"], out["ma20"]) - 1
 
     out["raw_volume_price"] = (
         0.35 * out["ret_20"]
         + 0.25 * np.log(out["volume_ratio20"].clip(lower=0.2, upper=5))
-        + 0.20 * np.log(out["amount_ratio20"].clip(lower=0.2, upper=5))
+        + 0.20 * np.log(out["activity_ratio20"].clip(lower=0.2, upper=5))
         + 0.20 * out["close_position"]
     )
     out["raw_trend_quality"] = (
@@ -223,7 +225,7 @@ def add_factor_columns(df: pd.DataFrame) -> pd.DataFrame:
     )
     out = out.merge(market[["date", "market_ret_1", "market_vol_20", "market_vol_regime"]], on="date", how="left")
 
-    liquidity_rank = out.groupby("date")["amount_ma20"].rank(pct=True, method="average")
+    liquidity_rank = out.groupby("date")["liquidity_metric20"].rank(pct=True, method="average")
     out["liquidity_bucket"] = pd.cut(
         liquidity_rank,
         bins=[0, 1 / 3, 2 / 3, 1],
@@ -304,7 +306,7 @@ def simulate_strategy(
         "market_vol_regime",
         "liquidity_bucket",
         "market_vol_20",
-        "amount_ma20",
+        "liquidity_metric20",
     ]
     work = df[cols].dropna(subset=["date", "code", score_col, "future_return_5"]).copy()
     if layer.get("market_vol_regime"):
@@ -327,7 +329,7 @@ def simulate_strategy(
             "stock_count": int(len(day)),
             "codes": ",".join(day["code"].tolist()),
             "market_vol_20": None if day["market_vol_20"].dropna().empty else float(day["market_vol_20"].mean()),
-            "amount_ma20": None if day["amount_ma20"].dropna().empty else float(day["amount_ma20"].mean()),
+            "liquidity_metric20": None if day["liquidity_metric20"].dropna().empty else float(day["liquidity_metric20"].mean()),
         })
 
     returns = pd.DataFrame(rows)
@@ -359,7 +361,7 @@ def simulate_strategy(
         "first_trade_date": returns["date"].iloc[0],
         "last_trade_date": returns["date"].iloc[-1],
         "market_vol_mean": None if returns["market_vol_20"].dropna().empty else float(returns["market_vol_20"].mean()),
-        "amount_ma20_mean": None if returns["amount_ma20"].dropna().empty else float(returns["amount_ma20"].mean()),
+        "liquidity_metric20_mean": None if returns["liquidity_metric20"].dropna().empty else float(returns["liquidity_metric20"].mean()),
         **layer,
         "daily_records_preview": rows[:20],
     }
@@ -426,6 +428,7 @@ def main() -> int:
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "input": str(input_path.relative_to(ROOT)) if input_path.is_relative_to(ROOT) else str(input_path),
         "rows": int(len(raw)),
+        "source_counts": raw["source"].value_counts(dropna=False).to_dict() if "source" in raw.columns else {},
         "factor_rows": int(len(factor_rows)),
         "unique_stocks": int(raw["code"].nunique()),
         "unique_dates": int(raw["date"].nunique()),
@@ -435,7 +438,7 @@ def main() -> int:
         "factor_count": len(FACTOR_DEFS),
         "factor_result_count": len(factor_results),
         "strategy_result_count": len(strategy_results),
-        "strategy_layer_policy": "本地分层只使用真实OHLCV可得字段：市场等权20日波动、20日成交额流动性；不伪造市值。",
+        "strategy_layer_policy": "本地分层只使用真实OHLCV可得字段：市场等权20日波动、20日成交额；成交额缺失时用真实成交量兜底；不伪造市值。",
         "factor_definitions": FACTOR_DEFS,
         "factor_results": factor_results,
         "strategy_results": strategy_results,
@@ -453,7 +456,9 @@ def main() -> int:
         "date",
         "code",
         "name",
+        "source",
         "close",
+        "liquidity_metric20",
         "ak_volume_price_confirmation",
         "ak_trend_quality",
         "ak_low_volatility_quality",

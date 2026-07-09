@@ -464,6 +464,9 @@ function formatMarketCap(value) {
 }
 
 function formatSizeOrLiquidityMeta(result) {
+  if (result.liquidity_metric20_mean !== null && result.liquidity_metric20_mean !== undefined && result.liquidity_metric20_mean !== '') {
+    return `流动性 ${formatNumber(Number(result.liquidity_metric20_mean), 1)}`;
+  }
   if (result.amount_ma20_mean !== null && result.amount_ma20_mean !== undefined && result.amount_ma20_mean !== '') {
     return `成交额 ${formatMarketCap(Number(result.amount_ma20_mean) / 100000000)}`;
   }

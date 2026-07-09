@@ -1,19 +1,23 @@
 {
   "source": "akshare_ohlcv_factor_backtest",
   "data_policy": "真实 AkShare OHLCV 本地回测；不填补缺失股票；不生成虚构绩效；当前本地样本不足以直接实盘。",
-  "generated_at": "2026-07-09T12:11:32",
+  "generated_at": "2026-07-09T12:36:25",
   "input": "outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv",
-  "rows": 32812,
-  "factor_rows": 29350,
-  "unique_stocks": 54,
+  "rows": 80619,
+  "source_counts": {
+    "akshare.stock_zh_a_hist_tx": 47807,
+    "akshare.stock_zh_a_hist": 32812
+  },
+  "factor_rows": 72015,
+  "unique_stocks": 134,
   "unique_dates": 608,
-  "min_stock_history_rows": 598,
+  "min_stock_history_rows": 143,
   "max_stock_history_rows": 608,
-  "min_stocks_per_day_required": 45,
+  "min_stocks_per_day_required": 120,
   "factor_count": 9,
   "factor_result_count": 27,
   "strategy_result_count": 64,
-  "strategy_layer_policy": "本地分层只使用真实OHLCV可得字段：市场等权20日波动、20日成交额流动性；不伪造市值。",
+  "strategy_layer_policy": "本地分层只使用真实OHLCV可得字段：市场等权20日波动、20日成交额；成交额缺失时用真实成交量兜底；不伪造市值。",
   "factor_definitions": [
     {
       "id": "ak_volume_price_confirmation",
