@@ -40,6 +40,7 @@ const paperWatchRoutesPath = outputPath('strategies', 'joinquant', 'paper_watch_
 const paperWatchExecutionPackPath = outputPath('strategies', 'joinquant', 'paper_watch_execution_pack_20260709.json');
 const paperWatchReadinessAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_readiness_audit_20260709.json');
 const paperWatchIndependenceAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_independence_audit_20260709.json');
+const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_readiness_audit_20260709.json');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -717,6 +718,7 @@ function buildDataCoverageSnapshot() {
   const akshareBacktest = readJsonFile(akshareOhlcvBacktestPath, {});
   const akshareStrategyValidation = readJsonFile(akshareStrategyValidationPath, {});
   const akshareFactorQualityAudit = readJsonFile(akshareFactorQualityAuditPath, {});
+  const aksharePaperWatchReadinessAudit = readJsonFile(aksharePaperWatchReadinessAuditPath, {});
   const strategyMaturityAudit = readJsonFile(strategyMaturityAuditPath, {});
   const paperWatchRoutes = readJsonFile(paperWatchRoutesPath, {});
   const allRawRows = [...primaryRows, ...capitalRows];
@@ -760,6 +762,9 @@ function buildDataCoverageSnapshot() {
     akshareAuditRejected: Number(akshareFactorQualityAudit.factor_decision_counts?.reject_standalone || 0),
     akshareAuditStrategyReviewCandidates: Number(akshareFactorQualityAudit.strategy_decision_counts?.awaiting_joinquant_review || 0),
     akshareAuditWatch: Number(akshareFactorQualityAudit.factor_decision_counts?.watch || 0),
+    aksharePaperWatchReadyCount: Number(aksharePaperWatchReadinessAudit.decision_counts?.ready_local_paper_watch || 0),
+    aksharePaperWatchRecommendedCount: Number(aksharePaperWatchReadinessAudit.recommended_route_count || 0),
+    aksharePaperWatchPolicy: aksharePaperWatchReadinessAudit.data_policy || '',
     controlledPaperWatchRouteCount: Number(strategyMaturityAudit.controlled_route_count || 0),
     firstPaperWatchRouteCount: Number(paperWatchRoutes.route_count || 0),
     paperWatchStatus: paperWatchRoutes.status || '',
@@ -833,17 +838,17 @@ function buildDataCoverageRisks() {
     },
     {
       detail: coverage.akshareStrategyValidationCandidates
-        ? `${coverage.akshareStrategyValidationPolicy} 已做候选稳定性验证 ${coverage.akshareStrategyValidationCandidates} 条，其中 ${coverage.akshareStrategyValidationReviewCandidates} 条通过本地门槛，状态仅为待 JoinQuant 复核。`
+        ? `${coverage.akshareStrategyValidationPolicy} 已做候选稳定性验证 ${coverage.akshareStrategyValidationCandidates} 条；严格模拟观察审计通过 ${coverage.aksharePaperWatchReadyCount} 条。`
         : '尚未对 AkShare 本地强分层策略做候选稳定性验证。',
       limit: 2,
       name: 'AkShare候选复核',
-      nextAction: coverage.akshareStrategyValidationReviewCandidates
-        ? '把通过本地门槛的候选迁移到 JoinQuant，补真实成交额、换手率、市值、行业暴露后再决定是否进入模拟盘观察。'
+      nextAction: coverage.aksharePaperWatchReadyCount
+        ? '允许作为本地数据源独立的受控模拟观察候选；继续补 JoinQuant 复核、行业暴露、市值与涨跌停约束。'
         : '先做年度分段、样本外切分和成本后净值稳定性验证。',
-      status: coverage.akshareStrategyValidationReviewCandidates >= 2 ? 'watch' : 'blocked',
-      value: coverage.akshareStrategyValidationReviewCandidates,
+      status: coverage.aksharePaperWatchReadyCount >= 1 ? 'ready' : (coverage.akshareStrategyValidationReviewCandidates >= 2 ? 'watch' : 'blocked'),
+      value: coverage.aksharePaperWatchReadyCount || coverage.akshareStrategyValidationReviewCandidates,
       valueText: coverage.akshareStrategyValidationCandidates
-        ? `${coverage.akshareStrategyValidationReviewCandidates}/${coverage.akshareStrategyValidationCandidates}待复核`
+        ? `${coverage.aksharePaperWatchReadyCount}/${coverage.akshareStrategyValidationCandidates}本地就绪`
         : '未验证',
     },
     {
@@ -863,17 +868,17 @@ function buildDataCoverageRisks() {
     },
     {
       detail: coverage.strategyMaturityStrategyCount
-        ? `已审计 ${coverage.strategyMaturityStrategyCount} 个 JoinQuant 实测策略：${coverage.strategyMaturityControlledCount} 个只允许分层路线模拟观察，${coverage.strategyMaturityRejectedCount} 个暂缓；首批配置 ${coverage.firstPaperWatchRouteCount} 条路线。`
+        ? `已审计 ${coverage.strategyMaturityStrategyCount} 个 JoinQuant 实测策略：${coverage.strategyMaturityControlledCount} 个只允许分层路线模拟观察，${coverage.strategyMaturityRejectedCount} 个暂缓；JoinQuant 配置 ${coverage.firstPaperWatchRouteCount} 条，AkShare 本地严格就绪 ${coverage.aksharePaperWatchReadyCount} 条。`
         : '尚未生成 JoinQuant 策略成熟度审计。',
       limit: 2,
       name: '策略成熟度审计',
-      nextAction: coverage.firstPaperWatchRouteCount >= 2
-        ? '首批只允许配置文件中的受控路线进入模拟观察；不得放开整策略或未通过分层。'
+      nextAction: coverage.firstPaperWatchRouteCount >= 2 || coverage.aksharePaperWatchReadyCount >= 1
+        ? '首批只允许配置文件和严格审计中的受控路线进入模拟观察；不得放开整策略或未通过分层。'
         : '继续导入 JoinQuant 交易净值、分层和成本结果，直到至少两条不同策略路线通过。',
-      status: coverage.firstPaperWatchRouteCount >= 2 ? 'ready' : (coverage.strategyMaturityStrategyCount ? 'watch' : 'blocked'),
-      value: coverage.firstPaperWatchRouteCount,
+      status: coverage.firstPaperWatchRouteCount >= 2 || coverage.aksharePaperWatchReadyCount >= 1 ? 'ready' : (coverage.strategyMaturityStrategyCount ? 'watch' : 'blocked'),
+      value: coverage.firstPaperWatchRouteCount + coverage.aksharePaperWatchReadyCount,
       valueText: coverage.paperWatchStatus === 'ready_for_controlled_paper_watch'
-        ? `${coverage.firstPaperWatchRouteCount}条路线`
+        ? `${coverage.firstPaperWatchRouteCount + coverage.aksharePaperWatchReadyCount}条路线`
         : '未就绪',
     },
     {
@@ -895,16 +900,29 @@ function buildPaperWatchRoutes() {
   const executionPack = readJsonFile(paperWatchExecutionPackPath, {});
   const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
   const independenceAudit = readJsonFile(paperWatchIndependenceAuditPath, {});
+  const akshareReadinessAudit = readJsonFile(aksharePaperWatchReadinessAuditPath, {});
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
+    : [];
+  const akshareRecommendedRoutes = Array.isArray(akshareReadinessAudit.recommended_routes)
+    ? akshareReadinessAudit.recommended_routes
     : [];
   const routes = readinessRecommendedRoutes.length
     ? readinessRecommendedRoutes
     : Array.isArray(pack.routes)
       ? pack.routes
       : [];
+  const akshareRoutes = akshareRecommendedRoutes.map((route) => ({
+    ...route,
+    evidence_system: 'AkShare本地OHLCV',
+    is_local_backtest: true,
+    sample_dates: route.sample_trades,
+    readiness_decision: route.decision,
+    readiness_reason: route.decision_reason,
+  }));
   const executionRoutes = Array.isArray(executionPack.routes) ? executionPack.routes : [];
   const readinessRoutes = Array.isArray(readinessAudit.routes) ? readinessAudit.routes : [];
+  const akshareReadinessRoutes = Array.isArray(akshareReadinessAudit.routes) ? akshareReadinessAudit.routes : [];
   const executionByRoute = new Map(executionRoutes.map((route) => [
     `${route.strategy_id || ''}::${route.allowed_layer || ''}`,
     route,
@@ -913,43 +931,74 @@ function buildPaperWatchRoutes() {
     `${route.strategy_id || ''}::${route.allowed_layer || ''}`,
     route,
   ]));
+  const akshareReadinessByRoute = new Map(akshareReadinessRoutes.map((route) => [
+    `${route.strategy_id || ''}::${route.layer || ''}`,
+    route,
+  ]));
   const enrichedRoutes = routes.map((route) => ({
     ...route,
+    evidence_system: route.evidence_system || 'JoinQuant',
     execution: executionByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
     readiness: readinessByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
-  }));
+  })).concat(akshareRoutes.map((route) => ({
+    ...route,
+    execution: null,
+    readiness: akshareReadinessByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || route,
+  })));
   const readinessCounts = readinessAudit.decision_counts || {};
+  const akshareReadinessCounts = akshareReadinessAudit.decision_counts || {};
   const recommendedReadinessCounts = enrichedRoutes.reduce((acc, route) => {
     const decision = route.readiness?.decision || route.readiness_decision || 'unknown';
     acc[decision] = (acc[decision] || 0) + 1;
     return acc;
   }, {});
+  const readyRouteCount = Number(recommendedReadinessCounts.ready_controlled_paper_watch || 0)
+    + Number(recommendedReadinessCounts.ready_local_paper_watch || 0);
+  const conditionalRouteCount = Number(recommendedReadinessCounts.conditional_paper_watch || 0)
+    + Number(recommendedReadinessCounts.conditional_local_paper_watch || 0);
   return {
     generatedAt: pack.generated_at || '',
-    dataPolicy: pack.data_policy || '只展示已通过真实回测审计的受控模拟观察路线。',
+    dataPolicy: [
+      pack.data_policy || '只展示已通过真实回测审计的受控模拟观察路线。',
+      akshareReadinessAudit.data_policy || '',
+    ].filter(Boolean).join('；'),
     executionDataPolicy: executionPack.data_policy || '',
     executionStatus: executionPack.status || 'not_ready',
     globalControls: Array.isArray(executionPack.global_controls) ? executionPack.global_controls : [],
+    localBacktest: {
+      dataPolicy: akshareReadinessAudit.data_policy || '',
+      decisionCounts: akshareReadinessCounts,
+      recommendedRouteCount: Number(akshareReadinessAudit.recommended_route_count || akshareRecommendedRoutes.length || 0),
+      source: akshareReadinessAudit.source || '',
+    },
     independence: {
       decision: independenceAudit.decision || '',
       decisionName: independenceAudit.decision_name || '',
       deploymentMode: independenceAudit.deployment_mode || '',
       independentCapitalSleeves: Number(independenceAudit.independent_capital_sleeves || 0),
+      localIndependentRouteCount: akshareRecommendedRoutes.length,
       overlaps: Array.isArray(independenceAudit.overlaps) ? independenceAudit.overlaps : [],
-      summary: independenceAudit.summary || '',
+      summary: [
+        independenceAudit.summary || '',
+        akshareRecommendedRoutes.length
+          ? `另有 ${akshareRecommendedRoutes.length} 条 AkShare 本地真实OHLCV路线通过严格审计，证据来源独立于 JoinQuant，但仍需按本地股票池和数据源边界模拟观察。`
+          : '',
+      ].filter(Boolean).join(' '),
     },
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
     readinessCounts: recommendedReadinessCounts,
     readinessDecisionCounts: readinessCounts,
     readinessDataPolicy: readinessAudit.data_policy || '',
-    readinessStatus: readinessCounts.ready_controlled_paper_watch
+    readinessStatus: readyRouteCount
       ? 'ready_controlled_paper_watch'
-      : readinessCounts.conditional_paper_watch
+      : conditionalRouteCount
         ? 'conditional_paper_watch'
         : readinessCounts.conditional_recheck_required
           ? 'conditional_recheck_required'
           : 'not_ready',
-    routeCount: Number(readinessRecommendedRoutes.length || pack.route_count || enrichedRoutes.length || 0),
+    readyRouteCount,
+    conditionalRouteCount,
+    routeCount: Number(enrichedRoutes.length || readinessRecommendedRoutes.length || pack.route_count || 0),
     routes: enrichedRoutes,
     selectionPolicy: pack.selection_policy || '',
     status: pack.status || 'not_ready',
