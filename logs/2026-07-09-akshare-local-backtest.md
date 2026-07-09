@@ -80,3 +80,14 @@
 - 审计结论：15 个因子中 1 个单因子通过、3 个显著但不可单独交易、6 个继续观察、5 个暂缓单独使用。
 - 通过项：`ak_liquidity_stability`；其余本地强策略更多来自分层组合，不允许直接包装成单因子 alpha。
 - 平台数据可信度接口新增 `AkShare因子审计` 项，用于展示严格通过数量和待 JoinQuant 复核边界。
+
+## 追加：JoinQuant 策略成熟度审计
+
+- 新增 `outputs/strategies/joinquant/audit_strategy_maturity.py`，只读取已导入的 JoinQuant 真实策略交易回测结果。
+- 审计产物：`outputs/strategies/joinquant/strategy_maturity_audit_20260709.json`、`outputs/_docs/strategy-maturity-audit-20260709.md`、`outputs/strategies/joinquant/paper_watch_routes_20260709.json`。
+- 5 个已导入策略中，没有整策略通过成熟门槛；4 个策略存在受控分层路线，1 个策略暂缓或重做。
+- 首批可进入受控模拟观察的两条路线：
+  - `K线辅助确认策略`：仅低波动/大市值，收益 49.93%，回撤 -3.92%，Sharpe 2.52。
+  - `JQ质量利润流动性策略 v1`：仅高波动/中市值，收益 57.66%，回撤 -10.37%，Sharpe 1.95。
+- 边界：这是“受控分层路线”模拟观察，不是整策略无条件放开；未通过的波动/市值层不得使用。
+- 平台数据可信度接口新增 `策略成熟度审计` 项，展示首批可模拟观察路线数量。

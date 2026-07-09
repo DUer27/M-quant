@@ -1,0 +1,4610 @@
+{
+  "source": "joinquant_strategy_maturity_audit",
+  "generated_at": "2026-07-09T14:23:56",
+  "input": "platform/quant-factor-platform/data/imported-backtest-results.json",
+  "data_policy": "只读取已导入 JoinQuant 真实策略结果；不生成虚构收益；整策略和分层路线分开评级。",
+  "whole_strategy_gates": {
+    "min_sample_dates": 100,
+    "min_strategy_return": 0.15,
+    "min_annual_return": 0.08,
+    "max_drawdown_floor": -0.25,
+    "min_sharpe": 0.8,
+    "min_win_rate": 0.52,
+    "min_positive_cross_layers": 12
+  },
+  "controlled_route_gates": {
+    "min_sample_dates": 30,
+    "min_strategy_return": 0.2,
+    "min_annual_return": 0.2,
+    "max_drawdown_floor": -0.15,
+    "min_sharpe": 1.2,
+    "min_win_rate": 0.52
+  },
+  "strategy_count": 5,
+  "decision_counts": {
+    "reject_or_rework": 1,
+    "controlled_route_paper_watch": 4
+  },
+  "controlled_route_count": 9,
+  "primary_paper_watch_route_count": 2,
+  "primary_paper_watch_routes": [
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "layer": "低波动/大市值",
+      "market_regime": "low_volatility",
+      "market_cap_bucket": "large_cap",
+      "sample_dates": 31,
+      "strategy_return": 0.4992595506771098,
+      "annual_return": 0.9317088757255843,
+      "max_drawdown": -0.03919115266187512,
+      "sharpe": 2.5191408980385095,
+      "win_rate": 0.5806451612903226,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "layer": "高波动/中市值",
+      "market_regime": "high_volatility",
+      "market_cap_bucket": "mid_cap",
+      "sample_dates": 39,
+      "strategy_return": 0.5765921523017343,
+      "annual_return": 0.8010022295639585,
+      "max_drawdown": -0.10369602814399159,
+      "sharpe": 1.953540702514037,
+      "win_rate": 0.5641025641025641,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 高波动/中市值，不得扩展到未通过分层。"
+    }
+  ],
+  "strategies": [
+    {
+      "strategy_id": "capital_follow_v0",
+      "strategy_name": "资金跟随策略 v0",
+      "decision": "reject_or_rework",
+      "decision_name": "暂缓或重做",
+      "record_count": 19,
+      "event_count": 3,
+      "trading_count": 16,
+      "cross_layer_count": 9,
+      "positive_cross_layer_count": 4,
+      "base_trading": {
+        "result_type": "strategy_trading_backtest",
+        "strategy_id": "capital_follow_v0",
+        "strategy_name": "资金跟随策略 v0",
+        "horizon": "5日调仓交易",
+        "layer": "未分层",
+        "sample_dates": 118,
+        "sample_trades": 3540,
+        "trade_count": 3540,
+        "strategy_return": -0.1236115736156902,
+        "strategy_annual_return": -0.05479793047669723,
+        "annual_return": -0.05479793047669723,
+        "final_net_value": 0.8763884263843098,
+        "max_drawdown": -0.2008721051671205,
+        "sharpe": -0.19261938094556189,
+        "daily_win_rate": 0.4915254237288136,
+        "period_mean_return": -0.0007564856316155282,
+        "gross_mean_return": 0.002095096289288429,
+        "avg_turnover": 1.6774011299435045,
+        "total_turnover": 197.93333333333354,
+        "cost_rate": 0.0015,
+        "slippage_rate": 0.0002,
+        "date_range": "2024-01-02 至 2026-06-08",
+        "source": "joinquant_capital_follow_v0_trading_simulation_v1",
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+        "net_value_curve": [
+          {
+            "date": "2024-10-21",
+            "net_value": 1.0490877173067412,
+            "period_return": 0.030917911612568513,
+            "gross_return": 0.03386457827923518,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-10-28",
+            "net_value": 1.0250724786277126,
+            "period_return": -0.02289154498985227,
+            "gross_return": -0.0199448783231856,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-04",
+            "net_value": 1.0693361417044993,
+            "period_return": 0.043181008172264515,
+            "gross_return": 0.046354341505597856,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-11",
+            "net_value": 1.010799725284392,
+            "period_return": -0.054740894034313016,
+            "gross_return": -0.05168089403431301,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-18",
+            "net_value": 0.9882272676563799,
+            "period_return": -0.022331285875311583,
+            "gross_return": -0.01927128587531158,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-25",
+            "net_value": 1.004255982433667,
+            "period_return": 0.01621966454669881,
+            "gross_return": 0.019052997880032146,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-02",
+            "net_value": 0.9951209455720623,
+            "period_return": -0.009096323070406082,
+            "gross_return": -0.005922989737072744,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-09",
+            "net_value": 0.9774643979502833,
+            "period_return": -0.01774311725659528,
+            "gross_return": -0.014569783923261942,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-16",
+            "net_value": 0.9746498633408537,
+            "period_return": -0.002879424166579886,
+            "gross_return": 6.724250008678439e-05,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-23",
+            "net_value": 0.9812422807030046,
+            "period_return": 0.006763882713278982,
+            "gross_return": 0.009710549379945652,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-30",
+            "net_value": 0.9453491375901193,
+            "period_return": -0.036579287112628193,
+            "gross_return": -0.03385928711262819,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-07",
+            "net_value": 0.9329045159599746,
+            "period_return": -0.013164048218067426,
+            "gross_return": -0.010444048218067423,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-14",
+            "net_value": 0.9205228718405594,
+            "period_return": -0.013272145120526473,
+            "gross_return": -0.010552145120526471,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-21",
+            "net_value": 0.918015781081063,
+            "period_return": -0.0027235507516326263,
+            "gross_return": 0.0004497825817007116,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-05",
+            "net_value": 0.9334908495317268,
+            "period_return": 0.016857083254538642,
+            "gross_return": 0.02003041658787198,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-12",
+            "net_value": 0.9307892726445262,
+            "period_return": -0.002894058242301797,
+            "gross_return": -6.072490896846035e-05,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-19",
+            "net_value": 0.92736556656487,
+            "period_return": -0.003678282700797448,
+            "gross_return": -0.0009582827007974452,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-26",
+            "net_value": 0.9081958053249273,
+            "period_return": -0.020671202308007827,
+            "gross_return": -0.018064535641341157,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-05",
+            "net_value": 0.9058633925493181,
+            "period_return": -0.0025681827221990623,
+            "gross_return": 0.00037848394446760795,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-12",
+            "net_value": 0.9226195549526718,
+            "period_return": 0.01849744955053081,
+            "gross_return": 0.02144411621719748,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-19",
+            "net_value": 0.9123745692682512,
+            "period_return": -0.011104236442231085,
+            "gross_return": -0.008270903108897748,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-26",
+            "net_value": 0.9072956707529738,
+            "period_return": -0.005566681367884702,
+            "gross_return": -0.0028466813678846995,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-02",
+            "net_value": 0.8736592451351846,
+            "period_return": -0.0370732790886944,
+            "gross_return": -0.03401327908869439,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-10",
+            "net_value": 0.8803059150499688,
+            "period_return": 0.007607851632996385,
+            "gross_return": 0.010441184966329722,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-17",
+            "net_value": 0.8881182813819248,
+            "period_return": 0.008874603928467851,
+            "gross_return": 0.011707937261801188,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-24",
+            "net_value": 0.8881320525198375,
+            "period_return": 1.5505972798215105e-05,
+            "gross_return": 0.002735505972798218,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-06",
+            "net_value": 0.9050872697521697,
+            "period_return": 0.01909087413772104,
+            "gross_return": 0.021924207471054377,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-13",
+            "net_value": 0.9063273893376252,
+            "period_return": 0.0013701657584854585,
+            "gross_return": 0.004430165758485463,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-20",
+            "net_value": 0.903522643947171,
+            "period_return": -0.003094627199233242,
+            "gross_return": -0.0001479605325665715,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-27",
+            "net_value": 0.9103793257600199,
+            "period_return": 0.0075888322874727195,
+            "gross_return": 0.009968832287472721,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-04",
+            "net_value": 0.9200645558650801,
+            "period_return": 0.01063867536422201,
+            "gross_return": 0.013245342030888679,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-11",
+            "net_value": 0.9144946992478129,
+            "period_return": -0.006053767185966851,
+            "gross_return": -0.0032204338526335145,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-18",
+            "net_value": 0.9262537709311709,
+            "period_return": 0.012858545482035112,
+            "gross_return": 0.015805212148701783,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-25",
+            "net_value": 0.9208415974915787,
+            "period_return": -0.005843078440750897,
+            "gross_return": -0.003236411774084228,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-02",
+            "net_value": 0.9257955937721891,
+            "period_return": 0.005379857180763122,
+            "gross_return": 0.008099857180763125,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-09",
+            "net_value": 0.9241617610088048,
+            "period_return": -0.0017647877937366312,
+            "gross_return": 0.0009552122062633716,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-16",
+            "net_value": 0.9512268944961345,
+            "period_return": 0.029286142999236226,
+            "gross_return": 0.03234614299923623,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-23",
+            "net_value": 0.9688502632256449,
+            "period_return": 0.0185269874427231,
+            "gross_return": 0.02147365410938977,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-30",
+            "net_value": 0.9614751322994795,
+            "period_return": -0.0076122505263208785,
+            "gross_return": -0.004778917192987542,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-06",
+            "net_value": 0.9615113223352004,
+            "period_return": 3.764011621848256e-05,
+            "gross_return": 0.0027576401162184854,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-13",
+            "net_value": 0.9700414403862081,
+            "period_return": 0.00887157317117252,
+            "gross_return": 0.011704906504505857,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-20",
+            "net_value": 0.9734595979877657,
+            "period_return": 0.003523723275365098,
+            "gross_return": 0.006583723275365102,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-27",
+            "net_value": 0.9739026671600876,
+            "period_return": 0.0004551490100232038,
+            "gross_return": 0.0036284823433565417,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-03",
+            "net_value": 0.9931048849589267,
+            "period_return": 0.01971677298598337,
+            "gross_return": 0.022776772985983372,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-10",
+            "net_value": 0.9878315002993641,
+            "period_return": -0.005309997704603666,
+            "gross_return": -0.0028166643712703304,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-17",
+            "net_value": 0.965563858992969,
+            "period_return": -0.0225419429322175,
+            "gross_return": -0.01925527626555083,
+            "cost": 0.0032866666666666717,
+            "turnover": 1.933333333333336,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-24",
+            "net_value": 0.9801950037327645,
+            "period_return": 0.015152954000427089,
+            "gross_return": 0.01809962066709376,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-09",
+            "net_value": 0.9804219506640447,
+            "period_return": 0.00023153243019612742,
+            "gross_return": 0.003518199096862799,
+            "cost": 0.0032866666666666717,
+            "turnover": 1.933333333333336,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-16",
+            "net_value": 0.9809248951981828,
+            "period_return": 0.0005129878352860841,
+            "gross_return": 0.0034596545019527545,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-23",
+            "net_value": 0.995024693645612,
+            "period_return": 0.01437398369278879,
+            "gross_return": 0.01675398369278879,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-30",
+            "net_value": 0.9880652788639719,
+            "period_return": -0.006994213134693037,
+            "gross_return": -0.004047546468026367,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-06",
+            "net_value": 0.9816543673095545,
+            "period_return": -0.006488348180586203,
+            "gross_return": -0.003315014847252865,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-13",
+            "net_value": 0.9512797607848837,
+            "period_return": -0.030942261896026817,
+            "gross_return": -0.02776892856269348,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-20",
+            "net_value": 0.9413609086314597,
+            "period_return": -0.01042685081961598,
+            "gross_return": -0.00782018415294931,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-27",
+            "net_value": 0.9510918122882731,
+            "period_return": 0.010337059429162063,
+            "gross_return": 0.013397059429162066,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-04",
+            "net_value": 0.9411373043707898,
+            "period_return": -0.010466400602832781,
+            "gross_return": -0.007746400602832778,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-11",
+            "net_value": 0.9440393852284551,
+            "period_return": 0.003083589232078528,
+            "gross_return": 0.005916922565411865,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-18",
+            "net_value": 0.9461011060371547,
+            "period_return": 0.0021839351630447467,
+            "gross_return": 0.004563935163044749,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-25",
+            "net_value": 0.94880334151686,
+            "period_return": 0.0028561804467430512,
+            "gross_return": 0.005802847113409722,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-05",
+            "net_value": 0.9624699455225044,
+            "period_return": 0.014404042869195055,
+            "gross_return": 0.017350709535861725,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-12",
+            "net_value": 0.9411342119441398,
+            "period_return": -0.022167688121193078,
+            "gross_return": -0.01967435478785974,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-19",
+            "net_value": 0.9430165786704114,
+            "period_return": 0.002000104450972163,
+            "gross_return": 0.004606771117638833,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-26",
+            "net_value": 0.9253418728568611,
+            "period_return": -0.01874273073594365,
+            "gross_return": -0.01613606406927698,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-02",
+            "net_value": 0.951607039106362,
+            "period_return": 0.0283842837117171,
+            "gross_return": 0.030424283711717102,
+            "cost": 0.002040000000000001,
+            "turnover": 1.2000000000000004,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-09",
+            "net_value": 0.9459089089886838,
+            "period_return": -0.0059879024466119625,
+            "gross_return": -0.0032679024466119597,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-24",
+            "net_value": 0.9633518802097708,
+            "period_return": 0.018440434438593063,
+            "gross_return": 0.0216137677719264,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-03",
+            "net_value": 0.9614096386392186,
+            "period_return": -0.0020161289041438608,
+            "gross_return": 0.000703871095856142,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-10",
+            "net_value": 0.9633788476641112,
+            "period_return": 0.0020482518020931823,
+            "gross_return": 0.004881585135426519,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-17",
+            "net_value": 0.9239832283042514,
+            "period_return": -0.04089317453396629,
+            "gross_return": -0.038626507867299625,
+            "cost": 0.002266666666666668,
+            "turnover": 1.3333333333333341,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-24",
+            "net_value": 0.929272509105554,
+            "period_return": 0.005724433776801205,
+            "gross_return": 0.008444433776801208,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-31",
+            "net_value": 0.9415429478273957,
+            "period_return": 0.013204349210386455,
+            "gross_return": 0.016037682543719792,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-08",
+            "net_value": 0.9501507776691333,
+            "period_return": 0.009142259374997307,
+            "gross_return": 0.011862259374997311,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-15",
+            "net_value": 0.9501685331204074,
+            "period_return": 1.868698283617482e-05,
+            "gross_return": 0.002965353649502845,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-22",
+            "net_value": 0.946559719350903,
+            "period_return": -0.0037980775448886147,
+            "gross_return": -0.0006247442115552769,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-29",
+            "net_value": 0.9305958285494276,
+            "period_return": -0.016865170231860814,
+            "gross_return": -0.014031836898527479,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-11",
+            "net_value": 0.9185057381091829,
+            "period_return": -0.01299177373177168,
+            "gross_return": -0.010271773731771676,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-18",
+            "net_value": 0.9022366979855311,
+            "period_return": -0.01771250787952943,
+            "gross_return": -0.014879174546196094,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-25",
+            "net_value": 0.890788165600446,
+            "period_return": -0.012689056442335804,
+            "gross_return": -0.009969056442335802,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-01",
+            "net_value": 0.8663847681602782,
+            "period_return": -0.027395286985787946,
+            "gross_return": -0.02422195365245461,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-08",
+            "net_value": 0.8763884263843098,
+            "period_return": 0.011546438247378037,
+            "gross_return": 0.01426643824737804,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          }
+        ],
+        "importedAt": "2026-07-09T01:28:14.091Z"
+      },
+      "base_checks": {
+        "sample_dates": true,
+        "strategy_return": false,
+        "annual_return": false,
+        "max_drawdown": true,
+        "sharpe": false,
+        "win_rate": false
+      },
+      "controlled_route_count": 0,
+      "controlled_routes": [],
+      "worst_layers": [
+        {
+          "layer": "中波动",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "",
+          "sample_dates": 48,
+          "strategy_return": -0.2350765876276606,
+          "max_drawdown": -0.2009499131071122,
+          "sharpe": -2.2798241463339384
+        },
+        {
+          "layer": "中波动/大市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 48,
+          "strategy_return": -0.23379425861783165,
+          "max_drawdown": -0.2244290716876416,
+          "sharpe": -2.0418954245831733
+        },
+        {
+          "layer": "中波动/小市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 48,
+          "strategy_return": -0.2231309121087004,
+          "max_drawdown": -0.1913715469719166,
+          "sharpe": -1.2543476326679377
+        },
+        {
+          "layer": "小市值",
+          "market_regime": "",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 118,
+          "strategy_return": -0.22011426189720218,
+          "max_drawdown": -0.25608877558721277,
+          "sharpe": -0.20304785118559898
+        },
+        {
+          "layer": "中波动/中市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "mid_cap",
+          "sample_dates": 48,
+          "strategy_return": -0.2089731112235359,
+          "max_drawdown": -0.16906432597731424,
+          "sharpe": -1.565634638691625
+        }
+      ],
+      "next_action": "不进入模拟盘；先重做因子、降低换手或限制市场/市值层后再复核。"
+    },
+    {
+      "strategy_id": "core_volume_price_trend_v1",
+      "strategy_name": "核心量价趋势策略 v1",
+      "decision": "controlled_route_paper_watch",
+      "decision_name": "仅分层路线可模拟观察",
+      "record_count": 19,
+      "event_count": 3,
+      "trading_count": 16,
+      "cross_layer_count": 9,
+      "positive_cross_layer_count": 5,
+      "base_trading": {
+        "result_type": "strategy_trading_backtest",
+        "strategy_id": "core_volume_price_trend_v1",
+        "strategy_name": "核心量价趋势策略 v1",
+        "horizon": "5日调仓交易",
+        "layer": "未分层",
+        "sample_dates": 118,
+        "sample_trades": 3236,
+        "trade_count": 3236,
+        "strategy_return": 0.11553029119986413,
+        "strategy_annual_return": 0.04780430237941524,
+        "annual_return": 0.04780430237941524,
+        "final_net_value": 1.1155302911998641,
+        "max_drawdown": -0.192242172954335,
+        "sharpe": 0.3158124923752124,
+        "daily_win_rate": 0.4661016949152542,
+        "period_mean_return": 0.0013776064561064924,
+        "gross_mean_return": 0.004238586468521596,
+        "avg_turnover": 1.682929419067707,
+        "total_turnover": 198.58567144998943,
+        "cost_rate": 0.0015,
+        "slippage_rate": 0.0002,
+        "date_range": "2024-01-02 至 2026-06-08",
+        "source": "joinquant_core_volume_price_trend_v1_trading_simulation_v1",
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+        "net_value_curve": [
+          {
+            "date": "2024-10-21",
+            "net_value": 1.0315885400563605,
+            "period_return": 0.015208035922234162,
+            "gross_return": 0.017928035922234166,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-10-28",
+            "net_value": 1.0141801685130523,
+            "period_return": -0.016875305286308342,
+            "gross_return": -0.013701971952975005,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-04",
+            "net_value": 1.0842567244748744,
+            "period_return": 0.06909675236951784,
+            "gross_return": 0.07227008570285118,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-11",
+            "net_value": 1.0326021842422621,
+            "period_return": -0.04764050714799991,
+            "gross_return": -0.0442405071479999,
+            "cost": 0.0034000000000000046,
+            "turnover": 2.0000000000000027,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-18",
+            "net_value": 0.9934096373543423,
+            "period_return": -0.037955126849436104,
+            "gross_return": -0.0345551268494361,
+            "cost": 0.0034000000000000015,
+            "turnover": 2.000000000000001,
+            "selected_count": 23
+          },
+          {
+            "date": "2024-11-25",
+            "net_value": 1.029414427278696,
+            "period_return": 0.03624364871297411,
+            "gross_return": 0.03920017045210454,
+            "cost": 0.0029565217391304345,
+            "turnover": 1.7391304347826084,
+            "selected_count": 17
+          },
+          {
+            "date": "2024-12-02",
+            "net_value": 1.0224336868899386,
+            "period_return": -0.006781273123606215,
+            "gross_return": -0.0034946064569395447,
+            "cost": 0.00328666666666667,
+            "turnover": 1.9333333333333351,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-09",
+            "net_value": 1.0047469666241184,
+            "period_return": -0.017298647817072663,
+            "gross_return": -0.014465314483739326,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-16",
+            "net_value": 1.0095689696762895,
+            "period_return": 0.00479922130879629,
+            "gross_return": 0.007292554642129625,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-23",
+            "net_value": 1.032357251875833,
+            "period_return": 0.022572288653889855,
+            "gross_return": 0.02449895532055652,
+            "cost": 0.0019266666666666672,
+            "turnover": 1.1333333333333335,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-30",
+            "net_value": 0.9707177944844112,
+            "period_return": -0.05970748718955634,
+            "gross_return": -0.05744082052288967,
+            "cost": 0.002266666666666668,
+            "turnover": 1.3333333333333341,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-07",
+            "net_value": 0.9854183647972057,
+            "period_return": 0.015144020637432028,
+            "gross_return": 0.0180906873040987,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-14",
+            "net_value": 0.995833803060045,
+            "period_return": 0.010569559727033079,
+            "gross_return": 0.013062893060366414,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-21",
+            "net_value": 0.9807263792051004,
+            "period_return": -0.015170627677551899,
+            "gross_return": -0.01256396101088523,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-05",
+            "net_value": 1.014798681702758,
+            "period_return": 0.03474190479639605,
+            "gross_return": 0.03734857146306272,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-12",
+            "net_value": 1.0062412638679203,
+            "period_return": -0.008432626085480382,
+            "gross_return": -0.005372626085480378,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-19",
+            "net_value": 1.0193068226847244,
+            "period_return": 0.012984519007480495,
+            "gross_return": 0.015817852340813832,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-26",
+            "net_value": 0.9973149150118777,
+            "period_return": -0.021575356098297107,
+            "gross_return": -0.01840202276496377,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-05",
+            "net_value": 0.9951825599459766,
+            "period_return": -0.002138096035469142,
+            "gross_return": 0.0008085706311975285,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-12",
+            "net_value": 1.0171440917030359,
+            "period_return": 0.022067842264289112,
+            "gross_return": 0.02501450893095578,
+            "cost": 0.002946666666666668,
+            "turnover": 1.733333333333334,
+            "selected_count": 27
+          },
+          {
+            "date": "2025-03-19",
+            "net_value": 1.00380661628941,
+            "period_return": -0.0131126705866172,
+            "gross_return": -0.010619337253283866,
+            "cost": 0.0024933333333333344,
+            "turnover": 1.4666666666666672,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-26",
+            "net_value": 0.9787886258739062,
+            "period_return": -0.024923117669798912,
+            "gross_return": -0.021976451003132242,
+            "cost": 0.00294666666666667,
+            "turnover": 1.7333333333333352,
+            "selected_count": 28
+          },
+          {
+            "date": "2025-04-02",
+            "net_value": 0.9470990124951636,
+            "period_return": -0.03237636047358924,
+            "gross_return": -0.028976360473589233,
+            "cost": 0.0034000000000000015,
+            "turnover": 2.000000000000001,
+            "selected_count": 23
+          },
+          {
+            "date": "2025-04-10",
+            "net_value": 0.9544974648195046,
+            "period_return": 0.007811698910813415,
+            "gross_return": 0.010758365577480083,
+            "cost": 0.0029466666666666686,
+            "turnover": 1.7333333333333343,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-17",
+            "net_value": 0.9420579761155831,
+            "period_return": -0.013032500517195018,
+            "gross_return": -0.01076583385052835,
+            "cost": 0.002266666666666668,
+            "turnover": 1.3333333333333341,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-24",
+            "net_value": 0.9289968680845943,
+            "period_return": -0.013864441851916669,
+            "gross_return": -0.011031108518583332,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-06",
+            "net_value": 0.9247239686539492,
+            "period_return": -0.004599476680104242,
+            "gross_return": -0.0015394766801042382,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-13",
+            "net_value": 0.9250366111024768,
+            "period_return": 0.00033809272726292427,
+            "gross_return": 0.0033980927272629284,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-20",
+            "net_value": 0.9193697960241466,
+            "period_return": -0.006126044104974906,
+            "gross_return": -0.003179377438308236,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-27",
+            "net_value": 0.9368981650906065,
+            "period_return": 0.019065635114686293,
+            "gross_return": 0.02201230178135296,
+            "cost": 0.0029466666666666686,
+            "turnover": 1.7333333333333343,
+            "selected_count": 22
+          },
+          {
+            "date": "2025-06-04",
+            "net_value": 0.9550442421822809,
+            "period_return": 0.019368249152157763,
+            "gross_return": 0.02197491581882443,
+            "cost": 0.0026066666666666686,
+            "turnover": 1.5333333333333343,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-11",
+            "net_value": 0.953454318109747,
+            "period_return": -0.0016647648373868534,
+            "gross_return": 0.0009419018292798159,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-18",
+            "net_value": 0.9784488363086644,
+            "period_return": 0.026214699251108198,
+            "gross_return": 0.029161365917774868,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-25",
+            "net_value": 0.9740344465498524,
+            "period_return": -0.004511620429194676,
+            "gross_return": -0.0020182870958613407,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-02",
+            "net_value": 0.9822686637062868,
+            "period_return": 0.008453722746255164,
+            "gross_return": 0.011287056079588501,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-09",
+            "net_value": 0.9716013133354295,
+            "period_return": -0.010859911106812005,
+            "gross_return": -0.007913244440145335,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-16",
+            "net_value": 0.9796020541346161,
+            "period_return": 0.00823459240881497,
+            "gross_return": 0.01118125907548164,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-23",
+            "net_value": 0.9906226605849687,
+            "period_return": 0.011250085076728644,
+            "gross_return": 0.014310085076728648,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-30",
+            "net_value": 0.9660544355640306,
+            "period_return": -0.024800790450755887,
+            "gross_return": -0.022080790450755883,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-06",
+            "net_value": 0.9733184649207395,
+            "period_return": 0.0075192754044627825,
+            "gross_return": 0.01069260873779612,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-13",
+            "net_value": 1.0065743862896233,
+            "period_return": 0.034167564438009466,
+            "gross_return": 0.0370008977713428,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-20",
+            "net_value": 1.031594010201865,
+            "period_return": 0.024856209588709623,
+            "gross_return": 0.027916209588709627,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-27",
+            "net_value": 1.0702502020539413,
+            "period_return": 0.037472291880128204,
+            "gross_return": 0.04064562521346154,
+            "cost": 0.0031733333333333353,
+            "turnover": 1.8666666666666678,
+            "selected_count": 11
+          },
+          {
+            "date": "2025-09-03",
+            "net_value": 1.0947323255544856,
+            "period_return": 0.02287514027426507,
+            "gross_return": 0.02612731418730855,
+            "cost": 0.003252173913043477,
+            "turnover": 1.9130434782608687,
+            "selected_count": 23
+          },
+          {
+            "date": "2025-09-10",
+            "net_value": 1.144186106813038,
+            "period_return": 0.04517431348663591,
+            "gross_return": 0.04808859920092163,
+            "cost": 0.002914285714285715,
+            "turnover": 1.7142857142857146,
+            "selected_count": 28
+          },
+          {
+            "date": "2025-09-17",
+            "net_value": 1.1378075798815936,
+            "period_return": -0.005574728528395373,
+            "gross_return": -0.0022880618617287015,
+            "cost": 0.0032866666666666712,
+            "turnover": 1.9333333333333358,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-24",
+            "net_value": 1.229102978501606,
+            "period_return": 0.08023799474908849,
+            "gross_return": 0.08307132808242183,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-09",
+            "net_value": 1.207942045622994,
+            "period_return": -0.017216566267221563,
+            "gross_return": -0.01415656626722156,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-16",
+            "net_value": 1.211832818892603,
+            "period_return": 0.0032209933280387157,
+            "gross_return": 0.006054326661372052,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-23",
+            "net_value": 1.2441098364097254,
+            "period_return": 0.026634876539007844,
+            "gross_return": 0.029581543205674514,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-30",
+            "net_value": 1.242248773573161,
+            "period_return": -0.0014958991417791416,
+            "gross_return": 0.001337434191554195,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-06",
+            "net_value": 1.2208170341078237,
+            "period_return": -0.017252373213210603,
+            "gross_return": -0.014305706546543933,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-13",
+            "net_value": 1.1756661788230562,
+            "period_return": -0.036984129499605,
+            "gross_return": -0.03403746283293833,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-20",
+            "net_value": 1.1677791379391278,
+            "period_return": -0.006708571723840976,
+            "gross_return": -0.0036485717238409735,
+            "cost": 0.0030600000000000024,
+            "turnover": 1.8000000000000012,
+            "selected_count": 21
+          },
+          {
+            "date": "2025-11-27",
+            "net_value": 1.1609407180918017,
+            "period_return": -0.005855918833585707,
+            "gross_return": -0.0032654426431095143,
+            "cost": 0.0025904761904761925,
+            "turnover": 1.5238095238095248,
+            "selected_count": 21
+          },
+          {
+            "date": "2025-12-04",
+            "net_value": 1.1767461104769452,
+            "period_return": 0.013614297559588024,
+            "gross_return": 0.017014297559588026,
+            "cost": 0.0034000000000000024,
+            "turnover": 2.0000000000000013,
+            "selected_count": 29
+          },
+          {
+            "date": "2025-12-11",
+            "net_value": 1.1909422020509175,
+            "period_return": 0.012063852557131938,
+            "gross_return": 0.015229369798511248,
+            "cost": 0.003165517241379311,
+            "turnover": 1.8620689655172418,
+            "selected_count": 12
+          },
+          {
+            "date": "2025-12-18",
+            "net_value": 1.1921702633993847,
+            "period_return": 0.0010311678823306377,
+            "gross_return": 0.0040911678823306406,
+            "cost": 0.003060000000000003,
+            "turnover": 1.8000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-25",
+            "net_value": 1.255837178930013,
+            "period_return": 0.053404213714479634,
+            "gross_return": 0.05635088038114631,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-05",
+            "net_value": 1.2973437473647416,
+            "period_return": 0.03305091546190133,
+            "gross_return": 0.03588424879523466,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-12",
+            "net_value": 1.2781766109745611,
+            "period_return": -0.01477413864221722,
+            "gross_return": -0.012280805308883884,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-19",
+            "net_value": 1.3325836395496329,
+            "period_return": 0.04256612748811633,
+            "gross_return": 0.04573946082144967,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-26",
+            "net_value": 1.2863457972604495,
+            "period_return": -0.03469789131195561,
+            "gross_return": -0.03152455797862227,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-02",
+            "net_value": 1.3151980821041498,
+            "period_return": 0.022429649092139365,
+            "gross_return": 0.025716315758806035,
+            "cost": 0.003286666666666669,
+            "turnover": 1.9333333333333347,
+            "selected_count": 4
+          },
+          {
+            "date": "2026-02-09",
+            "net_value": 1.3368443342282232,
+            "period_return": 0.016458549034258228,
+            "gross_return": 0.019858549034258228,
+            "cost": 0.003400000000000001,
+            "turnover": 2.0000000000000004,
+            "selected_count": 29
+          },
+          {
+            "date": "2026-02-24",
+            "net_value": 1.3810207141908633,
+            "period_return": 0.03304526849653266,
+            "gross_return": 0.03610526849653266,
+            "cost": 0.0030600000000000033,
+            "turnover": 1.8000000000000018,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-03",
+            "net_value": 1.3752797823462106,
+            "period_return": -0.004157020807625035,
+            "gross_return": -0.0015503541409583677,
+            "cost": 0.002606666666666668,
+            "turnover": 1.533333333333334,
+            "selected_count": 25
+          },
+          {
+            "date": "2026-03-10",
+            "net_value": 1.3313922822282227,
+            "period_return": -0.031911688575190306,
+            "gross_return": -0.028851688575190302,
+            "cost": 0.003060000000000003,
+            "turnover": 1.8000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-17",
+            "net_value": 1.3030289318586525,
+            "period_return": -0.02130352620198553,
+            "gross_return": -0.01835685953531886,
+            "cost": 0.002946666666666669,
+            "turnover": 1.7333333333333345,
+            "selected_count": 21
+          },
+          {
+            "date": "2026-03-24",
+            "net_value": 1.2640135145692906,
+            "period_return": -0.029942095939274445,
+            "gross_return": -0.027222095939274445,
+            "cost": 0.0027200000000000015,
+            "turnover": 1.6000000000000008,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-31",
+            "net_value": 1.2461743687600797,
+            "period_return": -0.014113097370869073,
+            "gross_return": -0.011166430704202404,
+            "cost": 0.002946666666666668,
+            "turnover": 1.733333333333334,
+            "selected_count": 12
+          },
+          {
+            "date": "2026-04-08",
+            "net_value": 1.2795552560527073,
+            "period_return": 0.02678669063450649,
+            "gross_return": 0.030073357301173158,
+            "cost": 0.0032866666666666686,
+            "turnover": 1.9333333333333345,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-15",
+            "net_value": 1.2847521029987292,
+            "period_return": 0.0040614478518525695,
+            "gross_return": 0.007008114518519237,
+            "cost": 0.0029466666666666677,
+            "turnover": 1.7333333333333338,
+            "selected_count": 27
+          },
+          {
+            "date": "2026-04-22",
+            "net_value": 1.270295715452767,
+            "period_return": -0.01125227778356594,
+            "gross_return": -0.008192277783565937,
+            "cost": 0.003060000000000001,
+            "turnover": 1.8000000000000005,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-29",
+            "net_value": 1.273381230453704,
+            "period_return": 0.0024289737920098536,
+            "gross_return": 0.005375640458676524,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-11",
+            "net_value": 1.2479792815051902,
+            "period_return": -0.01994842419615614,
+            "gross_return": -0.01734175752948947,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-18",
+            "net_value": 1.2467453193678868,
+            "period_return": -0.0009887681274765938,
+            "gross_return": 0.0016178985391900756,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-25",
+            "net_value": 1.188802325194334,
+            "period_return": -0.046475405420355206,
+            "gross_return": -0.04364207208702187,
+            "cost": 0.0028333333333333357,
+            "turnover": 1.6666666666666679,
+            "selected_count": 29
+          },
+          {
+            "date": "2026-06-01",
+            "net_value": 1.1533090639348782,
+            "period_return": -0.029856318840605977,
+            "gross_return": -0.026909652173939307,
+            "cost": 0.0029466666666666695,
+            "turnover": 1.733333333333335,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-08",
+            "net_value": 1.1155302911998641,
+            "period_return": -0.03275685062780984,
+            "gross_return": -0.030376850627809843,
+            "cost": 0.002380000000000001,
+            "turnover": 1.4000000000000006,
+            "selected_count": 22
+          }
+        ],
+        "importedAt": "2026-07-09T01:28:14.091Z"
+      },
+      "base_checks": {
+        "sample_dates": true,
+        "strategy_return": false,
+        "annual_return": false,
+        "max_drawdown": true,
+        "sharpe": false,
+        "win_rate": false
+      },
+      "controlled_route_count": 1,
+      "controlled_routes": [
+        {
+          "strategy_id": "core_volume_price_trend_v1",
+          "strategy_name": "核心量价趋势策略 v1",
+          "layer": "中波动/小市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 45,
+          "strategy_return": 0.4330085735791378,
+          "annual_return": 0.49623098235046603,
+          "max_drawdown": -0.09339761818584269,
+          "sharpe": 1.3930551667201772,
+          "win_rate": 0.5555555555555556,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_core_volume_price_trend_v1_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 中波动/小市值，不得扩展到未通过分层。"
+        }
+      ],
+      "worst_layers": [
+        {
+          "layer": "高波动/小市值",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 36,
+          "strategy_return": -0.2819933759842269,
+          "max_drawdown": -0.2919211940176455,
+          "sharpe": -1.5266164242068951
+        },
+        {
+          "layer": "中波动/大市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 48,
+          "strategy_return": -0.12163123466279901,
+          "max_drawdown": -0.18233468728217694,
+          "sharpe": -0.5257490240692287
+        },
+        {
+          "layer": "高波动/中市值",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": "mid_cap",
+          "sample_dates": 38,
+          "strategy_return": -0.09304623958986358,
+          "max_drawdown": -0.14121594815017213,
+          "sharpe": -0.6115937175111436
+        },
+        {
+          "layer": "高波动",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": "",
+          "sample_dates": 39,
+          "strategy_return": -0.09057341312419609,
+          "max_drawdown": -0.1566499628520891,
+          "sharpe": -0.6435384675920393
+        },
+        {
+          "layer": "中波动/中市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "mid_cap",
+          "sample_dates": 48,
+          "strategy_return": -0.08502287869856062,
+          "max_drawdown": -0.19519426876919888,
+          "sharpe": -0.23174047314015794
+        }
+      ],
+      "next_action": "可进入受控模拟观察，但只能按通过的分层路线运行，并继续监控样本外和成本。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "decision": "controlled_route_paper_watch",
+      "decision_name": "仅分层路线可模拟观察",
+      "record_count": 19,
+      "event_count": 3,
+      "trading_count": 16,
+      "cross_layer_count": 9,
+      "positive_cross_layer_count": 8,
+      "base_trading": {
+        "result_type": "strategy_trading_backtest",
+        "strategy_id": "jq_quality_profit_liquidity_v1",
+        "strategy_name": "JQ质量利润流动性策略 v1",
+        "horizon": "5日调仓交易",
+        "layer": "未分层",
+        "sample_dates": 118,
+        "sample_trades": 3540,
+        "trade_count": 3540,
+        "strategy_return": 1.0368915949426105,
+        "strategy_annual_return": 0.35508318861747457,
+        "annual_return": 0.35508318861747457,
+        "final_net_value": 2.0368915949426105,
+        "max_drawdown": -0.21903426818322502,
+        "sharpe": 1.2247974060152669,
+        "daily_win_rate": 0.559322033898305,
+        "period_mean_return": 0.006761299457985235,
+        "gross_mean_return": 0.007150282508832692,
+        "avg_turnover": 0.22881355932203384,
+        "total_turnover": 26.999999999999993,
+        "cost_rate": 0.0015,
+        "slippage_rate": 0.0002,
+        "date_range": "2024-01-02 至 2026-06-08",
+        "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+        "net_value_curve": [
+          {
+            "date": "2024-10-21",
+            "net_value": 1.0416495916285093,
+            "period_return": 0.00032322700946767246,
+            "gross_return": 0.0005498936761343391,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-10-28",
+            "net_value": 1.031303873053071,
+            "period_return": -0.009932052638991554,
+            "gross_return": -0.009252052638991554,
+            "cost": 0.0006799999999999999,
+            "turnover": 0.39999999999999997,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-04",
+            "net_value": 1.091913593150579,
+            "period_return": 0.058769991736847584,
+            "gross_return": 0.05933665840351425,
+            "cost": 0.0005666666666666667,
+            "turnover": 0.3333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-11",
+            "net_value": 1.0309812171474606,
+            "period_return": -0.05580329467948634,
+            "gross_return": -0.05546329467948634,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-18",
+            "net_value": 0.9928901541308721,
+            "period_return": -0.036946418017177456,
+            "gross_return": -0.03649308468384412,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-25",
+            "net_value": 1.0187268362633441,
+            "period_return": 0.02602169235436553,
+            "gross_return": 0.026248359021032196,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-02",
+            "net_value": 1.0198740527721797,
+            "period_return": 0.0011261276997899475,
+            "gross_return": 0.0013527943664566142,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-09",
+            "net_value": 1.0106171036870477,
+            "period_return": -0.009076561032188422,
+            "gross_return": -0.008849894365521756,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-16",
+            "net_value": 1.0128053604550635,
+            "period_return": 0.0021652678942720087,
+            "gross_return": 0.0027319345609386754,
+            "cost": 0.0005666666666666667,
+            "turnover": 0.3333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-23",
+            "net_value": 1.0315794415054127,
+            "period_return": 0.018536711774425965,
+            "gross_return": 0.018763378441092632,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-30",
+            "net_value": 0.9838520542667349,
+            "period_return": -0.04626632261014026,
+            "gross_return": -0.04592632261014026,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-07",
+            "net_value": 0.980546930996561,
+            "period_return": -0.003359370197826345,
+            "gross_return": -0.0029060368644930118,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-14",
+            "net_value": 0.9970436554494079,
+            "period_return": 0.016824002943011392,
+            "gross_return": 0.016937336276344726,
+            "cost": 0.00011333333333333334,
+            "turnover": 0.06666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-21",
+            "net_value": 0.966919701852471,
+            "period_return": -0.030213274446201525,
+            "gross_return": -0.029759941112868192,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-05",
+            "net_value": 1.0147421497465843,
+            "period_return": 0.049458551524488394,
+            "gross_return": 0.04968521819115506,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-12",
+            "net_value": 1.018453780548437,
+            "period_return": 0.003657708318097983,
+            "gross_return": 0.004111041651431316,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-19",
+            "net_value": 1.0307906075667606,
+            "period_return": 0.012113291004408817,
+            "gross_return": 0.012453291004408817,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-26",
+            "net_value": 0.9898842058079227,
+            "period_return": -0.039684492135022245,
+            "gross_return": -0.03923115880168891,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-05",
+            "net_value": 0.99938402477548,
+            "period_return": 0.009596899224999535,
+            "gross_return": 0.010050232558332869,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-12",
+            "net_value": 1.0276615438501087,
+            "period_return": 0.028294948061613704,
+            "gross_return": 0.02852161472828037,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-19",
+            "net_value": 0.9984525320655835,
+            "period_return": -0.028422793437510824,
+            "gross_return": -0.02796946010417749,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-26",
+            "net_value": 0.989097551293377,
+            "period_return": -0.009369479741668935,
+            "gross_return": -0.008916146408335601,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-02",
+            "net_value": 0.9218699195423699,
+            "period_return": -0.0679686565426211,
+            "gross_return": -0.06740198987595443,
+            "cost": 0.0005666666666666667,
+            "turnover": 0.3333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-10",
+            "net_value": 0.9306218189352693,
+            "period_return": 0.009493638101614148,
+            "gross_return": 0.010173638101614148,
+            "cost": 0.0006799999999999999,
+            "turnover": 0.39999999999999997,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-17",
+            "net_value": 0.9519452371519115,
+            "period_return": 0.022913086479144074,
+            "gross_return": 0.023366419812477408,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-24",
+            "net_value": 0.9738647793790006,
+            "period_return": 0.02302605378085549,
+            "gross_return": 0.02336605378085549,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-06",
+            "net_value": 0.9956585625420777,
+            "period_return": 0.022378654228541104,
+            "gross_return": 0.02328532089520777,
+            "cost": 0.0009066666666666667,
+            "turnover": 0.5333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-13",
+            "net_value": 0.9997331947942948,
+            "period_return": 0.0040923991471673,
+            "gross_return": 0.004319065813833967,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-20",
+            "net_value": 0.9740974115051693,
+            "period_return": -0.02564262487493007,
+            "gross_return": -0.02530262487493007,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-27",
+            "net_value": 0.999457708740638,
+            "period_return": 0.0260346623817449,
+            "gross_return": 0.026261329048411566,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-04",
+            "net_value": 1.0190812975239771,
+            "period_return": 0.019634236258046174,
+            "gross_return": 0.019747569591379507,
+            "cost": 0.00011333333333333334,
+            "turnover": 0.06666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-11",
+            "net_value": 1.0243560547755854,
+            "period_return": 0.005175992596885322,
+            "gross_return": 0.005289325930218656,
+            "cost": 0.00011333333333333334,
+            "turnover": 0.06666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-18",
+            "net_value": 1.0485653011668288,
+            "period_return": 0.023633624537463316,
+            "gross_return": 0.023973624537463316,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-25",
+            "net_value": 1.0519538434830285,
+            "period_return": 0.003231598749671578,
+            "gross_return": 0.003571598749671578,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-02",
+            "net_value": 1.073831805308591,
+            "period_return": 0.020797454147916047,
+            "gross_return": 0.021137454147916047,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-09",
+            "net_value": 1.1046057424956646,
+            "period_return": 0.0286580608200834,
+            "gross_return": 0.028771394153416733,
+            "cost": 0.00011333333333333334,
+            "turnover": 0.06666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-16",
+            "net_value": 1.1375512177478215,
+            "period_return": 0.02982555131183947,
+            "gross_return": 0.029938884645172803,
+            "cost": 0.00011333333333333334,
+            "turnover": 0.06666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-23",
+            "net_value": 1.1701587401930973,
+            "period_return": 0.028664663125967788,
+            "gross_return": 0.02877799645930112,
+            "cost": 0.00011333333333333334,
+            "turnover": 0.06666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-30",
+            "net_value": 1.160070480007253,
+            "period_return": -0.008621274908547591,
+            "gross_return": -0.008621274908547591,
+            "cost": 0,
+            "turnover": 0,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-06",
+            "net_value": 1.2134963358299533,
+            "period_return": 0.046053974084717876,
+            "gross_return": 0.04616730741805121,
+            "cost": 0.00011333333333333334,
+            "turnover": 0.06666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-13",
+            "net_value": 1.2574709662308985,
+            "period_return": 0.036237958947662796,
+            "gross_return": 0.03646462561432946,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-20",
+            "net_value": 1.3476103697052706,
+            "period_return": 0.07168308922833674,
+            "gross_return": 0.07213642256167008,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-27",
+            "net_value": 1.4318231395707754,
+            "period_return": 0.06249044364649904,
+            "gross_return": 0.06294377697983237,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-03",
+            "net_value": 1.4080786211137306,
+            "period_return": -0.01658341578706626,
+            "gross_return": -0.01556341578706626,
+            "cost": 0.00102,
+            "turnover": 0.6,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-10",
+            "net_value": 1.4686977523805547,
+            "period_return": 0.043050956358443034,
+            "gross_return": 0.0432776230251097,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-17",
+            "net_value": 1.4926512342881542,
+            "period_return": 0.016309333808657515,
+            "gross_return": 0.016649333808657515,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-24",
+            "net_value": 1.5477567287506144,
+            "period_return": 0.03691786346107857,
+            "gross_return": 0.03714453012774524,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-09",
+            "net_value": 1.475502132558212,
+            "period_return": -0.0466834321248456,
+            "gross_return": -0.0463434321248456,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-16",
+            "net_value": 1.4759508293587178,
+            "period_return": 0.0003040976970516441,
+            "gross_return": 0.000984097697051644,
+            "cost": 0.0006799999999999999,
+            "turnover": 0.39999999999999997,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-23",
+            "net_value": 1.5443044200289482,
+            "period_return": 0.046311563576904025,
+            "gross_return": 0.046651563576904025,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-30",
+            "net_value": 1.500483233824402,
+            "period_return": -0.02837600257838069,
+            "gross_return": -0.027582669245047358,
+            "cost": 0.0007933333333333333,
+            "turnover": 0.4666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-06",
+            "net_value": 1.478639377490732,
+            "period_return": -0.014557880982111828,
+            "gross_return": -0.013991214315445161,
+            "cost": 0.0005666666666666667,
+            "turnover": 0.3333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-13",
+            "net_value": 1.429156360289273,
+            "period_return": -0.0334652369974296,
+            "gross_return": -0.0334652369974296,
+            "cost": 0,
+            "turnover": 0,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-20",
+            "net_value": 1.4248049779247176,
+            "period_return": -0.0030447209874744116,
+            "gross_return": -0.0025913876541410782,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-27",
+            "net_value": 1.4532753033888413,
+            "period_return": 0.019981910440537376,
+            "gross_return": 0.020208577107204043,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-04",
+            "net_value": 1.4885154603040573,
+            "period_return": 0.02424878261747152,
+            "gross_return": 0.02458878261747152,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-11",
+            "net_value": 1.4837604674664178,
+            "period_return": -0.003194453107439105,
+            "gross_return": -0.002967786440772438,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-18",
+            "net_value": 1.5454911981421653,
+            "period_return": 0.04160424275297972,
+            "gross_return": 0.04205757608631305,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-25",
+            "net_value": 1.594080368542899,
+            "period_return": 0.0314393058072039,
+            "gross_return": 0.03166597247387057,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-05",
+            "net_value": 1.6112178050998287,
+            "period_return": 0.01075067286136545,
+            "gross_return": 0.01109067286136545,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-12",
+            "net_value": 1.6487184674839648,
+            "period_return": 0.023274731861476966,
+            "gross_return": 0.0237280651948103,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-19",
+            "net_value": 1.630645461190589,
+            "period_return": -0.010961851067851667,
+            "gross_return": -0.010508517734518334,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-26",
+            "net_value": 1.5867224982167367,
+            "period_return": -0.0269359367313252,
+            "gross_return": -0.026482603397991866,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-02",
+            "net_value": 1.6197845429707431,
+            "period_return": 0.020836689963849263,
+            "gross_return": 0.021176689963849263,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-09",
+            "net_value": 1.6312043448555293,
+            "period_return": 0.007050198086124401,
+            "gross_return": 0.007390198086124401,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-24",
+            "net_value": 1.6153785798162947,
+            "period_return": -0.009701889949683861,
+            "gross_return": -0.009361889949683861,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-03",
+            "net_value": 1.6324702375191618,
+            "period_return": 0.010580589538837814,
+            "gross_return": 0.010807256205504481,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-10",
+            "net_value": 1.598370777934476,
+            "period_return": -0.02088825805272024,
+            "gross_return": -0.020774924719386908,
+            "cost": 0.00011333333333333334,
+            "turnover": 0.06666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-17",
+            "net_value": 1.5508569675860964,
+            "period_return": -0.029726400785292303,
+            "gross_return": -0.029386400785292303,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-24",
+            "net_value": 1.5089619820916509,
+            "period_return": -0.027014087288562184,
+            "gross_return": -0.026787420621895517,
+            "cost": 0.00022666666666666668,
+            "turnover": 0.13333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-31",
+            "net_value": 1.6256161909327722,
+            "period_return": 0.07730758642402691,
+            "gross_return": 0.07787425309069358,
+            "cost": 0.0005666666666666667,
+            "turnover": 0.3333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-08",
+            "net_value": 1.6992063333561187,
+            "period_return": 0.04526907571037462,
+            "gross_return": 0.04560907571037462,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-15",
+            "net_value": 1.8009489625534378,
+            "period_return": 0.05987655954434108,
+            "gross_return": 0.06021655954434108,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-22",
+            "net_value": 1.8299198329510185,
+            "period_return": 0.016086447200871618,
+            "gross_return": 0.01653978053420495,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-29",
+            "net_value": 1.9470808297627402,
+            "period_return": 0.0640252073899775,
+            "gross_return": 0.06459187405664417,
+            "cost": 0.0005666666666666667,
+            "turnover": 0.3333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-11",
+            "net_value": 1.9141251929286662,
+            "period_return": -0.016925664476954313,
+            "gross_return": -0.016358997810287646,
+            "cost": 0.0005666666666666667,
+            "turnover": 0.3333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-18",
+            "net_value": 2.015160932752934,
+            "period_return": 0.052784290284419735,
+            "gross_return": 0.05323762361775307,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-25",
+            "net_value": 1.9684864701183427,
+            "period_return": -0.023161655169063235,
+            "gross_return": -0.02259498850239657,
+            "cost": 0.0005666666666666667,
+            "turnover": 0.3333333333333333,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-01",
+            "net_value": 1.8808186406885192,
+            "period_return": -0.04453565252320633,
+            "gross_return": -0.044082319189872994,
+            "cost": 0.00045333333333333337,
+            "turnover": 0.26666666666666666,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-08",
+            "net_value": 2.0368915949426105,
+            "period_return": 0.08298139484461776,
+            "gross_return": 0.08332139484461776,
+            "cost": 0.00033999999999999997,
+            "turnover": 0.19999999999999998,
+            "selected_count": 30
+          }
+        ],
+        "importedAt": "2026-07-09T01:28:14.091Z"
+      },
+      "base_checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "controlled_route_count": 4,
+      "controlled_routes": [
+        {
+          "strategy_id": "jq_quality_profit_liquidity_v1",
+          "strategy_name": "JQ质量利润流动性策略 v1",
+          "layer": "高波动/中市值",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": "mid_cap",
+          "sample_dates": 39,
+          "strategy_return": 0.5765921523017343,
+          "annual_return": 0.8010022295639585,
+          "max_drawdown": -0.10369602814399159,
+          "sharpe": 1.953540702514037,
+          "win_rate": 0.5641025641025641,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 高波动/中市值，不得扩展到未通过分层。"
+        },
+        {
+          "strategy_id": "jq_quality_profit_liquidity_v1",
+          "strategy_name": "JQ质量利润流动性策略 v1",
+          "layer": "高波动",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": "",
+          "sample_dates": 39,
+          "strategy_return": 0.35130804884936606,
+          "annual_return": 0.47562114502445274,
+          "max_drawdown": -0.10268028853355404,
+          "sharpe": 1.7373322248071763,
+          "win_rate": 0.6153846153846154,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 高波动，不得扩展到未通过分层。"
+        },
+        {
+          "strategy_id": "jq_quality_profit_liquidity_v1",
+          "strategy_name": "JQ质量利润流动性策略 v1",
+          "layer": "低波动/大市值",
+          "market_regime": "low_volatility",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 31,
+          "strategy_return": 0.348183947762847,
+          "annual_return": 0.6253504214937329,
+          "max_drawdown": -0.14482222169408943,
+          "sharpe": 1.4838210455714396,
+          "win_rate": 0.5483870967741935,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。"
+        },
+        {
+          "strategy_id": "jq_quality_profit_liquidity_v1",
+          "strategy_name": "JQ质量利润流动性策略 v1",
+          "layer": "高波动/大市值",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 39,
+          "strategy_return": 0.2401219047679799,
+          "annual_return": 0.3206408767836728,
+          "max_drawdown": -0.12800768027034404,
+          "sharpe": 1.3409995039234317,
+          "win_rate": 0.5897435897435898,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 高波动/大市值，不得扩展到未通过分层。"
+        }
+      ],
+      "worst_layers": [
+        {
+          "layer": "中波动/小市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 42,
+          "strategy_return": -0.29003835302722236,
+          "max_drawdown": -0.29852293370427274,
+          "sharpe": -0.8550159150285396
+        },
+        {
+          "layer": "中波动/中市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "mid_cap",
+          "sample_dates": 48,
+          "strategy_return": 0.044316707000532585,
+          "max_drawdown": -0.278551091295663,
+          "sharpe": 0.2974158033295629
+        },
+        {
+          "layer": "小市值",
+          "market_regime": "",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 110,
+          "strategy_return": 0.04687135109304674,
+          "max_drawdown": -0.4042246167867597,
+          "sharpe": 0.2426791824432014
+        },
+        {
+          "layer": "中波动",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "",
+          "sample_dates": 48,
+          "strategy_return": 0.06350023561078233,
+          "max_drawdown": -0.17122384791115985,
+          "sharpe": 0.39963704076455997
+        },
+        {
+          "layer": "中波动/大市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 48,
+          "strategy_return": 0.07674584528858963,
+          "max_drawdown": -0.11421791292850447,
+          "sharpe": 0.474380328011466
+        }
+      ],
+      "next_action": "可进入受控模拟观察，但只能按通过的分层路线运行，并继续监控样本外和成本。"
+    },
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "decision": "controlled_route_paper_watch",
+      "decision_name": "仅分层路线可模拟观察",
+      "record_count": 19,
+      "event_count": 3,
+      "trading_count": 16,
+      "cross_layer_count": 9,
+      "positive_cross_layer_count": 4,
+      "base_trading": {
+        "result_type": "strategy_trading_backtest",
+        "strategy_id": "kline_assisted_confirmation",
+        "strategy_name": "K线辅助确认策略",
+        "horizon": "5日调仓交易",
+        "layer": "未分层",
+        "sample_dates": 118,
+        "sample_trades": 3341,
+        "trade_count": 3341,
+        "strategy_return": 0.18620469250309468,
+        "strategy_annual_return": 0.07565986343811515,
+        "annual_return": 0.07565986343811515,
+        "final_net_value": 1.1862046925030947,
+        "max_drawdown": -0.239561214382082,
+        "sharpe": 0.40961366943846594,
+        "daily_win_rate": 0.5254237288135594,
+        "period_mean_return": 0.002064459054054505,
+        "gross_mean_return": 0.004714414663416895,
+        "avg_turnover": 1.5587974172719947,
+        "total_turnover": 183.93809523809537,
+        "cost_rate": 0.0015,
+        "slippage_rate": 0.0002,
+        "date_range": "2024-01-02 至 2026-06-08",
+        "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+        "net_value_curve": [
+          {
+            "date": "2024-10-21",
+            "net_value": 1.1219947279035272,
+            "period_return": -0.0008372150384710728,
+            "gross_return": 0.0022227849615289313,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-10-28",
+            "net_value": 1.1092060683761036,
+            "period_return": -0.011398145828474093,
+            "gross_return": -0.00833814582847409,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-04",
+            "net_value": 1.2220227255636764,
+            "period_return": 0.10170937610604532,
+            "gross_return": 0.10499604277271199,
+            "cost": 0.0032866666666666717,
+            "turnover": 1.933333333333336,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-11",
+            "net_value": 1.0854721982856488,
+            "period_return": -0.11174139762011512,
+            "gross_return": -0.10890806428678178,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-18",
+            "net_value": 1.0532021504140447,
+            "period_return": -0.029729041354140714,
+            "gross_return": -0.026442374687474044,
+            "cost": 0.0032866666666666686,
+            "turnover": 1.9333333333333342,
+            "selected_count": 22
+          },
+          {
+            "date": "2024-11-25",
+            "net_value": 1.076361890599075,
+            "period_return": 0.021989833742672694,
+            "gross_return": 0.025049833742672695,
+            "cost": 0.003060000000000002,
+            "turnover": 1.800000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-02",
+            "net_value": 1.0685284455670525,
+            "period_return": -0.007277705667991126,
+            "gross_return": -0.004671039001324456,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-09",
+            "net_value": 1.052187864331773,
+            "period_return": -0.015292602927952634,
+            "gross_return": -0.012912602927952632,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-16",
+            "net_value": 1.058578273004039,
+            "period_return": 0.0060734483725720856,
+            "gross_return": 0.008793448372572088,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-23",
+            "net_value": 1.0786170751671156,
+            "period_return": 0.018929920133548876,
+            "gross_return": 0.02108325346688221,
+            "cost": 0.0021533333333333344,
+            "turnover": 1.2666666666666673,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-30",
+            "net_value": 1.0085503295949987,
+            "period_return": -0.06495979637746883,
+            "gross_return": -0.06235312971080216,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-07",
+            "net_value": 1.0259959058944361,
+            "period_return": 0.017297675472916548,
+            "gross_return": 0.01990434213958322,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-14",
+            "net_value": 1.0422550921646965,
+            "period_return": 0.015847223343533747,
+            "gross_return": 0.017887223343533747,
+            "cost": 0.002040000000000001,
+            "turnover": 1.2000000000000004,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-21",
+            "net_value": 1.039264793241919,
+            "period_return": -0.002869066263391375,
+            "gross_return": -0.0010557329300580416,
+            "cost": 0.0018133333333333335,
+            "turnover": 1.0666666666666667,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-05",
+            "net_value": 1.0829068718686023,
+            "period_return": 0.04199322339261086,
+            "gross_return": 0.04403322339261086,
+            "cost": 0.002040000000000001,
+            "turnover": 1.2000000000000004,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-12",
+            "net_value": 1.0865819629602391,
+            "period_return": 0.0033937277406829993,
+            "gross_return": 0.005773727740683001,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-19",
+            "net_value": 1.0880218719336194,
+            "period_return": 0.0013251729022425848,
+            "gross_return": 0.0038185062355759205,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-26",
+            "net_value": 1.043883905774423,
+            "period_return": -0.04056716808528404,
+            "gross_return": -0.03796050141861737,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-05",
+            "net_value": 1.0350857217399736,
+            "period_return": -0.008428316583655256,
+            "gross_return": -0.0053683165836552514,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-12",
+            "net_value": 1.0405571378243754,
+            "period_return": 0.005285954553797051,
+            "gross_return": 0.008345954553797054,
+            "cost": 0.0030600000000000033,
+            "turnover": 1.8000000000000018,
+            "selected_count": 21
+          },
+          {
+            "date": "2025-03-19",
+            "net_value": 1.018040953433754,
+            "period_return": -0.02163858530411774,
+            "gross_return": -0.018805251970784403,
+            "cost": 0.002833333333333336,
+            "turnover": 1.6666666666666683,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-26",
+            "net_value": 0.9978439267699888,
+            "period_return": -0.019839110200471355,
+            "gross_return": -0.017345776867138018,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-02",
+            "net_value": 0.9547764340934729,
+            "period_return": -0.043160549982926594,
+            "gross_return": -0.03998721664959326,
+            "cost": 0.003173333333333337,
+            "turnover": 1.8666666666666687,
+            "selected_count": 26
+          },
+          {
+            "date": "2025-04-10",
+            "net_value": 0.9571769051939951,
+            "period_return": 0.002514170872683133,
+            "gross_return": 0.005347504206016469,
+            "cost": 0.002833333333333336,
+            "turnover": 1.666666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-17",
+            "net_value": 0.9488327788711791,
+            "period_return": -0.0087174338176544,
+            "gross_return": -0.006450767150987731,
+            "cost": 0.002266666666666668,
+            "turnover": 1.3333333333333341,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-24",
+            "net_value": 0.9379419352190886,
+            "period_return": -0.011478148620716153,
+            "gross_return": -0.009551481954049486,
+            "cost": 0.0019266666666666672,
+            "turnover": 1.1333333333333335,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-06",
+            "net_value": 0.9378673771319702,
+            "period_return": -7.949115432292087e-05,
+            "gross_return": 0.0025271755123437486,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-13",
+            "net_value": 0.9392917977169086,
+            "period_return": 0.001518786791896166,
+            "gross_return": 0.0041254534585628356,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-20",
+            "net_value": 0.9292734774251404,
+            "period_return": -0.010665823246960294,
+            "gross_return": -0.008059156580293624,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-27",
+            "net_value": 0.9510945335054871,
+            "period_return": 0.023481845345257494,
+            "gross_return": 0.026428512011924164,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-04",
+            "net_value": 0.9732994027249038,
+            "period_return": 0.023346647927388702,
+            "gross_return": 0.025499981260722036,
+            "cost": 0.0021533333333333344,
+            "turnover": 1.2666666666666673,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-11",
+            "net_value": 0.9673146412882987,
+            "period_return": -0.006148941856791226,
+            "gross_return": -0.0038822751901245586,
+            "cost": 0.002266666666666668,
+            "turnover": 1.3333333333333341,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-18",
+            "net_value": 0.9922147530412503,
+            "period_return": 0.025741481303114436,
+            "gross_return": 0.028574814636447773,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-25",
+            "net_value": 0.9686935104102152,
+            "period_return": -0.023705798123782894,
+            "gross_return": -0.02132579812378289,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-02",
+            "net_value": 0.995543343077824,
+            "period_return": 0.027717572564555027,
+            "gross_return": 0.03077757256455503,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-09",
+            "net_value": 0.996293566353103,
+            "period_return": 0.0007535817305146389,
+            "gross_return": 0.0033602483971813084,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-16",
+            "net_value": 1.0117880427666563,
+            "period_return": 0.015552119311851317,
+            "gross_return": 0.01793211931185132,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-23",
+            "net_value": 1.029799052761795,
+            "period_return": 0.017801169053044765,
+            "gross_return": 0.020747835719711435,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-30",
+            "net_value": 1.0037347105016494,
+            "period_return": -0.025310124524046056,
+            "gross_return": -0.02281679119071272,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-06",
+            "net_value": 1.0145042973456841,
+            "period_return": 0.010729515210899066,
+            "gross_return": 0.013562848544232403,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-13",
+            "net_value": 1.0482935689788238,
+            "period_return": 0.03330618876779982,
+            "gross_return": 0.036366188767799824,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-20",
+            "net_value": 1.0956667930373791,
+            "period_return": 0.04519079908570198,
+            "gross_return": 0.047797465752368644,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-27",
+            "net_value": 1.1805359939548,
+            "period_return": 0.07745895144102016,
+            "gross_return": 0.08040561810768683,
+            "cost": 0.0029466666666666686,
+            "turnover": 1.7333333333333343,
+            "selected_count": 10
+          },
+          {
+            "date": "2025-09-03",
+            "net_value": 1.1734889878261856,
+            "period_return": -0.0059693276314318365,
+            "gross_return": -0.003135994298098501,
+            "cost": 0.0028333333333333353,
+            "turnover": 1.6666666666666676,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-10",
+            "net_value": 1.2050365779319676,
+            "period_return": 0.0268835842799188,
+            "gross_return": 0.02983025094658547,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-17",
+            "net_value": 1.222950701798296,
+            "period_return": 0.01486604157449882,
+            "gross_return": 0.01747270824116549,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-24",
+            "net_value": 1.3233519210442315,
+            "period_return": 0.08209751962879604,
+            "gross_return": 0.08447751962879604,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-09",
+            "net_value": 1.3026152745618873,
+            "period_return": -0.015669789836388594,
+            "gross_return": -0.012723123169721922,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-16",
+            "net_value": 1.2888564473381188,
+            "period_return": -0.010562464215227456,
+            "gross_return": -0.0075024642152274525,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-23",
+            "net_value": 1.340722820116719,
+            "period_return": 0.040242164195803225,
+            "gross_return": 0.043415497529136565,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-30",
+            "net_value": 1.3475557548000716,
+            "period_return": 0.005096455867557852,
+            "gross_return": 0.007476455867557854,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-06",
+            "net_value": 1.3278911048063842,
+            "period_return": -0.014592828477516279,
+            "gross_return": -0.011872828477516275,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-13",
+            "net_value": 1.2720993471847877,
+            "period_return": -0.04201531090889522,
+            "gross_return": -0.039408644242228556,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-20",
+            "net_value": 1.2325206941045903,
+            "period_return": -0.031112863289951883,
+            "gross_return": -0.028506196623285213,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-27",
+            "net_value": 1.2276487028704266,
+            "period_return": -0.003952867694203832,
+            "gross_return": -0.001912867694203831,
+            "cost": 0.002040000000000001,
+            "turnover": 1.2000000000000004,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-04",
+            "net_value": 1.242073348267584,
+            "period_return": 0.01174981520644355,
+            "gross_return": 0.014923148539776887,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-11",
+            "net_value": 1.2567422111623336,
+            "period_return": 0.011809981202164385,
+            "gross_return": 0.01498331453549772,
+            "cost": 0.0031733333333333357,
+            "turnover": 1.866666666666668,
+            "selected_count": 15
+          },
+          {
+            "date": "2025-12-18",
+            "net_value": 1.260963078594268,
+            "period_return": 0.0033585785489218234,
+            "gross_return": 0.006418578548921826,
+            "cost": 0.0030600000000000024,
+            "turnover": 1.8000000000000014,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-25",
+            "net_value": 1.3415965851928389,
+            "period_return": 0.0639459695270869,
+            "gross_return": 0.0666659695270869,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-05",
+            "net_value": 1.3899519089855992,
+            "period_return": 0.036043117824282385,
+            "gross_return": 0.038423117824282385,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-12",
+            "net_value": 1.3242388956763844,
+            "period_return": -0.04727718483236784,
+            "gross_return": -0.044330518165701174,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-19",
+            "net_value": 1.3683920944598926,
+            "period_return": 0.03334232133466812,
+            "gross_return": 0.03640232133466813,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-26",
+            "net_value": 1.3079708532123813,
+            "period_return": -0.04415491838350589,
+            "gross_return": -0.04143491838350589,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-02",
+            "net_value": 1.3113737036250142,
+            "period_return": 0.0026016255670190196,
+            "gross_return": 0.00464162556701902,
+            "cost": 0.0020400000000000006,
+            "turnover": 1.2000000000000002,
+            "selected_count": 17
+          },
+          {
+            "date": "2026-02-09",
+            "net_value": 1.3665581889347524,
+            "period_return": 0.042081433505333096,
+            "gross_return": 0.045141433505333096,
+            "cost": 0.0030600000000000024,
+            "turnover": 1.8000000000000012,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-24",
+            "net_value": 1.4265041439826391,
+            "period_return": 0.043866375785004276,
+            "gross_return": 0.046246375785004276,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-03",
+            "net_value": 1.357082355285828,
+            "period_return": -0.04866567614938248,
+            "gross_return": -0.045945676149382476,
+            "cost": 0.0027200000000000024,
+            "turnover": 1.6000000000000012,
+            "selected_count": 26
+          },
+          {
+            "date": "2026-03-10",
+            "net_value": 1.3315891634025119,
+            "period_return": -0.018785294631545532,
+            "gross_return": -0.01606529463154553,
+            "cost": 0.0027200000000000024,
+            "turnover": 1.6000000000000012,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-17",
+            "net_value": 1.3056250255568185,
+            "period_return": -0.01949861005127826,
+            "gross_return": -0.016438610051278255,
+            "cost": 0.003060000000000002,
+            "turnover": 1.800000000000001,
+            "selected_count": 17
+          },
+          {
+            "date": "2026-03-24",
+            "net_value": 1.229376845297005,
+            "period_return": -0.05839975396250953,
+            "gross_return": -0.055566420629176196,
+            "cost": 0.0028333333333333353,
+            "turnover": 1.6666666666666676,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-31",
+            "net_value": 1.211312895889764,
+            "period_return": -0.014693581936527225,
+            "gross_return": -0.011293581936527223,
+            "cost": 0.0034000000000000024,
+            "turnover": 2.0000000000000013,
+            "selected_count": 9
+          },
+          {
+            "date": "2026-04-08",
+            "net_value": 1.2459975677266348,
+            "period_return": 0.028633949126244063,
+            "gross_return": 0.03169394912624406,
+            "cost": 0.003060000000000002,
+            "turnover": 1.800000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-15",
+            "net_value": 1.266315048346768,
+            "period_return": 0.016306196052375075,
+            "gross_return": 0.01902619605237508,
+            "cost": 0.0027200000000000024,
+            "turnover": 1.6000000000000012,
+            "selected_count": 26
+          },
+          {
+            "date": "2026-04-22",
+            "net_value": 1.2571953592202092,
+            "period_return": -0.007201753732978883,
+            "gross_return": -0.004255087066312214,
+            "cost": 0.0029466666666666695,
+            "turnover": 1.733333333333335,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-29",
+            "net_value": 1.3088272169738193,
+            "period_return": 0.04106908077169109,
+            "gross_return": 0.043675747438357754,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-11",
+            "net_value": 1.301842592827523,
+            "period_return": -0.005336551727924513,
+            "gross_return": -0.002729885061257844,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-18",
+            "net_value": 1.327551523057776,
+            "period_return": 0.019748109619316494,
+            "gross_return": 0.022354776285983164,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-25",
+            "net_value": 1.2283302768762197,
+            "period_return": -0.07474003415929048,
+            "gross_return": -0.07224670082595715,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-01",
+            "net_value": 1.1829579545316584,
+            "period_return": -0.03693821051122181,
+            "gross_return": -0.03365154384455513,
+            "cost": 0.0032866666666666717,
+            "turnover": 1.933333333333336,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-08",
+            "net_value": 1.1862046925030947,
+            "period_return": 0.0027445928733128397,
+            "gross_return": 0.005577926206646175,
+            "cost": 0.0028333333333333357,
+            "turnover": 1.6666666666666679,
+            "selected_count": 22
+          }
+        ],
+        "importedAt": "2026-07-09T01:28:14.091Z"
+      },
+      "base_checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": false,
+        "max_drawdown": true,
+        "sharpe": false,
+        "win_rate": true
+      },
+      "controlled_route_count": 3,
+      "controlled_routes": [
+        {
+          "strategy_id": "kline_assisted_confirmation",
+          "strategy_name": "K线辅助确认策略",
+          "layer": "低波动/大市值",
+          "market_regime": "low_volatility",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 31,
+          "strategy_return": 0.4992595506771098,
+          "annual_return": 0.9317088757255843,
+          "max_drawdown": -0.03919115266187512,
+          "sharpe": 2.5191408980385095,
+          "win_rate": 0.5806451612903226,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。"
+        },
+        {
+          "strategy_id": "kline_assisted_confirmation",
+          "strategy_name": "K线辅助确认策略",
+          "layer": "低波动",
+          "market_regime": "low_volatility",
+          "market_cap_bucket": "",
+          "sample_dates": 31,
+          "strategy_return": 0.3563799970244368,
+          "annual_return": 0.6414456068636449,
+          "max_drawdown": -0.04105313516809139,
+          "sharpe": 1.8620972822480988,
+          "win_rate": 0.6451612903225806,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 低波动，不得扩展到未通过分层。"
+        },
+        {
+          "strategy_id": "kline_assisted_confirmation",
+          "strategy_name": "K线辅助确认策略",
+          "layer": "低波动/中市值",
+          "market_regime": "low_volatility",
+          "market_cap_bucket": "mid_cap",
+          "sample_dates": 31,
+          "strategy_return": 0.26235027440604464,
+          "annual_return": 0.46049104924753537,
+          "max_drawdown": -0.0730924421450857,
+          "sharpe": 1.2727941937750473,
+          "win_rate": 0.5483870967741935,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 低波动/中市值，不得扩展到未通过分层。"
+        }
+      ],
+      "worst_layers": [
+        {
+          "layer": "小市值",
+          "market_regime": "",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 115,
+          "strategy_return": -0.480460298609237,
+          "max_drawdown": -0.49512361744611944,
+          "sharpe": -0.697011351092699
+        },
+        {
+          "layer": "高波动/小市值",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 37,
+          "strategy_return": -0.35302737415418795,
+          "max_drawdown": -0.3998077770171632,
+          "sharpe": -1.9128588588539042
+        },
+        {
+          "layer": "中波动/小市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 47,
+          "strategy_return": -0.3452377516780669,
+          "max_drawdown": -0.36669359409092506,
+          "sharpe": -1.3982716800230242
+        },
+        {
+          "layer": "高波动/中市值",
+          "market_regime": "high_volatility",
+          "market_cap_bucket": "mid_cap",
+          "sample_dates": 39,
+          "strategy_return": -0.1193568657948354,
+          "max_drawdown": -0.22108866378285374,
+          "sharpe": -0.4703488207211378
+        },
+        {
+          "layer": "中波动",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "",
+          "sample_dates": 48,
+          "strategy_return": -0.09073136515361835,
+          "max_drawdown": -0.22160052142059217,
+          "sharpe": -0.26284306894668763
+        }
+      ],
+      "next_action": "可进入受控模拟观察，但只能按通过的分层路线运行，并继续监控样本外和成本。"
+    },
+    {
+      "strategy_id": "money_flow_kline_confirmation_v0",
+      "strategy_name": "主力资金广度K线确认策略 v0",
+      "decision": "controlled_route_paper_watch",
+      "decision_name": "仅分层路线可模拟观察",
+      "record_count": 19,
+      "event_count": 3,
+      "trading_count": 16,
+      "cross_layer_count": 9,
+      "positive_cross_layer_count": 3,
+      "base_trading": {
+        "result_type": "strategy_trading_backtest",
+        "strategy_id": "money_flow_kline_confirmation_v0",
+        "strategy_name": "主力资金广度K线确认策略 v0",
+        "horizon": "5日调仓交易",
+        "layer": "未分层",
+        "sample_dates": 118,
+        "sample_trades": 3533,
+        "trade_count": 3533,
+        "strategy_return": -0.14137017748819303,
+        "strategy_annual_return": -0.06302652812575793,
+        "annual_return": -0.06302652812575793,
+        "final_net_value": 0.858629822511807,
+        "max_drawdown": -0.22698535890124483,
+        "sharpe": -0.23638378029754373,
+        "daily_win_rate": 0.4322033898305085,
+        "period_mean_return": -0.0009300713962540754,
+        "gross_mean_return": 0.0019349568523334985,
+        "avg_turnover": 1.6853107344632785,
+        "total_turnover": 198.86666666666687,
+        "cost_rate": 0.0015,
+        "slippage_rate": 0.0002,
+        "date_range": "2024-01-02 至 2026-06-08",
+        "source": "joinquant_money_flow_kline_confirmation_v0_trading_simulation_v1",
+        "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+        "net_value_curve": [
+          {
+            "date": "2024-10-21",
+            "net_value": 1.0411676511458845,
+            "period_return": 0.016946640681724925,
+            "gross_return": 0.02000664068172493,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-10-28",
+            "net_value": 1.0207942430883785,
+            "period_return": -0.01956784580762137,
+            "gross_return": -0.0166211791409547,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-04",
+            "net_value": 1.0459982418427645,
+            "period_return": 0.0246905768964097,
+            "gross_return": 0.027863910229743036,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-11",
+            "net_value": 0.9844017392956014,
+            "period_return": -0.0588877687199998,
+            "gross_return": -0.05594110205333313,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-18",
+            "net_value": 0.9636250782544266,
+            "period_return": -0.02110587599737661,
+            "gross_return": -0.018045875997376608,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-11-25",
+            "net_value": 1.0008090122962803,
+            "period_return": 0.038587553272493844,
+            "gross_return": 0.041760886605827184,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-02",
+            "net_value": 1.0044129459799587,
+            "period_return": 0.0036010204138842614,
+            "gross_return": 0.0066610204138842655,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-09",
+            "net_value": 0.991511071775881,
+            "period_return": -0.012845189078571526,
+            "gross_return": -0.009898522411904856,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-16",
+            "net_value": 0.9848866443623343,
+            "period_return": -0.006681143158272395,
+            "gross_return": -0.003961143158272392,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-23",
+            "net_value": 1.0023228022477242,
+            "period_return": 0.017703720509560796,
+            "gross_return": 0.020537053842894133,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2024-12-30",
+            "net_value": 0.966439919310023,
+            "period_return": -0.035799727250775175,
+            "gross_return": -0.03319306058410851,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-07",
+            "net_value": 0.9540287325726989,
+            "period_return": -0.012842171033440847,
+            "gross_return": -0.01000883770010751,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-14",
+            "net_value": 0.9427610524916363,
+            "period_return": -0.011810629697365044,
+            "gross_return": -0.008977296364031707,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-01-21",
+            "net_value": 0.9444665286596283,
+            "period_return": 0.001809022724776912,
+            "gross_return": 0.004869022724776916,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-05",
+            "net_value": 0.9594622425815459,
+            "period_return": 0.015877443474041738,
+            "gross_return": 0.019050776807375075,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-12",
+            "net_value": 0.9592978554941008,
+            "period_return": -0.000171332523729945,
+            "gross_return": 0.003002000809603393,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-19",
+            "net_value": 0.9526241719885821,
+            "period_return": -0.006956841889406044,
+            "gross_return": -0.0044635085560727076,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-02-26",
+            "net_value": 0.9355948713466331,
+            "period_return": -0.017876200439466777,
+            "gross_return": -0.01504286710613344,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-05",
+            "net_value": 0.9365735142212435,
+            "period_return": 0.0010460113715690515,
+            "gross_return": 0.004106011371569056,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-12",
+            "net_value": 0.9565887158055646,
+            "period_return": 0.021370667951211186,
+            "gross_return": 0.023977334617877856,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-19",
+            "net_value": 0.944629779173933,
+            "period_return": -0.012501649281489526,
+            "gross_return": -0.00966831594815619,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-03-26",
+            "net_value": 0.9389194799967264,
+            "period_return": -0.0060450128749912095,
+            "gross_return": -0.0033250128749912067,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-02",
+            "net_value": 0.9132639211376635,
+            "period_return": -0.027324557010098855,
+            "gross_return": -0.02460455701009885,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-10",
+            "net_value": 0.917067594602553,
+            "period_return": 0.004164922512378796,
+            "gross_return": 0.007111589179045467,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-17",
+            "net_value": 0.9230347121573921,
+            "period_return": 0.0065067368969950684,
+            "gross_return": 0.009226736896995071,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-04-24",
+            "net_value": 0.9190433847402724,
+            "period_return": -0.0043241357714391086,
+            "gross_return": -0.0012641357714391044,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-06",
+            "net_value": 0.9375414294538988,
+            "period_return": 0.02012749889805719,
+            "gross_return": 0.023074165564723862,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-13",
+            "net_value": 0.9366749300684019,
+            "period_return": -0.0009242251683765751,
+            "gross_return": 0.002022441498290095,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-20",
+            "net_value": 0.9276193786686422,
+            "period_return": -0.009667763179162306,
+            "gross_return": -0.006947763179162303,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-05-27",
+            "net_value": 0.9315107156912487,
+            "period_return": 0.004194971679215476,
+            "gross_return": 0.006688305012548812,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-04",
+            "net_value": 0.9370964522295608,
+            "period_return": 0.005996427571063637,
+            "gross_return": 0.008603094237730306,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-11",
+            "net_value": 0.9271479602240708,
+            "period_return": -0.010616294600006706,
+            "gross_return": -0.008009627933340037,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-18",
+            "net_value": 0.9406952519070279,
+            "period_return": 0.01461179041981931,
+            "gross_return": 0.01755845708648598,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-06-25",
+            "net_value": 0.9354822408745249,
+            "period_return": -0.005541657643040888,
+            "gross_return": -0.002708324309707551,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-02",
+            "net_value": 0.9396373067863673,
+            "period_return": 0.004441629921224328,
+            "gross_return": 0.007048296587890997,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-09",
+            "net_value": 0.9378745175554771,
+            "period_return": -0.0018760315476607087,
+            "gross_return": 0.0008439684523392942,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-16",
+            "net_value": 0.9555315036846846,
+            "period_return": 0.018826597587094655,
+            "gross_return": 0.02165993092042799,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-23",
+            "net_value": 0.9752260227970196,
+            "period_return": 0.020611062049121092,
+            "gross_return": 0.023557728715787762,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-07-30",
+            "net_value": 0.9694400661627833,
+            "period_return": -0.005932939133065539,
+            "gross_return": -0.0028729391330655353,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-06",
+            "net_value": 0.9702137640335785,
+            "period_return": 0.0007980873679563731,
+            "gross_return": 0.0037447540346230435,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-13",
+            "net_value": 0.9818299111397557,
+            "period_return": 0.01197277088492743,
+            "gross_return": 0.014919437551594101,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-20",
+            "net_value": 0.9746040229887735,
+            "period_return": -0.0073596129726727156,
+            "gross_return": -0.004186279639339378,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-08-27",
+            "net_value": 0.9809262644742969,
+            "period_return": 0.006486984802438176,
+            "gross_return": 0.009546984802438178,
+            "cost": 0.0030600000000000015,
+            "turnover": 1.8000000000000007,
+            "selected_count": 23
+          },
+          {
+            "date": "2025-09-03",
+            "net_value": 1.0038816752808233,
+            "period_return": 0.0234017699779185,
+            "gross_return": 0.026461769977918503,
+            "cost": 0.003060000000000002,
+            "turnover": 1.800000000000001,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-10",
+            "net_value": 0.9967676920089789,
+            "period_return": -0.007086475873617681,
+            "gross_return": -0.004479809206951011,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-17",
+            "net_value": 0.9747763739315506,
+            "period_return": -0.022062631296872103,
+            "gross_return": -0.0190026312968721,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-09-24",
+            "net_value": 0.9922833026854699,
+            "period_return": 0.017959943656932247,
+            "gross_return": 0.020906610323598918,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-09",
+            "net_value": 0.98548313822211,
+            "period_return": -0.006853047355484472,
+            "gross_return": -0.0037930473554844677,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-16",
+            "net_value": 0.978170694350674,
+            "period_return": -0.007420161327801166,
+            "gross_return": -0.0043601613278011625,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-23",
+            "net_value": 0.9984353465558502,
+            "period_return": 0.020716887473947516,
+            "gross_return": 0.023210220807280853,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-10-30",
+            "net_value": 0.9933960251511207,
+            "period_return": -0.005047218552621229,
+            "gross_return": -0.001987218552621225,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-06",
+            "net_value": 0.9911722871272248,
+            "period_return": -0.002238521161344023,
+            "gross_return": 0.0009348121719893149,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-13",
+            "net_value": 0.9632273110204035,
+            "period_return": -0.0281938634380264,
+            "gross_return": -0.025133863438026396,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-20",
+            "net_value": 0.9490023082017723,
+            "period_return": -0.014768064252208358,
+            "gross_return": -0.01193473091887502,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-11-27",
+            "net_value": 0.9544213888919727,
+            "period_return": 0.005710292423280549,
+            "gross_return": 0.008430292423280552,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-04",
+            "net_value": 0.947919004922485,
+            "period_return": -0.006812906798994288,
+            "gross_return": -0.003866240132327618,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-11",
+            "net_value": 0.9516599155754543,
+            "period_return": 0.003946445459520136,
+            "gross_return": 0.006666445459520139,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-18",
+            "net_value": 0.9516028454650509,
+            "period_return": -5.99690177858804e-05,
+            "gross_return": 0.0019800309822141206,
+            "cost": 0.002040000000000001,
+            "turnover": 1.2000000000000004,
+            "selected_count": 30
+          },
+          {
+            "date": "2025-12-25",
+            "net_value": 0.9556893517248993,
+            "period_return": 0.004294340101359517,
+            "gross_return": 0.007127673434692854,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-05",
+            "net_value": 0.9670994428424524,
+            "period_return": 0.01193912132322006,
+            "gross_return": 0.014772454656553398,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-12",
+            "net_value": 0.9412022542590203,
+            "period_return": -0.02677820649685874,
+            "gross_return": -0.02383153983019207,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-19",
+            "net_value": 0.9387258626731037,
+            "period_return": -0.002631093980821571,
+            "gross_return": 0.00031557268584509975,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-01-26",
+            "net_value": 0.9222797856195879,
+            "period_return": -0.017519573826041267,
+            "gross_return": -0.014686240492707931,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-02",
+            "net_value": 0.9393454126873105,
+            "period_return": 0.018503741851240915,
+            "gross_return": 0.020997075184574252,
+            "cost": 0.0024933333333333357,
+            "turnover": 1.466666666666668,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-09",
+            "net_value": 0.935176855789052,
+            "period_return": -0.00443772529461025,
+            "gross_return": -0.0017177252946102472,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-02-24",
+            "net_value": 0.9436329834471519,
+            "period_return": 0.009042276448303646,
+            "gross_return": 0.011875609781636983,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-03",
+            "net_value": 0.9405328060001559,
+            "period_return": -0.0032853635909067093,
+            "gross_return": -0.00045203025757337264,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-10",
+            "net_value": 0.9327258737136572,
+            "period_return": -0.008300542242327031,
+            "gross_return": -0.00535387557566036,
+            "cost": 0.0029466666666666703,
+            "turnover": 1.7333333333333354,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-17",
+            "net_value": 0.8973039526646315,
+            "period_return": -0.037976775435630376,
+            "gross_return": -0.03537010876896371,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-24",
+            "net_value": 0.8957593439369612,
+            "period_return": -0.0017213885251295409,
+            "gross_return": 0.0011119448082037957,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-03-31",
+            "net_value": 0.9127593194604391,
+            "period_return": 0.01897828433333571,
+            "gross_return": 0.021698284333335715,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-08",
+            "net_value": 0.9150107731569593,
+            "period_return": 0.002466645531322662,
+            "gross_return": 0.0050733121979893315,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-15",
+            "net_value": 0.9156747400391768,
+            "period_return": 0.0007256383221877641,
+            "gross_return": 0.0035589716555211007,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-22",
+            "net_value": 0.9119982658357542,
+            "period_return": -0.004015043817049449,
+            "gross_return": -0.0008417104837161113,
+            "cost": 0.003173333333333338,
+            "turnover": 1.8666666666666691,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-04-29",
+            "net_value": 0.8951297165200557,
+            "period_return": -0.018496251525478614,
+            "gross_return": -0.015889584858811943,
+            "cost": 0.0026066666666666695,
+            "turnover": 1.5333333333333348,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-11",
+            "net_value": 0.8901312336066501,
+            "period_return": -0.00558408778209029,
+            "gross_return": -0.0028640877820902875,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-18",
+            "net_value": 0.8782192355633529,
+            "period_return": -0.013382294198386848,
+            "gross_return": -0.010662294198386844,
+            "cost": 0.002720000000000003,
+            "turnover": 1.6000000000000016,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-05-25",
+            "net_value": 0.8676809590613429,
+            "period_return": -0.011999596541802018,
+            "gross_return": -0.00916626320846868,
+            "cost": 0.0028333333333333366,
+            "turnover": 1.6666666666666685,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-01",
+            "net_value": 0.8502560767379116,
+            "period_return": -0.020082130582053586,
+            "gross_return": -0.017022130582053582,
+            "cost": 0.003060000000000004,
+            "turnover": 1.8000000000000023,
+            "selected_count": 30
+          },
+          {
+            "date": "2026-06-08",
+            "net_value": 0.858629822511807,
+            "period_return": 0.009848498591179694,
+            "gross_return": 0.012228498591179696,
+            "cost": 0.002380000000000002,
+            "turnover": 1.400000000000001,
+            "selected_count": 30
+          }
+        ],
+        "importedAt": "2026-07-09T02:08:02.656Z"
+      },
+      "base_checks": {
+        "sample_dates": true,
+        "strategy_return": false,
+        "annual_return": false,
+        "max_drawdown": true,
+        "sharpe": false,
+        "win_rate": false
+      },
+      "controlled_route_count": 1,
+      "controlled_routes": [
+        {
+          "strategy_id": "money_flow_kline_confirmation_v0",
+          "strategy_name": "主力资金广度K线确认策略 v0",
+          "layer": "低波动/大市值",
+          "market_regime": "low_volatility",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 31,
+          "strategy_return": 0.20535546400494908,
+          "annual_return": 0.35480727314370375,
+          "max_drawdown": -0.12012624098308877,
+          "sharpe": 1.2829914674081908,
+          "win_rate": 0.5483870967741935,
+          "checks": {
+            "sample_dates": true,
+            "strategy_return": true,
+            "annual_return": true,
+            "max_drawdown": true,
+            "sharpe": true,
+            "win_rate": true
+          },
+          "source": "joinquant_money_flow_kline_confirmation_v0_trading_simulation_v1",
+          "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+          "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。"
+        }
+      ],
+      "worst_layers": [
+        {
+          "layer": "中波动/大市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 48,
+          "strategy_return": -0.25544598534308527,
+          "max_drawdown": -0.2539991371478241,
+          "sharpe": -2.3229241516361503
+        },
+        {
+          "layer": "中波动/中市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "mid_cap",
+          "sample_dates": 48,
+          "strategy_return": -0.2525069040283804,
+          "max_drawdown": -0.21277835369648201,
+          "sharpe": -1.875820605235249
+        },
+        {
+          "layer": "中波动/小市值",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "small_cap",
+          "sample_dates": 48,
+          "strategy_return": -0.24859323573848324,
+          "max_drawdown": -0.2196552417027665,
+          "sharpe": -1.6263280713230426
+        },
+        {
+          "layer": "中波动",
+          "market_regime": "medium_volatility",
+          "market_cap_bucket": "",
+          "sample_dates": 48,
+          "strategy_return": -0.24061721868173813,
+          "max_drawdown": -0.20819361771922906,
+          "sharpe": -2.371035016329628
+        },
+        {
+          "layer": "大市值",
+          "market_regime": "",
+          "market_cap_bucket": "large_cap",
+          "sample_dates": 118,
+          "strategy_return": -0.19318584966622965,
+          "max_drawdown": -0.31895094613657504,
+          "sharpe": -0.41564590626581577
+        }
+      ],
+      "next_action": "可进入受控模拟观察，但只能按通过的分层路线运行，并继续监控样本外和成本。"
+    }
+  ],
+  "controlled_routes": [
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "layer": "低波动/大市值",
+      "market_regime": "low_volatility",
+      "market_cap_bucket": "large_cap",
+      "sample_dates": 31,
+      "strategy_return": 0.4992595506771098,
+      "annual_return": 0.9317088757255843,
+      "max_drawdown": -0.03919115266187512,
+      "sharpe": 2.5191408980385095,
+      "win_rate": 0.5806451612903226,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "layer": "高波动/中市值",
+      "market_regime": "high_volatility",
+      "market_cap_bucket": "mid_cap",
+      "sample_dates": 39,
+      "strategy_return": 0.5765921523017343,
+      "annual_return": 0.8010022295639585,
+      "max_drawdown": -0.10369602814399159,
+      "sharpe": 1.953540702514037,
+      "win_rate": 0.5641025641025641,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 高波动/中市值，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "layer": "低波动",
+      "market_regime": "low_volatility",
+      "market_cap_bucket": "",
+      "sample_dates": 31,
+      "strategy_return": 0.3563799970244368,
+      "annual_return": 0.6414456068636449,
+      "max_drawdown": -0.04105313516809139,
+      "sharpe": 1.8620972822480988,
+      "win_rate": 0.6451612903225806,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 低波动，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "layer": "高波动",
+      "market_regime": "high_volatility",
+      "market_cap_bucket": "",
+      "sample_dates": 39,
+      "strategy_return": 0.35130804884936606,
+      "annual_return": 0.47562114502445274,
+      "max_drawdown": -0.10268028853355404,
+      "sharpe": 1.7373322248071763,
+      "win_rate": 0.6153846153846154,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 高波动，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "layer": "低波动/大市值",
+      "market_regime": "low_volatility",
+      "market_cap_bucket": "large_cap",
+      "sample_dates": 31,
+      "strategy_return": 0.348183947762847,
+      "annual_return": 0.6253504214937329,
+      "max_drawdown": -0.14482222169408943,
+      "sharpe": 1.4838210455714396,
+      "win_rate": 0.5483870967741935,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "core_volume_price_trend_v1",
+      "strategy_name": "核心量价趋势策略 v1",
+      "layer": "中波动/小市值",
+      "market_regime": "medium_volatility",
+      "market_cap_bucket": "small_cap",
+      "sample_dates": 45,
+      "strategy_return": 0.4330085735791378,
+      "annual_return": 0.49623098235046603,
+      "max_drawdown": -0.09339761818584269,
+      "sharpe": 1.3930551667201772,
+      "win_rate": 0.5555555555555556,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_core_volume_price_trend_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 中波动/小市值，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "jq_quality_profit_liquidity_v1",
+      "strategy_name": "JQ质量利润流动性策略 v1",
+      "layer": "高波动/大市值",
+      "market_regime": "high_volatility",
+      "market_cap_bucket": "large_cap",
+      "sample_dates": 39,
+      "strategy_return": 0.2401219047679799,
+      "annual_return": 0.3206408767836728,
+      "max_drawdown": -0.12800768027034404,
+      "sharpe": 1.3409995039234317,
+      "win_rate": 0.5897435897435898,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 高波动/大市值，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "kline_assisted_confirmation",
+      "strategy_name": "K线辅助确认策略",
+      "layer": "低波动/中市值",
+      "market_regime": "low_volatility",
+      "market_cap_bucket": "mid_cap",
+      "sample_dates": 31,
+      "strategy_return": 0.26235027440604464,
+      "annual_return": 0.46049104924753537,
+      "max_drawdown": -0.0730924421450857,
+      "sharpe": 1.2727941937750473,
+      "win_rate": 0.5483870967741935,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_kline_assisted_confirmation_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 低波动/中市值，不得扩展到未通过分层。"
+    },
+    {
+      "strategy_id": "money_flow_kline_confirmation_v0",
+      "strategy_name": "主力资金广度K线确认策略 v0",
+      "layer": "低波动/大市值",
+      "market_regime": "low_volatility",
+      "market_cap_bucket": "large_cap",
+      "sample_dates": 31,
+      "strategy_return": 0.20535546400494908,
+      "annual_return": 0.35480727314370375,
+      "max_drawdown": -0.12012624098308877,
+      "sharpe": 1.2829914674081908,
+      "win_rate": 0.5483870967741935,
+      "checks": {
+        "sample_dates": true,
+        "strategy_return": true,
+        "annual_return": true,
+        "max_drawdown": true,
+        "sharpe": true,
+        "win_rate": true
+      },
+      "source": "joinquant_money_flow_kline_confirmation_v0_trading_simulation_v1",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "paper_scope": "仅限 低波动/大市值，不得扩展到未通过分层。"
+    }
+  ]
+}

@@ -35,6 +35,8 @@ const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
 const akshareStrategyValidationPath = outputPath('sources', 'akshare', 'results', 'akshare_strategy_candidate_validation.json');
 const akshareFactorQualityAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_factor_quality_audit.json');
+const strategyMaturityAuditPath = outputPath('strategies', 'joinquant', 'strategy_maturity_audit_20260709.json');
+const paperWatchRoutesPath = outputPath('strategies', 'joinquant', 'paper_watch_routes_20260709.json');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -712,6 +714,8 @@ function buildDataCoverageSnapshot() {
   const akshareBacktest = readJsonFile(akshareOhlcvBacktestPath, {});
   const akshareStrategyValidation = readJsonFile(akshareStrategyValidationPath, {});
   const akshareFactorQualityAudit = readJsonFile(akshareFactorQualityAuditPath, {});
+  const strategyMaturityAudit = readJsonFile(strategyMaturityAuditPath, {});
+  const paperWatchRoutes = readJsonFile(paperWatchRoutesPath, {});
   const allRawRows = [...primaryRows, ...capitalRows];
   const importedFactorResults = readImportedFactorResults();
   const importedStrategyResults = readImportedStrategyResults();
@@ -753,6 +757,12 @@ function buildDataCoverageSnapshot() {
     akshareAuditRejected: Number(akshareFactorQualityAudit.factor_decision_counts?.reject_standalone || 0),
     akshareAuditStrategyReviewCandidates: Number(akshareFactorQualityAudit.strategy_decision_counts?.awaiting_joinquant_review || 0),
     akshareAuditWatch: Number(akshareFactorQualityAudit.factor_decision_counts?.watch || 0),
+    controlledPaperWatchRouteCount: Number(strategyMaturityAudit.controlled_route_count || 0),
+    firstPaperWatchRouteCount: Number(paperWatchRoutes.route_count || 0),
+    paperWatchStatus: paperWatchRoutes.status || '',
+    strategyMaturityControlledCount: Number(strategyMaturityAudit.decision_counts?.controlled_route_paper_watch || 0),
+    strategyMaturityRejectedCount: Number(strategyMaturityAudit.decision_counts?.reject_or_rework || 0),
+    strategyMaturityStrategyCount: Number(strategyMaturityAudit.strategy_count || 0),
     maxJqSampleDates,
     localBacktestReady: rawDateCount >= 60,
     minimumLocalDays: 60,
@@ -847,6 +857,21 @@ function buildDataCoverageRisks() {
       valueText: coverage.akshareAuditFactorCount
         ? `${coverage.akshareAuditAlphaCandidates}/${coverage.akshareAuditFactorCount}通过`
         : '未审计',
+    },
+    {
+      detail: coverage.strategyMaturityStrategyCount
+        ? `已审计 ${coverage.strategyMaturityStrategyCount} 个 JoinQuant 实测策略：${coverage.strategyMaturityControlledCount} 个只允许分层路线模拟观察，${coverage.strategyMaturityRejectedCount} 个暂缓；首批配置 ${coverage.firstPaperWatchRouteCount} 条路线。`
+        : '尚未生成 JoinQuant 策略成熟度审计。',
+      limit: 2,
+      name: '策略成熟度审计',
+      nextAction: coverage.firstPaperWatchRouteCount >= 2
+        ? '首批只允许配置文件中的受控路线进入模拟观察；不得放开整策略或未通过分层。'
+        : '继续导入 JoinQuant 交易净值、分层和成本结果，直到至少两条不同策略路线通过。',
+      status: coverage.firstPaperWatchRouteCount >= 2 ? 'ready' : (coverage.strategyMaturityStrategyCount ? 'watch' : 'blocked'),
+      value: coverage.firstPaperWatchRouteCount,
+      valueText: coverage.paperWatchStatus === 'ready_for_controlled_paper_watch'
+        ? `${coverage.firstPaperWatchRouteCount}条路线`
+        : '未就绪',
     },
     {
       detail: coverage.localBacktestReady
@@ -3905,7 +3930,7 @@ function buildLiveStrategySignals() {
           pool: 'formal_candidate',
           status: 'paper_trade_candidate',
           validationState: `${jqQualityValidation.evidence} ${jqQualityLayeredValidation.evidence} ${jqQualityTradingValidation.evidence} 口径为 JoinQuant valuation/indicator/OHLCV 事件回测。`,
-          role: '准模拟盘候选：当前最完整路线',
+          role: '准模拟盘候选：仅审计通过分层路线',
           objective: '用利润增长做进攻核心，用质量成长确认基本面质量，用流动性质量约束可交易性。',
           dataBasis: `JoinQuant 策略级结果 ${jqQualityStrategyStats.all.length} 条；严格审计入选 ${strictAudit?.counts.selectedFactors || 3} 个因子`,
           factorState: jqQualityRouteFactors,
@@ -3918,11 +3943,11 @@ function buildLiveStrategySignals() {
           ],
           riskFilters: [
             '仅承认 JoinQuant 已回填策略结果，不用单因子结果替代策略收益',
-            '当前结果为事件回测，不等同完整交易净值回测',
-            '正式实盘前继续做交易成本、换手、最大回撤和样本外审计',
+            '未通过的波动/市值层不得在模拟盘中放开',
+            '正式实盘前继续做样本外、交易成本、换手、最大回撤和行业暴露审计',
           ],
-          portfolioRules: ['候选池排序前30只', '5/10/20 日均已跑策略级事件回测', '当前只作为正式候选，不等于实盘批准'],
-          nextAction: '继续补完整交易回测净值、成本敏感性、市值/波动分层和样本外结果。',
+          portfolioRules: ['候选池排序前30只', '5/10/20 日均已跑策略级事件回测', '首批模拟观察只允许成熟度审计通过的分层路线'],
+          nextAction: '按 strategy_maturity_audit 的受控路线进入模拟观察；不得放开整策略。',
           candidateCount: jqQualityValidation.bestResult?.packetSample?.candidate_rows || 0,
           computedSignalCount: jqQualityValidation.bestResult?.packetSample?.factor_rows || strictAudit?.counts.selectedFactors || 0,
           exportStatus: '已有真实策略级结果，仍需交易成本和样本外审计',
