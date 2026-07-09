@@ -103,3 +103,10 @@
 - 新增 `outputs/strategies/joinquant/build_paper_watch_execution_pack.py`，从已审计 JoinQuant 路线生成执行包。
 - 生成 `paper_watch_execution_pack_20260709.json` 和 `paper-watch-execution-pack-20260709.md`，记录每条路线的开仓边界、5日调仓、暂停规则和每日观察字段。
 - 总览页 `模拟观察清单` 支持展开查看执行规则；继续强调这只是受控样本外观察配置，不是整策略实盘批准。
+
+## 追加：新 OHLCV 因子探测
+
+- 新增 `outputs/sources/akshare/scripts/probe_ohlcv_factor_candidates.py`，使用本地真实 AkShare OHLCV 历史探测 5 个候选因子。
+- 生成 `akshare_new_factor_probe_20260709.json` 和 `akshare-new-factor-probe-20260709.md`。
+- 本轮没有新增正式因子：`ak_vol_adj_momentum`、`ak_price_volume_elasticity`、`ak_orderly_trend` 仅多空观察；`ak_volume_dry_up_reversal`、`ak_gap_repair_quality` 弱信号拒绝。
+- 决策：全部不进入正式因子库，不用于生成正式策略，等待更多真实数据或 JoinQuant 复核后再判断。
