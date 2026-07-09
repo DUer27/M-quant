@@ -4,6 +4,19 @@
 
 ## 2026-07-10
 
+### Add core medium-small latest signal task pack
+- 新增核心量价中波动/小市值最新信号复核脚本：
+  - `outputs/sources/joinquant/scripts/m_quant_core_medium_small_latest_signal_review_20260710.py`
+  - 下载端点：`/strategy-api/joinquant-core-medium-small-latest-signal-review.py`
+- 新增晋级任务包：
+  - `outputs/paper-watch/results/core_medium_small_promotion_task_pack_20260710.json`
+  - `outputs/_docs/core-medium-small-promotion-task-pack-20260710.md`
+- 模拟观察清单新增“核心量价中波动小市值晋级复核”卡片，展示历史证据、通过门槛和下载入口。
+- 通过门槛要求：`source=joinquant_core_medium_small_latest_signal_review`、`decision=promotion_signal_ready`、市场状态为 `medium_volatility`、小市值入选不少于 10 只。
+- 成熟策略目标仍保持 `1 / 2`，该任务包只用于补最新真实信号，不生成回测或模拟盘结果。
+- Data honesty note: 本次只生成 JoinQuant 真实数据复核脚本和任务包；没有生成收益、净值、成交、持仓、交易可行性或成熟策略晋级结论。
+- Detail log: `logs/2026-07-10-core-medium-small-latest-signal-task.md`
+
 ### Identify mutually exclusive second-sleeve candidate
 - 在独立资金袖候选审计中细分 `核心量价趋势策略 v1 / 中波动/小市值`：
   - 真实 JoinQuant 分层交易回测：样本 45、收益 43.30%、最大回撤 -9.34%、Sharpe 1.39、胜率 55.56%。

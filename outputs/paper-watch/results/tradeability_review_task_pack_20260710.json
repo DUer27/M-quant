@@ -1,6 +1,6 @@
 {
   "source": "m_quant_tradeability_review_task_pack",
-  "generated_at": "2026-07-10T02:10:52",
+  "generated_at": "2026-07-10T02:38:25",
   "status": "waiting_for_joinquant_review",
   "data_policy": "只整理已有 AkShare 本地最新信号、运行包和成熟策略矩阵；不调用 JoinQuant，不生成交易可行性、收益、净值、成交或持仓。",
   "target": {

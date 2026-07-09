@@ -1,0 +1,50 @@
+{
+  "source": "m_quant_core_medium_small_promotion_task_pack",
+  "generated_at": "2026-07-10T02:38:21",
+  "status": "waiting_for_joinquant_latest_signal_review",
+  "data_policy": "只生成 JoinQuant 最新信号复核任务；不生成收益、净值、成交、持仓、交易可行性或模拟盘结果。",
+  "target": {
+    "sleeve_id": "jq_medium_vol_small_cap_core",
+    "strategy_id": "core_volume_price_trend_v1",
+    "strategy_name": "核心量价趋势策略 v1",
+    "layer": "中波动/小市值",
+    "market_regime": "medium_volatility",
+    "market_cap_bucket": "small_cap",
+    "current_decision": "mutually_exclusive_candidate_needs_promotion",
+    "current_decision_name": "互斥候选，待晋级确认",
+    "counts_as_independent_sleeve": false,
+    "baseline": {
+      "sample_dates": 45,
+      "strategy_return": 0.4330085735791378,
+      "annual_return": 0.49623098235046603,
+      "max_drawdown": -0.09339761818584269,
+      "sharpe": 1.3930551667201772,
+      "win_rate": 0.5555555555555556
+    },
+    "independence_evidence": {
+      "primary_controller_medium_volatility_logic": "cash_watch",
+      "component_overlap": false,
+      "reason": "市场状态切换策略 v1 在中波动环境默认空仓；该路线只允许 medium_volatility/small_cap，因此具备互斥晋级潜力。"
+    }
+  },
+  "pass_gate": {
+    "required_source": "joinquant_core_medium_small_latest_signal_review",
+    "required_decision": "promotion_signal_ready",
+    "required_market_regime": "medium_volatility",
+    "required_market_cap_bucket": "small_cap",
+    "min_selected_count": 10,
+    "after_pass_next_action": "再写入模拟观察运行包；写入前仍不计入 2/2 成熟策略目标。"
+  },
+  "joinquant_script": {
+    "path": "outputs/sources/joinquant/scripts/m_quant_core_medium_small_latest_signal_review_20260710.py",
+    "download_endpoint": "/strategy-api/joinquant-core-medium-small-latest-signal-review.py",
+    "expected_source": "joinquant_core_medium_small_latest_signal_review"
+  },
+  "steps": [
+    "在 M-quant 页面下载核心量价中波动小市值最新信号复核脚本。",
+    "粘贴到 JoinQuant Python3 研究环境运行。",
+    "确认输出 JSON 的 source、strategy_id、sleeve_id、market_regime、selected_count 和 records。",
+    "只有 decision=promotion_signal_ready 且 selected_count>=10 时，才进入运行包晋级步骤。",
+    "晋级前仍不得把该路线计入两条成熟策略目标。"
+  ]
+}
