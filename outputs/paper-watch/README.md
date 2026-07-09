@@ -25,6 +25,7 @@
 - 暂时阻塞：1，`AkShare本地高低波动切换策略 v1`，原因是尚未导入 JoinQuant 交易可行性复核 JSON。
 - 组件监控：`JQ质量利润流动性策略 v1` 当前与切换策略共享高波动组件，不计入第二个独立资金袖。
 - 晋级候选：`核心量价趋势策略 v1 / 中波动/小市值` 已生成 JoinQuant 最新信号复核任务包；复核通过前不计入第二个独立资金袖。
+- 回填库：平台 `data/imported-core-medium-small-signal-reviews.json` 存放用户从 JoinQuant 导入的核心量价最新信号复核；导入后仍需下一步写入运行包才可计入目标。
 
 ## 数据边界
 
@@ -40,3 +41,16 @@
 - `sleeve_id` 必须来自运行包。
 - `planned_weight` 必须在 0 到 1 之间。
 - 未通过准入门槛的资金袖，例如当前 `akshare_local_switch`，只能导入 `planned_weight=0` 的记录。
+
+## 核心量价最新信号复核
+
+- 校验接口：`/backtest-api/validate-core-medium-small-signal-review`
+- 导入接口：`/backtest-api/import-results`
+- 查询接口：`/strategy-api/core-medium-small-signal-reviews`
+- 下载脚本：`/strategy-api/joinquant-core-medium-small-latest-signal-review.py`
+- 必须满足：
+  - `source=joinquant_core_medium_small_latest_signal_review`
+  - `strategy_id=core_volume_price_trend_v1`
+  - `sleeve_id=jq_medium_vol_small_cap_core`
+  - ready 结论必须是 `market_regime=medium_volatility` 且 `selected_count>=10`
+  - 所有 records 必须是 `market_cap_bucket=small_cap`

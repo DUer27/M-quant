@@ -1,8 +1,10 @@
 {
   "source": "m_quant_core_medium_small_promotion_task_pack",
-  "generated_at": "2026-07-10T02:38:21",
+  "generated_at": "2026-07-10T02:48:31",
   "status": "waiting_for_joinquant_latest_signal_review",
   "data_policy": "只生成 JoinQuant 最新信号复核任务；不生成收益、净值、成交、持仓、交易可行性或模拟盘结果。",
+  "imported_review_count": 0,
+  "latest_review": null,
   "target": {
     "sleeve_id": "jq_medium_vol_small_cap_core",
     "strategy_id": "core_volume_price_trend_v1",
@@ -39,6 +41,12 @@
     "path": "outputs/sources/joinquant/scripts/m_quant_core_medium_small_latest_signal_review_20260710.py",
     "download_endpoint": "/strategy-api/joinquant-core-medium-small-latest-signal-review.py",
     "expected_source": "joinquant_core_medium_small_latest_signal_review"
+  },
+  "import": {
+    "validate_endpoint": "/backtest-api/validate-core-medium-small-signal-review",
+    "import_endpoint": "/backtest-api/import-results",
+    "storage": "platform/quant-factor-platform/data/imported-core-medium-small-signal-reviews.json",
+    "after_import_expected_effect": "平台会把复核结果写入 imported-core-medium-small-signal-reviews.json；即使 signal_ready，通过前仍需下一步写入运行包。"
   },
   "steps": [
     "在 M-quant 页面下载核心量价中波动小市值最新信号复核脚本。",

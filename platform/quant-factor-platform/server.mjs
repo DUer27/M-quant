@@ -32,6 +32,7 @@ const capitalFactorSummaryPath = outputPath('capital-flow-factors', 'yiwan-capit
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
 const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
 const importedTradeabilityReviewsPath = join(dataDir, 'imported-tradeability-reviews.json');
+const importedCoreMediumSmallSignalReviewsPath = join(dataDir, 'imported-core-medium-small-signal-reviews.json');
 const importedPaperWatchLedgerPath = join(dataDir, 'imported-paper-watch-ledger.json');
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
@@ -68,6 +69,7 @@ const akshareCandidateReviewScriptPath = outputPath('sources', 'joinquant', 'scr
 const joinquantFactorTestScriptPath = outputPath('joinquant', 'm_quant_joinquant_factor_test.py');
 const primaryStrategyHorizons = [5, 10, 20];
 const akshareLatestSignalTradeabilityReviewSource = 'joinquant_akshare_latest_signal_tradeability_review';
+const coreMediumSmallLatestSignalReviewSource = 'joinquant_core_medium_small_latest_signal_review';
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -2907,6 +2909,10 @@ function readImportedTradeabilityReviews() {
   return readJsonFile(importedTradeabilityReviewsPath, []);
 }
 
+function readImportedCoreMediumSmallSignalReviews() {
+  return readJsonFile(importedCoreMediumSmallSignalReviewsPath, []);
+}
+
 function readImportedPaperWatchLedger() {
   return readJsonFile(importedPaperWatchLedgerPath, []);
 }
@@ -3010,6 +3016,11 @@ function isTradeabilityReviewPayload(payload) {
     || payload?.result_type === 'tradeability_review';
 }
 
+function isCoreMediumSmallSignalReviewPayload(payload) {
+  return payload?.source === coreMediumSmallLatestSignalReviewSource
+    || payload?.result_type === 'core_medium_small_latest_signal_review';
+}
+
 function localAshareCode(code) {
   const text = String(code || '').trim();
   const match = text.match(/\d{6}/);
@@ -3081,6 +3092,79 @@ function normalizeTradeabilityReview(payload, importedAt) {
     blocked_count: Number(payload.blocked_count ?? candidateCount - tradableCount),
     importedAt,
     source: akshareLatestSignalTradeabilityReviewSource,
+  };
+}
+
+function normalizeCoreMediumSmallSignalReview(payload, importedAt) {
+  if (payload?.source !== coreMediumSmallLatestSignalReviewSource) {
+    throw new Error('核心量价最新信号 source 不匹配，不能导入。');
+  }
+  const taskPack = readJsonFile(coreMediumSmallPromotionTaskPackPath, null);
+  const target = taskPack?.target || {};
+  const passGate = taskPack?.pass_gate || {};
+  if (!payload.strategy_id || !payload.sleeve_id || !payload.signal_date || !payload.decision) {
+    throw new Error('核心量价最新信号缺少 strategy_id、sleeve_id、signal_date 或 decision。');
+  }
+  if (payload.strategy_id !== 'core_volume_price_trend_v1') {
+    throw new Error(`核心量价最新信号 strategy_id 不匹配：${payload.strategy_id}。`);
+  }
+  if (payload.sleeve_id !== 'jq_medium_vol_small_cap_core') {
+    throw new Error(`核心量价最新信号 sleeve_id 不匹配：${payload.sleeve_id}。`);
+  }
+  if (target.strategy_id && payload.strategy_id !== target.strategy_id) {
+    throw new Error(`核心量价最新信号 strategy_id 与任务包不匹配：期望 ${target.strategy_id}，实际 ${payload.strategy_id}。`);
+  }
+  if (target.sleeve_id && payload.sleeve_id !== target.sleeve_id) {
+    throw new Error(`核心量价最新信号 sleeve_id 与任务包不匹配：期望 ${target.sleeve_id}，实际 ${payload.sleeve_id}。`);
+  }
+  if (!Array.isArray(payload.records)) {
+    throw new Error('核心量价最新信号必须包含 records 数组。');
+  }
+  const selectedCount = Number(payload.selected_count ?? payload.records.length);
+  const targetCandidateCount = Number(payload.target_candidate_count ?? selectedCount);
+  const entryCandidateCount = Number(payload.entry_candidate_count ?? targetCandidateCount);
+  const universeCount = Number(payload.universe_count ?? 0);
+  if (![selectedCount, targetCandidateCount, entryCandidateCount, universeCount].every(Number.isFinite)) {
+    throw new Error('核心量价最新信号 selected_count、target_candidate_count、entry_candidate_count 或 universe_count 非法。');
+  }
+  if (selectedCount !== payload.records.length) {
+    throw new Error(`核心量价最新信号 selected_count 与 records 数量不一致：${selectedCount} / ${payload.records.length}。`);
+  }
+  const allowedDecisions = new Set(['promotion_signal_ready', 'promotion_signal_not_ready']);
+  if (!allowedDecisions.has(payload.decision)) {
+    throw new Error('核心量价最新信号 decision 必须为 promotion_signal_ready 或 promotion_signal_not_ready。');
+  }
+  const requiredRegime = passGate.required_market_regime || 'medium_volatility';
+  const requiredBucket = passGate.required_market_cap_bucket || 'small_cap';
+  if (payload.target_market_regime && payload.target_market_regime !== requiredRegime) {
+    throw new Error(`核心量价最新信号 target_market_regime 不匹配：期望 ${requiredRegime}，实际 ${payload.target_market_regime}。`);
+  }
+  if (payload.target_market_cap_bucket && payload.target_market_cap_bucket !== requiredBucket) {
+    throw new Error(`核心量价最新信号 target_market_cap_bucket 不匹配：期望 ${requiredBucket}，实际 ${payload.target_market_cap_bucket}。`);
+  }
+  const badBucket = payload.records.find((row) => row?.market_cap_bucket && row.market_cap_bucket !== requiredBucket);
+  if (badBucket) {
+    throw new Error(`核心量价最新信号 records 存在非 ${requiredBucket} 候选：${badBucket.code || '-'}`);
+  }
+  const minSelectedCount = Number(passGate.min_selected_count ?? 10);
+  if (payload.decision === 'promotion_signal_ready') {
+    if (payload.market_regime !== requiredRegime) {
+      throw new Error(`核心量价最新信号 ready 结论要求 market_regime=${requiredRegime}，实际 ${payload.market_regime}。`);
+    }
+    if (selectedCount < minSelectedCount) {
+      throw new Error(`核心量价最新信号 ready 结论要求 selected_count >= ${minSelectedCount}，实际 ${selectedCount}。`);
+    }
+  }
+
+  return {
+    ...payload,
+    result_type: 'core_medium_small_latest_signal_review',
+    selected_count: selectedCount,
+    target_candidate_count: targetCandidateCount,
+    entry_candidate_count: entryCandidateCount,
+    universe_count: universeCount,
+    importedAt,
+    source: coreMediumSmallLatestSignalReviewSource,
   };
 }
 
@@ -5032,6 +5116,14 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/strategy-api/core-medium-small-signal-reviews') {
+    sendJson(res, {
+      dataPolicy: '只展示用户从 JoinQuant 真实研究环境导入的核心量价中波动小市值最新信号复核；不生成收益、持仓或模拟盘结果。',
+      records: readImportedCoreMediumSmallSignalReviews(),
+    });
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/strategy-api/akshare-regime-switch-paper-watch-strategy') {
     sendJson(res, readJsonFile(akshareRegimeSwitchPaperWatchPath, {
       source: 'akshare_local_regime_switch_paper_watch_strategy',
@@ -5375,6 +5467,29 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'POST' && pathname === '/backtest-api/validate-core-medium-small-signal-review') {
+    const body = await readJsonBody(req);
+    if (!isCoreMediumSmallSignalReviewPayload(body)) {
+      sendError(res, '这里只校验核心量价中波动小市值最新信号复核 JSON。');
+      return true;
+    }
+    const checked = normalizeCoreMediumSmallSignalReview(body, new Date().toISOString());
+    sendJson(res, {
+      dataPolicy: '只校验核心量价最新信号 JSON；不写入复核库，不刷新运行包，不生成收益、净值、成交或持仓。',
+      message: `核心量价最新信号 JSON 校验通过：${checked.market_regime}/${checked.target_market_cap_bucket}，入选 ${checked.selected_count}，结论 ${checked.decision}。尚未导入。`,
+      result: {
+        decision: checked.decision,
+        market_regime: checked.market_regime,
+        selected_count: checked.selected_count,
+        signal_date: checked.signal_date,
+        sleeve_id: checked.sleeve_id,
+        strategy_id: checked.strategy_id,
+        target_market_cap_bucket: checked.target_market_cap_bucket,
+      },
+    });
+    return true;
+  }
+
   if (req.method === 'POST' && pathname === '/backtest-api/import-results') {
     const body = await readJsonBody(req);
     const importedAt = new Date().toISOString();
@@ -5385,6 +5500,21 @@ async function handleApi(req, res, pathname) {
       const refresh = rebuildPaperWatchDerivedArtifacts();
       sendJson(res, {
         message: `交易可行性复核已导入：${nextItem.tradable_count}/${nextItem.candidate_count} 可交易，结论 ${nextItem.decision}。派生包刷新${refresh.ok ? '完成' : '存在失败'}。`,
+        refresh,
+        result: nextItem,
+        importedCount: 1,
+        results: nextReviews,
+      }, 201);
+      return true;
+    }
+
+    if (isCoreMediumSmallSignalReviewPayload(body)) {
+      const nextItem = normalizeCoreMediumSmallSignalReview(body, importedAt);
+      const nextReviews = [nextItem, ...readImportedCoreMediumSmallSignalReviews()].slice(0, 100);
+      writeFileSync(importedCoreMediumSmallSignalReviewsPath, `${JSON.stringify(nextReviews, null, 2)}\n`);
+      const refresh = rebuildPaperWatchDerivedArtifacts();
+      sendJson(res, {
+        message: `核心量价最新信号复核已导入：${nextItem.market_regime}/${nextItem.target_market_cap_bucket}，入选 ${nextItem.selected_count}，结论 ${nextItem.decision}。派生包刷新${refresh.ok ? '完成' : '存在失败'}。`,
         refresh,
         result: nextItem,
         importedCount: 1,

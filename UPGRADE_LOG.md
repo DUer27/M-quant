@@ -4,6 +4,25 @@
 
 ## 2026-07-10
 
+### Add core medium-small signal review import gate
+- 新增核心量价中波动/小市值最新信号复核导入库：
+  - `platform/quant-factor-platform/data/imported-core-medium-small-signal-reviews.json`
+- 新增校验接口：
+  - `/backtest-api/validate-core-medium-small-signal-review`
+- 新增查询接口：
+  - `/strategy-api/core-medium-small-signal-reviews`
+- `/backtest-api/import-results` 已支持导入 `source=joinquant_core_medium_small_latest_signal_review` 的真实 JoinQuant 输出。
+- 严格校验：
+  - `strategy_id=core_volume_price_trend_v1`
+  - `sleeve_id=jq_medium_vol_small_cap_core`
+  - `selected_count` 必须等于 records 数量
+  - ready 结论必须满足 `market_regime=medium_volatility`
+  - ready 结论必须满足 `selected_count>=10`
+  - records 中候选必须全部为 `market_cap_bucket=small_cap`
+- 导入后只更新任务包状态，不自动写入运行包，不自动计入 `2/2`。
+- Data honesty note: validate 测试只校验不写入；没有导入任何假复核记录，没有生成收益、净值、成交、持仓或晋级结论。
+- Detail log: `logs/2026-07-10-core-medium-small-signal-import-gate.md`
+
 ### Add core medium-small latest signal task pack
 - 新增核心量价中波动/小市值最新信号复核脚本：
   - `outputs/sources/joinquant/scripts/m_quant_core_medium_small_latest_signal_review_20260710.py`
