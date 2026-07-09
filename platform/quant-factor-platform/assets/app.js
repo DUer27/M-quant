@@ -287,12 +287,18 @@ function renderPaperWatchRoutes(pack) {
           ? 'watch'
           : 'pending';
       const evidenceSystem = route.evidence_system || (route.is_local_backtest ? 'AkShare本地OHLCV' : 'JoinQuant');
+      const executionRoleLabel = {
+        primary_local_sleeve: '主观察',
+        high_volatility_backup_sleeve: '高波动备选',
+        candidate_monitor: '候选监控',
+      }[execution.execution_role] || '';
       return `
         <article class="paper-watch-item">
           <div>
             <strong>${escapeHtml(route.strategy_name || route.strategy_id)}</strong>
             <span class="tag ${readinessTone}">${escapeHtml(readiness.decision || route.layer || '-')}</span>
             <span class="tag neutral">${escapeHtml(evidenceSystem)}</span>
+            ${executionRoleLabel ? `<span class="tag neutral">${escapeHtml(executionRoleLabel)}</span>` : ''}
           </div>
           <div class="paper-watch-metrics">
             <span>收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>

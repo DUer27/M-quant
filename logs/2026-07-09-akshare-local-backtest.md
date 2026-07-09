@@ -151,3 +151,11 @@
 - 严格门槛：调仓次数 >= 30，收益 >= 20%，Sharpe >= 1.2，最大回撤 >= -15%，胜率 >= 55%，平均入选 >= 15，近 2026 年至少 3 次触发，1.5x/2.0x 成本压力收益为正，年度分段和样本外收益为正。
 - 审计结果：6 条 AkShare 本地路线全部为 `ready_local_paper_watch`。其中 `AkShare低波动收缩突破-中流动性观察策略` Sharpe 3.23、收益 84.95%、最大回撤 -4.19%、2.0x 成本压力收益 77.98%。
 - 平台 `模拟观察清单` 已接入 AkShare 本地路线，并单独标记 `AkShare本地OHLCV`。这是第二类独立证据源，可作为寻找第二个独立模拟观察策略的候选，但仍需继续补 JoinQuant 复核、行业暴露、市值、涨跌停/停牌约束。
+
+## 追加：AkShare 本地受控执行包
+
+- 新增 `outputs/sources/akshare/scripts/build_akshare_paper_watch_execution_pack.py`。
+- 生成 `outputs/sources/akshare/results/akshare_paper_watch_execution_pack_20260709.json` 与 `outputs/_docs/akshare-paper-watch-execution-pack-20260709.md`。
+- 6 条本地就绪路线中，2 条进入执行包：`AkShare低波动收缩突破-中流动性观察策略` 为主观察，`AkShare高波动均值回归-中流动性观察策略` 为高波动备选；其余 4 条只做候选监控。
+- 执行包只读取严格审计结果，不新增收益；新增开仓边界、Top20 等权、单票 5% 上限、5日调仓、暂停规则和每日观察字段。
+- 平台 `模拟观察清单` 已接入 AkShare execution pack，展开后可看到本地路线的真实执行规则，并用 `主观察`、`高波动备选`、`候选监控` 区分可用程度。
