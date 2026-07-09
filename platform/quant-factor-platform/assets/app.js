@@ -296,6 +296,14 @@ function renderPaperWatchRoutes(pack) {
             回撤 ${formatPercent(pack.localBacktest.regimeSwitch.baseline?.max_drawdown, 2)}，
             Sharpe ${formatNumber(pack.localBacktest.regimeSwitch.baseline?.sharpe, 2)}。
           </p>
+          ${pack.localBacktest?.regimeSwitchRobustness ? `
+            <p>
+              稳健性 ${escapeHtml(pack.localBacktest.regimeSwitchRobustness.decision || '-')}：
+              留一年最差收益 ${formatPercent(pack.localBacktest.regimeSwitchRobustness.summary?.min_leave_one_year_return, 2)}，
+              滚动12期正收益 ${formatPercent(pack.localBacktest.regimeSwitchRobustness.summary?.rolling_12_positive_ratio, 2)}，
+              最差滚动收益 ${formatPercent(pack.localBacktest.regimeSwitchRobustness.summary?.worst_rolling_12_return, 2)}。
+            </p>
+          ` : ''}
           <p>${escapeHtml(pack.localBacktest.regimeSwitch.paper_scope || '进入模拟观察前仍需交易可行性复核。')}</p>
         </div>
       ` : ''}

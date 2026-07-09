@@ -45,6 +45,7 @@ const aksharePaperWatchReadinessAuditPath = outputPath('sources', 'akshare', 're
 const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_execution_pack_20260709.json');
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
 const akshareRegimeSwitchPaperWatchPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_paper_watch_strategy_20260709.json');
+const akshareRegimeSwitchRobustnessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_robustness_audit_20260709.json');
 const akshareLatestSignalTradeabilityReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_latest_signal_tradeability_review_20260709.py');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
@@ -914,6 +915,7 @@ function buildPaperWatchRoutes() {
   const akshareExecutionPack = readJsonFile(aksharePaperWatchExecutionPackPath, {});
   const akshareLatestSignal = readJsonFile(aksharePaperWatchLatestSignalPath, {});
   const akshareRegimeSwitch = readJsonFile(akshareRegimeSwitchPaperWatchPath, null);
+  const akshareRegimeSwitchRobustness = readJsonFile(akshareRegimeSwitchRobustnessAuditPath, null);
   const tradeabilityReviews = readImportedTradeabilityReviews();
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
@@ -1013,6 +1015,7 @@ function buildPaperWatchRoutes() {
         akshareLatestSignal.signal_date || '',
       ),
       regimeSwitch: akshareRegimeSwitch,
+      regimeSwitchRobustness: akshareRegimeSwitchRobustness,
       paperWatchRouteCount: Number(akshareExecutionPack.paper_watch_route_count || 0),
       recommendedRouteCount: Number(akshareReadinessAudit.recommended_route_count || akshareRecommendedRoutes.length || 0),
       tradeabilityReviewScriptEndpoint: '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py',
@@ -4607,6 +4610,15 @@ async function handleApi(req, res, pathname) {
       source: 'akshare_local_regime_switch_paper_watch_strategy',
       decision: 'missing',
       data_policy: '尚未生成 AkShare 本地切换策略结果。',
+    }));
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/akshare-regime-switch-robustness-audit') {
+    sendJson(res, readJsonFile(akshareRegimeSwitchRobustnessAuditPath, {
+      source: 'akshare_regime_switch_robustness_audit',
+      decision: 'missing',
+      data_policy: '尚未生成 AkShare 本地切换策略稳健性审计。',
     }));
     return true;
   }

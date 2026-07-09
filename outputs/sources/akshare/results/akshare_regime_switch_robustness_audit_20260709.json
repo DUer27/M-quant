@@ -1,0 +1,281 @@
+{
+  "source": "akshare_regime_switch_robustness_audit",
+  "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+  "strategy_name": "AkShare本地高低波动切换策略 v1",
+  "generated_at": "2026-07-09T19:59:13",
+  "input": "outputs/sources/akshare/results/akshare_regime_switch_paper_watch_strategy_20260709.json",
+  "data_policy": "只读取 AkShare 本地切换策略的真实组件 trade_records 重建曲线；做稳健性切片和压力检查，不生成新收益。",
+  "decision": "robust_local_switch_paper_watch",
+  "decision_reason": "组件均衡、留一年、年度、滚动窗口和近期收益门槛均通过。",
+  "gates": {
+    "min_total_trades": 50,
+    "min_component_trade_share": 0.25,
+    "max_component_trade_share": 0.75,
+    "min_component_return": 0.0,
+    "min_year_positive_ratio": 0.67,
+    "min_leave_one_year_return": 0.2,
+    "min_leave_one_year_sharpe": 1.0,
+    "min_rolling_12_positive_ratio": 0.7,
+    "min_worst_rolling_12_return": -0.08,
+    "max_worst_rolling_12_drawdown": -0.12,
+    "min_rolling_12_sharpe": -1.0,
+    "min_recent_return": 0.0
+  },
+  "checks": [
+    {
+      "name": "total_trades",
+      "passed": true,
+      "detail": "72 >= 50"
+    },
+    {
+      "name": "component_trade_share_floor",
+      "passed": true,
+      "detail": "0.4583 >= 0.2500"
+    },
+    {
+      "name": "component_trade_share_ceiling",
+      "passed": true,
+      "detail": "0.5417 <= 0.7500"
+    },
+    {
+      "name": "components_all_positive",
+      "passed": true,
+      "detail": "0.8495, 0.4819"
+    },
+    {
+      "name": "year_positive_ratio",
+      "passed": true,
+      "detail": "1.0000 >= 0.6700"
+    },
+    {
+      "name": "leave_one_year_return",
+      "passed": true,
+      "detail": "0.8256 >= 0.2000"
+    },
+    {
+      "name": "leave_one_year_sharpe",
+      "passed": true,
+      "detail": "2.7824 >= 1.0000"
+    },
+    {
+      "name": "rolling_12_positive_ratio",
+      "passed": true,
+      "detail": "0.9344 >= 0.7000"
+    },
+    {
+      "name": "worst_rolling_12_return",
+      "passed": true,
+      "detail": "-0.0290 >= -0.0800"
+    },
+    {
+      "name": "worst_rolling_12_drawdown",
+      "passed": true,
+      "detail": "-0.0660 >= -0.1200"
+    },
+    {
+      "name": "min_rolling_12_sharpe",
+      "passed": true,
+      "detail": "-0.9252 >= -1.0000"
+    },
+    {
+      "name": "recent_return",
+      "passed": true,
+      "detail": "0.3042 > 0.0000"
+    }
+  ],
+  "failed_checks": [],
+  "summary": {
+    "year_positive_ratio": 1.0,
+    "min_leave_one_year_return": 0.825644158477095,
+    "min_leave_one_year_sharpe": 2.7823945174141897,
+    "rolling_12_positive_ratio": 0.9344262295081968,
+    "worst_rolling_12_return": -0.028994451081872152,
+    "worst_rolling_12_drawdown": -0.0659759239932376,
+    "min_rolling_12_sharpe": -0.9251959188416783
+  },
+  "component_robustness": [
+    {
+      "component_id": "ak_low_vol_contraction_breakout_mid_liquidity",
+      "component_name": "AkShare低波动收缩突破-中流动性观察策略",
+      "execution_role": "primary_local_sleeve",
+      "market_regime": "low_volatility",
+      "trade_share": 0.5416666666666666,
+      "sample_trades": 39,
+      "strategy_return": 0.8495432513829866,
+      "max_drawdown": -0.041902416191464065,
+      "sharpe": 3.2286751147990493,
+      "positive_trade_ratio": 0.6666666666666666,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-05-30",
+      "last_trade_date": "2026-05-19",
+      "stress_2_0_return": 0.7798138498280636
+    },
+    {
+      "component_id": "ak_high_vol_mean_reversion_mid_liquidity",
+      "component_name": "AkShare高波动均值回归-中流动性观察策略",
+      "execution_role": "high_volatility_backup_sleeve",
+      "market_regime": "high_volatility",
+      "trade_share": 0.4583333333333333,
+      "sample_trades": 33,
+      "strategy_return": 0.48191543140246806,
+      "max_drawdown": -0.04892893054364811,
+      "sharpe": 3.0216827049654844,
+      "positive_trade_ratio": 0.696969696969697,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2026-06-29",
+      "stress_2_0_return": 0.43433046576621104
+    }
+  ],
+  "year_robustness": [
+    {
+      "year": 2024,
+      "sample_trades": 28,
+      "strategy_return": 0.5013148496348274,
+      "max_drawdown": -0.05471178677320809,
+      "sharpe": 2.3996274869056013,
+      "positive_trade_ratio": 0.5357142857142857,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2024-12-31",
+      "stress_2_0_return": 0.46039542332352124
+    },
+    {
+      "year": 2025,
+      "sample_trades": 29,
+      "strategy_return": 0.3998206877155439,
+      "max_drawdown": -0.024416054057118886,
+      "sharpe": 4.294648970155776,
+      "positive_trade_ratio": 0.7586206896551724,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2025-01-15",
+      "last_trade_date": "2025-12-25",
+      "stress_2_0_return": 0.3602373481662613
+    },
+    {
+      "year": 2026,
+      "sample_trades": 15,
+      "strategy_return": 0.30419858378895603,
+      "max_drawdown": -0.03719283070485857,
+      "sharpe": 5.098621629383738,
+      "positive_trade_ratio": 0.8,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2026-01-05",
+      "last_trade_date": "2026-06-29",
+      "stress_2_0_return": 0.2851050986885413
+    }
+  ],
+  "leave_one_year_out": [
+    {
+      "excluded_year": 2024,
+      "sample_trades": 44,
+      "strategy_return": 0.825644158477095,
+      "max_drawdown": -0.03719283070485879,
+      "sharpe": 4.598696819648214,
+      "positive_trade_ratio": 0.7727272727272727,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2025-01-15",
+      "last_trade_date": "2026-06-29",
+      "stress_2_0_return": 0.7480479515550431
+    },
+    {
+      "excluded_year": 2025,
+      "sample_trades": 43,
+      "strategy_return": 0.9580127007150714,
+      "max_drawdown": -0.05471178677320809,
+      "sharpe": 2.943898717190031,
+      "positive_trade_ratio": 0.627906976744186,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2026-06-29",
+      "stress_2_0_return": 0.8767616046144675
+    },
+    {
+      "excluded_year": 2026,
+      "sample_trades": 57,
+      "strategy_return": 1.101571585293383,
+      "max_drawdown": -0.06597592399323748,
+      "sharpe": 2.7823945174141897,
+      "positive_trade_ratio": 0.6491228070175439,
+      "avg_stock_count": 20.0,
+      "first_trade_date": "2024-04-17",
+      "last_trade_date": "2025-12-25",
+      "stress_2_0_return": 0.9864843978957303
+    }
+  ],
+  "rolling_12": {
+    "window": 12,
+    "window_count": 61,
+    "positive_ratio": 0.9344262295081968,
+    "worst_return": -0.028994451081872152,
+    "worst_drawdown": -0.0659759239932376,
+    "min_sharpe": -0.9251959188416783,
+    "worst_records": [
+      {
+        "start_date": "2024-11-13",
+        "end_date": "2025-04-01",
+        "sample_trades": 12,
+        "strategy_return": -0.028994451081872152,
+        "max_drawdown": -0.06597592399323748,
+        "sharpe": -0.9251959188416783,
+        "positive_trade_ratio": 0.4166666666666667,
+        "avg_stock_count": 20.0,
+        "first_trade_date": "2024-11-13",
+        "last_trade_date": "2025-04-01",
+        "stress_2_0_return": -0.040612581149316096
+      },
+      {
+        "start_date": "2024-11-20",
+        "end_date": "2025-04-11",
+        "sample_trades": 12,
+        "strategy_return": -0.02380055283488991,
+        "max_drawdown": -0.06597592399323748,
+        "sharpe": -0.7377398287894247,
+        "positive_trade_ratio": 0.4166666666666667,
+        "avg_stock_count": 20.0,
+        "first_trade_date": "2024-11-20",
+        "last_trade_date": "2025-04-11",
+        "stress_2_0_return": -0.03547570361221497
+      },
+      {
+        "start_date": "2024-10-16",
+        "end_date": "2025-01-15",
+        "sample_trades": 12,
+        "strategy_return": -0.007595409706634193,
+        "max_drawdown": -0.06597592399323737,
+        "sharpe": -0.15608119284425867,
+        "positive_trade_ratio": 0.5,
+        "avg_stock_count": 20.0,
+        "first_trade_date": "2024-10-16",
+        "last_trade_date": "2025-01-15",
+        "stress_2_0_return": -0.019448703185253935
+      },
+      {
+        "start_date": "2024-11-06",
+        "end_date": "2025-02-25",
+        "sample_trades": 12,
+        "strategy_return": -0.004534140228103389,
+        "max_drawdown": -0.06597592399323748,
+        "sharpe": -0.09159717670610787,
+        "positive_trade_ratio": 0.5,
+        "avg_stock_count": 20.0,
+        "first_trade_date": "2024-11-06",
+        "last_trade_date": "2025-02-25",
+        "stress_2_0_return": -0.016420459164425916
+      },
+      {
+        "start_date": "2024-10-23",
+        "end_date": "2025-01-22",
+        "sample_trades": 12,
+        "strategy_return": 0.0004097331191250664,
+        "max_drawdown": -0.06597592399323748,
+        "sharpe": 0.08075683585555456,
+        "positive_trade_ratio": 0.5,
+        "avg_stock_count": 20.0,
+        "first_trade_date": "2024-10-23",
+        "last_trade_date": "2025-01-22",
+        "stress_2_0_return": -0.011531449979553021
+      }
+    ]
+  }
+}

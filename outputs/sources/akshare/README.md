@@ -186,6 +186,8 @@
 
 - `outputs/sources/akshare/results/akshare_regime_switch_paper_watch_strategy_20260709.json`
 - `outputs/_docs/akshare-regime-switch-paper-watch-strategy-20260709.md`
+- `outputs/sources/akshare/results/akshare_regime_switch_robustness_audit_20260709.json`
+- `outputs/_docs/akshare-regime-switch-robustness-audit-20260709.md`
 
 当前结论：
 
@@ -193,6 +195,7 @@
 - 组件：低波动使用 `AkShare低波动收缩突破-中流动性观察策略`，高波动使用 `AkShare高波动均值回归-中流动性观察策略`。
 - 样本：72 次 5 日调仓，收益 174.09%，最大回撤 -6.60%，Sharpe 3.14，2.0x 成本压力收益 155.28%。
 - 决策：`ready_local_switch_paper_watch`。
+- 稳健性：`robust_local_switch_paper_watch`，年度正收益比例 100%，留一年最差收益 82.56%，滚动 12 期正收益比例 93.44%，最差滚动 12 期收益 -2.90%。
 - 边界：只组合已有 AkShare 真实 OHLCV trade_records，不是 JoinQuant 原生策略回测；进入真实模拟观察前仍要完成 JoinQuant 交易可行性复核。
 
 ## 新因子探测
