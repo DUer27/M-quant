@@ -472,6 +472,7 @@ function labelForStatus(status) {
   if (status === 'ready_for_local_factor_test') return ['本地可测', 'good'];
   if (status === 'handled_by_joinquant') return ['交由聚宽', 'pending'];
   if (status === 'ready_for_joinquant_strategy_backtest') return ['待聚宽策略实测', 'pending'];
+  if (status === 'joinquant_review_not_passed') return ['聚宽复核未过', 'watch'];
   if (status === 'blocked_by_factor_screen') return ['因子筛选未过', 'watch'];
   if (status === 'insufficient_history' || status === 'blocked_by_resonance_history') return ['历史不足', 'watch'];
   if (status === 'requires_more_data') return ['待采集字段', 'watch'];

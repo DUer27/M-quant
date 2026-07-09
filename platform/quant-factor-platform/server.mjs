@@ -3291,6 +3291,71 @@ function buildTradingStrategyValidation(stats, label = '策略') {
   };
 }
 
+function reviewNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function akshareCandidateReviewPasses(record) {
+  const sampleDates = toNumber(record?.sample_dates, 0);
+  const strategyReturn = reviewNumber(record?.strategy_return);
+  const annualReturn = reviewNumber(record?.strategy_annual_return ?? record?.annual_return);
+  const maxDrawdown = reviewNumber(record?.max_drawdown);
+  const sharpe = reviewNumber(record?.sharpe);
+  const winRate = reviewNumber(record?.daily_win_rate);
+  const checks = {
+    annualReturn: Number.isFinite(annualReturn) && annualReturn >= 0.20,
+    maxDrawdown: Number.isFinite(maxDrawdown) && maxDrawdown >= -0.15,
+    sampleDates: sampleDates >= 30,
+    sharpe: Number.isFinite(sharpe) && sharpe >= 1.20,
+    strategyReturn: Number.isFinite(strategyReturn) && strategyReturn >= 0.20,
+    winRate: Number.isFinite(winRate) && winRate >= 0.52,
+  };
+  return {
+    checks,
+    passed: Object.values(checks).every(Boolean),
+  };
+}
+
+function summarizeAkshareCandidateReviewResults() {
+  const records = flattenStrategyResultRecords(readImportedStrategyResults())
+    .filter((record) => record?.source === 'joinquant_akshare_ohlcv_candidate_review');
+  const targetRouteRecords = records.filter((record) => (
+    record.result_type === 'strategy_trading_backtest'
+    && (record.review_layer_type === 'target_volatility_liquidity_route' || record.layer === '目标路线')
+  ));
+  const evaluatedTargetRoutes = targetRouteRecords.map((record) => {
+    const gate = akshareCandidateReviewPasses(record);
+    return {
+      ...record,
+      gate_checks: gate.checks,
+      gate_passed: gate.passed,
+    };
+  });
+  const passedTargetRoutes = evaluatedTargetRoutes.filter((record) => record.gate_passed);
+  const bestTargetRoute = evaluatedTargetRoutes
+    .slice()
+    .sort((left, right) => {
+      const leftScore = (reviewNumber(left.sharpe) ?? -999) * 100
+        + (reviewNumber(left.strategy_return) ?? -999) * 10
+        + (reviewNumber(left.max_drawdown) ?? -999);
+      const rightScore = (reviewNumber(right.sharpe) ?? -999) * 100
+        + (reviewNumber(right.strategy_return) ?? -999) * 10
+        + (reviewNumber(right.max_drawdown) ?? -999);
+      return rightScore - leftScore;
+    })[0] || null;
+
+  return {
+    bestTargetRoute,
+    candidateCount: new Set(records.map((record) => record.strategy_id).filter(Boolean)).size,
+    importedRecordCount: records.length,
+    passedTargetRouteCount: passedTargetRoutes.length,
+    passedTargetRoutes,
+    targetRouteCount: targetRouteRecords.length,
+  };
+}
+
 function readPrimaryFactorRows() {
   return readFirstJsonFile([researchFactorResultsPath, realFactorResultsPath], []);
 }
@@ -4143,6 +4208,9 @@ function buildLiveStrategySignals() {
     || akshareCandidateValidation.paper_watch_candidate_count
     || 0,
   );
+  const akshareJqReviewSummary = summarizeAkshareCandidateReviewResults();
+  const akshareJqReviewImported = akshareJqReviewSummary.importedRecordCount > 0;
+  const akshareJqReviewPassed = akshareJqReviewSummary.passedTargetRouteCount > 0;
   const jqQualityRouteFactors = [
     strategyFactor('profit_growth_jq', '进攻核心', 0.40),
     strategyFactor('quality_growth_jq', '质量确认', 0.35),
@@ -4493,15 +4561,23 @@ function buildLiveStrategySignals() {
         id: 'akshare_ohlcv_candidate_review_pack',
         name: 'AkShare强分层候选复核包',
         pool: 'draft',
-        status: 'ready_for_joinquant_strategy_backtest',
-        validationState: akshareReviewCandidateCount
-          ? `本地 AkShare 300股/608日 OHLCV 稳定性验证筛出 ${akshareReviewCandidateCount} 条待复核候选；尚未导入 JoinQuant 真实复核结果。`
-          : '等待 AkShare 本地候选稳定性验证结果。',
+        status: akshareJqReviewPassed
+          ? 'real_strategy_backtested'
+          : akshareJqReviewImported
+            ? 'joinquant_review_not_passed'
+            : 'ready_for_joinquant_strategy_backtest',
+        validationState: akshareJqReviewImported
+          ? `已导入 JoinQuant AkShare候选复核 ${akshareJqReviewSummary.importedRecordCount} 条；目标路线交易净值 ${akshareJqReviewSummary.targetRouteCount} 条，其中 ${akshareJqReviewSummary.passedTargetRouteCount} 条通过受控观察硬门槛。`
+          : akshareReviewCandidateCount
+            ? `本地 AkShare 300股/608日 OHLCV 稳定性验证筛出 ${akshareReviewCandidateCount} 条待复核候选；尚未导入 JoinQuant 真实复核结果。`
+            : '等待 AkShare 本地候选稳定性验证结果。',
         role: '待聚宽复核的候选策略包',
         objective: '把本地强分层路线迁移到 JoinQuant，用真实 OHLCV、沪深300波动、市值、成交额和换手率复核目标路线与波动×市值交叉层。',
-        dataBasis: akshareReviewCandidateCount
-          ? `AkShare 本地验证 ${akshareCandidateValidation.unique_stocks || 0} 股 / ${akshareCandidateValidation.unique_dates || 0} 日；候选 ${akshareReviewCandidateCount} 条`
-          : '等待 AkShare 候选验证文件',
+        dataBasis: akshareJqReviewImported
+          ? `JoinQuant 真实复核已回填 ${akshareJqReviewSummary.importedRecordCount} 条，覆盖 ${akshareJqReviewSummary.candidateCount} 条候选；本地来源 ${akshareCandidateValidation.unique_stocks || 0} 股 / ${akshareCandidateValidation.unique_dates || 0} 日`
+          : akshareReviewCandidateCount
+            ? `AkShare 本地验证 ${akshareCandidateValidation.unique_stocks || 0} 股 / ${akshareCandidateValidation.unique_dates || 0} 日；候选 ${akshareReviewCandidateCount} 条`
+            : '等待 AkShare 候选验证文件',
         factorState: akshareReviewFactors,
         rankingFormula: '按每条本地候选路线分别复核：高波动均值回归、低波动防守确认、低波动量价趋势、高波动反拥挤、低波动收缩突破、低波动趋势回踩；不合并展示未实测收益。',
         entryRules: [
@@ -4511,7 +4587,9 @@ function buildLiveStrategySignals() {
           '每期 Top20，5日等权调仓',
         ],
         riskFilters: [
-          '未导入 JoinQuant 结果前，不进入正式策略池',
+          akshareJqReviewPassed
+            ? '已有目标路线通过 JoinQuant 复核硬门槛，但仍需独立性、行业暴露、最新可交易性和模拟观察账本跟踪'
+            : '未导入或未通过 JoinQuant 结果前，不进入正式策略池',
           '腾讯源缺成交额的本地流动性兜底会被 JoinQuant money_ma20 替换',
           '使用 valuation.market_cap 做市值层，使用 valuation.turnover_ratio 做拥挤风险复核',
         ],
@@ -4520,12 +4598,18 @@ function buildLiveStrategySignals() {
           '脚本输出 5日调仓交易净值、成本、滑点、换手和最大回撤',
           '默认包含目标路线、市值层、波动×市值交叉层',
         ],
-        nextAction: '下载聚宽复核脚本，在 JoinQuant Python3 研究环境运行，回填 JSON 后再筛选是否升级为正式候选。',
-        candidateCount: akshareReviewCandidateCount,
-        computedSignalCount: akshareCandidateValidation.rows || 0,
+        nextAction: akshareJqReviewPassed
+          ? `优先审查已通过目标路线：${akshareJqReviewSummary.passedTargetRoutes.map((route) => route.strategy_name || route.strategy_id).join('、')}；再做独立性和最新交易可行性复核。`
+          : akshareJqReviewImported
+            ? 'JoinQuant 目标路线暂未过硬门槛；先查看交叉层结果，判断是否只保留特定市值/波动层或重做因子权重。'
+            : '下载聚宽复核脚本，在 JoinQuant Python3 研究环境运行，回填 JSON 后再筛选是否升级为正式候选。',
+        candidateCount: akshareJqReviewImported ? akshareJqReviewSummary.candidateCount : akshareReviewCandidateCount,
+        computedSignalCount: akshareJqReviewImported ? akshareJqReviewSummary.importedRecordCount : akshareCandidateValidation.rows || 0,
         exportable: false,
         specialBacktestScriptEndpoint: '/strategy-api/joinquant-akshare-candidate-review-script.py',
-        exportStatus: '已生成 JoinQuant 复核脚本；等待真实结果回填',
+        exportStatus: akshareJqReviewImported
+          ? `已识别真实 JoinQuant 复核结果；目标路线通过 ${akshareJqReviewSummary.passedTargetRouteCount}/${akshareJqReviewSummary.targetRouteCount}`
+          : '已生成 JoinQuant 复核脚本；等待真实结果回填',
       },
       {
         id: 'money_flow_kline_confirmation_v0',
