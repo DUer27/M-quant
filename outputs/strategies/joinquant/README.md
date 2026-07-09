@@ -24,6 +24,8 @@ strategy_core_volume_trend_v1_large_cap_high_vol_20240101_20260701.json
 - `paper_watch_routes_20260709.json`：首批受控模拟观察路线配置。
 - `build_paper_watch_execution_pack.py`：从首批路线生成模拟观察执行包。
 - `paper_watch_execution_pack_20260709.json`：模拟观察执行包，包含开仓边界、暂停规则和每日观察字段。
+- `audit_paper_watch_readiness.py`：用真实 JoinQuant 交易净值曲线复核模拟观察前的成本压力、分段收益、候选数量和近期触发。
+- `paper_watch_readiness_audit_20260709.json`：模拟观察就绪审计结果。
 
 当前首批只允许两条路线进入模拟观察：
 
@@ -31,3 +33,8 @@ strategy_core_volume_trend_v1_large_cap_high_vol_20240101_20260701.json
 - `JQ质量利润流动性策略 v1`：仅高波动/中市值。
 
 这些配置不是整策略放开，未通过的波动层、市值层不得在模拟盘中扩展使用。
+
+进一步就绪审计后：
+
+- `K线辅助确认策略` 低波动/大市值为 `conditional_paper_watch`：硬门槛、成本压力、前后半段通过，但最近一次触发在 2025-08-13，只能等低波动/大市值环境再次出现后观察。
+- `JQ质量利润流动性策略 v1` 高波动/中市值为 `not_ready`：收益、回撤、Sharpe 和成本压力通过，但平均入选股票数只有 7.38，低于模拟观察的 10 只门槛，暂不进入模拟盘。

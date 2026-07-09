@@ -38,6 +38,7 @@ const akshareFactorQualityAuditPath = outputPath('sources', 'akshare', 'results'
 const strategyMaturityAuditPath = outputPath('strategies', 'joinquant', 'strategy_maturity_audit_20260709.json');
 const paperWatchRoutesPath = outputPath('strategies', 'joinquant', 'paper_watch_routes_20260709.json');
 const paperWatchExecutionPackPath = outputPath('strategies', 'joinquant', 'paper_watch_execution_pack_20260709.json');
+const paperWatchReadinessAuditPath = outputPath('strategies', 'joinquant', 'paper_watch_readiness_audit_20260709.json');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
@@ -891,16 +892,24 @@ function buildDataCoverageRisks() {
 function buildPaperWatchRoutes() {
   const pack = readJsonFile(paperWatchRoutesPath, {});
   const executionPack = readJsonFile(paperWatchExecutionPackPath, {});
+  const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
   const routes = Array.isArray(pack.routes) ? pack.routes : [];
   const executionRoutes = Array.isArray(executionPack.routes) ? executionPack.routes : [];
+  const readinessRoutes = Array.isArray(readinessAudit.routes) ? readinessAudit.routes : [];
   const executionByRoute = new Map(executionRoutes.map((route) => [
+    `${route.strategy_id || ''}::${route.allowed_layer || ''}`,
+    route,
+  ]));
+  const readinessByRoute = new Map(readinessRoutes.map((route) => [
     `${route.strategy_id || ''}::${route.allowed_layer || ''}`,
     route,
   ]));
   const enrichedRoutes = routes.map((route) => ({
     ...route,
     execution: executionByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
+    readiness: readinessByRoute.get(`${route.strategy_id || ''}::${route.layer || ''}`) || null,
   }));
+  const readinessCounts = readinessAudit.decision_counts || {};
   return {
     generatedAt: pack.generated_at || '',
     dataPolicy: pack.data_policy || '只展示已通过真实回测审计的受控模拟观察路线。',
@@ -908,6 +917,15 @@ function buildPaperWatchRoutes() {
     executionStatus: executionPack.status || 'not_ready',
     globalControls: Array.isArray(executionPack.global_controls) ? executionPack.global_controls : [],
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
+    readinessCounts,
+    readinessDataPolicy: readinessAudit.data_policy || '',
+    readinessStatus: readinessCounts.ready_controlled_paper_watch
+      ? 'ready_controlled_paper_watch'
+      : readinessCounts.conditional_paper_watch
+        ? 'conditional_paper_watch'
+        : readinessCounts.conditional_recheck_required
+          ? 'conditional_recheck_required'
+          : 'not_ready',
     routeCount: Number(pack.route_count || enrichedRoutes.length || 0),
     routes: enrichedRoutes,
     selectionPolicy: pack.selection_policy || '',

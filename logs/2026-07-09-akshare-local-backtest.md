@@ -110,3 +110,10 @@
 - 生成 `akshare_new_factor_probe_20260709.json` 和 `akshare-new-factor-probe-20260709.md`。
 - 本轮没有新增正式因子：`ak_vol_adj_momentum`、`ak_price_volume_elasticity`、`ak_orderly_trend` 仅多空观察；`ak_volume_dry_up_reversal`、`ak_gap_repair_quality` 弱信号拒绝。
 - 决策：全部不进入正式因子库，不用于生成正式策略，等待更多真实数据或 JoinQuant 复核后再判断。
+
+## 追加：模拟观察就绪审计
+
+- 新增 `outputs/strategies/joinquant/audit_paper_watch_readiness.py`，用已导入 JoinQuant 真实交易净值曲线重算成本压力、前后半段收益、候选数量和近期触发。
+- 生成 `paper_watch_readiness_audit_20260709.json` 和 `paper-watch-readiness-audit-20260709.md`。
+- 严格结论：`K线辅助确认策略` 低波动/大市值为条件模拟观察；`JQ质量利润流动性策略 v1` 高波动/中市值因平均入选 7.38 只，低于 10 只门槛，暂不进入模拟盘。
+- 平台总览的 `模拟观察清单` 接入就绪审计，展开后可看到失败检查项和 1.5x/2.0x 成本压力结果。
