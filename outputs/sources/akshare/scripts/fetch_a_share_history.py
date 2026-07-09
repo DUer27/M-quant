@@ -94,6 +94,26 @@ def pool_from_symbols_file(path: str) -> pd.DataFrame:
     return pool.drop_duplicates("code").sort_values("code")
 
 
+def pool_from_index(symbol: str) -> pd.DataFrame:
+    try:
+        raw = ak.index_stock_cons_csindex(symbol=symbol)
+        code_col = "成分券代码"
+        name_col = "成分券名称"
+        if code_col in raw.columns and name_col in raw.columns:
+            pool = raw[[code_col, name_col]].rename(columns={code_col: "code", name_col: "name"}).copy()
+        else:
+            raise KeyError("missing csindex constituent columns")
+    except Exception:
+        raw = ak.index_stock_cons(symbol=symbol)
+        code_col = "品种代码"
+        name_col = "品种名称"
+        pool = raw[[code_col, name_col]].rename(columns={code_col: "code", name_col: "name"}).copy()
+
+    pool["code"] = pool["code"].map(normalize_code)
+    pool["pool_source"] = f"akshare.index_stock_cons:{symbol}"
+    return pool.drop_duplicates("code").sort_values("code")
+
+
 def seed_pool(limit: int | None = None) -> pd.DataFrame:
     pool = pd.DataFrame([
         {"code": code, "name": name, "pool_source": "seed_fallback"}
@@ -104,15 +124,25 @@ def seed_pool(limit: int | None = None) -> pd.DataFrame:
     return pool
 
 
-def fetch_stock_pool(limit: int | None = None, seed_fallback: bool = False) -> pd.DataFrame:
+def fetch_stock_pool(limit: int | None = None, pool_sort: str = "code") -> pd.DataFrame:
     pool_source = "akshare.stock_zh_a_spot_em"
     spot = ak.stock_zh_a_spot_em()
     code_col = "代码"
     name_col = "名称"
-    pool = spot[[code_col, name_col]].rename(columns={code_col: "code", name_col: "name"}).copy()
+    amount_col = "成交额"
+    keep_cols = [code_col, name_col] + ([amount_col] if amount_col in spot.columns else [])
+    pool = spot[keep_cols].rename(columns={code_col: "code", name_col: "name", amount_col: "spot_amount"}).copy()
     pool["code"] = pool["code"].map(normalize_code)
     pool["pool_source"] = pool_source
-    pool = pool.drop_duplicates("code").sort_values("code")
+    pool = pool[pool["code"].str.match(r"^(000|001|002|003|300|600|601|603|605|688)")]
+    pool = pool[~pool["name"].astype(str).str.contains("ST|退", regex=True, na=False)]
+    if "spot_amount" in pool.columns:
+        pool["spot_amount"] = pd.to_numeric(pool["spot_amount"], errors="coerce")
+    pool = pool.drop_duplicates("code")
+    if pool_sort == "amount_desc" and "spot_amount" in pool.columns:
+        pool = pool.sort_values(["spot_amount", "code"], ascending=[False, True])
+    else:
+        pool = pool.sort_values("code")
     if limit:
         pool = pool.head(limit)
     return pool
@@ -196,8 +226,11 @@ def main() -> int:
     parser.add_argument("--retries", type=int, default=2, help="单只股票失败后的重试次数")
     parser.add_argument("--retry-sleep", type=float, default=1.0, help="重试等待秒数，会按次数递增")
     parser.add_argument("--skip-existing", action="store_true", help="raw 中已有该股票数据时直接复用，用于断点续跑")
+    parser.add_argument("--combine-only", action="store_true", help="只合并 raw 中已有数据，并输出缺失清单；不请求网络")
     parser.add_argument("--symbols", default="", help="逗号分隔的 6 位股票代码；传入后不请求股票池列表")
     parser.add_argument("--symbols-file", default="", help="包含 code/name 列的 CSV 股票池文件；优先级高于 --symbols")
+    parser.add_argument("--index-symbol", default="", help="指数成分股代码，例如 000300；优先级低于 --symbols-file，高于 --symbols")
+    parser.add_argument("--pool-sort", default="code", choices=["code", "amount_desc"], help="未指定股票池文件时，股票池排序方式")
     parser.add_argument("--seed-fallback", action="store_true", help="股票池列表接口失败时，使用内置小股票池继续验证行情接口")
     args = parser.parse_args()
 
@@ -210,13 +243,17 @@ def main() -> int:
         pool = pool_from_symbols_file(args.symbols_file)
         if args.limit:
             pool = pool.head(args.limit)
+    elif args.index_symbol:
+        pool = pool_from_index(args.index_symbol)
+        if args.limit:
+            pool = pool.head(args.limit)
     elif args.symbols:
         pool = pool_from_symbols(args.symbols)
         if args.limit:
             pool = pool.head(args.limit)
     else:
         try:
-            pool = fetch_stock_pool(args.limit or None)
+            pool = fetch_stock_pool(args.limit or None, args.pool_sort)
         except Exception as exc:  # noqa: BLE001
             pool_error = repr(exc)
             if not args.seed_fallback:
@@ -237,6 +274,9 @@ def main() -> int:
                 frames.append(existing)
                 reused.append(code)
                 print(f"[SKIP] {code} reused rows={len(existing)}")
+                continue
+            if args.combine_only:
+                failures.append({"code": code, "reason": "missing_raw"})
                 continue
 
         df, error = fetch_one_stock_with_retry(
@@ -267,6 +307,8 @@ def main() -> int:
     combined = pd.concat(frames, ignore_index=True)
     output_path = PROCESSED_DIR / f"a_share_daily_{args.start}_{args.end}_{args.adjust or 'none'}.csv"
     combined.to_csv(output_path, index=False, encoding="utf-8-sig")
+    failures_path = RESULTS_DIR / "a_share_daily_history_failures.csv"
+    pd.DataFrame(failures).to_csv(failures_path, index=False, encoding="utf-8-sig")
 
     summary = {
         "source": "akshare",
@@ -284,6 +326,8 @@ def main() -> int:
         "pool_error": pool_error,
         "retries": int(max(0, args.retries)),
         "reused_existing": len(reused),
+        "combine_only": bool(args.combine_only),
+        "failures_output": str(failures_path.relative_to(ROOT)),
         "failures": failures[:100],
     }
     summary_path = RESULTS_DIR / "a_share_daily_history_summary.json"

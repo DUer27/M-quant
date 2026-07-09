@@ -213,6 +213,23 @@ def add_factor_columns(df: pd.DataFrame) -> pd.DataFrame:
         + 0.12 * out["ak_low_volatility_quality"]
         + 0.08 * (1 - out["ak_kline_confirmation"])
     )
+
+    market = out.groupby("date", as_index=False)["ret_1"].mean().rename(columns={"ret_1": "market_ret_1"})
+    market["market_vol_20"] = market["market_ret_1"].rolling(20, min_periods=20).std()
+    market["market_vol_regime"] = pd.qcut(
+        market["market_vol_20"].rank(method="first"),
+        3,
+        labels=["low_volatility", "medium_volatility", "high_volatility"],
+    )
+    out = out.merge(market[["date", "market_ret_1", "market_vol_20", "market_vol_regime"]], on="date", how="left")
+
+    liquidity_rank = out.groupby("date")["amount_ma20"].rank(pct=True, method="average")
+    out["liquidity_bucket"] = pd.cut(
+        liquidity_rank,
+        bins=[0, 1 / 3, 2 / 3, 1],
+        labels=["low_liquidity", "mid_liquidity", "high_liquidity"],
+        include_lowest=True,
+    )
     return out
 
 
@@ -269,8 +286,32 @@ def summarize_factor(df: pd.DataFrame, factor: dict, horizon: int, min_stocks: i
     }
 
 
-def simulate_strategy(df: pd.DataFrame, score_col: str, name: str, top_n: int, cost: float) -> dict:
-    work = df[["date", "code", "name", score_col, "future_return_5"]].dropna().copy()
+def simulate_strategy(
+    df: pd.DataFrame,
+    score_col: str,
+    name: str,
+    top_n: int,
+    cost: float,
+    layer: dict | None = None,
+) -> dict:
+    layer = layer or {}
+    cols = [
+        "date",
+        "code",
+        "name",
+        score_col,
+        "future_return_5",
+        "market_vol_regime",
+        "liquidity_bucket",
+        "market_vol_20",
+        "amount_ma20",
+    ]
+    work = df[cols].dropna(subset=["date", "code", score_col, "future_return_5"]).copy()
+    if layer.get("market_vol_regime"):
+        work = work[work["market_vol_regime"].astype(str) == layer["market_vol_regime"]]
+    if layer.get("liquidity_bucket"):
+        work = work[work["liquidity_bucket"].astype(str) == layer["liquidity_bucket"]]
+
     trade_dates = sorted(work["date"].unique())[::5]
     rows = []
     for date in trade_dates:
@@ -285,11 +326,19 @@ def simulate_strategy(df: pd.DataFrame, score_col: str, name: str, top_n: int, c
             "net_return_5d": net,
             "stock_count": int(len(day)),
             "codes": ",".join(day["code"].tolist()),
+            "market_vol_20": None if day["market_vol_20"].dropna().empty else float(day["market_vol_20"].mean()),
+            "amount_ma20": None if day["amount_ma20"].dropna().empty else float(day["amount_ma20"].mean()),
         })
 
     returns = pd.DataFrame(rows)
     if returns.empty:
-        return {"strategy_id": score_col, "strategy_name": name, "result_type": "local_strategy_backtest", "sample_trades": 0}
+        return {
+            "strategy_id": score_col,
+            "strategy_name": name,
+            "result_type": "local_strategy_backtest",
+            "sample_trades": 0,
+            **layer,
+        }
     equity = (1 + returns["net_return_5d"]).cumprod()
     total_return = float(equity.iloc[-1] - 1)
     # 5日调仓，按每次交易约5个交易日折算。
@@ -309,8 +358,29 @@ def simulate_strategy(df: pd.DataFrame, score_col: str, name: str, top_n: int, c
         "positive_trade_ratio": float((returns["net_return_5d"] > 0).mean()),
         "first_trade_date": returns["date"].iloc[0],
         "last_trade_date": returns["date"].iloc[-1],
+        "market_vol_mean": None if returns["market_vol_20"].dropna().empty else float(returns["market_vol_20"].mean()),
+        "amount_ma20_mean": None if returns["amount_ma20"].dropna().empty else float(returns["amount_ma20"].mean()),
+        **layer,
         "daily_records_preview": rows[:20],
     }
+
+
+def strategy_layers() -> list[dict]:
+    regimes = ["low_volatility", "medium_volatility", "high_volatility"]
+    liquidity_buckets = ["low_liquidity", "mid_liquidity", "high_liquidity"]
+    layers = [{"layer_type": "unsegmented"}]
+    layers.extend({"layer_type": "market_volatility", "market_vol_regime": regime} for regime in regimes)
+    layers.extend({"layer_type": "liquidity", "liquidity_bucket": bucket} for bucket in liquidity_buckets)
+    layers.extend(
+        {
+            "layer_type": "volatility_liquidity_cross",
+            "market_vol_regime": regime,
+            "liquidity_bucket": bucket,
+        }
+        for regime in regimes
+        for bucket in liquidity_buckets
+    )
+    return layers
 
 
 def main() -> int:
@@ -338,16 +408,21 @@ def main() -> int:
             if result:
                 factor_results.append(result)
 
+    strategy_specs = [
+        ("ak_volume_trend_quality_combo", "AkShare量价趋势质量策略 v0"),
+        ("ak_defensive_quality_combo", "AkShare防守质量确认策略 v0"),
+        ("ak_mean_reversion_quality_combo", "AkShare均值回归质量策略 v0"),
+        ("ak_anti_crowding_reversal_combo", "AkShare反拥挤回归策略 v0"),
+    ]
     strategy_results = [
-        simulate_strategy(factors, "ak_volume_trend_quality_combo", "AkShare量价趋势质量策略 v0", args.top_n, args.cost),
-        simulate_strategy(factors, "ak_defensive_quality_combo", "AkShare防守质量确认策略 v0", args.top_n, args.cost),
-        simulate_strategy(factors, "ak_mean_reversion_quality_combo", "AkShare均值回归质量策略 v0", args.top_n, args.cost),
-        simulate_strategy(factors, "ak_anti_crowding_reversal_combo", "AkShare反拥挤回归策略 v0", args.top_n, args.cost),
+        simulate_strategy(factors, strategy_id, name, args.top_n, args.cost, layer)
+        for strategy_id, name in strategy_specs
+        for layer in strategy_layers()
     ]
 
     summary = {
         "source": "akshare_ohlcv_factor_backtest",
-        "data_policy": "真实 AkShare OHLCV 本地回测；不填补缺失股票；不生成虚构绩效；50股样本不足以直接实盘。",
+        "data_policy": "真实 AkShare OHLCV 本地回测；不填补缺失股票；不生成虚构绩效；当前本地样本不足以直接实盘。",
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "input": str(input_path.relative_to(ROOT)) if input_path.is_relative_to(ROOT) else str(input_path),
         "rows": int(len(raw)),
@@ -360,6 +435,7 @@ def main() -> int:
         "factor_count": len(FACTOR_DEFS),
         "factor_result_count": len(factor_results),
         "strategy_result_count": len(strategy_results),
+        "strategy_layer_policy": "本地分层只使用真实OHLCV可得字段：市场等权20日波动、20日成交额流动性；不伪造市值。",
         "factor_definitions": FACTOR_DEFS,
         "factor_results": factor_results,
         "strategy_results": strategy_results,
@@ -392,7 +468,11 @@ def main() -> int:
         "future_return_20",
     ]
     factors[export_cols].dropna(subset=["ak_volume_trend_quality_combo"]).to_csv(factor_csv, index=False, encoding="utf-8-sig")
-    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    console_summary = {
+        key: value for key, value in summary.items()
+        if key not in {"factor_definitions", "factor_results", "strategy_results"}
+    }
+    print(json.dumps(console_summary, ensure_ascii=False, indent=2))
     return 0
 
 
