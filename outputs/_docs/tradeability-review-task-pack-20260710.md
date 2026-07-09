@@ -1,6 +1,6 @@
 # JoinQuant 交易可行性复核任务包
 
-- 生成时间：2026-07-10T01:46:45
+- 生成时间：2026-07-10T01:52:03
 - 状态：`waiting_for_joinquant_review`
 - 数据原则：只整理已有 AkShare 本地最新信号、运行包和成熟策略矩阵；不调用 JoinQuant，不生成交易可行性、收益、净值、成交或持仓。
 
@@ -35,6 +35,14 @@
 - 导入接口：`/backtest-api/import-results`
 - 脚本路径：`outputs/sources/joinquant/scripts/m_quant_akshare_latest_signal_tradeability_review_20260709.py`
 - 下载入口：`/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py`
+
+## 严格导入检查
+
+- source 必须为 joinquant_akshare_latest_signal_tradeability_review。
+- strategy_id 和 signal_date 必须匹配当前任务包目标信号。
+- candidate_count 必须等于 records 数量，也必须等于当前任务包 selected_count。
+- records 中的 code/local_code 六位代码集合必须与当前任务包 selected_codes 完全一致。
+- tradable_count 必须等于 records 中 tradable=true 的数量。
 
 ## 注意
 
