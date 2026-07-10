@@ -1,0 +1,202 @@
+{
+  "source": "m_quant_bigquant_paper_watch_test_pack",
+  "generated_at": "2026-07-10T06:41:48.507Z",
+  "result_status": "pending_bigquant_real_backtest",
+  "data_policy": "本包只从 M-quant 已落地真实证据生成 BigQuant 待测试输入。 不生成 BigQuant 收益、净值、成交、持仓或通过结论。 BigQuant 实测后必须把真实结果回填项目，才能改变策略状态。",
+  "source_files": {
+    "operations_pack": "outputs/paper-watch/results/paper_watch_operations_pack_20260709.json",
+    "maturity_matrix": "outputs/paper-watch/results/strategy_maturity_matrix_20260710.json",
+    "daily_refresh_latest": "outputs/paper-watch/results/paper_watch_daily_refresh_latest.json",
+    "latest_saved_pack": "outputs/paper-watch/results/bigquant_paper_watch_test_pack_latest.json"
+  },
+  "readiness_summary": {
+    "operations_status": "ready_with_blockers",
+    "ready_sleeve_count": 2,
+    "blocked_sleeve_count": 1,
+    "maturity_goal_status": "target_met",
+    "maturity_ready_strategy_count": 2,
+    "daily_refresh_ok": true,
+    "daily_refresh_mode": "local",
+    "daily_refresh_finished_at": "2026-07-10T06:25:46.412Z"
+  },
+  "bigquant_workflow": [
+    "先下载 JSON 或 CSV 包，并在 BigQuant 中按 strategy_id/sleeve_id 建立独立测试任务。",
+    "只测试 bigquant_test_status=ready_for_bigquant_real_test 的资金袖；blocked_before_bigquant_test 只能做记录或排队。",
+    "测试时按 selected_codes、signal_date、entry_gate、pause_rules 保持同一口径，不能扩大到未审计分层。",
+    "BigQuant 产生真实收益、净值、成交、持仓或风控结果后，再回填 M-quant；未回填前页面仍显示待测。"
+  ],
+  "import_back_after_bigquant": {
+    "target_section": "准模拟盘 / 账本回填，或后续 BigQuant 回测结果回填接口",
+    "required_fields": [
+      "platform",
+      "strategy_id",
+      "sleeve_id",
+      "test_start",
+      "test_end",
+      "benchmark",
+      "annual_return",
+      "max_drawdown",
+      "sharpe",
+      "win_rate",
+      "turnover",
+      "net_value_curve",
+      "positions_or_selected_codes",
+      "data_policy"
+    ]
+  },
+  "targets": [
+    {
+      "sleeve_id": "jq_controller",
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "strategy_name": "市场状态切换策略 v1",
+      "evidence_system": "JoinQuant derived real curves",
+      "operational_status": "ready_for_controlled_paper_watch",
+      "bigquant_test_status": "ready_for_bigquant_real_test",
+      "bigquant_test_priority": "test_now",
+      "can_start_observation": true,
+      "paper_action": "open_allowed",
+      "planned_weight": 1,
+      "bigquant_payload_type": "controller_strategy_logic",
+      "signal_date": "2026-07-09",
+      "candidate_count": null,
+      "selected_count": null,
+      "selected_codes": [],
+      "target_market_regime": "",
+      "target_market_cap_bucket": "",
+      "actual_market_regime": "",
+      "entry_gate": [
+        "高波动环境使用 JQ质量利润流动性策略 v1",
+        "低波动环境使用 K线辅助确认策略",
+        "中波动环境空仓/观察，不强行开仓",
+        "只使用已导入 JoinQuant 真实曲线验证过的组件策略和市场状态"
+      ],
+      "pause_rules": [
+        "rolling_drawdown_guard / -0.11336 / 模拟盘回撤超过历史该路线最大回撤的 1.25 倍，或超过 8%，先暂停新开仓。",
+        "three_rebalance_underperformance / 连续3个调仓周期跑输沪深300且命中率低于历史胜率 / 说明样本外状态可能劣化，暂停并复核分层环境。",
+        "layer_violation / 市场状态不满足执行配置 / 不满足受控路线，禁止开仓；切换策略在中波动默认空仓。"
+      ],
+      "blocked_reasons": [],
+      "baseline": {
+        "annual_return": null,
+        "avg_selected_count": 29.357142857142858,
+        "max_drawdown": -0.09068798084469964,
+        "positive_trade_ratio": null,
+        "sample_dates": 70,
+        "sharpe": 1.8039399491070465,
+        "strategy_return": 0.8328872072774001,
+        "win_rate": 0.6285714285714286
+      },
+      "latest_review_decision": "",
+      "data_policy": "只组合两条已导入 JoinQuant 真实交易净值曲线的单期 gross_return/cost/turnover；不生成虚构收益；中波动环境默认空仓/观察。",
+      "notes": "可以提交 BigQuant 做真实回测/模拟验证；结果未回填前仍只算待测输入。 该资金袖是状态切换控制器，BigQuant应复现策略逻辑和分层规则，不是直接用单日 selected_codes 回测。"
+    },
+    {
+      "sleeve_id": "jq_medium_vol_small_cap_core",
+      "strategy_id": "core_volume_price_trend_v1",
+      "strategy_name": "核心量价趋势策略 v1",
+      "evidence_system": "JoinQuant historical route + imported latest signal review",
+      "operational_status": "blocked_by_latest_signal_review",
+      "bigquant_test_status": "blocked_before_bigquant_test",
+      "bigquant_test_priority": "record_only_until_gate_passed",
+      "can_start_observation": false,
+      "paper_action": "record_only",
+      "planned_weight": 0,
+      "bigquant_payload_type": "latest_selected_codes",
+      "signal_date": "2026-07-09",
+      "candidate_count": 7,
+      "selected_count": 7,
+      "selected_codes": [
+        "002049.XSHE",
+        "301269.XSHE",
+        "688047.XSHG",
+        "002236.XSHE",
+        "600372.XSHG",
+        "600482.XSHG",
+        "002558.XSHE"
+      ],
+      "target_market_regime": "medium_volatility",
+      "target_market_cap_bucket": "small_cap",
+      "actual_market_regime": "high_volatility",
+      "entry_gate": [
+        "market_regime 必须为 medium_volatility。",
+        "market_cap_bucket 必须为 small_cap。",
+        "最新 JoinQuant 复核 decision 必须为 promotion_signal_ready。",
+        "selected_count 必须不少于 10。",
+        "若主控制器同时发出高/低波动信号，本资金袖不得开仓。"
+      ],
+      "pause_rules": [
+        "最新复核不是 promotion_signal_ready 时，paper_action 只能 record_only。",
+        "selected_count 低于 10 时暂停新开仓。",
+        "市场状态离开 medium_volatility 时暂停新开仓并进入退出观察。"
+      ],
+      "blocked_reasons": [
+        "已导入核心量价中波动/小市值最新信号复核，但未达到 promotion_signal_ready 门槛。"
+      ],
+      "baseline": {
+        "annual_return": 0.49623098235046603,
+        "avg_selected_count": null,
+        "max_drawdown": -0.09339761818584269,
+        "positive_trade_ratio": null,
+        "sample_dates": 45,
+        "sharpe": 1.3930551667201772,
+        "strategy_return": 0.4330085735791378,
+        "win_rate": 0.5555555555555556
+      },
+      "latest_review_decision": "promotion_signal_not_ready",
+      "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。",
+      "notes": "未通过本地准入，不得在 BigQuant 结果回填前手工改成可开仓。 已导入核心量价中波动/小市值最新信号复核，但未达到 promotion_signal_ready 门槛。"
+    },
+    {
+      "sleeve_id": "akshare_local_switch",
+      "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+      "strategy_name": "AkShare本地高低波动切换策略 v1",
+      "evidence_system": "AkShare local OHLCV",
+      "operational_status": "ready_for_controlled_paper_watch",
+      "bigquant_test_status": "ready_for_bigquant_real_test",
+      "bigquant_test_priority": "test_now",
+      "can_start_observation": true,
+      "paper_action": "open_allowed",
+      "planned_weight": 0,
+      "bigquant_payload_type": "latest_selected_codes",
+      "signal_date": "2026-07-09",
+      "candidate_count": 15,
+      "selected_count": 15,
+      "selected_codes": [
+        "002001",
+        "000568",
+        "000858",
+        "000425",
+        "000338",
+        "000651",
+        "000001",
+        "002142",
+        "000776",
+        "002027",
+        "002241",
+        "002179",
+        "002230",
+        "002415",
+        "002714"
+      ],
+      "target_market_regime": "",
+      "target_market_cap_bucket": "",
+      "actual_market_regime": "",
+      "entry_gate": [],
+      "pause_rules": [],
+      "blocked_reasons": [],
+      "baseline": {
+        "annual_return": null,
+        "avg_selected_count": 20,
+        "max_drawdown": -0.06597592399323748,
+        "positive_trade_ratio": 0.6805555555555556,
+        "sample_dates": 72,
+        "sharpe": 3.14203779176307,
+        "strategy_return": 1.740866685270742,
+        "win_rate": null
+      },
+      "latest_review_decision": "tradeability_review_passed",
+      "data_policy": "只组合 AkShare 本地真实 OHLCV 已生成的执行组件 trade_records；不新增收益、不扩展未审计分层、不伪造交易状态。",
+      "notes": "可以提交 BigQuant 做真实回测/模拟验证；结果未回填前仍只算待测输入。"
+    }
+  ]
+}

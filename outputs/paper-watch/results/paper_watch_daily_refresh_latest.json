@@ -1,0 +1,384 @@
+{
+  "data_policy": "JoinQuant刷新只扫描 outputs/sources/joinquant/results 中的真实 JoinQuant JSON。 导入前执行严格校验；自动账本只生成信号、准入状态和计划动作。 不会生成收益、净值、成交、持仓或事后回测结论。",
+  "finished_at": "2026-07-10T07:37:26.350Z",
+  "import_summary": {
+    "failed": [],
+    "files_scanned": 2,
+    "imported_core_signal_review_count": 0,
+    "imported_observation_ledger_count": 0,
+    "imported_tradeability_review_count": 0,
+    "importedAt": "2026-07-10T07:37:25.659Z",
+    "ok": true,
+    "skipped": [
+      {
+        "file": "outputs/sources/joinquant/results/akshare_latest_signal_tradeability_review_20260710.json",
+        "reason": "交易可行性复核已导入。"
+      },
+      {
+        "file": "outputs/sources/joinquant/results/core_medium_small_latest_signal_review_20260710.json",
+        "reason": "核心量价信号复核已导入。"
+      }
+    ]
+  },
+  "ledger_summary": {
+    "auto_ledger_count": 3,
+    "total_ledger_count": 3
+  },
+  "mode": "joinquant_local",
+  "ok": true,
+  "report": {
+    "source": "m_quant_joinquant_paper_watch_report",
+    "generated_at": "2026-07-10T07:37:26.350Z",
+    "status": "ready_to_start_observation",
+    "data_policy": "报告只汇总 JoinQuant 自动导入复核、运行包和自动信号账本；收益、净值、成交、持仓必须来自后续真实观察或外部平台回填。",
+    "import_summary": {
+      "failed": [],
+      "files_scanned": 2,
+      "imported_core_signal_review_count": 0,
+      "imported_observation_ledger_count": 0,
+      "imported_tradeability_review_count": 0,
+      "importedAt": "2026-07-10T07:37:25.659Z",
+      "ok": true,
+      "skipped": [
+        {
+          "file": "outputs/sources/joinquant/results/akshare_latest_signal_tradeability_review_20260710.json",
+          "reason": "交易可行性复核已导入。"
+        },
+        {
+          "file": "outputs/sources/joinquant/results/core_medium_small_latest_signal_review_20260710.json",
+          "reason": "核心量价信号复核已导入。"
+        }
+      ]
+    },
+    "derived_summary": {
+      "data_policy": "只重建本地派生 JSON/Markdown：运行包、成熟策略矩阵和交易复核任务包；不生成收益、净值、成交、持仓或交易可行性结论。",
+      "finished_at": "2026-07-10T07:37:26.341Z",
+      "ok": true,
+      "python": "/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+      "scripts": [
+        {
+          "ok": true,
+          "path": "outputs/paper-watch/scripts/build_paper_watch_operations_pack.py",
+          "signal": "",
+          "status": 0,
+          "stderr": "",
+          "stdout": "{\n  \"output\": \"outputs/paper-watch/results/paper_watch_operations_pack_20260709.json\",\n  \"doc\": \"outputs/_docs/paper-watch-operations-pack-20260709.md\",\n  \"status\": \"ready_with_blockers\",\n  \"ready_sleeve_count\": 2,\n  \"blocked_sleeve_count\": 1\n}"
+        },
+        {
+          "ok": true,
+          "path": "outputs/paper-watch/scripts/audit_independent_sleeve_candidates.py",
+          "signal": "",
+          "status": 0,
+          "stderr": "",
+          "stdout": "{\n  \"result\": \"outputs/paper-watch/results/independent_sleeve_candidate_audit_20260710.json\",\n  \"doc\": \"outputs/_docs/independent-sleeve-candidate-audit-20260710.md\",\n  \"goal_status\": \"target_met\",\n  \"eligible_independent_sleeve_count\": 2,\n  \"blocked_candidate_count\": 12\n}"
+        },
+        {
+          "ok": true,
+          "path": "outputs/paper-watch/scripts/build_core_medium_small_promotion_task_pack.py",
+          "signal": "",
+          "status": 0,
+          "stderr": "",
+          "stdout": "{\n  \"source\": \"m_quant_core_medium_small_promotion_task_pack\",\n  \"status\": \"signal_not_ready_imported\",\n  \"result\": \"outputs/paper-watch/results/core_medium_small_promotion_task_pack_20260710.json\",\n  \"doc\": \"outputs/_docs/core-medium-small-promotion-task-pack-20260710.md\",\n  \"script\": \"outputs/sources/joinquant/scripts/m_quant_core_medium_small_latest_signal_review_20260710.py\"\n}"
+        },
+        {
+          "ok": true,
+          "path": "outputs/paper-watch/scripts/build_strategy_maturity_matrix.py",
+          "signal": "",
+          "status": 0,
+          "stderr": "",
+          "stdout": "{\n  \"source\": \"m_quant_strategy_maturity_matrix\",\n  \"goal_status\": \"target_met\",\n  \"ready_strategy_count\": 2,\n  \"target_ready_strategy_count\": 2,\n  \"result\": \"outputs/paper-watch/results/strategy_maturity_matrix_20260710.json\",\n  \"doc\": \"outputs/_docs/strategy-maturity-matrix-20260710.md\"\n}"
+        },
+        {
+          "ok": true,
+          "path": "outputs/paper-watch/scripts/build_tradeability_review_task_pack.py",
+          "signal": "",
+          "status": 0,
+          "stderr": "",
+          "stdout": "{\n  \"source\": \"m_quant_tradeability_review_task_pack\",\n  \"status\": \"review_passed\",\n  \"strategy_id\": \"ak_mean_reversion_quality_combo\",\n  \"signal_date\": \"2026-07-09\",\n  \"selected_count\": 15,\n  \"result\": \"outputs/paper-watch/results/tradeability_review_task_pack_20260710.json\",\n  \"doc\": \"outputs/_docs/tradeability-review-task-pack-20260710.md\"\n}"
+        }
+      ],
+      "started_at": "2026-07-10T07:37:26.074Z"
+    },
+    "performance_summary": {
+      "collect_returns_count": 3,
+      "promotion_candidate_count": 0,
+      "risk_pause_count": 0,
+      "sleeve_count": 3,
+      "total_completed_return_rows": 0,
+      "total_ledger_rows": 3
+    },
+    "metrics": {
+      "auto_or_imported_ledger_count": 3,
+      "blocked_sleeve_count": 1,
+      "open_allowed_sleeve_count": 2,
+      "ready_sleeve_count": 2,
+      "record_only_sleeve_count": 1,
+      "signal_date": "2026-07-09",
+      "sleeve_count": 3
+    },
+    "sleeves": [
+      {
+        "activity": {
+          "key": "warming_up",
+          "name": "样本积累",
+          "tone": "pending",
+          "reason": "观察天数少于5天，先记录信号活性，不做升级判断。"
+        },
+        "blocked_reasons": [],
+        "can_start_observation": true,
+        "gate_status": "ready_for_controlled_paper_watch",
+        "latest_action": "open_allowed",
+        "selected_codes": [],
+        "selected_count": null,
+        "signal_date": "2026-07-09",
+        "sleeve_id": "jq_controller",
+        "strategy_id": "regime_switch_quality_kline_v1",
+        "strategy_name": "市场状态切换策略 v1"
+      },
+      {
+        "activity": {
+          "key": "warming_up",
+          "name": "样本积累",
+          "tone": "pending",
+          "reason": "观察天数少于5天，先记录信号活性，不做升级判断。"
+        },
+        "blocked_reasons": [
+          "已导入核心量价中波动/小市值最新信号复核，但未达到 promotion_signal_ready 门槛。"
+        ],
+        "can_start_observation": false,
+        "gate_status": "blocked_by_latest_signal_review",
+        "latest_action": "record_only",
+        "selected_codes": [
+          "002049.XSHE",
+          "301269.XSHE",
+          "688047.XSHG",
+          "002236.XSHE",
+          "600372.XSHG",
+          "600482.XSHG",
+          "002558.XSHE"
+        ],
+        "selected_count": 7,
+        "signal_date": "2026-07-09",
+        "sleeve_id": "jq_medium_vol_small_cap_core",
+        "strategy_id": "core_volume_price_trend_v1",
+        "strategy_name": "核心量价趋势策略 v1"
+      },
+      {
+        "activity": {
+          "key": "warming_up",
+          "name": "样本积累",
+          "tone": "pending",
+          "reason": "观察天数少于5天，先记录信号活性，不做升级判断。"
+        },
+        "blocked_reasons": [],
+        "can_start_observation": true,
+        "gate_status": "ready_for_controlled_paper_watch",
+        "latest_action": "open_allowed",
+        "selected_codes": [
+          "002001",
+          "000568",
+          "000858",
+          "000425",
+          "000338",
+          "000651",
+          "000001",
+          "002142",
+          "000776",
+          "002027",
+          "002241",
+          "002179",
+          "002230",
+          "002415",
+          "002714"
+        ],
+        "selected_count": 15,
+        "signal_date": "2026-07-09",
+        "sleeve_id": "akshare_local_switch",
+        "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+        "strategy_name": "AkShare本地高低波动切换策略 v1"
+      }
+    ],
+    "next_actions": [
+      "今天可以按 open_allowed 资金袖开始准模拟盘观察账本记录。",
+      "当前只有信号账本，等待 JoinQuant 准模拟观察收益结果自动导入。",
+      "下一交易日继续运行 JoinQuant 刷新，自动覆盖同日自动信号行，保留真实观察回填行。",
+      "收益、净值、回撤字段等待真实观察或外部平台结果回填，不由本地自动生成。"
+    ],
+    "performance_report": {
+      "source": "m_quant_paper_watch_performance_report",
+      "generated_at": "2026-07-10T07:37:26.349Z",
+      "data_policy": "表现报告只读取准模拟盘账本真实收益字段；没有真实收益时只显示信号样本，不生成净值曲线。",
+      "summary": {
+        "collect_returns_count": 3,
+        "promotion_candidate_count": 0,
+        "risk_pause_count": 0,
+        "sleeve_count": 3,
+        "total_completed_return_rows": 0,
+        "total_ledger_rows": 3
+      },
+      "sleeves": [
+        {
+          "sleeve_id": "jq_controller",
+          "strategy_id": "regime_switch_quality_kline_v1",
+          "strategy_name": "市场状态切换策略 v1",
+          "can_start_observation": true,
+          "operational_status": "ready_for_controlled_paper_watch",
+          "metrics": {
+            "avg_benchmark_return": null,
+            "avg_excess_return": null,
+            "avg_period_return": null,
+            "completed_return_rows": 0,
+            "latest_action": "open_allowed",
+            "max_drawdown": null,
+            "missing_return_rows": 1,
+            "observed_days": 1,
+            "total_rows": 1,
+            "win_rate": null
+          },
+          "stage": {
+            "action": "collect_returns",
+            "stage": "signal_only",
+            "stage_name": "只有信号账本",
+            "tone": "pending",
+            "reason": "尚无真实 period_return，不能计算净值、胜率或晋级。"
+          },
+          "curve": [],
+          "data_policy": "只基于准模拟盘账本中已存在的真实 period_return / benchmark_return 计算；缺失时不补、不估、不生成。"
+        },
+        {
+          "sleeve_id": "jq_medium_vol_small_cap_core",
+          "strategy_id": "core_volume_price_trend_v1",
+          "strategy_name": "核心量价趋势策略 v1",
+          "can_start_observation": false,
+          "operational_status": "blocked_by_latest_signal_review",
+          "metrics": {
+            "avg_benchmark_return": null,
+            "avg_excess_return": null,
+            "avg_period_return": null,
+            "completed_return_rows": 0,
+            "latest_action": "record_only",
+            "max_drawdown": null,
+            "missing_return_rows": 1,
+            "observed_days": 1,
+            "total_rows": 1,
+            "win_rate": null
+          },
+          "stage": {
+            "action": "collect_returns",
+            "stage": "signal_only",
+            "stage_name": "只有信号账本",
+            "tone": "pending",
+            "reason": "尚无真实 period_return，不能计算净值、胜率或晋级。"
+          },
+          "curve": [],
+          "data_policy": "只基于准模拟盘账本中已存在的真实 period_return / benchmark_return 计算；缺失时不补、不估、不生成。"
+        },
+        {
+          "sleeve_id": "akshare_local_switch",
+          "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+          "strategy_name": "AkShare本地高低波动切换策略 v1",
+          "can_start_observation": true,
+          "operational_status": "ready_for_controlled_paper_watch",
+          "metrics": {
+            "avg_benchmark_return": null,
+            "avg_excess_return": null,
+            "avg_period_return": null,
+            "completed_return_rows": 0,
+            "latest_action": "open_allowed",
+            "max_drawdown": null,
+            "missing_return_rows": 1,
+            "observed_days": 1,
+            "total_rows": 1,
+            "win_rate": null
+          },
+          "stage": {
+            "action": "collect_returns",
+            "stage": "signal_only",
+            "stage_name": "只有信号账本",
+            "tone": "pending",
+            "reason": "尚无真实 period_return，不能计算净值、胜率或晋级。"
+          },
+          "curve": [],
+          "data_policy": "只基于准模拟盘账本中已存在的真实 period_return / benchmark_return 计算；缺失时不补、不估、不生成。"
+        }
+      ]
+    }
+  },
+  "source": "m_quant_joinquant_paper_watch_refresh",
+  "started_at": "2026-07-10T07:37:25.659Z",
+  "steps": [
+    {
+      "name": "扫描并导入JoinQuant结果",
+      "ok": true,
+      "path": "outputs/sources/joinquant/results",
+      "status": 0,
+      "stdout": "{\"files_scanned\":2,\"imported_tradeability_review_count\":0,\"imported_core_signal_review_count\":0,\"skipped_count\":2}",
+      "stderr": ""
+    },
+    {
+      "name": "自动生成准模拟账本信号行",
+      "ok": true,
+      "path": "platform/quant-factor-platform/data/imported-paper-watch-ledger.json",
+      "status": 0,
+      "stdout": "{\"auto_ledger_count\":3,\"total_ledger_count\":3}",
+      "stderr": ""
+    },
+    {
+      "name": "生成准模拟盘报告",
+      "ok": true,
+      "path": "outputs/paper-watch/results/joinquant_paper_watch_report_latest.json",
+      "status": 0,
+      "stdout": "{\"auto_or_imported_ledger_count\":3,\"blocked_sleeve_count\":1,\"open_allowed_sleeve_count\":2,\"ready_sleeve_count\":2,\"record_only_sleeve_count\":1,\"signal_date\":\"2026-07-09\",\"sleeve_count\":3}",
+      "stderr": ""
+    }
+  ],
+  "derived": {
+    "data_policy": "只重建本地派生 JSON/Markdown：运行包、成熟策略矩阵和交易复核任务包；不生成收益、净值、成交、持仓或交易可行性结论。",
+    "finished_at": "2026-07-10T07:37:26.341Z",
+    "ok": true,
+    "python": "/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+    "scripts": [
+      {
+        "ok": true,
+        "path": "outputs/paper-watch/scripts/build_paper_watch_operations_pack.py",
+        "signal": "",
+        "status": 0,
+        "stderr": "",
+        "stdout": "{\n  \"output\": \"outputs/paper-watch/results/paper_watch_operations_pack_20260709.json\",\n  \"doc\": \"outputs/_docs/paper-watch-operations-pack-20260709.md\",\n  \"status\": \"ready_with_blockers\",\n  \"ready_sleeve_count\": 2,\n  \"blocked_sleeve_count\": 1\n}"
+      },
+      {
+        "ok": true,
+        "path": "outputs/paper-watch/scripts/audit_independent_sleeve_candidates.py",
+        "signal": "",
+        "status": 0,
+        "stderr": "",
+        "stdout": "{\n  \"result\": \"outputs/paper-watch/results/independent_sleeve_candidate_audit_20260710.json\",\n  \"doc\": \"outputs/_docs/independent-sleeve-candidate-audit-20260710.md\",\n  \"goal_status\": \"target_met\",\n  \"eligible_independent_sleeve_count\": 2,\n  \"blocked_candidate_count\": 12\n}"
+      },
+      {
+        "ok": true,
+        "path": "outputs/paper-watch/scripts/build_core_medium_small_promotion_task_pack.py",
+        "signal": "",
+        "status": 0,
+        "stderr": "",
+        "stdout": "{\n  \"source\": \"m_quant_core_medium_small_promotion_task_pack\",\n  \"status\": \"signal_not_ready_imported\",\n  \"result\": \"outputs/paper-watch/results/core_medium_small_promotion_task_pack_20260710.json\",\n  \"doc\": \"outputs/_docs/core-medium-small-promotion-task-pack-20260710.md\",\n  \"script\": \"outputs/sources/joinquant/scripts/m_quant_core_medium_small_latest_signal_review_20260710.py\"\n}"
+      },
+      {
+        "ok": true,
+        "path": "outputs/paper-watch/scripts/build_strategy_maturity_matrix.py",
+        "signal": "",
+        "status": 0,
+        "stderr": "",
+        "stdout": "{\n  \"source\": \"m_quant_strategy_maturity_matrix\",\n  \"goal_status\": \"target_met\",\n  \"ready_strategy_count\": 2,\n  \"target_ready_strategy_count\": 2,\n  \"result\": \"outputs/paper-watch/results/strategy_maturity_matrix_20260710.json\",\n  \"doc\": \"outputs/_docs/strategy-maturity-matrix-20260710.md\"\n}"
+      },
+      {
+        "ok": true,
+        "path": "outputs/paper-watch/scripts/build_tradeability_review_task_pack.py",
+        "signal": "",
+        "status": 0,
+        "stderr": "",
+        "stdout": "{\n  \"source\": \"m_quant_tradeability_review_task_pack\",\n  \"status\": \"review_passed\",\n  \"strategy_id\": \"ak_mean_reversion_quality_combo\",\n  \"signal_date\": \"2026-07-09\",\n  \"selected_count\": 15,\n  \"result\": \"outputs/paper-watch/results/tradeability_review_task_pack_20260710.json\",\n  \"doc\": \"outputs/_docs/tradeability-review-task-pack-20260710.md\"\n}"
+      }
+    ],
+    "started_at": "2026-07-10T07:37:26.074Z"
+  }
+}
