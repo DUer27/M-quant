@@ -21,6 +21,7 @@
           <button class="active" data-view-target="dashboard">总览</button>
           <button data-view-target="factor-library">因子库</button>
           <button data-view-target="strategy-library">策略池</button>
+          <button data-view-target="paper-watch">准模拟盘</button>
           <button data-view-target="research-pipeline">研究流水线</button>
           <button data-view-target="backtest-center">回测中心</button>
           <button data-view-target="validated-results">实测结果</button>
@@ -197,35 +198,98 @@
               </div>
             </section>
 
-            <section class="panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Paper Watch</p>
-                  <h2>模拟观察清单</h2>
-                </div>
+          </section>
+        </div>
+
+        <div id="paper-watch-view" class="view">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Paper Watch</p>
+                <h2>准模拟盘观察台</h2>
+              </div>
+              <div class="paper-watch-head-actions">
+                <select id="paper-watch-refresh-mode" aria-label="一键刷新模式">
+                  <option value="joinquant_local">JoinQuant本地结果</option>
+                  <option value="local">本地快速</option>
+                  <option value="akshare_fast">AkShare核心50</option>
+                  <option value="akshare_csi300">AkShare沪深300</option>
+                </select>
+                <button id="run-paper-watch-daily-refresh" class="primary" type="button">一键刷新数据</button>
                 <span id="paper-watch-status" class="tag pending">未就绪</span>
               </div>
-              <div id="paper-watch-list" class="paper-watch-list"></div>
-              <details class="compact-details">
-                <summary>账本回填</summary>
-                <div class="ledger-import">
-                  <label>
-                    粘贴模拟观察账本 JSON 或 CSV
-                    <textarea id="paper-watch-ledger-json" rows="5" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
-                  </label>
-                  <div class="backtest-actions">
-                    <button id="download-paper-watch-ledger-csv" type="button">下载CSV模板</button>
-                    <button id="download-paper-watch-ledger-json" type="button">下载JSON模板</button>
-                    <button id="import-paper-watch-ledger" class="primary" type="button">导入账本</button>
+            </div>
+            <section class="paper-watch-console">
+              <div id="paper-watch-console-summary" class="paper-watch-console-summary"></div>
+              <div id="paper-watch-refresh-summary" class="paper-watch-refresh-summary"></div>
+              <details class="compact-details" open>
+                <summary>JoinQuant准模拟报告</summary>
+                <div id="paper-watch-joinquant-report" class="paper-watch-joinquant-report">
+                  <div class="paper-watch-note compact">
+                    <strong>等待刷新</strong>
+                    <p>点击一键刷新数据后，将自动扫描 JoinQuant 结果、生成信号账本和报告。</p>
                   </div>
-                  <p id="paper-watch-ledger-message" class="form-message">只导入真实观察记录；平台不生成收益或净值。</p>
                 </div>
               </details>
-              <details class="compact-details">
-                <summary>运行约束</summary>
-                <ul id="paper-watch-controls" class="text-list"></ul>
+              <details class="compact-details" open>
+                <summary>准模拟表现报告</summary>
+                <div id="paper-watch-performance-report" class="paper-watch-performance-report">
+                  <div class="paper-watch-note compact">
+                    <strong>等待真实观察收益</strong>
+                    <p>表现报告只使用账本中的真实收益字段；没有收益时不生成净值曲线。</p>
+                  </div>
+                </div>
               </details>
+              <details class="compact-details" open>
+                <summary>BigQuant测试准备</summary>
+                <div id="paper-watch-bigquant-summary" class="paper-watch-bigquant-summary">
+                  <div class="paper-watch-note compact">
+                    <strong>待生成</strong>
+                    <p>生成包只包含准模拟盘真实证据和待测试输入，不包含 BigQuant 回测结论。</p>
+                  </div>
+                </div>
+                <div class="backtest-actions">
+                  <button id="build-bigquant-paper-watch-pack" type="button">生成BigQuant包</button>
+                  <a class="inline-link" href="/paper-watch-api/bigquant-test-pack.json">下载JSON包</a>
+                  <a class="inline-link" href="/paper-watch-api/bigquant-test-targets.csv">下载CSV清单</a>
+                  <a class="inline-link" href="/paper-watch-api/bigquant-test-guide.md">下载操作说明</a>
+                </div>
+              </details>
+              <div class="paper-watch-console-grid">
+                <article>
+                  <strong>最新信号</strong>
+                  <div id="paper-watch-signal-list" class="paper-watch-mini-list"></div>
+                </article>
+                <article>
+                  <strong>观察账本</strong>
+                  <div id="paper-watch-ledger-summary" class="paper-watch-mini-list"></div>
+                </article>
+                <article>
+                  <strong>升级/暂停判断</strong>
+                  <div id="paper-watch-upgrade-list" class="paper-watch-mini-list"></div>
+                </article>
+              </div>
             </section>
+            <div id="paper-watch-list" class="paper-watch-list"></div>
+            <details class="compact-details" open>
+              <summary>账本回填</summary>
+              <div class="ledger-import">
+                <label>
+                  粘贴模拟观察账本 JSON 或 CSV
+                  <textarea id="paper-watch-ledger-json" rows="5" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
+                </label>
+                <div class="backtest-actions">
+                  <button id="download-paper-watch-ledger-csv" type="button">下载CSV模板</button>
+                  <button id="download-paper-watch-ledger-json" type="button">下载JSON模板</button>
+                  <button id="import-paper-watch-ledger" class="primary" type="button">导入账本</button>
+                </div>
+                <p id="paper-watch-ledger-message" class="form-message">只导入真实观察记录；平台不生成收益或净值。</p>
+              </div>
+            </details>
+            <details class="compact-details">
+              <summary>运行约束</summary>
+              <ul id="paper-watch-controls" class="text-list"></ul>
+            </details>
           </section>
         </div>
 
@@ -311,9 +375,9 @@
         <div id="strategy-library-view" class="view">
           <section class="metrics-grid" aria-label="策略池指标">
             <article class="metric">
-              <span>草案策略</span>
+              <span>策略路线</span>
               <strong id="strategy-strong-count">-</strong>
-              <small>待复测方案</small>
+              <small>分级研究</small>
             </article>
             <article class="metric">
               <span>核心入池</span>
@@ -321,32 +385,40 @@
               <small>量价趋势通过</small>
             </article>
             <article class="metric">
-              <span>资金候选</span>
+              <span>资金观察</span>
               <strong id="strategy-partial-count">-</strong>
-              <small>待策略复测</small>
+              <small>待审计跟踪</small>
             </article>
             <article class="metric">
-              <span>正式策略</span>
+              <span>高等级策略</span>
               <strong id="strategy-blocked-count">-</strong>
-              <small>已回测通过</small>
+              <small>已实测/准模拟</small>
             </article>
           </section>
 
           <section class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Draft Strategy Pool</p>
-                <h2>策略草案池</h2>
+                <p class="eyebrow">Strategy Pool</p>
+                <h2>策略池</h2>
               </div>
               <div class="draft-strategy-tools">
-                <input id="draft-strategy-search" type="search" placeholder="搜索草案" aria-label="搜索草案策略" />
-                <select id="draft-strategy-jump" aria-label="跳转草案策略">
-                  <option value="">全部草案</option>
+                <input id="draft-strategy-search" type="search" placeholder="搜索策略/因子/状态" aria-label="搜索策略" />
+                <select id="strategy-grade-filter" aria-label="按策略等级筛选">
+                  <option value="all">全部等级</option>
+                  <option value="paper_watch">准模拟盘</option>
+                  <option value="backtested">已实测</option>
+                  <option value="candidate">候选/待测</option>
+                  <option value="blocked">暂缓/阻塞</option>
+                </select>
+                <select id="draft-strategy-jump" aria-label="跳转策略">
+                  <option value="">全部策略</option>
                 </select>
                 <button id="draft-strategy-toggle" type="button">展开全部</button>
               </div>
             </div>
             <div class="library-source" id="strategy-source-file">策略数据源等待加载</div>
+            <div id="strategy-level-index" class="strategy-level-index" aria-label="策略等级索引"></div>
             <div id="strategy-live-list" class="strategy-list"></div>
             <div id="draft-strategy-pagination" class="pagination compact"></div>
           </section>
@@ -354,19 +426,8 @@
           <section class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Validated Strategy Pool</p>
-                <h2>正式策略池</h2>
-              </div>
-            </div>
-            <div class="library-source" id="formal-strategy-policy">正式策略池等待加载</div>
-            <div id="formal-strategy-list" class="status-list"></div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-head">
-              <div>
                 <p class="eyebrow">Decision Candidates</p>
-                <h2>草案候选明细</h2>
+                <h2>策略候选明细</h2>
               </div>
             </div>
             <table>
@@ -720,6 +781,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260710-core-signal-import"></script>
+    <script type="module" src="/assets/app.js?v=20260710-paper-watch-performance"></script>
   </body>
 </html>

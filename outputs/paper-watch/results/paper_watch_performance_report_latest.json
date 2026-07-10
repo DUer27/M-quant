@@ -1,0 +1,99 @@
+{
+  "source": "m_quant_paper_watch_performance_report",
+  "generated_at": "2026-07-10T07:37:26.349Z",
+  "data_policy": "表现报告只读取准模拟盘账本真实收益字段；没有真实收益时只显示信号样本，不生成净值曲线。",
+  "summary": {
+    "collect_returns_count": 3,
+    "promotion_candidate_count": 0,
+    "risk_pause_count": 0,
+    "sleeve_count": 3,
+    "total_completed_return_rows": 0,
+    "total_ledger_rows": 3
+  },
+  "sleeves": [
+    {
+      "sleeve_id": "jq_controller",
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "strategy_name": "市场状态切换策略 v1",
+      "can_start_observation": true,
+      "operational_status": "ready_for_controlled_paper_watch",
+      "metrics": {
+        "avg_benchmark_return": null,
+        "avg_excess_return": null,
+        "avg_period_return": null,
+        "completed_return_rows": 0,
+        "latest_action": "open_allowed",
+        "max_drawdown": null,
+        "missing_return_rows": 1,
+        "observed_days": 1,
+        "total_rows": 1,
+        "win_rate": null
+      },
+      "stage": {
+        "action": "collect_returns",
+        "stage": "signal_only",
+        "stage_name": "只有信号账本",
+        "tone": "pending",
+        "reason": "尚无真实 period_return，不能计算净值、胜率或晋级。"
+      },
+      "curve": [],
+      "data_policy": "只基于准模拟盘账本中已存在的真实 period_return / benchmark_return 计算；缺失时不补、不估、不生成。"
+    },
+    {
+      "sleeve_id": "jq_medium_vol_small_cap_core",
+      "strategy_id": "core_volume_price_trend_v1",
+      "strategy_name": "核心量价趋势策略 v1",
+      "can_start_observation": false,
+      "operational_status": "blocked_by_latest_signal_review",
+      "metrics": {
+        "avg_benchmark_return": null,
+        "avg_excess_return": null,
+        "avg_period_return": null,
+        "completed_return_rows": 0,
+        "latest_action": "record_only",
+        "max_drawdown": null,
+        "missing_return_rows": 1,
+        "observed_days": 1,
+        "total_rows": 1,
+        "win_rate": null
+      },
+      "stage": {
+        "action": "collect_returns",
+        "stage": "signal_only",
+        "stage_name": "只有信号账本",
+        "tone": "pending",
+        "reason": "尚无真实 period_return，不能计算净值、胜率或晋级。"
+      },
+      "curve": [],
+      "data_policy": "只基于准模拟盘账本中已存在的真实 period_return / benchmark_return 计算；缺失时不补、不估、不生成。"
+    },
+    {
+      "sleeve_id": "akshare_local_switch",
+      "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+      "strategy_name": "AkShare本地高低波动切换策略 v1",
+      "can_start_observation": true,
+      "operational_status": "ready_for_controlled_paper_watch",
+      "metrics": {
+        "avg_benchmark_return": null,
+        "avg_excess_return": null,
+        "avg_period_return": null,
+        "completed_return_rows": 0,
+        "latest_action": "open_allowed",
+        "max_drawdown": null,
+        "missing_return_rows": 1,
+        "observed_days": 1,
+        "total_rows": 1,
+        "win_rate": null
+      },
+      "stage": {
+        "action": "collect_returns",
+        "stage": "signal_only",
+        "stage_name": "只有信号账本",
+        "tone": "pending",
+        "reason": "尚无真实 period_return，不能计算净值、胜率或晋级。"
+      },
+      "curve": [],
+      "data_policy": "只基于准模拟盘账本中已存在的真实 period_return / benchmark_return 计算；缺失时不补、不估、不生成。"
+    }
+  ]
+}

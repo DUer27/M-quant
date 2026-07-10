@@ -19,7 +19,8 @@ from build_ohlcv_factor_backtest import add_factor_columns, prepare_frame
 
 ROOT = Path(__file__).resolve().parents[4]
 AK_DIR = ROOT / "outputs" / "sources" / "akshare"
-INPUT_PATH = AK_DIR / "processed" / "a_share_daily_20240101_20260709_qfq.csv"
+PROCESSED_DIR = AK_DIR / "processed"
+DEFAULT_INPUT_PATH = PROCESSED_DIR / "a_share_daily_20240101_20260709_qfq.csv"
 EXECUTION_PACK_PATH = AK_DIR / "results" / "akshare_paper_watch_execution_pack_20260709.json"
 RESULT_PATH = AK_DIR / "results" / "akshare_paper_watch_latest_signal_20260709.json"
 DOC_PATH = ROOT / "outputs" / "_docs" / "akshare-paper-watch-latest-signal-20260709.md"
@@ -40,8 +41,15 @@ def pct(value: float | None) -> str:
     return f"{value * 100:.2f}%"
 
 
+def latest_daily_input_path() -> Path:
+    files = sorted(PROCESSED_DIR.glob("a_share_daily_*_qfq.csv"))
+    if not files:
+        return DEFAULT_INPUT_PATH
+    return max(files, key=lambda path: path.stat().st_mtime)
+
+
 def latest_factor_frame() -> pd.DataFrame:
-    raw = prepare_frame(INPUT_PATH)
+    raw = prepare_frame(latest_daily_input_path())
     factors = add_factor_columns(raw)
     latest_date = factors["date"].max()
     return factors[factors["date"] == latest_date].copy()
@@ -176,7 +184,7 @@ def main() -> int:
     pack = {
         "source": "akshare_local_paper_watch_latest_signal",
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "input": str(INPUT_PATH.relative_to(ROOT)),
+        "input": str(latest_daily_input_path().relative_to(ROOT)),
         "execution_pack": str(EXECUTION_PACK_PATH.relative_to(ROOT)),
         "signal_date": signal_date,
         "data_policy": "只使用本地已落地 AkShare 真实 OHLCV 和已审计执行包；信号只用当日及以前数据；不使用未来收益。",

@@ -2,13 +2,14 @@ import {
   createReadStream,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
-import { extname, join, normalize } from 'node:path';
+import { basename, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -23,6 +24,8 @@ const projectRootCandidates = [
 ].filter(Boolean).map((path) => normalize(path));
 const projectRoot = projectRootCandidates.find((path) => existsSync(join(path, 'outputs'))) || projectRootCandidates[0];
 const outputPath = (...parts) => join(projectRoot, 'outputs', ...parts);
+const bundledPythonPath = '/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3';
+const pythonExecutable = existsSync(bundledPythonPath) ? bundledPythonPath : (process.env.PYTHON || 'python3');
 const realFactorResultsPath = outputPath('real-factors', 'yiwan-real-factor-results.json');
 const realFactorSummaryPath = outputPath('real-factors', 'yiwan-real-factor-summary.json');
 const researchFactorResultsPath = outputPath('research-factor-pipeline', 'yiwan-research-factor-results.json');
@@ -48,6 +51,11 @@ const paperWatchOperationsPackPath = outputPath('paper-watch', 'results', 'paper
 const strategyMaturityMatrixPath = outputPath('paper-watch', 'results', 'strategy_maturity_matrix_20260710.json');
 const tradeabilityReviewTaskPackPath = outputPath('paper-watch', 'results', 'tradeability_review_task_pack_20260710.json');
 const coreMediumSmallPromotionTaskPackPath = outputPath('paper-watch', 'results', 'core_medium_small_promotion_task_pack_20260710.json');
+const paperWatchDailyRefreshLatestPath = outputPath('paper-watch', 'results', 'paper_watch_daily_refresh_latest.json');
+const bigQuantPaperWatchPackPath = outputPath('paper-watch', 'results', 'bigquant_paper_watch_test_pack_latest.json');
+const joinQuantPaperWatchReportPath = outputPath('paper-watch', 'results', 'joinquant_paper_watch_report_latest.json');
+const paperWatchPerformanceReportPath = outputPath('paper-watch', 'results', 'paper_watch_performance_report_latest.json');
+const joinQuantResultsDir = outputPath('sources', 'joinquant', 'results');
 const paperWatchDerivedScriptPaths = [
   outputPath('paper-watch', 'scripts', 'build_paper_watch_operations_pack.py'),
   outputPath('paper-watch', 'scripts', 'audit_independent_sleeve_candidates.py'),
@@ -60,6 +68,8 @@ const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'res
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
 const akshareRegimeSwitchPaperWatchPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_paper_watch_strategy_20260709.json');
 const akshareRegimeSwitchRobustnessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_robustness_audit_20260709.json');
+const akshareFetchHistoryScriptPath = outputPath('sources', 'akshare', 'scripts', 'fetch_a_share_history.py');
+const akshareGeneratePaperWatchSignalScriptPath = outputPath('sources', 'akshare', 'scripts', 'generate_akshare_paper_watch_signal.py');
 const akshareLatestSignalTradeabilityReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_latest_signal_tradeability_review_20260709.py');
 const coreMediumSmallLatestSignalReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_core_medium_small_latest_signal_review_20260710.py');
 const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_jq_quality_profit_liquidity_strategy_backtest.py');
@@ -946,6 +956,10 @@ function buildPaperWatchRoutes() {
   const strategyMaturityMatrix = readJsonFile(strategyMaturityMatrixPath, null);
   const tradeabilityReviewTaskPack = readJsonFile(tradeabilityReviewTaskPackPath, null);
   const coreMediumSmallPromotionTaskPack = readJsonFile(coreMediumSmallPromotionTaskPackPath, null);
+  const dailyRefresh = readJsonFile(paperWatchDailyRefreshLatestPath, null);
+  const bigQuantTestPack = readJsonFile(bigQuantPaperWatchPackPath, null);
+  const joinQuantPaperWatchReport = readJsonFile(joinQuantPaperWatchReportPath, null);
+  const paperWatchPerformanceReport = readJsonFile(paperWatchPerformanceReportPath, null);
   const tradeabilityReviews = readImportedTradeabilityReviews();
   const readinessRecommendedRoutes = Array.isArray(readinessAudit.recommended_routes)
     ? readinessAudit.recommended_routes
@@ -1020,6 +1034,12 @@ function buildPaperWatchRoutes() {
     + Number(recommendedReadinessCounts.ready_local_paper_watch || 0);
   const conditionalRouteCount = Number(recommendedReadinessCounts.conditional_paper_watch || 0)
     + Number(recommendedReadinessCounts.conditional_local_paper_watch || 0);
+  const paperWatchConsole = buildPaperWatchConsole({
+    enrichedRoutes,
+    operationsPack,
+    paperWatchLedger,
+    tradeabilityReviews,
+  });
   return {
     generatedAt: pack.generated_at || '',
     dataPolicy: [
@@ -1072,9 +1092,14 @@ function buildPaperWatchRoutes() {
         latestLedgerRows: paperWatchLedger.slice(0, 5),
       }
       : null,
+    paperWatchConsole,
     maturityMatrix: strategyMaturityMatrix,
     tradeabilityReviewTaskPack,
     coreMediumSmallPromotionTaskPack,
+    bigQuantTestPack,
+    joinQuantPaperWatchReport,
+    paperWatchPerformanceReport,
+    dailyRefresh,
     requiredControls: Array.isArray(pack.required_controls) ? pack.required_controls : [],
     readinessCounts: recommendedReadinessCounts,
     readinessDecisionCounts: readinessCounts,
@@ -1098,6 +1123,201 @@ function buildPaperWatchRoutes() {
 function toNumber(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
+}
+
+function latestByDate(rows) {
+  return [...rows].sort((left, right) => {
+    const rightKey = `${right.date || ''} ${right.importedAt || ''}`;
+    const leftKey = `${left.date || ''} ${left.importedAt || ''}`;
+    return rightKey.localeCompare(leftKey);
+  })[0] || null;
+}
+
+function averageFinite(values) {
+  const finite = values.map(Number).filter(Number.isFinite);
+  if (!finite.length) return null;
+  return finite.reduce((sum, value) => sum + value, 0) / finite.length;
+}
+
+function minFinite(values) {
+  const finite = values.map(Number).filter(Number.isFinite);
+  return finite.length ? Math.min(...finite) : null;
+}
+
+function selectedCodesList(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (value === undefined || value === null || value === '') return [];
+  return String(value).split(/[|,，\s]+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function paperWatchActivityStatus(metrics) {
+  if (!metrics.ledgerCount) {
+    return {
+      key: 'waiting_observation_sample',
+      name: '待样本记录',
+      tone: 'pending',
+      reason: '还没有导入真实准模拟盘观察账本，只能看运行包准入状态。',
+    };
+  }
+  if (Number.isFinite(metrics.worstDrawdown) && metrics.worstDrawdown <= -0.08) {
+    return {
+      key: 'pause_review',
+      name: '回撤复核',
+      tone: 'watch',
+      reason: '观察账本中的滚动回撤已触发复核阈值。',
+    };
+  }
+  if (metrics.pauseCount > 0 || ['pause_new_entry', 'close_only'].includes(metrics.latestAction)) {
+    return {
+      key: 'paused',
+      name: '暂停观察',
+      tone: 'watch',
+      reason: '最近账本或历史记录出现暂停/只平不开动作。',
+    };
+  }
+  if (metrics.observedDays < 5) {
+    return {
+      key: 'warming_up',
+      name: '样本积累',
+      tone: 'pending',
+      reason: '观察天数少于5天，先记录信号活性，不做升级判断。',
+    };
+  }
+  if (Number.isFinite(metrics.avgPeriodReturn) && metrics.avgPeriodReturn > 0 && metrics.openAllowedCount > 0) {
+    return {
+      key: 'active',
+      name: '活性良好',
+      tone: 'good',
+      reason: '已有多日观察记录，平均观察收益为正且未触发暂停。',
+    };
+  }
+  return {
+    key: 'watch',
+    name: '继续观察',
+    tone: 'pending',
+    reason: '已有观察样本，但收益或动作状态还不足以升级。',
+  };
+}
+
+function buildPaperWatchConsole({ enrichedRoutes, operationsPack, paperWatchLedger }) {
+  const sleeves = Array.isArray(operationsPack?.capital_sleeves) ? operationsPack.capital_sleeves : [];
+  const ledger = Array.isArray(paperWatchLedger) ? paperWatchLedger : [];
+  const routeByStrategy = new Map((Array.isArray(enrichedRoutes) ? enrichedRoutes : []).map((route) => [
+    route.strategy_id,
+    route,
+  ]));
+  const signalDate = sleeves
+    .map((sleeve) => sleeve.latest_signal?.signal_date)
+    .filter(Boolean)
+    .sort()
+    .slice(-1)[0] || '';
+  const sleeveRows = sleeves.map((sleeve) => {
+    const rows = ledger.filter((row) => row?.sleeve_id === sleeve.sleeve_id);
+    const latestLedger = latestByDate(rows);
+    const latestSignal = sleeve.latest_signal || {};
+    const route = routeByStrategy.get(sleeve.strategy_id) || {};
+    const tradeabilityReview = sleeve.tradeability_review || route.tradeability_review || null;
+    const observedDays = new Set(rows.map((row) => dateOnly(row.date)).filter(Boolean)).size;
+    const openAllowedCount = rows.filter((row) => row.paper_action === 'open_allowed').length;
+    const pauseCount = rows.filter((row) => ['pause_new_entry', 'close_only'].includes(row.paper_action)).length;
+    const avgPeriodReturn = averageFinite(rows.map((row) => row.period_return));
+    const avgBenchmarkReturn = averageFinite(rows.map((row) => row.benchmark_return));
+    const worstDrawdown = minFinite(rows.map((row) => row.rolling_drawdown));
+    const latestAction = latestLedger?.paper_action || (sleeve.can_start_observation ? 'open_allowed' : 'record_only');
+    const selectedCodes = selectedCodesList(latestSignal.selected_codes || latestLedger?.selected_codes);
+    const metrics = {
+      avgBenchmarkReturn,
+      avgPeriodReturn,
+      ledgerCount: rows.length,
+      latestAction,
+      observedDays,
+      openAllowedCount,
+      pauseCount,
+      worstDrawdown,
+    };
+    const activity = paperWatchActivityStatus(metrics);
+    const canOpen = Boolean(sleeve.can_start_observation && latestSignal.action !== 'record_only');
+    const gateStatus = sleeve.operational_status || latestLedger?.gate_status || 'unknown';
+    const isController = sleeve.role === 'primary_controller' && selectedCodes.length === 0;
+    return {
+      activity,
+      avgBenchmarkReturn,
+      avgPeriodReturn,
+      baseline: sleeve.baseline || null,
+      blockedReasons: Array.isArray(sleeve.blocked_reasons) ? sleeve.blocked_reasons : [],
+      canStartObservation: Boolean(sleeve.can_start_observation),
+      candidateCount: isController ? null : Number(latestSignal.candidate_count ?? latestLedger?.candidate_count ?? 0),
+      dataPolicy: sleeve.data_policy || '',
+      gateStatus,
+      latestAction,
+      latestLedger,
+      latestSignal,
+      ledgerCount: rows.length,
+      nextAction: sleeve.next_action || (
+        canOpen
+          ? '按账本模板记录下一交易日真实信号、计划仓位和后续收益。'
+          : '保持 record_only，补齐阻塞原因中的复核证据。'
+      ),
+      observedDays,
+      openAllowedCount,
+      pauseCount,
+      role: sleeve.role || '',
+      selectedCodes,
+      selectedCount: isController ? null : Number(latestSignal.selected_count ?? latestLedger?.selected_count ?? selectedCodes.length),
+      signalDate: latestSignal.signal_date || latestLedger?.date || '',
+      sleeveId: sleeve.sleeve_id || '',
+      strategyId: sleeve.strategy_id || '',
+      strategyName: sleeve.strategy_name || sleeve.strategy_id || '',
+      tradeabilityReview,
+      worstDrawdown,
+    };
+  });
+  const readySleeves = sleeveRows.filter((row) => row.canStartObservation);
+  const openSignalRows = sleeveRows.filter((row) => row.canStartObservation && row.latestAction === 'open_allowed');
+  const blockedRows = sleeveRows.filter((row) => !row.canStartObservation);
+  const observedDays = new Set(ledger.map((row) => dateOnly(row.date)).filter(Boolean)).size;
+  const activeRows = sleeveRows.filter((row) => row.activity.key === 'active');
+  const warmingRows = sleeveRows.filter((row) => row.activity.key === 'warming_up');
+  const pauseRows = sleeveRows.filter((row) => ['paused', 'pause_review'].includes(row.activity.key));
+  return {
+    source: 'm_quant_paper_watch_console',
+    generatedAt: new Date().toISOString(),
+    dataPolicy: '准模拟盘观察台只汇总运行包、最新信号、交易可行性复核和用户导入账本；没有导入的未来表现不会自动生成。',
+    signalDate,
+    status: readySleeves.length ? 'paper_watch_ready' : 'not_ready',
+    statusName: readySleeves.length ? '可开始准模拟盘观察' : '等待准入证据',
+    metrics: {
+      activeSleeveCount: activeRows.length,
+      blockedSleeveCount: blockedRows.length,
+      importedLedgerCount: ledger.length,
+      openSignalCount: openSignalRows.length,
+      pauseSleeveCount: pauseRows.length,
+      readySleeveCount: readySleeves.length,
+      sleeveCount: sleeveRows.length,
+      warmingSleeveCount: warmingRows.length,
+      observedDays,
+    },
+    nextActions: [
+      ledger.length
+        ? '继续每天导入真实观察账本，累计至少20个交易日样本外表现。'
+        : '先下载账本模板，按最新信号导入第一天准模拟盘观察记录。',
+      '只记录当时真实可见信号，不回填事后挑选结果。',
+      '若触发候选不足、不可交易、回撤超限或集中度异常，记录 pause_new_entry 或 close_only。',
+    ],
+    upgradeRules: [
+      '至少20个交易日真实观察账本。',
+      '观察期平均 period_return 为正，且相对 benchmark_return 有稳定优势。',
+      '滚动回撤未触发暂停阈值，且没有连续多日候选不足。',
+      '候选股票可交易数量稳定，行业和市值暴露不过度集中。',
+    ],
+    pauseRules: [
+      '可交易候选少于10只，暂停新增观察。',
+      '出现 ST、停牌、涨跌停不可买或数据缺失，记录阻塞原因。',
+      'rolling_drawdown <= -8% 时进入回撤复核。',
+      '最新信号与策略适用市场状态不一致时只 record_only。',
+    ],
+    sleeves: sleeveRows,
+  };
 }
 
 function dateOnly(value) {
@@ -3021,6 +3241,11 @@ function isCoreMediumSmallSignalReviewPayload(payload) {
     || payload?.result_type === 'core_medium_small_latest_signal_review';
 }
 
+function isPaperWatchObservationPayload(payload) {
+  return payload?.source === 'joinquant_paper_watch_observation_result'
+    || payload?.result_type === 'paper_watch_observation_result';
+}
+
 function localAshareCode(code) {
   const text = String(code || '').trim();
   const match = text.match(/\d{6}/);
@@ -3168,18 +3393,624 @@ function normalizeCoreMediumSmallSignalReview(payload, importedAt) {
   };
 }
 
+function normalizeJoinQuantObservationRows(payload, importedAt, filePath = '') {
+  const rows = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload.records)
+      ? payload.records
+      : Array.isArray(payload.rows)
+        ? payload.rows
+        : [];
+  if (!rows.length) {
+    throw new Error('JoinQuant 准模拟观察结果必须包含 records 或 rows。');
+  }
+  const normalized = normalizePaperWatchLedgerRows(rows, importedAt);
+  return normalized.map((row) => ({
+    ...row,
+    imported_from_file: filePath,
+    source: 'paper_watch_joinquant_observation_ledger',
+    data_policy: 'JoinQuant 准模拟观察结果自动导入；收益、净值、回撤等字段来自 JoinQuant 输出或用户确认的真实观察结果。',
+  }));
+}
+
 function latestTradeabilityReviewFor(reviews, strategyId, signalDate) {
   return reviews
     .filter((review) => review?.strategy_id === strategyId && review?.signal_date === signalDate)
     .sort((left, right) => String(right.importedAt || '').localeCompare(String(left.importedAt || '')))[0] || null;
 }
 
+function todayYmd() {
+  return new Date().toISOString().slice(0, 10).replaceAll('-', '');
+}
+
+function relativeProjectPath(path) {
+  return path.startsWith(projectRoot) ? path.slice(projectRoot.length + 1) : path;
+}
+
+function runPythonRefreshStep(name, scriptPath, args = [], timeout = 180_000) {
+  const relativePath = relativeProjectPath(scriptPath);
+  if (!existsSync(scriptPath)) {
+    return {
+      args,
+      name,
+      ok: false,
+      path: relativePath,
+      status: 'missing_script',
+      stderr: '脚本不存在。',
+      stdout: '',
+    };
+  }
+  const result = spawnSync(pythonExecutable, [scriptPath, ...args], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+    timeout,
+  });
+  return {
+    args,
+    name,
+    ok: result.status === 0,
+    path: relativePath,
+    signal: result.signal || '',
+    status: result.status,
+    stderr: String(result.stderr || '').trim(),
+    stdout: String(result.stdout || '').trim(),
+  };
+}
+
+function reviewIdentity(review) {
+  return [
+    review?.source || '',
+    review?.result_type || '',
+    review?.strategy_id || '',
+    review?.sleeve_id || '',
+    review?.signal_date || '',
+    review?.decision || '',
+  ].join('::');
+}
+
+function uniqueReviews(rows) {
+  const seen = new Set();
+  return rows.filter((row) => {
+    const key = reviewIdentity(row);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function scanJoinQuantResultFiles() {
+  if (!existsSync(joinQuantResultsDir)) return [];
+  return readdirSync(joinQuantResultsDir)
+    .filter((name) => name.endsWith('.json'))
+    .map((name) => join(joinQuantResultsDir, name))
+    .sort((left, right) => {
+      const rightMtime = statSync(right).mtimeMs;
+      const leftMtime = statSync(left).mtimeMs;
+      return rightMtime - leftMtime;
+    });
+}
+
+function importJoinQuantResultFiles() {
+  const importedAt = new Date().toISOString();
+  const files = scanJoinQuantResultFiles();
+  const currentTradeability = readImportedTradeabilityReviews();
+  const currentCoreReviews = readImportedCoreMediumSmallSignalReviews();
+  const currentLedger = readImportedPaperWatchLedger();
+  const tradeabilityKeys = new Set(currentTradeability.map(reviewIdentity));
+  const coreKeys = new Set(currentCoreReviews.map(reviewIdentity));
+  const ledgerKeys = new Set(currentLedger.map((row) => `${row.date || ''}::${row.sleeve_id || ''}::${row.strategy_id || ''}::${row.source || ''}`));
+  const importedTradeability = [];
+  const importedCoreReviews = [];
+  const importedObservationRows = [];
+  const skipped = [];
+  const failed = [];
+
+  files.forEach((filePath) => {
+    const relativePath = relativeProjectPath(filePath);
+    try {
+      const payload = readJsonFile(filePath, null);
+      if (!payload || typeof payload !== 'object') {
+        skipped.push({ file: relativePath, reason: '不是有效 JSON 对象。' });
+        return;
+      }
+      if (isTradeabilityReviewPayload(payload)) {
+        const normalized = normalizeTradeabilityReview(payload, importedAt);
+        const key = reviewIdentity(normalized);
+        if (tradeabilityKeys.has(key)) {
+          skipped.push({ file: relativePath, reason: '交易可行性复核已导入。' });
+          return;
+        }
+        tradeabilityKeys.add(key);
+        importedTradeability.push({ ...normalized, imported_from_file: relativePath });
+        return;
+      }
+      if (isCoreMediumSmallSignalReviewPayload(payload)) {
+        const normalized = normalizeCoreMediumSmallSignalReview(payload, importedAt);
+        const key = reviewIdentity(normalized);
+        if (coreKeys.has(key)) {
+          skipped.push({ file: relativePath, reason: '核心量价信号复核已导入。' });
+          return;
+        }
+        coreKeys.add(key);
+        importedCoreReviews.push({ ...normalized, imported_from_file: relativePath });
+        return;
+      }
+      if (isPaperWatchObservationPayload(payload)) {
+        const rows = normalizeJoinQuantObservationRows(payload, importedAt, relativePath);
+        const freshRows = rows.filter((row) => {
+          const key = `${row.date || ''}::${row.sleeve_id || ''}::${row.strategy_id || ''}::${row.source || ''}`;
+          if (ledgerKeys.has(key)) return false;
+          ledgerKeys.add(key);
+          return true;
+        });
+        if (!freshRows.length) {
+          skipped.push({ file: relativePath, reason: 'JoinQuant 准模拟观察结果已导入。' });
+          return;
+        }
+        importedObservationRows.push(...freshRows);
+        return;
+      }
+      skipped.push({ file: relativePath, reason: `未识别的 JoinQuant 结果类型：${payload.source || payload.result_type || 'unknown'}。` });
+    } catch (error) {
+      failed.push({ file: relativePath, reason: error.message });
+    }
+  });
+
+  if (importedTradeability.length) {
+    const nextRows = uniqueReviews([...importedTradeability, ...currentTradeability]).slice(0, 200);
+    writeFileSync(importedTradeabilityReviewsPath, `${JSON.stringify(nextRows, null, 2)}\n`);
+  }
+  if (importedCoreReviews.length) {
+    const nextRows = uniqueReviews([...importedCoreReviews, ...currentCoreReviews]).slice(0, 200);
+    writeFileSync(importedCoreMediumSmallSignalReviewsPath, `${JSON.stringify(nextRows, null, 2)}\n`);
+  }
+  if (importedObservationRows.length) {
+    const nextLedger = [...importedObservationRows, ...currentLedger].slice(0, 1000);
+    writeFileSync(importedPaperWatchLedgerPath, `${JSON.stringify(nextLedger, null, 2)}\n`);
+  }
+
+  return {
+    failed,
+    files_scanned: files.length,
+    imported_core_signal_review_count: importedCoreReviews.length,
+    imported_observation_ledger_count: importedObservationRows.length,
+    imported_tradeability_review_count: importedTradeability.length,
+    importedAt,
+    ok: failed.length === 0,
+    skipped,
+  };
+}
+
+function normalizeAutoLedgerAction(sleeve, initialRow) {
+  const latestSignal = sleeve.latest_signal || {};
+  const reviewDecision = sleeve.latest_signal_review?.decision || sleeve.tradeability_review?.decision || '';
+  if (!sleeve.can_start_observation) return 'record_only';
+  if (initialRow?.paper_action) return initialRow.paper_action;
+  if (latestSignal.action === 'record_only') return 'record_only';
+  if (latestSignal.action === 'paper_watch_open_allowed') return 'open_allowed';
+  if (reviewDecision === 'tradeability_review_passed') return 'open_allowed';
+  if (sleeve.operational_status === 'ready_for_controlled_paper_watch') return 'open_allowed';
+  return 'record_only';
+}
+
+function buildAutoLedgerRowsFromOperationsPack(operationsPack) {
+  const sleeves = Array.isArray(operationsPack?.capital_sleeves) ? operationsPack.capital_sleeves : [];
+  const initialRows = Array.isArray(operationsPack?.initial_ledger_rows) ? operationsPack.initial_ledger_rows : [];
+  const initialBySleeve = new Map(initialRows.map((row) => [row.sleeve_id, row]));
+  return sleeves.map((sleeve) => {
+    const initialRow = initialBySleeve.get(sleeve.sleeve_id) || {};
+    const latestSignal = sleeve.latest_signal || {};
+    const selectedCodes = selectedCodesList(latestSignal.selected_codes || initialRow.selected_codes);
+    const isController = sleeve.role === 'primary_controller' && selectedCodes.length === 0;
+    const paperAction = normalizeAutoLedgerAction(sleeve, initialRow);
+    const signalDate = latestSignal.signal_date
+      || sleeve.latest_signal_review?.signal_date
+      || sleeve.tradeability_review?.signal_date
+      || initialRow.date
+      || '';
+    const plannedWeight = sleeve.can_start_observation
+      ? Number(initialRow.planned_weight ?? (paperAction === 'open_allowed' ? 1 : 0))
+      : 0;
+    return {
+      benchmark_return: null,
+      blocked_reason: Array.isArray(sleeve.blocked_reasons) ? sleeve.blocked_reasons.join('；') : '',
+      candidate_count: latestSignal.candidate_count ?? initialRow.candidate_count ?? null,
+      data_policy: 'JoinQuant 自动刷新生成的准模拟盘信号账本；只记录当时信号、准入状态和计划动作，不生成未来收益、净值、成交或持仓。',
+      date: signalDate,
+      gate_status: sleeve.operational_status || initialRow.gate_status || 'unknown',
+      importedAt: new Date().toISOString(),
+      industry_top_exposure: null,
+      market_cap_exposure: null,
+      notes: 'auto_generated_from_joinquant_refresh',
+      paper_action: paperAction,
+      paper_nav: null,
+      period_return: null,
+      planned_weight: Number.isFinite(plannedWeight) ? plannedWeight : 0,
+      rolling_drawdown: null,
+      selected_codes: selectedCodes,
+      selected_count: isController ? null : (latestSignal.selected_count ?? initialRow.selected_count ?? selectedCodes.length),
+      signal_state: sleeve.can_start_observation ? 'ready' : 'blocked',
+      sleeve_id: sleeve.sleeve_id || '',
+      slippage: null,
+      source: 'paper_watch_auto_joinquant_ledger',
+      strategy_id: sleeve.strategy_id || '',
+      turnover: null,
+      unknown_fields: [],
+    };
+  });
+}
+
+function mergePaperWatchLedgerRows(autoRows) {
+  const existing = readImportedPaperWatchLedger();
+  const autoKeys = new Set(autoRows.map((row) => `${row.date}::${row.sleeve_id}::${row.strategy_id}::${row.source}`));
+  const preserved = existing.filter((row) => !autoKeys.has(`${row.date}::${row.sleeve_id}::${row.strategy_id}::${row.source}`));
+  const nextRows = [...autoRows, ...preserved].slice(0, 1000);
+  writeFileSync(importedPaperWatchLedgerPath, `${JSON.stringify(nextRows, null, 2)}\n`);
+  return {
+    auto_ledger_count: autoRows.length,
+    total_ledger_count: nextRows.length,
+  };
+}
+
+function maxDrawdownFromNav(navValues) {
+  const values = navValues.map(Number).filter(Number.isFinite);
+  if (!values.length) return null;
+  let peak = values[0];
+  let drawdown = 0;
+  values.forEach((value) => {
+    peak = Math.max(peak, value);
+    if (peak > 0) drawdown = Math.min(drawdown, value / peak - 1);
+  });
+  return drawdown;
+}
+
+function cumulativeNavFromReturns(rows, field) {
+  let nav = 1;
+  return rows.map((row) => {
+    if (!hasFiniteLedgerValue(row[field])) return null;
+    const ret = Number(row[field]);
+    nav *= (1 + ret);
+    return {
+      date: row.date || '',
+      nav,
+      return: ret,
+    };
+  }).filter(Boolean);
+}
+
+function hasFiniteLedgerValue(value) {
+  if (value === null || value === undefined || value === '') return false;
+  return Number.isFinite(Number(value));
+}
+
+function decidePaperWatchStage(metrics) {
+  if (!metrics.completed_return_rows) {
+    return {
+      action: 'collect_returns',
+      stage: 'signal_only',
+      stage_name: '只有信号账本',
+      tone: 'pending',
+      reason: '尚无真实 period_return，不能计算净值、胜率或晋级。',
+    };
+  }
+  if (metrics.max_drawdown !== null && metrics.max_drawdown <= -0.08) {
+    return {
+      action: 'pause_new_entry',
+      stage: 'risk_pause',
+      stage_name: '触发回撤复核',
+      tone: 'watch',
+      reason: '真实观察回撤已达到或超过 -8% 暂停阈值。',
+    };
+  }
+  if (metrics.completed_return_rows < 5) {
+    return {
+      action: 'continue_observation',
+      stage: 'flow_check',
+      stage_name: '流程校验',
+      tone: 'pending',
+      reason: '真实收益样本少于5期，只能确认流程是否顺畅。',
+    };
+  }
+  if (metrics.completed_return_rows < 20) {
+    return {
+      action: 'continue_observation',
+      stage: 'activation_watch',
+      stage_name: '活性观察',
+      tone: 'pending',
+      reason: '真实收益样本少于20期，继续积累样本外表现。',
+    };
+  }
+  const excess = Number(metrics.avg_excess_return);
+  const winRate = Number(metrics.win_rate);
+  if (excess > 0 && winRate >= 0.5 && (metrics.max_drawdown === null || metrics.max_drawdown > -0.08)) {
+    return {
+      action: 'promotion_review',
+      stage: 'promotion_candidate',
+      stage_name: '可进入晋级复核',
+      tone: 'good',
+      reason: '至少20期真实观察，平均超额为正，胜率不低于50%，且未触发回撤阈值。',
+    };
+  }
+  return {
+    action: 'continue_or_reduce',
+    stage: 'needs_more_evidence',
+    stage_name: '继续观察/降权',
+    tone: 'watch',
+    reason: '已有20期以上真实观察，但超额、胜率或回撤暂未达到晋级条件。',
+  };
+}
+
+function buildPaperWatchPerformanceReport() {
+  const ledger = readImportedPaperWatchLedger();
+  const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
+  const sleeves = Array.isArray(operationsPack.capital_sleeves) ? operationsPack.capital_sleeves : [];
+  const rowsBySleeve = new Map();
+  ledger.forEach((row) => {
+    const key = row.sleeve_id || '';
+    if (!rowsBySleeve.has(key)) rowsBySleeve.set(key, []);
+    rowsBySleeve.get(key).push(row);
+  });
+  const sleeveReports = sleeves.map((sleeve) => {
+    const rows = (rowsBySleeve.get(sleeve.sleeve_id) || [])
+      .slice()
+      .sort((left, right) => String(left.date || '').localeCompare(String(right.date || '')));
+    const completedRows = rows.filter((row) => hasFiniteLedgerValue(row.period_return));
+    const strategyCurve = cumulativeNavFromReturns(rows, 'period_return');
+    const benchmarkCurve = cumulativeNavFromReturns(rows, 'benchmark_return');
+    const periodReturns = completedRows.map((row) => Number(row.period_return)).filter(Number.isFinite);
+    const benchmarkReturns = completedRows
+      .filter((row) => hasFiniteLedgerValue(row.benchmark_return))
+      .map((row) => Number(row.benchmark_return))
+      .filter(Number.isFinite);
+    const excessReturns = completedRows
+      .map((row) => {
+        const strategyRet = Number(row.period_return);
+        if (!hasFiniteLedgerValue(row.benchmark_return)) return null;
+        const benchmarkRet = Number(row.benchmark_return);
+        return Number.isFinite(strategyRet) && Number.isFinite(benchmarkRet) ? strategyRet - benchmarkRet : null;
+      })
+      .filter(Number.isFinite);
+    const metrics = {
+      avg_benchmark_return: averageFinite(benchmarkReturns),
+      avg_excess_return: averageFinite(excessReturns),
+      avg_period_return: averageFinite(periodReturns),
+      completed_return_rows: completedRows.length,
+      latest_action: latestByDate(rows)?.paper_action || (sleeve.can_start_observation ? 'open_allowed' : 'record_only'),
+      max_drawdown: maxDrawdownFromNav(strategyCurve.map((point) => point.nav)),
+      missing_return_rows: rows.length - completedRows.length,
+      observed_days: new Set(rows.map((row) => dateOnly(row.date)).filter(Boolean)).size,
+      total_rows: rows.length,
+      win_rate: periodReturns.length ? periodReturns.filter((value) => value > 0).length / periodReturns.length : null,
+    };
+    const stage = decidePaperWatchStage(metrics);
+    return {
+      sleeve_id: sleeve.sleeve_id,
+      strategy_id: sleeve.strategy_id,
+      strategy_name: sleeve.strategy_name,
+      can_start_observation: Boolean(sleeve.can_start_observation),
+      operational_status: sleeve.operational_status || '',
+      metrics,
+      stage,
+      curve: strategyCurve.map((point, index) => ({
+        date: point.date,
+        benchmark_nav: benchmarkCurve[index]?.nav ?? null,
+        excess_return: excessReturns[index] ?? null,
+        net_value: point.nav,
+        period_return: point.return,
+      })),
+      data_policy: '只基于准模拟盘账本中已存在的真实 period_return / benchmark_return 计算；缺失时不补、不估、不生成。',
+    };
+  });
+  const report = {
+    source: 'm_quant_paper_watch_performance_report',
+    generated_at: new Date().toISOString(),
+    data_policy: '表现报告只读取准模拟盘账本真实收益字段；没有真实收益时只显示信号样本，不生成净值曲线。',
+    summary: {
+      collect_returns_count: sleeveReports.filter((item) => item.stage.stage === 'signal_only').length,
+      promotion_candidate_count: sleeveReports.filter((item) => item.stage.stage === 'promotion_candidate').length,
+      risk_pause_count: sleeveReports.filter((item) => item.stage.stage === 'risk_pause').length,
+      sleeve_count: sleeveReports.length,
+      total_completed_return_rows: sleeveReports.reduce((sum, item) => sum + item.metrics.completed_return_rows, 0),
+      total_ledger_rows: ledger.length,
+    },
+    sleeves: sleeveReports,
+  };
+  writeFileSync(paperWatchPerformanceReportPath, `${JSON.stringify(report, null, 2)}\n`);
+  return report;
+}
+
+function buildJoinQuantPaperWatchReport(importSummary, derived) {
+  const routes = buildPaperWatchRoutes();
+  const performanceReport = buildPaperWatchPerformanceReport();
+  const consoleData = routes.paperWatchConsole || {};
+  const sleeves = Array.isArray(consoleData.sleeves) ? consoleData.sleeves : [];
+  const openSleeves = sleeves.filter((sleeve) => sleeve.canStartObservation && sleeve.latestAction === 'open_allowed');
+  const recordOnlySleeves = sleeves.filter((sleeve) => sleeve.latestAction === 'record_only');
+  const blockedSleeves = sleeves.filter((sleeve) => !sleeve.canStartObservation);
+  const report = {
+    source: 'm_quant_joinquant_paper_watch_report',
+    generated_at: new Date().toISOString(),
+    status: openSleeves.length ? 'ready_to_start_observation' : 'record_only',
+    data_policy: '报告只汇总 JoinQuant 自动导入复核、运行包和自动信号账本；收益、净值、成交、持仓必须来自后续真实观察或外部平台回填。',
+    import_summary: importSummary,
+    derived_summary: derived,
+    performance_summary: performanceReport.summary,
+    metrics: {
+      auto_or_imported_ledger_count: consoleData.metrics?.importedLedgerCount ?? 0,
+      blocked_sleeve_count: blockedSleeves.length,
+      open_allowed_sleeve_count: openSleeves.length,
+      ready_sleeve_count: consoleData.metrics?.readySleeveCount ?? 0,
+      record_only_sleeve_count: recordOnlySleeves.length,
+      signal_date: consoleData.signalDate || '',
+      sleeve_count: sleeves.length,
+    },
+    sleeves: sleeves.map((sleeve) => ({
+      activity: sleeve.activity,
+      blocked_reasons: sleeve.blockedReasons || [],
+      can_start_observation: sleeve.canStartObservation,
+      gate_status: sleeve.gateStatus,
+      latest_action: sleeve.latestAction,
+      selected_codes: sleeve.selectedCodes || [],
+      selected_count: sleeve.selectedCount,
+      signal_date: sleeve.signalDate,
+      sleeve_id: sleeve.sleeveId,
+      strategy_id: sleeve.strategyId,
+      strategy_name: sleeve.strategyName,
+    })),
+    next_actions: [
+      openSleeves.length
+        ? '今天可以按 open_allowed 资金袖开始准模拟盘观察账本记录。'
+        : '今天没有满足 open_allowed 的资金袖，只能 record_only。',
+      performanceReport.summary.total_completed_return_rows
+        ? '已检测到真实观察收益，表现报告已更新净值/回撤/晋级状态。'
+        : '当前只有信号账本，等待 JoinQuant 准模拟观察收益结果自动导入。',
+      '下一交易日继续运行 JoinQuant 刷新，自动覆盖同日自动信号行，保留真实观察回填行。',
+      '收益、净值、回撤字段等待真实观察或外部平台结果回填，不由本地自动生成。',
+    ],
+    performance_report: performanceReport,
+  };
+  writeFileSync(joinQuantPaperWatchReportPath, `${JSON.stringify(report, null, 2)}\n`);
+  return report;
+}
+
+function runJoinQuantPaperWatchRefresh() {
+  const startedAt = new Date().toISOString();
+  const importSummary = importJoinQuantResultFiles();
+  const firstDerived = rebuildPaperWatchDerivedArtifacts();
+  const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
+  const autoRows = buildAutoLedgerRowsFromOperationsPack(operationsPack);
+  const ledgerSummary = mergePaperWatchLedgerRows(autoRows);
+  const secondDerived = rebuildPaperWatchDerivedArtifacts();
+  const report = buildJoinQuantPaperWatchReport(importSummary, secondDerived);
+  const pack = {
+    data_policy: [
+      'JoinQuant刷新只扫描 outputs/sources/joinquant/results 中的真实 JoinQuant JSON。',
+      '导入前执行严格校验；自动账本只生成信号、准入状态和计划动作。',
+      '不会生成收益、净值、成交、持仓或事后回测结论。',
+    ].join(' '),
+    finished_at: new Date().toISOString(),
+    import_summary: importSummary,
+    ledger_summary: ledgerSummary,
+    mode: 'joinquant_local',
+    ok: importSummary.ok && firstDerived.ok && secondDerived.ok,
+    report,
+    source: 'm_quant_joinquant_paper_watch_refresh',
+    started_at: startedAt,
+    steps: [
+      {
+        name: '扫描并导入JoinQuant结果',
+        ok: importSummary.ok,
+        path: relativeProjectPath(joinQuantResultsDir),
+        status: importSummary.ok ? 0 : 'validation_failed',
+        stdout: JSON.stringify({
+          files_scanned: importSummary.files_scanned,
+          imported_tradeability_review_count: importSummary.imported_tradeability_review_count,
+          imported_core_signal_review_count: importSummary.imported_core_signal_review_count,
+          skipped_count: importSummary.skipped.length,
+        }),
+        stderr: importSummary.failed.map((item) => `${item.file}: ${item.reason}`).join('\n'),
+      },
+      {
+        name: '自动生成准模拟账本信号行',
+        ok: true,
+        path: relativeProjectPath(importedPaperWatchLedgerPath),
+        status: 0,
+        stdout: JSON.stringify(ledgerSummary),
+        stderr: '',
+      },
+      {
+        name: '生成准模拟盘报告',
+        ok: true,
+        path: relativeProjectPath(joinQuantPaperWatchReportPath),
+        status: 0,
+        stdout: JSON.stringify(report.metrics),
+        stderr: '',
+      },
+    ],
+    derived: secondDerived,
+  };
+  writeFileSync(paperWatchDailyRefreshLatestPath, `${JSON.stringify(pack, null, 2)}\n`);
+  return pack;
+}
+
+function akshareFetchArgsForMode(mode) {
+  const end = todayYmd();
+  const base = [
+    '--start', '20240101',
+    '--end', end,
+    '--adjust', 'qfq',
+    '--provider', 'em_tx',
+    '--retries', '1',
+    '--retry-sleep', '1',
+  ];
+  if (mode === 'akshare_csi300') {
+    return [
+      ...base,
+      '--symbols-file', 'outputs/sources/akshare/processed/a_share_csi300_pool.csv',
+      '--sleep', '0.15',
+      '--pool-output', 'a_share_csi300_pool.csv',
+      '--output-name', `a_share_daily_20240101_${end}_qfq.csv`,
+    ];
+  }
+  return [
+    ...base,
+    '--symbols-file', 'outputs/sources/akshare/symbols/core_liquid_50.csv',
+    '--sleep', '0.1',
+    '--pool-output', 'a_share_core_liquid_50_pool.csv',
+    '--output-name', `a_share_daily_core50_20240101_${end}_qfq.csv`,
+  ];
+}
+
+function runPaperWatchDailyRefresh(mode = 'local') {
+  const startedAt = new Date().toISOString();
+  const refreshMode = ['local', 'akshare_fast', 'akshare_csi300', 'joinquant_local'].includes(mode) ? mode : 'local';
+  if (refreshMode === 'joinquant_local') {
+    return runJoinQuantPaperWatchRefresh();
+  }
+  const steps = [];
+
+  if (refreshMode !== 'local') {
+    steps.push(runPythonRefreshStep(
+      refreshMode === 'akshare_csi300' ? 'AkShare沪深300行情刷新' : 'AkShare核心50行情刷新',
+      akshareFetchHistoryScriptPath,
+      akshareFetchArgsForMode(refreshMode),
+      refreshMode === 'akshare_csi300' ? 900_000 : 300_000,
+    ));
+  }
+
+  steps.push(runPythonRefreshStep(
+    'AkShare最新准模拟信号重建',
+    akshareGeneratePaperWatchSignalScriptPath,
+    [],
+    180_000,
+  ));
+
+  const derived = rebuildPaperWatchDerivedArtifacts();
+  const pack = {
+    data_policy: [
+      '一键刷新只调用真实数据脚本和本地派生包脚本；失败会保留错误日志。',
+      '不会生成收益、净值、成交、持仓、交易可行性或 BigQuant/JoinQuant 结论。',
+      refreshMode === 'local'
+        ? '本地快速模式不联网，只用已有落地数据重建信号。'
+        : '联网模式依赖 AkShare 实时接口；若接口失败，不用旧数据冒充新数据。',
+    ].join(' '),
+    derived,
+    finished_at: new Date().toISOString(),
+    mode: refreshMode,
+    ok: steps.every((step) => step.ok) && derived.ok,
+    python: pythonExecutable,
+    source: 'm_quant_paper_watch_daily_refresh',
+    started_at: startedAt,
+    steps,
+  };
+  writeFileSync(paperWatchDailyRefreshLatestPath, `${JSON.stringify(pack, null, 2)}\n`);
+  return pack;
+}
+
 function rebuildPaperWatchDerivedArtifacts() {
   const startedAt = new Date().toISOString();
   const scripts = paperWatchDerivedScriptPaths.map((scriptPath) => {
-    const relativePath = scriptPath.startsWith(projectRoot)
-      ? scriptPath.slice(projectRoot.length + 1)
-      : scriptPath;
+    const relativePath = relativeProjectPath(scriptPath);
     if (!existsSync(scriptPath)) {
       return {
         ok: false,
@@ -3189,7 +4020,7 @@ function rebuildPaperWatchDerivedArtifacts() {
         stderr: '脚本不存在。',
       };
     }
-    const result = spawnSync('python3', [scriptPath], {
+    const result = spawnSync(pythonExecutable, [scriptPath], {
       cwd: projectRoot,
       encoding: 'utf8',
       timeout: 120_000,
@@ -3207,6 +4038,7 @@ function rebuildPaperWatchDerivedArtifacts() {
     data_policy: '只重建本地派生 JSON/Markdown：运行包、成熟策略矩阵和交易复核任务包；不生成收益、净值、成交、持仓或交易可行性结论。',
     finished_at: new Date().toISOString(),
     ok: scripts.every((item) => item.ok),
+    python: pythonExecutable,
     scripts,
     started_at: startedAt,
   };
@@ -3253,6 +4085,231 @@ function buildPaperWatchLedgerTemplateCsv() {
       return csvCell(value);
     }).join(',')),
   ].join('\n');
+}
+
+function compactMetricPack(source = {}) {
+  return {
+    annual_return: source.annual_return ?? null,
+    avg_selected_count: source.avg_selected_count ?? source.avg_stock_count ?? null,
+    max_drawdown: source.max_drawdown ?? null,
+    positive_trade_ratio: source.positive_trade_ratio ?? null,
+    sample_dates: source.sample_dates ?? source.sample_trades ?? null,
+    sharpe: source.sharpe ?? null,
+    strategy_return: source.strategy_return ?? null,
+    win_rate: source.win_rate ?? null,
+  };
+}
+
+function normalizeBigQuantPauseRules(rules = []) {
+  return (Array.isArray(rules) ? rules : []).map((rule) => {
+    if (typeof rule === 'string') return rule;
+    return [rule.rule, rule.trigger, rule.meaning].filter(Boolean).join(' / ');
+  }).filter(Boolean);
+}
+
+function latestLedgerRowFor(sleeveId, rows = []) {
+  return rows.find((row) => row.sleeve_id === sleeveId) || null;
+}
+
+function buildBigQuantPaperWatchTargets(operationsPack, ledgerRows) {
+  const sleeves = Array.isArray(operationsPack.capital_sleeves) ? operationsPack.capital_sleeves : [];
+  const initialRows = Array.isArray(operationsPack.initial_ledger_rows) ? operationsPack.initial_ledger_rows : [];
+  return sleeves.map((sleeve) => {
+    const latestLedger = latestLedgerRowFor(sleeve.sleeve_id, ledgerRows);
+    const initialLedger = latestLedgerRowFor(sleeve.sleeve_id, initialRows);
+    const ledger = latestLedger || initialLedger || {};
+    const signal = sleeve.latest_signal || {};
+    const selectedCodes = selectedCodesList(signal.selected_codes || ledger.selected_codes);
+    const canStart = Boolean(sleeve.can_start_observation);
+    const paperAction = ledger.paper_action || signal.action || (canStart ? 'open_allowed' : 'record_only');
+    const blockedReasons = Array.isArray(sleeve.blocked_reasons) ? sleeve.blocked_reasons : [];
+    const selectedCount = signal.selected_count ?? ledger.selected_count ?? (selectedCodes.length ? selectedCodes.length : null);
+    const payloadType = selectedCodes.length
+      ? 'latest_selected_codes'
+      : (sleeve.role === 'primary_controller' ? 'controller_strategy_logic' : 'no_single_day_codes');
+    return {
+      sleeve_id: sleeve.sleeve_id || '',
+      strategy_id: sleeve.strategy_id || '',
+      strategy_name: sleeve.strategy_name || '',
+      evidence_system: sleeve.evidence_system || '',
+      operational_status: sleeve.operational_status || ledger.gate_status || '',
+      bigquant_test_status: canStart ? 'ready_for_bigquant_real_test' : 'blocked_before_bigquant_test',
+      bigquant_test_priority: canStart ? 'test_now' : 'record_only_until_gate_passed',
+      can_start_observation: canStart,
+      paper_action: paperAction,
+      planned_weight: Number(ledger.planned_weight || 0),
+      bigquant_payload_type: payloadType,
+      signal_date: signal.signal_date || ledger.date || '',
+      candidate_count: signal.candidate_count ?? ledger.candidate_count ?? null,
+      selected_count: selectedCount,
+      selected_codes: selectedCodes,
+      target_market_regime: sleeve.latest_signal_review?.target_market_regime || '',
+      target_market_cap_bucket: sleeve.latest_signal_review?.target_market_cap_bucket || '',
+      actual_market_regime: sleeve.latest_signal_review?.market_regime || signal.market_regime || '',
+      entry_gate: Array.isArray(sleeve.entry_gate) ? sleeve.entry_gate : [],
+      pause_rules: normalizeBigQuantPauseRules(sleeve.pause_rules),
+      blocked_reasons: blockedReasons,
+      baseline: compactMetricPack(sleeve.baseline || {}),
+      latest_review_decision: sleeve.latest_signal_review?.decision || sleeve.tradeability_review?.decision || '',
+      data_policy: sleeve.data_policy || '',
+      notes: [
+        canStart
+          ? '可以提交 BigQuant 做真实回测/模拟验证；结果未回填前仍只算待测输入。'
+          : '未通过本地准入，不得在 BigQuant 结果回填前手工改成可开仓。',
+        payloadType === 'controller_strategy_logic'
+          ? '该资金袖是状态切换控制器，BigQuant应复现策略逻辑和分层规则，不是直接用单日 selected_codes 回测。'
+          : '',
+        blockedReasons.join('；'),
+      ].filter(Boolean).join(' '),
+    };
+  });
+}
+
+function buildBigQuantPaperWatchPack() {
+  const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
+  const matrix = readJsonFile(strategyMaturityMatrixPath, {});
+  const dailyRefresh = readJsonFile(paperWatchDailyRefreshLatestPath, {});
+  const ledgerRows = readImportedPaperWatchLedger();
+  const targets = buildBigQuantPaperWatchTargets(operationsPack, ledgerRows);
+  const pack = {
+    source: 'm_quant_bigquant_paper_watch_test_pack',
+    generated_at: new Date().toISOString(),
+    result_status: 'pending_bigquant_real_backtest',
+    data_policy: [
+      '本包只从 M-quant 已落地真实证据生成 BigQuant 待测试输入。',
+      '不生成 BigQuant 收益、净值、成交、持仓或通过结论。',
+      'BigQuant 实测后必须把真实结果回填项目，才能改变策略状态。',
+    ].join(' '),
+    source_files: {
+      operations_pack: relativeProjectPath(paperWatchOperationsPackPath),
+      maturity_matrix: relativeProjectPath(strategyMaturityMatrixPath),
+      daily_refresh_latest: relativeProjectPath(paperWatchDailyRefreshLatestPath),
+      latest_saved_pack: relativeProjectPath(bigQuantPaperWatchPackPath),
+    },
+    readiness_summary: {
+      operations_status: operationsPack.status || 'missing',
+      ready_sleeve_count: operationsPack.ready_sleeve_count ?? 0,
+      blocked_sleeve_count: operationsPack.blocked_sleeve_count ?? 0,
+      maturity_goal_status: matrix.goal_status || 'missing',
+      maturity_ready_strategy_count: matrix.ready_strategy_count ?? 0,
+      daily_refresh_ok: dailyRefresh.ok === true,
+      daily_refresh_mode: dailyRefresh.mode || '',
+      daily_refresh_finished_at: dailyRefresh.finished_at || '',
+    },
+    bigquant_workflow: [
+      '先下载 JSON 或 CSV 包，并在 BigQuant 中按 strategy_id/sleeve_id 建立独立测试任务。',
+      '只测试 bigquant_test_status=ready_for_bigquant_real_test 的资金袖；blocked_before_bigquant_test 只能做记录或排队。',
+      '测试时按 selected_codes、signal_date、entry_gate、pause_rules 保持同一口径，不能扩大到未审计分层。',
+      'BigQuant 产生真实收益、净值、成交、持仓或风控结果后，再回填 M-quant；未回填前页面仍显示待测。',
+    ],
+    import_back_after_bigquant: {
+      target_section: '准模拟盘 / 账本回填，或后续 BigQuant 回测结果回填接口',
+      required_fields: [
+        'platform',
+        'strategy_id',
+        'sleeve_id',
+        'test_start',
+        'test_end',
+        'benchmark',
+        'annual_return',
+        'max_drawdown',
+        'sharpe',
+        'win_rate',
+        'turnover',
+        'net_value_curve',
+        'positions_or_selected_codes',
+        'data_policy',
+      ],
+    },
+    targets,
+  };
+  writeFileSync(bigQuantPaperWatchPackPath, `${JSON.stringify(pack, null, 2)}\n`);
+  return pack;
+}
+
+function buildBigQuantPaperWatchCsv(pack = buildBigQuantPaperWatchPack()) {
+  const headers = [
+    'sleeve_id',
+    'strategy_id',
+    'strategy_name',
+    'bigquant_test_status',
+    'bigquant_test_priority',
+    'can_start_observation',
+    'paper_action',
+    'planned_weight',
+    'bigquant_payload_type',
+    'signal_date',
+    'candidate_count',
+    'selected_count',
+    'selected_codes',
+    'target_market_regime',
+    'target_market_cap_bucket',
+    'actual_market_regime',
+    'operational_status',
+    'latest_review_decision',
+    'strategy_return',
+    'max_drawdown',
+    'sharpe',
+    'blocked_reasons',
+    'entry_gate',
+    'pause_rules',
+    'data_policy',
+  ];
+  return [
+    headers.join(','),
+    ...pack.targets.map((target) => headers.map((header) => {
+      let value = target[header];
+      if (header in (target.baseline || {})) value = target.baseline[header];
+      if (Array.isArray(value)) value = value.join('|');
+      return csvCell(value);
+    }).join(',')),
+  ].join('\n');
+}
+
+function buildBigQuantPaperWatchGuide(pack = buildBigQuantPaperWatchPack()) {
+  const lines = [
+    '# M-quant BigQuant准模拟盘测试包',
+    '',
+    `生成时间：${pack.generated_at}`,
+    '',
+    '## 数据原则',
+    '',
+    pack.data_policy,
+    '',
+    '## 当前状态',
+    '',
+    `- 运行包状态：${pack.readiness_summary.operations_status}`,
+    `- 可观察资金袖：${pack.readiness_summary.ready_sleeve_count}`,
+    `- 阻塞资金袖：${pack.readiness_summary.blocked_sleeve_count}`,
+    `- 最近一键刷新：${pack.readiness_summary.daily_refresh_ok ? 'OK' : '未完成或失败'} / ${pack.readiness_summary.daily_refresh_mode || '-'} / ${pack.readiness_summary.daily_refresh_finished_at || '-'}`,
+    '',
+    '## BigQuant执行步骤',
+    '',
+    ...pack.bigquant_workflow.map((item, index) => `${index + 1}. ${item}`),
+    '',
+    '## 待测试资金袖',
+    '',
+    ...pack.targets.flatMap((target) => [
+      `### ${target.strategy_name || target.strategy_id}`,
+      '',
+      `- sleeve_id：${target.sleeve_id}`,
+      `- 状态：${target.bigquant_test_status}`,
+      `- 动作：${target.paper_action}，计划权重：${target.planned_weight}`,
+      `- 信号日：${target.signal_date || '-'}`,
+      `- 入选数量：${target.selected_count ?? 0}`,
+      `- 入选代码：${target.selected_codes.join(', ') || '-'}`,
+      `- 阻塞原因：${target.blocked_reasons.join('；') || '-'}`,
+      `- 数据原则：${target.data_policy || '-'}`,
+      '',
+    ]),
+    '## 回填要求',
+    '',
+    `回填位置：${pack.import_back_after_bigquant.target_section}`,
+    '',
+    ...pack.import_back_after_bigquant.required_fields.map((field) => `- ${field}`),
+    '',
+  ];
+  return `${lines.join('\n')}\n`;
 }
 
 function readAkshareLocalBacktestRecords() {
@@ -3714,11 +4771,17 @@ const researchFactorAliases = {
   volume_trend_confirm_factor: 'volume_price_confirmation',
 };
 
+const researchFactorDisplayNames = {
+  active_large_order_accumulation: '超大/大单吸筹代理',
+  capital_source_count: '资金来源数',
+};
+
 function canonicalFactorId(id) {
   return researchFactorAliases[id] || id;
 }
 
 function researchFactorDisplayName(id) {
+  if (researchFactorDisplayNames[id]) return researchFactorDisplayNames[id];
   const exportable = exportableBacktestFactors.find((factor) => factor.id === id);
   if (exportable) return exportable.name;
   const definition = indicatorFactorDefinitions.find((factor) => canonicalFactorId(factor.id) === id);
@@ -3893,8 +4956,64 @@ function actionFromResearchEntry(entry, source) {
   return '补齐 requiredFields 对应真实字段后再计算。';
 }
 
+function readAkshareFactorQualityAudit() {
+  return readJsonFile(akshareFactorQualityAuditPath, {});
+}
+
+function akshareFactorDecisionStatus(decision) {
+  if (decision === 'alpha_candidate') return 'strategy_candidate';
+  if (decision === 'watch' || decision === 'significant_not_tradeable') return 'watch';
+  if (decision === 'reject_standalone') return 'hold';
+  return 'tracking';
+}
+
+function akshareFactorBacktestProfile(factorId, role = 'signal') {
+  const audit = readAkshareFactorQualityAudit();
+  const record = (Array.isArray(audit.factors) ? audit.factors : [])
+    .find((factor) => factor.factor_id === factorId);
+  if (!record) return null;
+  const best = record.best_primary_result || null;
+  const allResults = Array.isArray(record.all_results) ? record.all_results : [];
+  const rankIc = Number(best?.rank_ic_mean);
+  const rankIcT = Number(best?.rank_ic_t);
+  const longShort = Number(best?.long_short_mean);
+  const positiveRatio = Number(best?.long_short_positive_ratio);
+  return {
+    bestHorizon: best?.horizon ?? null,
+    bestLongShort: Number.isFinite(longShort) ? longShort : null,
+    bestPositiveRatio: Number.isFinite(positiveRatio) ? positiveRatio : null,
+    bestRankIc: Number.isFinite(rankIc) ? rankIc : null,
+    bestRankIcT: Number.isFinite(rankIcT) ? rankIcT : null,
+    bestSampleDates: Number(best?.sample_dates || 0),
+    detail: allResults
+      .filter((result) => [1, 5, 10, 20].includes(toNumber(result.horizon, 0)))
+      .sort((left, right) => toNumber(left.horizon, 0) - toNumber(right.horizon, 0))
+      .map((result) => ({
+        horizon: toNumber(result.horizon, 0),
+        isReferenceOnly: toNumber(result.horizon, 0) === 1,
+        longShort: Number.isFinite(Number(result.long_short_mean)) ? Number(result.long_short_mean) : null,
+        positiveRatio: Number.isFinite(Number(result.long_short_positive_ratio)) ? Number(result.long_short_positive_ratio) : null,
+        rankIc: Number.isFinite(Number(result.rank_ic_mean)) ? Number(result.rank_ic_mean) : null,
+        rankIcT: Number.isFinite(Number(result.rank_ic_t)) ? Number(result.rank_ic_t) : null,
+        sampleDates: Number(result.sample_dates || 0),
+        source: result.data_source || 'akshare_local_ohlcv',
+      })),
+    evidence: `${record.evidence || 'AkShare 本地 OHLCV 因子已完成真实历史检验。'} 数据源：${audit.source || 'akshare_factor_quality_audit'}。`,
+    factorId,
+    name: record.name || researchFactorDisplayName(factorId),
+    primaryHorizonCount: Number(record.primary_result_count || allResults.length || 0),
+    referenceHorizonCount: 0,
+    role,
+    status: akshareFactorDecisionStatus(record.decision),
+  };
+}
+
 function factorBacktestProfile(factorId, role = 'signal') {
   const importedResults = readImportedFactorResults().filter((result) => factorResultId(result) === factorId);
+  if (!importedResults.length) {
+    const akshareProfile = akshareFactorBacktestProfile(factorId, role);
+    if (akshareProfile) return akshareProfile;
+  }
   const primaryResults = importedResults.filter(isPrimaryHorizonResult);
   const referenceResults = importedResults.filter((result) => toNumber(result.horizon, 0) === 1);
   const bestPrimary = chooseBestPrimaryHorizon(importedResults);
@@ -4365,7 +5484,7 @@ function buildLiveStrategySignals() {
   ];
   const capitalRouteFactors = [
     strategyFactor('capital_follow_signal', '资金主信号', 0.40),
-    strategyFactor('active_ap_accumulation', '暗盘吸筹确认', 0.25),
+    strategyFactor('active_large_order_accumulation', '超大/大单吸筹代理', 0.25),
     strategyFactor('main_force_alignment', '主力一致确认', 0.20),
     strategyFactor('capital_persistence_2d', '资金持续性', 0.15),
     strategyFactor('capital_overheat_risk', '资金过热过滤', -0.25),
@@ -4407,6 +5526,14 @@ function buildLiveStrategySignals() {
     strategyFactor('ak_trend_pullback_reversal_combo', '新增趋势回踩', 0.30),
     strategyFactor('ak_crowding_risk', '拥挤风险过滤', -0.18),
   ];
+  const akshareContractionBreakoutFactors = [
+    strategyFactor('ak_volatility_contraction_quality', '波动收缩质量', 0.30),
+    strategyFactor('ak_breakout_confirmation', '突破确认', 0.28),
+    strategyFactor('ak_volume_price_confirmation', '量价确认', 0.18),
+    strategyFactor('ak_liquidity_stability', '流动性稳定', 0.12),
+    strategyFactor('ak_trend_quality', '趋势质量', 0.10),
+    strategyFactor('ak_crowding_risk', '拥挤风险扣分', -0.18),
+  ];
   const jqBlockedFactors = strictAuditRoute?.blockedFactors || [];
 
   const strategyCandidates = [
@@ -4432,6 +5559,7 @@ function buildLiveStrategySignals() {
   const capitalLayeredValidation = buildLayeredStrategyValidation(capitalStrategyStats, '资金跟随策略');
   const capitalTradingValidation = buildTradingStrategyValidation(capitalStrategyStats, '资金跟随策略');
   const capitalStrategyValidated = capitalValidation.validated && capitalLayeredValidation.validated && capitalTradingValidation.validated;
+  const capitalStrategyBacktested = Boolean(capitalStrategyStats?.all?.length);
   const comboStrategyStats = strategyResultStats.money_flow_kline_confirmation_v0;
   const comboValidation = buildStrategyValidation(comboStrategyStats, '策略');
   const comboTradingResult = (comboStrategyStats?.all || []).find((result) => (
@@ -4450,6 +5578,37 @@ function buildLiveStrategySignals() {
   const marketRegimeStats = strategyResultStats.market_capital_regime_position;
   const marketRegimeValidation = buildStrategyValidation(marketRegimeStats, '仓位模块');
   const marketRegimeTested = Boolean(marketRegimeValidation.bestResult);
+  const paperWatchOperationsPack = readJsonFile(paperWatchOperationsPackPath, {});
+  const paperWatchSleeves = Array.isArray(paperWatchOperationsPack.capital_sleeves)
+    ? paperWatchOperationsPack.capital_sleeves
+    : [];
+  const akshareLocalSwitchSleeve = paperWatchSleeves.find((sleeve) => (
+    sleeve?.sleeve_id === 'akshare_local_switch'
+    || sleeve?.strategy_id === 'akshare_regime_switch_contraction_mean_reversion_v1'
+  ));
+  const corePaperWatchSleeve = paperWatchSleeves.find((sleeve) => (
+    sleeve?.sleeve_id === 'jq_medium_vol_small_cap_core'
+    || sleeve?.strategy_id === 'core_volume_price_trend_v1'
+  ));
+  const corePaperWatchLatestSignal = corePaperWatchSleeve?.latest_signal || {};
+  const corePaperWatchLatestReview = corePaperWatchSleeve?.latest_signal_review || {};
+  const corePaperWatchBlockedReasons = Array.isArray(corePaperWatchSleeve?.blocked_reasons)
+    ? corePaperWatchSleeve.blocked_reasons
+    : [];
+  const corePaperWatchStateText = corePaperWatchSleeve
+    ? `准模拟盘运行包已建；当前 ${corePaperWatchSleeve.operational_status || '-'}，最新复核 ${corePaperWatchLatestReview.decision || '-'}，市场 ${corePaperWatchLatestReview.market_regime || corePaperWatchLatestSignal.market_regime || '-'}，入选 ${corePaperWatchLatestSignal.selected_count ?? corePaperWatchLatestReview.selected_count ?? 0} 只。`
+    : '';
+  const akshareBaseline = akshareLocalSwitchSleeve?.baseline || {};
+  const akshareLatestSignal = akshareLocalSwitchSleeve?.latest_signal || {};
+  const akshareTradeabilityReview = akshareLocalSwitchSleeve?.tradeability_review || {};
+  const akshareSelectedCodes = Array.isArray(akshareLatestSignal.selected_codes)
+    ? akshareLatestSignal.selected_codes
+    : [];
+  const akshareReadyForPaperWatch = Boolean(
+    akshareLocalSwitchSleeve?.can_start_observation
+    && akshareLocalSwitchSleeve?.operational_status === 'ready_for_controlled_paper_watch'
+    && akshareTradeabilityReview.decision === 'tradeability_review_passed',
+  );
   const formalStrategiesUnsorted = [
     ...(coreStrategyValidated
       ? [
@@ -4458,8 +5617,8 @@ function buildLiveStrategySignals() {
         name: '核心量价趋势策略 v1',
         pool: 'formal_candidate',
         status: 'real_strategy_backtested',
-        validationState: `${coreStrategyEvidence} ${coreLayeredValidation.evidence} ${coreTradingValidation.evidence} 口径为 JoinQuant OHLCV 历史重建，非 Yiwan 全字段等价复刻。`,
-        role: '已实测正式候选',
+        validationState: `${coreStrategyEvidence} ${coreLayeredValidation.evidence} ${coreTradingValidation.evidence} ${corePaperWatchStateText} 口径为 JoinQuant OHLCV 历史重建，非 Yiwan 全字段等价复刻。`,
+        role: corePaperWatchSleeve?.can_start_observation ? '已实测正式候选；准模拟盘可观察' : '已实测正式候选；准模拟盘待准入',
         objective: '用趋势质量确认方向，用量价确认验证成交质量，再用拥挤、背离、过伸做硬过滤。',
         dataBasis: `JoinQuant 策略级结果 ${coreStrategyStats.all.length} 条；技术截面 ${coreRows.length} 条`,
         factorState: coreRouteFactors,
@@ -4474,13 +5633,20 @@ function buildLiveStrategySignals() {
         riskFilters: [
           '仅承认 JoinQuant 已回填策略结果，不用因子结果替代策略收益',
           'OHLCV 重建不包含 Yiwan 暗盘/筹码原字段',
+          corePaperWatchSleeve?.can_start_observation
+            ? '准模拟盘运行包已允许 open_allowed，但仍只按账本记录样本外表现'
+            : `准模拟盘当前只能 record_only：${corePaperWatchBlockedReasons.join('；') || '最新信号未满足准入门槛'}`,
           '正式实盘前继续做样本外、交易成本、换手和回撤审计',
         ],
         portfolioRules: ['候选池排序前30只', '5日调仓脚本已生成', '当前只作为正式候选，不等于实盘批准'],
-        nextAction: '继续补策略交易回测净值、换手、最大回撤和样本外结果；若回撤/成本通过，再升级为正式策略。',
+        nextAction: corePaperWatchSleeve?.can_start_observation
+          ? '开始真实模拟观察账本记录，并持续监控暂停规则；不得回填事后挑选收益。'
+          : '等待下一次 JoinQuant 最新信号复核达到 medium_volatility/small_cap 且 selected_count>=10；当前只记录阻塞状态。',
         candidateCount: entryCandidates.length,
         computedSignalCount: coreRows.length,
-        exportStatus: '已有真实策略级结果，仍需交易成本和样本外审计',
+        exportStatus: corePaperWatchSleeve
+          ? `已有真实策略级结果；准模拟盘当前 ${corePaperWatchSleeve.operational_status || '待准入'}`
+          : '已有真实策略级结果，仍需交易成本和样本外审计',
       },
       ]
       : []),
@@ -4580,12 +5746,54 @@ function buildLiveStrategySignals() {
         },
       ]
       : []),
+    ...(akshareReadyForPaperWatch
+      ? [
+        {
+          id: akshareLocalSwitchSleeve.strategy_id || 'akshare_regime_switch_contraction_mean_reversion_v1',
+          name: akshareLocalSwitchSleeve.strategy_name || 'AkShare本地高低波动切换策略 v1',
+          pool: 'formal_candidate',
+          status: 'paper_trade_candidate',
+          validationState: `已进入模拟观察候选：AkShare 本地 OHLCV 回测 ${Number(akshareBaseline.sample_trades || 0)} 期，收益 ${(Number(akshareBaseline.strategy_return || 0) * 100).toFixed(2)}%，最大回撤 ${(Number(akshareBaseline.max_drawdown || 0) * 100).toFixed(2)}%，Sharpe ${Number(akshareBaseline.sharpe || 0).toFixed(2)}；2026-07-09 JoinQuant 最新信号交易可行性复核 ${Number(akshareTradeabilityReview.tradable_count || 0)}/${Number(akshareTradeabilityReview.candidate_count || 0)} 可交易。`,
+          role: '准模拟盘候选：AkShare本地独立资金袖',
+          objective: '根据市场高低波动状态切换收缩突破与均值回归组件，只在本地真实 OHLCV 已审计且最新信号可交易时进入观察。',
+          dataBasis: `${akshareLocalSwitchSleeve.evidence_system || 'AkShare local OHLCV'}；最新交易可行性复核来源 ${akshareTradeabilityReview.source || 'JoinQuant'}；信号日 ${akshareLatestSignal.signal_date || '-'}`,
+          factorState: akshareContractionBreakoutFactors,
+          rankingFormula: '低波动收缩突破组件真实公式：0.30*波动收缩质量 + 0.28*突破确认 + 0.18*量价确认 + 0.12*流动性稳定 + 0.10*趋势质量 - 0.18*拥挤风险；高波动时切换到均值回归备选组件。',
+          entryRules: [
+            '只使用 AkShare 执行包中已审计的组件 trade_records',
+            '低波动环境使用 ak_contraction_breakout_combo；高波动环境使用 ak_mean_reversion_quality_combo',
+            '中流动性是入池过滤条件，不是排序公式里的额外权重',
+            '最新信号必须 paper_watch_open_allowed',
+            'JoinQuant 交易可行性复核必须 tradeability_review_passed',
+            `当前最新组件：${akshareLatestSignal.triggered_component_name || '-'}`,
+          ],
+          riskFilters: [
+            '收益证据来自 AkShare 本地真实 OHLCV，不写成 JoinQuant 策略收益',
+            'JoinQuant 仅复核最新信号交易状态、市值、成交额和是否可交易',
+            '若 tradable_count < 10、出现 ST/停牌/涨跌停不可买，暂停观察',
+            '正式实盘前继续做独立样本外、行业暴露和真实模拟盘账本跟踪',
+          ],
+          portfolioRules: [
+            '模拟观察候选上限15只',
+            `当前最新入选 ${akshareSelectedCodes.length} 只：${akshareSelectedCodes.slice(0, 8).join(', ')}${akshareSelectedCodes.length > 8 ? '...' : ''}`,
+            '只作为本地独立资金袖观察，不与 JoinQuant 控制器重复计算收益',
+          ],
+          nextAction: akshareLocalSwitchSleeve.next_action || '开始真实模拟观察账本记录，并按运行包暂停规则监控。',
+          candidateCount: Number(akshareLatestSignal.candidate_count || akshareSelectedCodes.length || 0),
+          computedSignalCount: Number(akshareBaseline.sample_trades || 0),
+          exportable: false,
+          specialBacktestScriptEndpoint: '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py',
+          exportStatus: `模拟观察证据已齐：本地稳健性通过，最新 JoinQuant 交易可行性 ${akshareTradeabilityReview.decision || '-'}；后续记录真实模拟盘样本外表现。`,
+        },
+      ]
+      : []),
   ];
   const formalStrategyPriority = {
     jq_quality_profit_liquidity_v1: 0,
     kline_assisted_confirmation: 1,
     core_volume_price_trend_v1: 2,
     capital_follow_v0: 3,
+    akshare_regime_switch_contraction_mean_reversion_v1: 4,
   };
   const formalStrategies = [...formalStrategiesUnsorted].sort((left, right) => (
     (formalStrategyPriority[left.id] ?? 99) - (formalStrategyPriority[right.id] ?? 99)
@@ -4630,9 +5838,9 @@ function buildLiveStrategySignals() {
         pool: 'draft',
         status: coreStrategyValidated ? 'real_strategy_backtested' : 'real_signal_computed',
         validationState: coreStrategyValidated
-          ? `${coreStrategyEvidence} 仍保留在草案池中，方便继续导出分层/交易脚本。`
+          ? `${coreStrategyEvidence} ${corePaperWatchStateText} 仍保留在草案池中，方便继续导出分层/交易脚本。`
           : '因子有真实截面值，策略组合尚未完成历史回测',
-        role: '当前主策略',
+        role: corePaperWatchSleeve ? '当前主策略；准模拟盘运行包已接入' : '当前主策略',
         objective: '用趋势质量确认方向，用量价确认验证成交质量，再用拥挤、背离、过伸做硬过滤。',
         dataBasis: `技术截面 ${coreRows.length} 条；最新日期 ${dateOnly(primaryRows[0]?.stock_date || primaryRows[0]?.date) || '-'}`,
         factorState: coreRouteFactors,
@@ -4647,55 +5855,79 @@ function buildLiveStrategySignals() {
         riskFilters: [
           'crowding_risk > 0.70 或 volume_price_divergence_risk > 0.60 直接过滤',
           'trend_extension_risk > 0.90 不追高',
+          corePaperWatchSleeve?.can_start_observation
+            ? '准模拟盘最新信号允许 open_allowed，仍需按账本观察'
+            : `准模拟盘当前 record_only：${corePaperWatchBlockedReasons.join('；') || '最新信号未满足准入门槛'}`,
           '拥挤和背离优先级高于单日涨幅',
         ],
         portfolioRules: ['候选池先取排序前20-50只', '1日只作参考，正式入选看5/10/20最佳周期', '策略收益只认 JoinQuant 真实回填'],
         nextAction: coreStrategyValidated
-          ? '继续跑交易回测、样本外和成本敏感性；当前可作为正式候选，不直接实盘。'
+          ? corePaperWatchSleeve?.can_start_observation
+            ? '按准模拟盘账本记录真实观察，不直接实盘。'
+            : '运行包已建；等待下一次真实最新信号复核通过后才允许 open_allowed。'
           : '先按因子最佳周期组合回测核心量价路线，再决定是否进入正式策略池。',
         candidateCount: entryCandidates.length,
         computedSignalCount: coreRows.length,
-        exportStatus: '因子可导出；策略收益未验证',
+        exportStatus: coreStrategyValidated
+          ? corePaperWatchSleeve
+            ? `已有真实策略级结果；准模拟盘当前 ${corePaperWatchSleeve.operational_status || '待准入'}`
+            : '已有真实策略级结果，仍需交易成本和样本外审计'
+          : '因子可导出；策略收益未验证',
       },
       {
         id: 'capital_follow_v0',
         name: '资金跟随策略 v0',
         pool: 'draft',
-        status: capitalStrategyValidated ? 'real_strategy_backtested' : 'candidate_module',
+        status: capitalStrategyValidated
+          ? 'real_strategy_backtested'
+          : capitalStrategyBacktested
+            ? 'backtested_pending_audit'
+            : 'candidate_module',
         validationState: capitalStrategyValidated
           ? `${capitalValidation.evidence} 仍保留在草案池中，方便继续导出分层/交易脚本。`
-          : '资金因子已由真实日期批次计算，策略尚未实测',
-        role: '候选策略模块',
-        objective: '捕捉主力/暗盘资金同步流入且未过热的股票，作为量价策略之外的资金确认模块。',
-        dataBasis: capitalStrategyValidated
+          : capitalStrategyBacktested
+            ? `${capitalValidation.evidence} ${capitalLayeredValidation.evidence} ${capitalTradingValidation.evidence} 未进入正式策略池。`
+            : '资金因子已由真实日期批次计算，策略尚未实测',
+        role: capitalStrategyBacktested ? '已回测待审计策略' : '候选策略模块',
+        objective: '捕捉主力资金与超大/大单资金代理同步流入且未过热的股票，作为量价策略之外的资金确认模块。',
+        dataBasis: capitalStrategyBacktested
           ? `JoinQuant money_flow/OHLCV 策略实测 ${capitalStrategyStats.all.length} 条；候选样本 ${capitalValidation.bestResult?.packetSample?.candidate_rows || 0} 条`
           : `资金截面 ${capitalSignalRows.length} 条；日期 ${Array.from(new Set(capitalRows.map((row) => dateOnly(row.stock_date || row.date)))).filter(Boolean).join(', ') || '-'}`,
         factorState: capitalRouteFactors,
-        rankingFormula: capitalStrategyValidated
+        rankingFormula: capitalStrategyBacktested
           ? '资金跟随 + 主力一致 + 大单吸筹 + 资金持续性 - 资金过热；以 5/10/20 日真实策略结果为准。'
           : '资金因子当前缺少 5/10/20 回测周期，先保留真实资金逻辑；补齐后再选择最佳周期。',
         entryRules: [
           'capital_follow_signal >= 0.65',
-          'active_ap_accumulation >= 0.60',
+          'active_large_order_accumulation >= 0.55（JoinQuant 超大/大单资金代理；不等价于 Yiwan 暗盘字段）',
           'capital_overheat_risk <= 0.60',
           'capital_source_count >= 2',
         ],
         riskFilters: [
           'capital_overheat_risk > 0.70 过滤',
           '只有单一资金来源时不作为主信号',
+          'active_large_order_accumulation 是 JoinQuant money_flow 代理字段，不把它写成 Yiwan active_ap_accumulation 暗盘实测',
           capitalStrategyValidated
             ? '已完成独立 JoinQuant money_flow 实测；仍需交易成本、换手和样本外审计'
-            : '资金日期和技术日期不一致时先独立复测，不强行合成',
+            : capitalStrategyBacktested
+              ? '已有独立 JoinQuant money_flow/OHLCV 回测，但完整审计未过，不进入正式策略池'
+              : '资金日期和技术日期不一致时先独立复测，不强行合成',
         ],
-        portfolioRules: capitalStrategyValidated
+        portfolioRules: capitalStrategyBacktested
           ? ['候选池排序前30只', '已完成 5/10/20 日策略级事件回测', '下一步和核心量价趋势做交集/加权组合测试']
           : ['先作为独立候选池测试', '确认 5/10/20 最佳周期后再和核心量价趋势做交集或加权并集', '资金因子至少补 20-60 个交易日后进入正式组合回测'],
         nextAction: capitalStrategyValidated
           ? '继续补交易净值、交易成本、换手、回撤、市值/波动分层和样本外审计。'
-          : '继续按日期批量采集资金页，优先补齐连续 20 个交易日，再测资金跟随因子的未来收益。',
+          : capitalStrategyBacktested
+            ? '先审查未通过项，再决定降权作为核心量价确认模块，或重做过热过滤和换手控制后复测。'
+            : '继续按日期批量采集资金页，优先补齐连续 20 个交易日，再测资金跟随因子的未来收益。',
         candidateCount: capitalValidation.bestResult?.packetSample?.candidate_rows || capitalCandidates.length,
         computedSignalCount: capitalValidation.bestResult?.packetSample?.factor_rows || capitalSignalRows.length,
-        exportStatus: capitalStrategyValidated ? '已有真实策略级结果，仍需交易成本和样本外审计' : '因子可导出；策略收益未验证',
+        exportStatus: capitalStrategyValidated
+          ? '已有真实策略级结果，仍需交易成本和样本外审计'
+          : capitalStrategyBacktested
+            ? '已有真实策略级结果；未通过正式策略池审计'
+            : '因子可导出；策略收益未验证',
       },
       {
         id: 'jq_quality_profit_liquidity_v1',
@@ -5061,6 +6293,84 @@ async function handleApi(req, res, pathname) {
       message: refresh.ok ? '模拟观察派生包刷新完成。' : '模拟观察派生包刷新存在失败，请查看 scripts 明细。',
       refresh,
     }, refresh.ok ? 200 : 500);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/daily-refresh-latest') {
+    sendJson(res, readJsonFile(paperWatchDailyRefreshLatestPath, {
+      source: 'm_quant_paper_watch_daily_refresh',
+      status: 'missing',
+      data_policy: '尚未运行一键数据刷新。',
+      steps: [],
+    }));
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/joinquant-report-latest') {
+    sendJson(res, readJsonFile(joinQuantPaperWatchReportPath, {
+      source: 'm_quant_joinquant_paper_watch_report',
+      status: 'missing',
+      data_policy: '尚未运行 JoinQuant 准模拟盘刷新。',
+      sleeves: [],
+    }));
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/performance-report-latest') {
+    sendJson(res, readJsonFile(paperWatchPerformanceReportPath, {
+      source: 'm_quant_paper_watch_performance_report',
+      status: 'missing',
+      data_policy: '尚未生成准模拟表现报告。',
+      sleeves: [],
+    }));
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/paper-watch-api/run-daily-refresh') {
+    const body = await readJsonBody(req).catch(() => ({}));
+    const mode = String(body.mode || 'local');
+    const refresh = runPaperWatchDailyRefresh(mode);
+    sendJson(res, {
+      message: refresh.ok ? '一键数据刷新完成。' : '一键数据刷新存在失败，请查看步骤日志。',
+      refresh,
+    }, refresh.ok ? 200 : 500);
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/paper-watch-api/build-bigquant-test-pack') {
+    const pack = buildBigQuantPaperWatchPack();
+    sendJson(res, {
+      message: 'BigQuant待测试包已生成；该包不包含任何 BigQuant 回测结论。',
+      pack,
+    });
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-test-pack.json') {
+    const pack = buildBigQuantPaperWatchPack();
+    sendText(
+      res,
+      `m-quant-bigquant-paper-watch-test-pack-${todayYmd()}.json`,
+      `${JSON.stringify(pack, null, 2)}\n`,
+      'application/json; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-test-targets.csv') {
+    const pack = buildBigQuantPaperWatchPack();
+    sendCsv(res, `m-quant-bigquant-paper-watch-test-targets-${todayYmd()}.csv`, buildBigQuantPaperWatchCsv(pack));
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-test-guide.md') {
+    const pack = buildBigQuantPaperWatchPack();
+    sendText(
+      res,
+      `m-quant-bigquant-paper-watch-guide-${todayYmd()}.md`,
+      buildBigQuantPaperWatchGuide(pack),
+      'text/markdown; charset=utf-8',
+    );
     return true;
   }
 

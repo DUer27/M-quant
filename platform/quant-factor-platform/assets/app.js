@@ -45,6 +45,7 @@ const elements = {
   backtestRowCount: document.querySelector('#backtest-row-count'),
   backtestSourceFile: document.querySelector('#backtest-source-file'),
   backtestStatusList: document.querySelector('#backtest-status-list'),
+  buildBigquantPaperWatchPack: document.querySelector('#build-bigquant-paper-watch-pack'),
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
   demoFactorCount: document.querySelector('#demo-factor-count'),
   downloadJoinquantCsv: document.querySelector('#download-joinquant-csv'),
@@ -59,7 +60,11 @@ const elements = {
   fee: document.querySelector('#fee'),
   formMessage: document.querySelector('#form-message'),
   formalStrategyList: document.querySelector('#formal-strategy-list'),
+  formalStrategyJump: document.querySelector('#formal-strategy-jump'),
+  formalStrategyPagination: document.querySelector('#formal-strategy-pagination'),
   formalStrategyPolicy: document.querySelector('#formal-strategy-policy'),
+  formalStrategySearch: document.querySelector('#formal-strategy-search'),
+  formalStrategyToggle: document.querySelector('#formal-strategy-toggle'),
   importedBacktestList: document.querySelector('#imported-backtest-list'),
   importBacktestResult: document.querySelector('#import-backtest-result'),
   joinquantExportSummary: document.querySelector('#joinquant-export-summary'),
@@ -73,10 +78,20 @@ const elements = {
   libraryUnavailableCount: document.querySelector('#library-unavailable-count'),
   navButtons: document.querySelectorAll('.nav button[data-view-target]'),
   paperWatchControls: document.querySelector('#paper-watch-controls'),
+  paperWatchConsoleSummary: document.querySelector('#paper-watch-console-summary'),
   paperWatchLedgerJson: document.querySelector('#paper-watch-ledger-json'),
   paperWatchLedgerMessage: document.querySelector('#paper-watch-ledger-message'),
+  paperWatchLedgerSummary: document.querySelector('#paper-watch-ledger-summary'),
   paperWatchList: document.querySelector('#paper-watch-list'),
+  paperWatchBigquantSummary: document.querySelector('#paper-watch-bigquant-summary'),
+  paperWatchJoinquantReport: document.querySelector('#paper-watch-joinquant-report'),
+  paperWatchPerformanceReport: document.querySelector('#paper-watch-performance-report'),
+  paperWatchRefreshMode: document.querySelector('#paper-watch-refresh-mode'),
+  paperWatchRefreshSummary: document.querySelector('#paper-watch-refresh-summary'),
+  paperWatchSignalList: document.querySelector('#paper-watch-signal-list'),
   paperWatchStatus: document.querySelector('#paper-watch-status'),
+  paperWatchUpgradeList: document.querySelector('#paper-watch-upgrade-list'),
+  runPaperWatchDailyRefresh: document.querySelector('#run-paper-watch-daily-refresh'),
   downloadPaperWatchLedgerCsv: document.querySelector('#download-paper-watch-ledger-csv'),
   downloadPaperWatchLedgerJson: document.querySelector('#download-paper-watch-ledger-json'),
   importPaperWatchLedger: document.querySelector('#import-paper-watch-ledger'),
@@ -102,6 +117,8 @@ const elements = {
   strategyBlockedCount: document.querySelector('#strategy-blocked-count'),
   strategyCandidateTable: document.querySelector('#strategy-candidate-table'),
   strategyFactorList: document.querySelector('#strategy-factor-list'),
+  strategyGradeFilter: document.querySelector('#strategy-grade-filter'),
+  strategyLevelIndex: document.querySelector('#strategy-level-index'),
   strategyLiveList: document.querySelector('#strategy-live-list'),
   strategyLibraryList: document.querySelector('#strategy-library-list'),
   strategyObservationCount: document.querySelector('#strategy-observation-count'),
@@ -138,8 +155,12 @@ let activeResearchFactor = null;
 let currentResearchPipeline = null;
 let currentStrategySignalPack = null;
 let draftStrategyExpanded = false;
+let draftStrategyGrade = 'all';
 let draftStrategyPage = 1;
 let draftStrategyQuery = '';
+let formalStrategyExpanded = false;
+let formalStrategyPage = 1;
+let formalStrategyQuery = '';
 
 function percent(value, digits = 1) {
   return `${(value * 100).toFixed(digits)}%`;
@@ -408,11 +429,13 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
   const gate = pack.pass_gate || {};
   const script = pack.joinquant_script || {};
   const review = pack.latest_review || null;
+  const reviewReady = review?.decision === gate.required_decision;
+  const reviewRecords = Array.isArray(review?.records) ? review.records : [];
   const steps = Array.isArray(pack.steps) ? pack.steps : [];
   return `
     <div class="paper-watch-note">
       <strong>核心量价中波动小市值晋级复核</strong>
-      <span class="tag pending">${escapeHtml(pack.status || 'waiting')}</span>
+      <span class="tag ${reviewReady ? 'good' : review ? 'watch' : 'pending'}">${escapeHtml(pack.status || 'waiting')}</span>
       <p>
         ${escapeHtml(target.strategy_name || target.strategy_id || '-')}：
         ${escapeHtml(target.layer || '中波动/小市值')}，
@@ -430,9 +453,11 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
         <p>
           最新导入：${escapeHtml(review.signal_date || '-')}，
           ${escapeHtml(review.market_regime || '-')}，
-          入选 ${escapeHtml(review.selected_count ?? 0)}，
+          目标 ${escapeHtml(review.target_market_regime || '-')} / ${escapeHtml(review.target_market_cap_bucket || '-')}，
+          入选 ${escapeHtml(review.selected_count ?? 0)} / 门槛 ${escapeHtml(review.min_selected_count ?? gate.min_selected_count ?? 10)}，
           结论 ${escapeHtml(review.decision || '-')}。
         </p>
+        ${review.decision_reason ? `<p>${escapeHtml(review.decision_reason)}</p>` : ''}
       ` : ''}
       <div class="inline-actions">
         ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载核心量价复核脚本</a>` : ''}
@@ -441,12 +466,315 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
         <summary>查看晋级步骤</summary>
         <div class="paper-watch-rules">
           ${renderTextList(steps)}
+          ${reviewRecords.length ? `
+            <strong>最近复核候选</strong>
+            ${renderTextList(reviewRecords.slice(0, 10).map((item) => (
+              `${item.code || '-'} score ${formatNumber(item.strategy_score, 3)} / ${item.market_cap_bucket || '-'} / tradable_proxy=${item.tradable_proxy === false ? 'false' : 'true'}`
+            )))}
+          ` : ''}
           <strong>数据原则</strong>
           ${renderTextList([pack.data_policy || '只生成复核任务，不生成结果。'])}
         </div>
       </details>
     </div>
   `;
+}
+
+function shortLog(text, max = 260) {
+  const value = String(text || '').trim();
+  if (!value) return '';
+  return value.length > max ? `${value.slice(0, max)}...` : value;
+}
+
+function renderPaperWatchRefreshSummary(refresh) {
+  if (!elements.paperWatchRefreshSummary) return;
+  if (!refresh || refresh.status === 'missing') {
+    elements.paperWatchRefreshSummary.innerHTML = `
+      <div class="paper-watch-note compact">
+        <strong>一键刷新</strong>
+        <span class="tag pending">未运行</span>
+        <p>本地快速模式只重建已有真实数据；联网模式会尝试 AkShare 数据源，失败会展示日志。</p>
+      </div>
+    `;
+    return;
+  }
+  const steps = Array.isArray(refresh.steps) ? refresh.steps : [];
+  const derivedSteps = Array.isArray(refresh.derived?.scripts) ? refresh.derived.scripts : [];
+  const allSteps = [
+    ...steps.map((step) => ({ ...step, group: '数据/信号' })),
+    ...derivedSteps.map((step) => ({ ...step, group: '派生包' })),
+  ];
+  elements.paperWatchRefreshSummary.innerHTML = `
+    <details class="compact-details" open>
+      <summary>
+        一键刷新结果
+        <span class="tag ${refresh.ok ? 'good' : 'watch'}">${refresh.ok ? '完成' : '有失败'}</span>
+        <span>${escapeHtml(refresh.mode || '-')} / ${escapeHtml(refresh.finished_at || refresh.generatedAt || '-')}</span>
+      </summary>
+      <div class="paper-watch-rules">
+        <strong>数据原则</strong>
+        ${renderTextList([refresh.data_policy || '只使用真实数据脚本，不生成收益。'])}
+        <strong>执行线路</strong>
+        ${allSteps.length ? allSteps.map((step) => `
+          <div class="paper-watch-refresh-step">
+            <span class="tag ${step.ok ? 'good' : 'watch'}">${escapeHtml(step.ok ? 'OK' : 'FAIL')}</span>
+            <div>
+              <strong>${escapeHtml(step.group)} / ${escapeHtml(step.name || step.path || '-')}</strong>
+              <small>${escapeHtml(step.path || '')}</small>
+              ${step.stdout ? `<p>${escapeHtml(shortLog(step.stdout))}</p>` : ''}
+              ${step.stderr ? `<p>${escapeHtml(shortLog(step.stderr))}</p>` : ''}
+            </div>
+          </div>
+        `).join('') : '<div class="empty-state compact">暂无执行步骤。</div>'}
+      </div>
+    </details>
+  `;
+}
+
+function renderBigQuantPaperWatchPack(pack) {
+  if (!elements.paperWatchBigquantSummary) return;
+  if (!pack) {
+    elements.paperWatchBigquantSummary.innerHTML = `
+      <div class="paper-watch-note compact">
+        <strong>BigQuant测试包</strong>
+        <span class="tag pending">未生成</span>
+        <p>点击生成后，会从当前准模拟盘运行包导出待测试输入；不会生成 BigQuant 结果。</p>
+      </div>
+    `;
+    return;
+  }
+  const targets = Array.isArray(pack.targets) ? pack.targets : [];
+  const readyTargets = targets.filter((target) => target.bigquant_test_status === 'ready_for_bigquant_real_test');
+  const blockedTargets = targets.filter((target) => target.bigquant_test_status !== 'ready_for_bigquant_real_test');
+  elements.paperWatchBigquantSummary.innerHTML = `
+    <div class="paper-watch-note compact">
+      <strong>BigQuant测试包</strong>
+      <span class="tag ${readyTargets.length ? 'good' : 'watch'}">
+        ${escapeHtml(readyTargets.length)} 可测 / ${escapeHtml(blockedTargets.length)} 阻塞
+      </span>
+      <p>${escapeHtml(pack.data_policy || '只导出待测试输入。')}</p>
+      <p>
+        运行包 ${escapeHtml(pack.readiness_summary?.operations_status || '-')}；
+        最近刷新 ${pack.readiness_summary?.daily_refresh_ok ? 'OK' : '未完成或失败'} /
+        ${escapeHtml(pack.readiness_summary?.daily_refresh_mode || '-')}。
+      </p>
+      <details class="compact-details">
+        <summary>查看待测资金袖</summary>
+        <div class="paper-watch-rules">
+          ${targets.length ? targets.map((target) => `
+            <div class="paper-watch-refresh-step">
+              <span class="tag ${target.bigquant_test_status === 'ready_for_bigquant_real_test' ? 'good' : 'watch'}">
+                ${escapeHtml(target.bigquant_test_priority || '-')}
+              </span>
+              <div>
+                <strong>${escapeHtml(target.strategy_name || target.strategy_id || '-')}</strong>
+                <small>
+                  ${escapeHtml(target.sleeve_id || '-')} /
+                  ${escapeHtml(target.paper_action || '-')} /
+                  ${escapeHtml(target.signal_date || '-')} /
+                  ${target.selected_count === null || target.selected_count === undefined ? '控制器口径' : `${escapeHtml(target.selected_count)}只`}
+                </small>
+                ${target.blocked_reasons?.length ? `<p>${escapeHtml(target.blocked_reasons.join('；'))}</p>` : ''}
+              </div>
+            </div>
+          `).join('') : '<div class="empty-state compact">暂无准模拟盘资金袖。</div>'}
+        </div>
+      </details>
+    </div>
+  `;
+}
+
+function renderJoinQuantPaperWatchReport(report) {
+  if (!elements.paperWatchJoinquantReport) return;
+  if (!report || report.status === 'missing') {
+    elements.paperWatchJoinquantReport.innerHTML = `
+      <div class="paper-watch-note compact">
+        <strong>JoinQuant准模拟报告</strong>
+        <span class="tag pending">未生成</span>
+        <p>选择 JoinQuant本地结果 后点击一键刷新，系统会自动导入复核结果、生成信号账本和报告。</p>
+      </div>
+    `;
+    return;
+  }
+  const metrics = report.metrics || {};
+  const sleeves = Array.isArray(report.sleeves) ? report.sleeves : [];
+  const tone = report.status === 'ready_to_start_observation' ? 'good' : 'watch';
+  elements.paperWatchJoinquantReport.innerHTML = `
+    <div class="paper-watch-note compact">
+      <strong>JoinQuant准模拟报告</strong>
+      <span class="tag ${tone}">${escapeHtml(report.status || '-')}</span>
+      <p>${escapeHtml(report.data_policy || '只汇总真实 JoinQuant 证据。')}</p>
+      <div class="paper-watch-metrics">
+        <span>信号日 ${escapeHtml(metrics.signal_date || '-')}</span>
+        <span>可开 ${escapeHtml(metrics.open_allowed_sleeve_count ?? 0)}</span>
+        <span>阻塞 ${escapeHtml(metrics.blocked_sleeve_count ?? 0)}</span>
+        <span>账本 ${escapeHtml(metrics.auto_or_imported_ledger_count ?? 0)}</span>
+      </div>
+      <details class="compact-details">
+        <summary>查看资金袖状态</summary>
+        <div class="paper-watch-rules">
+          ${sleeves.length ? sleeves.map((sleeve) => `
+            <div class="paper-watch-refresh-step">
+              <span class="tag ${sleeve.can_start_observation ? 'good' : 'watch'}">
+                ${escapeHtml(sleeve.latest_action || '-')}
+              </span>
+              <div>
+                <strong>${escapeHtml(sleeve.strategy_name || sleeve.strategy_id || '-')}</strong>
+                <small>
+                  ${escapeHtml(sleeve.sleeve_id || '-')} /
+                  ${escapeHtml(sleeve.signal_date || '-')} /
+                  ${sleeve.selected_count === null || sleeve.selected_count === undefined ? '控制器口径' : `${escapeHtml(sleeve.selected_count)}只`} /
+                  ${escapeHtml(sleeve.gate_status || '-')}
+                </small>
+                ${sleeve.blocked_reasons?.length ? `<p>${escapeHtml(sleeve.blocked_reasons.join('；'))}</p>` : ''}
+              </div>
+            </div>
+          `).join('') : '<div class="empty-state compact">暂无资金袖状态。</div>'}
+          <strong>下一步</strong>
+          ${renderTextList(Array.isArray(report.next_actions) ? report.next_actions : [])}
+        </div>
+      </details>
+    </div>
+  `;
+}
+
+function renderPaperWatchPerformanceReport(report) {
+  if (!elements.paperWatchPerformanceReport) return;
+  if (!report || report.status === 'missing') {
+    elements.paperWatchPerformanceReport.innerHTML = `
+      <div class="paper-watch-note compact">
+        <strong>准模拟表现报告</strong>
+        <span class="tag pending">未生成</span>
+        <p>表现报告只读取真实 period_return / benchmark_return；没有收益时不生成净值。</p>
+      </div>
+    `;
+    return;
+  }
+  const summary = report.summary || {};
+  const sleeves = Array.isArray(report.sleeves) ? report.sleeves : [];
+  elements.paperWatchPerformanceReport.innerHTML = `
+    <div class="paper-watch-note compact">
+      <strong>准模拟表现报告</strong>
+      <span class="tag ${summary.promotion_candidate_count ? 'good' : summary.risk_pause_count ? 'watch' : 'pending'}">
+        ${escapeHtml(summary.total_completed_return_rows ?? 0)} 条真实收益
+      </span>
+      <p>${escapeHtml(report.data_policy || '只读取真实收益字段。')}</p>
+      <div class="paper-watch-metrics">
+        <span>账本 ${escapeHtml(summary.total_ledger_rows ?? 0)}</span>
+        <span>待收益 ${escapeHtml(summary.collect_returns_count ?? 0)}</span>
+        <span>晋级候选 ${escapeHtml(summary.promotion_candidate_count ?? 0)}</span>
+        <span>风险暂停 ${escapeHtml(summary.risk_pause_count ?? 0)}</span>
+      </div>
+      <details class="compact-details">
+        <summary>查看策略表现阶段</summary>
+        <div class="paper-watch-rules">
+          ${sleeves.length ? sleeves.map((sleeve) => `
+            <div class="paper-watch-refresh-step">
+              <span class="tag ${escapeHtml(sleeve.stage?.tone || 'pending')}">
+                ${escapeHtml(sleeve.stage?.stage_name || '-')}
+              </span>
+              <div>
+                <strong>${escapeHtml(sleeve.strategy_name || sleeve.strategy_id || '-')}</strong>
+                <small>
+                  ${escapeHtml(sleeve.sleeve_id || '-')} /
+                  收益样本 ${escapeHtml(sleeve.metrics?.completed_return_rows ?? 0)} /
+                  胜率 ${formatPercent(sleeve.metrics?.win_rate, 1)} /
+                  回撤 ${formatPercent(sleeve.metrics?.max_drawdown, 2)}
+                </small>
+                <p>${escapeHtml(sleeve.stage?.reason || '')}</p>
+              </div>
+            </div>
+          `).join('') : '<div class="empty-state compact">暂无表现样本。</div>'}
+        </div>
+      </details>
+    </div>
+  `;
+}
+
+function renderPaperWatchConsole(consoleData) {
+  if (!elements.paperWatchConsoleSummary || !consoleData) return;
+  const metrics = consoleData.metrics || {};
+  const sleeves = Array.isArray(consoleData.sleeves) ? consoleData.sleeves : [];
+  const activeSleeves = sleeves.filter((sleeve) => sleeve.canStartObservation);
+  elements.paperWatchConsoleSummary.innerHTML = [
+    ['状态', consoleData.statusName || '-', consoleData.signalDate ? `最新信号 ${consoleData.signalDate}` : '等待最新信号'],
+    ['可观察资金袖', metrics.readySleeveCount ?? 0, `${metrics.sleeveCount ?? sleeves.length} 条路线`],
+    ['开放信号', metrics.openSignalCount ?? 0, '可进入观察记录'],
+    ['账本记录', metrics.importedLedgerCount ?? 0, `${metrics.observedDays ?? 0} 个观察日`],
+    ['活性良好', metrics.activeSleeveCount ?? 0, `${metrics.warmingSleeveCount ?? 0} 条样本积累`],
+  ].map(([label, value, detail]) => `
+    <div class="paper-watch-console-metric">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <small>${escapeHtml(detail)}</small>
+    </div>
+  `).join('');
+
+  if (elements.paperWatchSignalList) {
+    elements.paperWatchSignalList.innerHTML = sleeves.length
+      ? sleeves.map((sleeve) => {
+        const action = sleeve.latestSignal?.triggered_component_name
+          || sleeve.latestSignal?.action
+          || sleeve.latestAction
+          || sleeve.gateStatus
+          || '-';
+        const blockedReason = Array.isArray(sleeve.blockedReasons) && sleeve.blockedReasons.length
+          ? sleeve.blockedReasons[0]
+          : '';
+        return `
+        <div class="paper-watch-mini-row">
+          <div>
+            <strong>${escapeHtml(sleeve.strategyName)}</strong>
+            <span>${escapeHtml(sleeve.signalDate || '-')} / ${escapeHtml(action)}</span>
+            ${blockedReason ? `<small>${escapeHtml(blockedReason)}</small>` : ''}
+          </div>
+          <span class="tag ${sleeve.canStartObservation ? 'good' : 'watch'}">
+            ${sleeve.canStartObservation ? '可观察' : 'record_only'} /
+            ${sleeve.selectedCount === null || sleeve.selectedCount === undefined ? '控制器口径' : `${escapeHtml(sleeve.selectedCount)}只`}
+          </span>
+        </div>
+      `;
+      }).join('')
+      : '<div class="empty-state compact">暂无运行包信号。</div>';
+  }
+
+  if (elements.paperWatchLedgerSummary) {
+    elements.paperWatchLedgerSummary.innerHTML = sleeves.length
+      ? sleeves.map((sleeve) => `
+        <div class="paper-watch-mini-row">
+          <div>
+            <strong>${escapeHtml(sleeve.strategyName)}</strong>
+            <span>
+              ${escapeHtml(sleeve.ledgerCount ?? 0)} 条 / ${escapeHtml(sleeve.observedDays ?? 0)} 日，
+              收益 ${formatPercent(sleeve.avgPeriodReturn, 2)}，
+              回撤 ${formatPercent(sleeve.worstDrawdown, 2)}
+            </span>
+          </div>
+          <span class="tag ${escapeHtml(sleeve.activity?.tone || 'pending')}">${escapeHtml(sleeve.activity?.name || '-')}</span>
+        </div>
+      `).join('')
+      : '<div class="empty-state compact">等待运行包。</div>';
+  }
+
+  if (elements.paperWatchUpgradeList) {
+    const actions = Array.isArray(consoleData.nextActions) ? consoleData.nextActions : [];
+    const pauseRules = Array.isArray(consoleData.pauseRules) ? consoleData.pauseRules : [];
+    const upgradeRules = Array.isArray(consoleData.upgradeRules) ? consoleData.upgradeRules : [];
+    elements.paperWatchUpgradeList.innerHTML = `
+      <details class="compact-details" open>
+        <summary>下一步</summary>
+        ${renderTextList(actions)}
+      </details>
+      <details class="compact-details">
+        <summary>暂停规则</summary>
+        ${renderTextList(pauseRules)}
+      </details>
+      <details class="compact-details">
+        <summary>升级模拟盘门槛</summary>
+        ${renderTextList(upgradeRules)}
+      </details>
+    `;
+  }
 }
 
 function renderPaperWatchRoutes(pack) {
@@ -458,12 +786,20 @@ function renderPaperWatchRoutes(pack) {
   const conditionalCount = Number(pack.conditionalRouteCount ?? ((counts.conditional_paper_watch || 0) + (counts.conditional_local_paper_watch || 0)));
   const ready = pack.readinessStatus === 'ready_controlled_paper_watch';
   const conditional = pack.readinessStatus === 'conditional_paper_watch';
+  const consoleMetrics = pack.paperWatchConsole?.metrics || {};
   if (elements.paperWatchStatus) {
-    elements.paperWatchStatus.textContent = ready || conditional
-      ? `${readyCount || 0}就绪/${conditionalCount || 0}条件`
-      : '未就绪';
+    elements.paperWatchStatus.textContent = pack.paperWatchConsole
+      ? `${consoleMetrics.readySleeveCount || 0}资金袖/${consoleMetrics.openSignalCount || 0}信号`
+      : ready || conditional
+        ? `${readyCount || 0}就绪/${conditionalCount || 0}条件`
+        : '未就绪';
     elements.paperWatchStatus.className = `tag ${ready ? 'good' : conditional ? 'pending' : 'watch'}`;
   }
+  renderPaperWatchConsole(pack.paperWatchConsole);
+  renderPaperWatchRefreshSummary(pack.dailyRefresh);
+  renderJoinQuantPaperWatchReport(pack.joinQuantPaperWatchReport);
+  renderPaperWatchPerformanceReport(pack.paperWatchPerformanceReport);
+  renderBigQuantPaperWatchPack(pack.bigQuantTestPack);
   elements.paperWatchList.innerHTML = routes.length
     ? `
       ${independence.summary ? `
@@ -679,6 +1015,14 @@ function labelForStatus(status) {
 
 function factorDisplayName(id) {
   const names = {
+    ak_breakout_confirmation: 'AkShare突破确认',
+    ak_contraction_breakout_combo: 'AkShare收缩突破组合',
+    ak_crowding_risk: 'AkShare拥挤风险',
+    ak_liquidity_stability: 'AkShare流动性稳定',
+    ak_mean_reversion_quality_combo: 'AkShare均值回归组合',
+    ak_trend_quality: 'AkShare趋势质量',
+    ak_volatility_contraction_quality: 'AkShare波动收缩质量',
+    ak_volume_price_confirmation: 'AkShare量价确认',
     capital_source_count: '资金来源数',
     chip_health: '筹码健康',
     crowding_risk: '拥挤风险',
@@ -704,6 +1048,7 @@ function factorDisplayName(id) {
     volume_price_divergence_risk: '量价背离风险',
     volume_price_resonance_60_5: '价量共振_60_5',
     active_ap_accumulation: '活跃暗盘吸筹',
+    active_large_order_accumulation: '超大/大单吸筹代理',
     capital_follow_factor: '资金跟随因子',
     capital_follow_signal: '资金跟随信号',
     capital_overheat_risk: '资金过热风险',
@@ -721,12 +1066,14 @@ function factorDisplayName(id) {
 }
 
 function formatNumber(value, digits = 4) {
+  if (value === undefined || value === null || value === '') return '-';
   const number = Number(value);
   if (!Number.isFinite(number)) return '-';
   return number.toFixed(digits);
 }
 
 function formatPercent(value, digits = 2) {
+  if (value === undefined || value === null || value === '') return '-';
   const number = Number(value);
   if (!Number.isFinite(number)) return '-';
   return `${(number * 100).toFixed(digits)}%`;
@@ -1747,6 +2094,7 @@ function factorLibraryProfile(id, value, pipelineEntry) {
   ].filter(Boolean).join(' ').toLowerCase();
   const explicitRoleMap = {
     active_ap_accumulation: 'confirmation',
+    active_large_order_accumulation: 'confirmation',
     capital_follow_signal: 'main_signal',
     capital_overheat_risk: 'risk_filter',
     capital_persistence_2d: 'main_signal',
@@ -2113,8 +2461,9 @@ function toneForAction(actionTone) {
   return 'neutral';
 }
 
-function renderStrategyCard(strategy) {
+function renderStrategyCard(strategy, options = {}) {
   const [label, tone] = labelForStatus(strategy.status);
+  const compactClass = options.compact ? ' compact-strategy-item' : '';
   const exportBase = `/strategy-api/joinquant-strategy-export.json?strategy=${encodeURIComponent(strategy.id)}`;
   const exportCsv = `/strategy-api/joinquant-strategy-export.csv?strategy=${encodeURIComponent(strategy.id)}`;
   const exportScript = `/strategy-api/joinquant-strategy-script.py?strategy=${encodeURIComponent(strategy.id)}`;
@@ -2124,19 +2473,22 @@ function renderStrategyCard(strategy) {
   const volatilitySizeScript = `/strategy-api/joinquant-volatility-size-script.py?strategy=${encodeURIComponent(strategy.id)}`;
   const tradingBacktestScript = `/strategy-api/joinquant-trading-backtest-script.py?strategy=${encodeURIComponent(strategy.id)}`;
   return `
-    <article class="strategy-item">
+    <article class="strategy-item${compactClass}">
       <div class="strategy-head">
         <div>
           <h3>${escapeHtml(strategy.name)}</h3>
           <p>${escapeHtml(strategy.objective)}</p>
           <p>${escapeHtml(strategy.validationState || '')}</p>
         </div>
-        <span class="tag ${tone}">${escapeHtml(label)}</span>
+        <div class="strategy-status-stack">
+          <span class="tag ${tone}">${escapeHtml(label)}</span>
+          <span class="tag neutral">${escapeHtml(strategy.displayGrade || strategyGradeLabel(strategy))}</span>
+        </div>
       </div>
       <div class="strategy-columns three strategy-summary">
         <div>
           <strong>角色</strong>
-          <span>${escapeHtml(strategy.role)}</span>
+          <span>${escapeHtml(strategy.role)}${strategy.sourcePoolLabel ? ` / ${escapeHtml(strategy.sourcePoolLabel)}` : ''}</span>
         </div>
         <div>
           <strong>信号 / 候选</strong>
@@ -2214,8 +2566,74 @@ function strategySearchText(strategy) {
   ].join(' ').toLowerCase();
 }
 
+const strategyGradeMeta = {
+  all: { label: '全部', description: '策略池全量路线' },
+  paper_watch: { label: '准模拟盘', description: '可进入或接近模拟观察' },
+  backtested: { label: '已实测', description: '已有真实策略级回测' },
+  candidate: { label: '候选/待测', description: '已有逻辑但证据未满' },
+  blocked: { label: '暂缓/阻塞', description: '当前不建议使用' },
+};
+
+function strategyGradeKey(strategy) {
+  const status = strategy.status || '';
+  if (status === 'paper_trade_candidate') return 'paper_watch';
+  if (status === 'real_strategy_backtested' || status === 'real_position_overlay_backtested') return 'backtested';
+  if (
+    status === 'hold'
+    || status === 'joinquant_review_not_passed'
+    || status === 'requires_more_data'
+    || status === 'requires_joinquant_or_history'
+    || status === 'blocked_by_factor_screen'
+    || status === 'insufficient_history'
+    || status === 'blocked_by_resonance_history'
+  ) {
+    return 'blocked';
+  }
+  return 'candidate';
+}
+
+function strategyGradeRank(strategy) {
+  const rank = {
+    paper_watch: 0,
+    backtested: 1,
+    candidate: 2,
+    blocked: 3,
+  };
+  return rank[strategyGradeKey(strategy)] ?? 9;
+}
+
+function strategyGradeLabel(strategy) {
+  return strategyGradeMeta[strategyGradeKey(strategy)]?.label || '候选/待测';
+}
+
+function buildUnifiedStrategies(signalPack) {
+  const map = new Map();
+  (signalPack.formalStrategies || []).forEach((strategy) => {
+    map.set(strategy.id, { ...strategy, sourcePoolLabel: '高等级证据', displayGrade: strategyGradeLabel(strategy) });
+  });
+  (signalPack.strategies || []).forEach((strategy) => {
+    if (!map.has(strategy.id)) {
+      map.set(strategy.id, { ...strategy, sourcePoolLabel: '研究路线', displayGrade: strategyGradeLabel(strategy) });
+    }
+  });
+  return [...map.values()].sort((left, right) => {
+    const gradeDelta = strategyGradeRank(left) - strategyGradeRank(right);
+    if (gradeDelta) return gradeDelta;
+    return String(left.name || '').localeCompare(String(right.name || ''), 'zh-Hans-CN');
+  });
+}
+
 function filteredDraftStrategies(strategies) {
   const query = draftStrategyQuery.trim().toLowerCase();
+  return strategies.filter((strategy) => {
+    const matchesGrade = draftStrategyGrade === 'all' || strategyGradeKey(strategy) === draftStrategyGrade;
+    const matchesQuery = !query || strategySearchText(strategy).includes(query);
+    return matchesGrade && matchesQuery;
+  });
+}
+
+function filteredFormalStrategies(strategies) {
+  const query = formalStrategyQuery.trim().toLowerCase();
   if (!query) return strategies;
   return strategies.filter((strategy) => strategySearchText(strategy).includes(query));
 }
@@ -2223,16 +2641,46 @@ function filteredDraftStrategies(strategies) {
 function syncDraftStrategyJump(strategies) {
   const selected = elements.draftStrategyJump.value;
   elements.draftStrategyJump.innerHTML = [
-    '<option value="">全部草案</option>',
-    ...strategies.map((strategy) => `<option value="${escapeHtml(strategy.id)}">${escapeHtml(strategy.name)}</option>`),
+    '<option value="">全部策略</option>',
+    ...strategies.map((strategy) => `<option value="${escapeHtml(strategy.id)}">${escapeHtml(strategy.displayGrade || strategyGradeLabel(strategy))} · ${escapeHtml(strategy.name)}</option>`),
   ].join('');
   if (strategies.some((strategy) => strategy.id === selected)) {
     elements.draftStrategyJump.value = selected;
   }
 }
 
+function renderStrategyLevelIndex(strategies) {
+  if (!elements.strategyLevelIndex) return;
+  const counts = strategies.reduce((acc, strategy) => {
+    const key = strategyGradeKey(strategy);
+    acc[key] = (acc[key] || 0) + 1;
+    acc.all += 1;
+    return acc;
+  }, { all: 0, paper_watch: 0, backtested: 0, candidate: 0, blocked: 0 });
+  elements.strategyLevelIndex.innerHTML = Object.entries(strategyGradeMeta).map(([key, meta]) => `
+    <button class="${draftStrategyGrade === key ? 'active' : ''}" type="button" data-strategy-grade="${escapeHtml(key)}">
+      <span>${escapeHtml(meta.label)}</span>
+      <strong>${counts[key] || 0}</strong>
+      <small>${escapeHtml(meta.description)}</small>
+    </button>
+  `).join('');
+}
+
+function syncFormalStrategyJump(strategies) {
+  if (!elements.formalStrategyJump) return;
+  const selected = elements.formalStrategyJump.value;
+  elements.formalStrategyJump.innerHTML = [
+    '<option value="">全部正式策略</option>',
+    ...strategies.map((strategy) => `<option value="${escapeHtml(strategy.id)}">${escapeHtml(strategy.name)}</option>`),
+  ].join('');
+  if (strategies.some((strategy) => strategy.id === selected)) {
+    elements.formalStrategyJump.value = selected;
+  }
+}
+
 function renderDraftStrategies(signalPack) {
-  const strategies = signalPack.strategies || [];
+  const strategies = buildUnifiedStrategies(signalPack);
+  renderStrategyLevelIndex(strategies);
   syncDraftStrategyJump(strategies);
 
   const filtered = filteredDraftStrategies(strategies);
@@ -2244,8 +2692,8 @@ function renderDraftStrategies(signalPack) {
     : filtered.slice(0, pageSize);
 
   elements.strategyLiveList.innerHTML = visibleStrategies.length
-    ? visibleStrategies.map(renderStrategyCard).join('')
-    : '<div class="empty-state"><strong>没有匹配的草案策略</strong><span>换一个关键词再筛选。</span></div>';
+    ? visibleStrategies.map((strategy) => renderStrategyCard(strategy)).join('')
+    : '<div class="empty-state"><strong>没有匹配的策略</strong><span>换一个等级、策略名、因子名、状态或周期再筛选。</span></div>';
 
   const hiddenCount = Math.max(0, filtered.length - visibleStrategies.length);
   elements.draftStrategyToggle.textContent = filtered.length <= 2
@@ -2266,31 +2714,80 @@ function renderDraftStrategies(signalPack) {
   }
 }
 
-function renderLiveStrategies(signalPack) {
-  const metrics = signalPack.metrics || {};
+function renderFormalStrategies(signalPack) {
   const formalStrategies = signalPack.formalStrategies || [];
-  currentStrategySignalPack = signalPack;
-  elements.strategyStrongCount.textContent = metrics.draftStrategies ?? (signalPack.strategies || []).length;
-  elements.strategyObservationCount.textContent = metrics.entryCandidates ?? '-';
-  elements.strategyPartialCount.textContent = metrics.capitalCandidates ?? metrics.partialStrategies ?? '-';
-  elements.strategyBlockedCount.textContent = metrics.formalStrategies ?? formalStrategies.length;
-  elements.strategySourceFile.textContent = signalPack.source?.file
-    ? `当前策略数据源：${signalPack.source.file}；技术截面 ${signalPack.source.primaryRows ?? 0} 条，资金截面 ${signalPack.source.capitalRows ?? 0} 条`
-    : '当前策略数据源：未加载';
-
-  renderDraftStrategies(signalPack);
-
   const formalPolicy = signalPack.formalPolicy || {};
+  syncFormalStrategyJump(formalStrategies);
+
   elements.formalStrategyPolicy.textContent = formalPolicy.description || '正式策略池只接收已完成策略级回测的组合。';
-  elements.formalStrategyList.innerHTML = formalStrategies.length
-    ? formalStrategies.map(renderStrategyCard).join('')
-    : `
+
+  if (!formalStrategies.length) {
+    elements.formalStrategyList.innerHTML = `
       <div class="empty-state">
         <strong>${escapeHtml(formalPolicy.title || '暂无正式策略')}</strong>
         <span>${escapeHtml(formalPolicy.nextAction || '等待策略级回测结果。')}</span>
         ${renderTextList(formalPolicy.requiredEvidence)}
       </div>
     `;
+    if (elements.formalStrategyPagination) elements.formalStrategyPagination.innerHTML = '';
+    if (elements.formalStrategyToggle) {
+      elements.formalStrategyToggle.textContent = '暂无策略';
+      elements.formalStrategyToggle.disabled = true;
+    }
+    return;
+  }
+
+  const filtered = filteredFormalStrategies(formalStrategies);
+  const pageSize = formalStrategyExpanded ? 4 : 2;
+  const pageCount = formalStrategyExpanded ? Math.max(1, Math.ceil(filtered.length / pageSize)) : 1;
+  formalStrategyPage = Math.min(Math.max(1, formalStrategyPage), pageCount);
+  const visibleStrategies = formalStrategyExpanded
+    ? filtered.slice((formalStrategyPage - 1) * pageSize, formalStrategyPage * pageSize)
+    : filtered.slice(0, pageSize);
+
+  elements.formalStrategyList.innerHTML = visibleStrategies.length
+    ? visibleStrategies.map((strategy) => renderStrategyCard(strategy, { compact: true })).join('')
+    : '<div class="empty-state"><strong>没有匹配的正式策略</strong><span>换一个策略名、因子名、状态或周期再筛选。</span></div>';
+
+  const hiddenCount = Math.max(0, filtered.length - visibleStrategies.length);
+  if (elements.formalStrategyToggle) {
+    elements.formalStrategyToggle.textContent = filtered.length <= 2
+      ? '已全部显示'
+      : formalStrategyExpanded
+        ? '收起'
+        : `展开其余 ${hiddenCount} 个`;
+    elements.formalStrategyToggle.disabled = filtered.length <= 2;
+  }
+
+  if (elements.formalStrategyPagination) {
+    if (formalStrategyExpanded && filtered.length > 4) {
+      elements.formalStrategyPagination.innerHTML = `
+        <button type="button" data-formal-page="prev" ${formalStrategyPage <= 1 ? 'disabled' : ''}>上一页</button>
+        <span>第 ${formalStrategyPage} / ${pageCount} 页</span>
+        <button type="button" data-formal-page="next" ${formalStrategyPage >= pageCount ? 'disabled' : ''}>下一页</button>
+      `;
+    } else {
+      elements.formalStrategyPagination.innerHTML = '';
+    }
+  }
+}
+
+function renderLiveStrategies(signalPack) {
+  const metrics = signalPack.metrics || {};
+  const formalStrategies = signalPack.formalStrategies || [];
+  const unifiedStrategies = buildUnifiedStrategies(signalPack);
+  currentStrategySignalPack = signalPack;
+  elements.strategyStrongCount.textContent = unifiedStrategies.length;
+  elements.strategyObservationCount.textContent = metrics.entryCandidates ?? '-';
+  elements.strategyPartialCount.textContent = metrics.capitalCandidates ?? metrics.partialStrategies ?? '-';
+  elements.strategyBlockedCount.textContent = unifiedStrategies.filter((strategy) => (
+    strategyGradeKey(strategy) === 'paper_watch' || strategyGradeKey(strategy) === 'backtested'
+  )).length || (metrics.formalStrategies ?? formalStrategies.length);
+  elements.strategySourceFile.textContent = signalPack.source?.file
+    ? `当前策略数据源：${signalPack.source.file}；技术截面 ${signalPack.source.primaryRows ?? 0} 条，资金截面 ${signalPack.source.capitalRows ?? 0} 条`
+    : '当前策略数据源：未加载';
+
+  renderDraftStrategies(signalPack);
 
   elements.strategyCandidateTable.innerHTML = (signalPack.candidates || [])
     .map((row) => {
@@ -2579,13 +3076,21 @@ elements.draftStrategySearch?.addEventListener('input', () => {
   if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
 });
 
+elements.strategyGradeFilter?.addEventListener('change', () => {
+  draftStrategyGrade = elements.strategyGradeFilter.value || 'all';
+  draftStrategyPage = 1;
+  if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
+});
+
 elements.draftStrategyJump?.addEventListener('change', () => {
   const strategyId = elements.draftStrategyJump.value;
-  const strategy = (currentStrategySignalPack?.strategies || []).find((item) => item.id === strategyId);
+  const strategy = buildUnifiedStrategies(currentStrategySignalPack || {}).find((item) => item.id === strategyId);
   draftStrategyQuery = strategy ? strategy.name : '';
+  draftStrategyGrade = strategy ? strategyGradeKey(strategy) : 'all';
   draftStrategyExpanded = Boolean(strategy);
   draftStrategyPage = 1;
   elements.draftStrategySearch.value = draftStrategyQuery;
+  if (elements.strategyGradeFilter) elements.strategyGradeFilter.value = draftStrategyGrade;
   if (currentStrategySignalPack) renderDraftStrategies(currentStrategySignalPack);
 });
 
@@ -2602,7 +3107,45 @@ elements.draftStrategyPagination?.addEventListener('click', (event) => {
   renderDraftStrategies(currentStrategySignalPack);
 });
 
-elements.strategyLiveList?.addEventListener('click', (event) => {
+elements.strategyLevelIndex?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-strategy-grade]');
+  if (!button || !currentStrategySignalPack) return;
+  draftStrategyGrade = button.dataset.strategyGrade || 'all';
+  draftStrategyPage = 1;
+  if (elements.strategyGradeFilter) elements.strategyGradeFilter.value = draftStrategyGrade;
+  renderDraftStrategies(currentStrategySignalPack);
+});
+
+elements.formalStrategySearch?.addEventListener('input', () => {
+  formalStrategyQuery = elements.formalStrategySearch.value;
+  formalStrategyPage = 1;
+  if (currentStrategySignalPack) renderFormalStrategies(currentStrategySignalPack);
+});
+
+elements.formalStrategyJump?.addEventListener('change', () => {
+  const strategyId = elements.formalStrategyJump.value;
+  const strategy = (currentStrategySignalPack?.formalStrategies || []).find((item) => item.id === strategyId);
+  formalStrategyQuery = strategy ? strategy.name : '';
+  formalStrategyExpanded = Boolean(strategy);
+  formalStrategyPage = 1;
+  elements.formalStrategySearch.value = formalStrategyQuery;
+  if (currentStrategySignalPack) renderFormalStrategies(currentStrategySignalPack);
+});
+
+elements.formalStrategyToggle?.addEventListener('click', () => {
+  formalStrategyExpanded = !formalStrategyExpanded;
+  formalStrategyPage = 1;
+  if (currentStrategySignalPack) renderFormalStrategies(currentStrategySignalPack);
+});
+
+elements.formalStrategyPagination?.addEventListener('click', (event) => {
+  const action = event.target?.dataset?.formalPage;
+  if (!action || !currentStrategySignalPack) return;
+  formalStrategyPage += action === 'next' ? 1 : -1;
+  renderFormalStrategies(currentStrategySignalPack);
+});
+
+function handleStrategyCardClick(event) {
   const downloadButton = event.target.closest('[data-strategy-download]');
   if (downloadButton) {
     window.location.href = downloadButton.dataset.strategyDownload;
@@ -2624,7 +3167,10 @@ elements.strategyLiveList?.addEventListener('click', (event) => {
   });
   panel.hidden = !shouldOpen;
   button.classList.toggle('active', shouldOpen);
-});
+}
+
+elements.strategyLiveList?.addEventListener('click', handleStrategyCardClick);
+elements.formalStrategyList?.addEventListener('click', handleStrategyCardClick);
 
 elements.paperWatchList?.addEventListener('click', async (event) => {
   const rebuildButton = event.target.closest('[data-paper-watch-rebuild]');
@@ -2637,6 +3183,80 @@ elements.paperWatchList?.addEventListener('click', async (event) => {
   } catch (error) {
     rebuildButton.disabled = false;
     rebuildButton.textContent = `刷新失败：${error.message}`;
+  }
+});
+
+elements.runPaperWatchDailyRefresh?.addEventListener('click', async () => {
+  const button = elements.runPaperWatchDailyRefresh;
+  const mode = elements.paperWatchRefreshMode?.value || 'local';
+  button.disabled = true;
+  const originalText = button.textContent;
+  button.textContent = mode === 'joinquant_local'
+    ? 'JoinQuant刷新中'
+    : mode === 'local'
+      ? '本地刷新中'
+      : '联网刷新中';
+  if (elements.paperWatchRefreshSummary) {
+    elements.paperWatchRefreshSummary.innerHTML = `
+      <div class="paper-watch-note compact">
+        <strong>一键刷新运行中</strong>
+        <span class="tag pending">${escapeHtml(mode)}</span>
+        <p>${mode === 'joinquant_local'
+          ? '正在扫描并导入 JoinQuant 真实结果，随后自动生成信号账本和报告。'
+          : '正在执行真实数据流水线，时间取决于 AkShare 接口和股票池大小。'}</p>
+      </div>
+    `;
+  }
+  try {
+    const response = await request('/paper-watch-api/run-daily-refresh', {
+      body: JSON.stringify({ mode }),
+      method: 'POST',
+    });
+    renderPaperWatchRefreshSummary(response.refresh);
+    renderJoinQuantPaperWatchReport(response.refresh?.report);
+    renderPaperWatchPerformanceReport(response.refresh?.report?.performance_report);
+    await refreshDashboard();
+  } catch (error) {
+    if (elements.paperWatchRefreshSummary) {
+      elements.paperWatchRefreshSummary.innerHTML = `
+        <div class="paper-watch-note compact">
+          <strong>一键刷新失败</strong>
+          <span class="tag watch">失败</span>
+          <p>${escapeHtml(error.message)}</p>
+        </div>
+      `;
+    }
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText || '一键刷新数据';
+  }
+});
+
+elements.buildBigquantPaperWatchPack?.addEventListener('click', async () => {
+  const button = elements.buildBigquantPaperWatchPack;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = '生成中';
+  try {
+    const response = await request('/paper-watch-api/build-bigquant-test-pack', { method: 'POST' });
+    renderBigQuantPaperWatchPack(response.pack);
+    button.textContent = '已生成';
+  } catch (error) {
+    if (elements.paperWatchBigquantSummary) {
+      elements.paperWatchBigquantSummary.innerHTML = `
+        <div class="paper-watch-note compact">
+          <strong>BigQuant测试包生成失败</strong>
+          <span class="tag watch">失败</span>
+          <p>${escapeHtml(error.message)}</p>
+        </div>
+      `;
+    }
+    button.textContent = '生成失败';
+  } finally {
+    window.setTimeout(() => {
+      button.disabled = false;
+      button.textContent = originalText || '生成BigQuant包';
+    }, 900);
   }
 });
 

@@ -1,6 +1,6 @@
 {
   "source": "m_quant_core_medium_small_promotion_task_pack",
-  "generated_at": "2026-07-10T03:12:42",
+  "generated_at": "2026-07-10T15:37:26",
   "status": "signal_not_ready_imported",
   "data_policy": "只生成 JoinQuant 最新信号复核任务；不生成收益、净值、成交、持仓、交易可行性或模拟盘结果。",
   "imported_review_count": 1,

@@ -1,6 +1,6 @@
 {
   "source": "akshare_local_paper_watch_latest_signal",
-  "generated_at": "2026-07-09T16:15:14",
+  "generated_at": "2026-07-10T14:43:41",
   "input": "outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv",
   "execution_pack": "outputs/sources/akshare/results/akshare_paper_watch_execution_pack_20260709.json",
   "signal_date": "2026-07-09",
