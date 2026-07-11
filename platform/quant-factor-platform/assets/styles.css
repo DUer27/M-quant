@@ -9,6 +9,8 @@
   --success: #0f8b6f;
   --text: #162033;
   --warning: #b7791f;
+  --gap: 18px;
+  --panel-pad: 18px;
 }
 
 * {
@@ -91,7 +93,7 @@ select {
 
 .workspace {
   display: grid;
-  gap: 18px;
+  gap: var(--gap);
   padding: 24px;
 }
 
@@ -101,7 +103,7 @@ select {
 
 .view.active {
   display: grid;
-  gap: 18px;
+  gap: var(--gap);
 }
 
 .topbar {
@@ -163,6 +165,8 @@ h2 {
 }
 
 .metric {
+  display: grid;
+  min-height: 116px;
   padding: 16px;
 }
 
@@ -180,25 +184,30 @@ h2 {
 
 .content-grid {
   display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 2fr) minmax(300px, 0.8fr);
+  align-items: start;
+  gap: var(--gap);
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.9fr);
 }
 
 .content-grid.lower {
-  grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.8fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
 }
 
 .panel {
+  align-content: start;
+  display: grid;
+  gap: 14px;
   min-width: 0;
-  overflow-x: auto;
-  padding: 18px;
+  overflow: hidden;
+  padding: var(--panel-pad);
 }
 
 .panel-head {
   align-items: center;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 0;
+  min-height: 44px;
 }
 
 .segmented {
@@ -326,14 +335,14 @@ textarea {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 .factor-directory {
   background: #fbfcfe;
   border: 1px solid var(--border);
   border-radius: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
   overflow: hidden;
 }
 
@@ -433,7 +442,7 @@ textarea {
   display: grid;
   gap: 10px;
   grid-template-columns: minmax(180px, 240px) 1fr;
-  margin-bottom: 14px;
+  margin-bottom: 0;
   padding: 12px;
 }
 
@@ -498,7 +507,7 @@ textarea {
   border-radius: 8px;
   display: grid;
   gap: 5px;
-  min-height: 88px;
+  min-height: 96px;
   padding: 12px;
 }
 
@@ -531,7 +540,7 @@ textarea {
   background: #fbfcfe;
   border: 1px solid var(--border);
   border-radius: 8px;
-  margin-top: 12px;
+  margin-top: 0;
   padding: 10px 12px;
 }
 
@@ -758,6 +767,83 @@ textarea {
   z-index: 1;
 }
 
+.collapsible-data {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 360px;
+  overflow: auto;
+  position: relative;
+  width: 100%;
+}
+
+.collapsible-data.compact-preview {
+  max-height: 300px;
+}
+
+.dashboard-factor-preview {
+  min-height: 238px;
+  max-height: 238px;
+}
+
+.dashboard-factor-preview.is-expanded {
+  min-height: 0;
+}
+
+.collapsible-data.is-expanded {
+  max-height: none;
+}
+
+.dashboard-factor-panel,
+.dashboard-risk-panel {
+  min-height: 352px;
+}
+
+.dashboard-factor-panel {
+  grid-template-rows: auto minmax(238px, 1fr) auto;
+}
+
+.dashboard-risk-panel {
+  grid-template-rows: auto minmax(238px, 1fr);
+}
+
+.dashboard-risk-panel .risk-list {
+  align-content: center;
+  min-height: 0;
+}
+
+.collapsible-data table {
+  margin: 0;
+}
+
+.collapsible-data thead th {
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.collapse-toggle {
+  justify-self: end;
+  background: #eef4fa;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: -4px;
+  min-height: 32px;
+  padding: 6px 10px;
+}
+
+.collapse-toggle:hover {
+  background: var(--primary-soft);
+}
+
+.collapse-toggle[hidden] {
+  display: none;
+}
+
 .disclosure-panel {
   padding: 0;
 }
@@ -892,7 +978,7 @@ td small {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
-  margin-bottom: 12px;
+  margin-bottom: 0;
   overflow-wrap: anywhere;
   padding: 10px 12px;
 }
@@ -909,6 +995,7 @@ td small {
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 52px;
   padding: 0 0 12px;
 }
 
@@ -929,6 +1016,8 @@ td small {
 .strategy-item {
   border: 1px solid var(--border);
   border-radius: 8px;
+  display: grid;
+  gap: 14px;
   padding: 16px;
 }
 
@@ -941,14 +1030,14 @@ td small {
 
 .strategy-head h3 {
   font-size: 18px;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .strategy-columns {
   display: grid;
   gap: 12px;
   grid-template-columns: 1fr 1fr;
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 .strategy-columns.three {
@@ -1015,7 +1104,7 @@ td small {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 .strategy-rule-grid > div,
@@ -1036,7 +1125,7 @@ td small {
 
 .strategy-formula,
 .strategy-next-action {
-  margin-top: 12px;
+  margin-top: 0;
 }
 
 .strategy-export-actions {
@@ -1044,7 +1133,7 @@ td small {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 12px;
+  margin-top: 0;
 }
 
 .strategy-export-actions button {
@@ -1196,7 +1285,7 @@ td small {
   border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
   padding: 12px;
 }
 
@@ -1254,9 +1343,9 @@ td small {
 
 .paper-watch-item div:first-child {
   align-items: center;
-  display: flex;
+  display: grid;
   gap: 10px;
-  justify-content: space-between;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
 }
 
 .paper-watch-item span,
@@ -1269,7 +1358,7 @@ td small {
 .paper-watch-metrics {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .paper-watch-rules {
@@ -1339,16 +1428,18 @@ meter {
   .research-layout,
   .research-detail-grid,
   .research-detail-grid.compact,
-	  .strategy-columns,
-	  .strategy-columns.three,
-	  .strategy-rule-grid,
-	  .strategy-regime-filter {
-	    grid-template-columns: 1fr;
-	  }
+  .strategy-columns,
+  .strategy-columns.three,
+  .strategy-rule-grid,
+  .strategy-regime-filter,
+  .paper-watch-item div:first-child,
+  .paper-watch-metrics {
+    grid-template-columns: 1fr;
+  }
 
-	  .strategy-regime-filter-actions {
-	    grid-template-columns: repeat(2, minmax(0, 1fr));
-	  }
+  .strategy-regime-filter-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   .topbar {
     align-items: flex-start;
@@ -1383,13 +1474,13 @@ meter {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-	  .metrics-grid {
-	    grid-template-columns: 1fr;
-	  }
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
 
-	  .strategy-regime-filter-actions {
-	    grid-template-columns: 1fr;
-	  }
+  .strategy-regime-filter-actions {
+    grid-template-columns: 1fr;
+  }
 
   .status-strip {
     align-items: flex-start;
