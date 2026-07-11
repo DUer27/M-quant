@@ -502,6 +502,17 @@ textarea {
   padding: 12px;
 }
 
+.result-card-wide {
+  background: #eef7f3;
+  border-color: rgba(15, 139, 111, 0.28);
+  grid-column: 1 / -1;
+}
+
+.result-card-wide strong {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
 .result-card span,
 .result-card small,
 .result-notes {
@@ -1208,6 +1219,26 @@ td small {
   color: var(--muted);
   font-size: 12px;
   margin: 0;
+}
+
+.plain-conclusion {
+  background: #eef7f3;
+  border: 1px solid rgba(15, 139, 111, 0.22);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  padding: 8px 10px;
+}
+
+.field-token {
+  border-bottom: 1px dotted #8aa0b7;
+  cursor: help;
+}
+
+.field-separator {
+  color: var(--muted);
 }
 
 .inline-link {
