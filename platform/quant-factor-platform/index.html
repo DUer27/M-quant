@@ -135,38 +135,41 @@
           </section>
 
           <section class="content-grid lower">
-            <section class="panel">
+            <section class="panel dashboard-factor-panel">
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Real Factor Ranking</p>
                   <h2>真实截面因子排名</h2>
                 </div>
               </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>股票</th>
-                    <th>综合分</th>
-                    <th>趋势</th>
-                    <th>过伸</th>
-                    <th>量价</th>
-                    <th>背离</th>
-                    <th>日内</th>
-                    <th>收盘位</th>
-                    <th>上影</th>
-                    <th>爆量</th>
-                    <th>K线</th>
-                    <th>拥挤风险</th>
-                    <th>交易挤</th>
-                    <th>警报</th>
-                    <th>标签</th>
-                  </tr>
-                </thead>
-                <tbody id="factor-table"></tbody>
-              </table>
+              <div class="collapsible-data dashboard-factor-preview" data-collapsible-data>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>股票</th>
+                      <th>综合分</th>
+                      <th>趋势</th>
+                      <th>过伸</th>
+                      <th>量价</th>
+                      <th>背离</th>
+                      <th>日内</th>
+                      <th>收盘位</th>
+                      <th>上影</th>
+                      <th>爆量</th>
+                      <th>K线</th>
+                      <th>拥挤风险</th>
+                      <th>交易挤</th>
+                      <th>警报</th>
+                      <th>标签</th>
+                    </tr>
+                  </thead>
+                  <tbody id="factor-table"></tbody>
+                </table>
+              </div>
+              <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
             </section>
 
-            <section class="panel">
+            <section class="panel dashboard-risk-panel">
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Risk Monitor</p>
@@ -261,17 +264,20 @@
               </div>
             </div>
             <div class="library-source" id="library-source-file">数据源等待加载</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>因子</th>
-                  <th>状态</th>
-                  <th>真实字段/公式</th>
-                  <th>说明</th>
-                </tr>
-              </thead>
-              <tbody id="factor-library-table"></tbody>
-            </table>
+            <div class="collapsible-data" data-collapsible-data>
+              <table>
+                <thead>
+                  <tr>
+                    <th>因子</th>
+                    <th>状态</th>
+                    <th>真实字段/公式</th>
+                    <th>说明</th>
+                  </tr>
+                </thead>
+                <tbody id="factor-library-table"></tbody>
+              </table>
+            </div>
+            <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
           </section>
 
           <section class="content-grid lower">
@@ -282,18 +288,21 @@
                   <h2>单根K线打分规则</h2>
                 </div>
               </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>形态</th>
-                    <th>分数</th>
-                    <th>持有期</th>
-                    <th>Kelly</th>
-                    <th>口径</th>
-                  </tr>
-                </thead>
-                <tbody id="kline-rules-table"></tbody>
-              </table>
+              <div class="collapsible-data compact-preview" data-collapsible-data>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>形态</th>
+                      <th>分数</th>
+                      <th>持有期</th>
+                      <th>Kelly</th>
+                      <th>口径</th>
+                    </tr>
+                  </thead>
+                  <tbody id="kline-rules-table"></tbody>
+                </table>
+              </div>
+              <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
             </section>
 
             <section class="panel">
@@ -369,24 +378,27 @@
                 <h2>草案候选明细</h2>
               </div>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>策略/日期</th>
-                  <th>股票</th>
-                  <th>决策分</th>
-                  <th>趋势/资金</th>
-                  <th>量价/吸筹</th>
-                  <th>拥挤/过热</th>
-                  <th>背离/持续</th>
-                  <th>警报/来源</th>
-                  <th>动作</th>
-                  <th>仓位</th>
-                  <th>原因</th>
-                </tr>
-              </thead>
-              <tbody id="strategy-candidate-table"></tbody>
-            </table>
+            <div class="collapsible-data" data-collapsible-data>
+              <table>
+                <thead>
+                  <tr>
+                    <th>策略/日期</th>
+                    <th>股票</th>
+                    <th>决策分</th>
+                    <th>趋势/资金</th>
+                    <th>量价/吸筹</th>
+                    <th>拥挤/过热</th>
+                    <th>背离/持续</th>
+                    <th>警报/来源</th>
+                    <th>动作</th>
+                    <th>仓位</th>
+                    <th>原因</th>
+                  </tr>
+                </thead>
+                <tbody id="strategy-candidate-table"></tbody>
+              </table>
+            </div>
+            <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
           </section>
 
           <section class="content-grid lower">
@@ -551,19 +563,22 @@
                 <h2>可送去 JoinQuant 复测的因子</h2>
               </div>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>因子</th>
-                  <th>方向</th>
-                  <th>状态</th>
-                  <th>用途</th>
-                  <th>阻塞项</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody id="backtest-factor-table"></tbody>
-            </table>
+            <div class="collapsible-data compact-preview" data-collapsible-data>
+              <table>
+                <thead>
+                  <tr>
+                    <th>因子</th>
+                    <th>方向</th>
+                    <th>状态</th>
+                    <th>用途</th>
+                    <th>阻塞项</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="backtest-factor-table"></tbody>
+              </table>
+            </div>
+            <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
           </section>
 
           <section class="content-grid lower">

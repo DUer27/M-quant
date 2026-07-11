@@ -262,6 +262,30 @@ function renderSummary(summary) {
   elements.demoFactorCount.textContent = summary.demoFactorCount;
 }
 
+function syncCollapsibleData() {
+  document.querySelectorAll('[data-collapsible-data]').forEach((box) => {
+    const button = box.parentElement?.querySelector('[data-collapse-toggle]');
+    if (!button) return;
+    const expanded = box.classList.contains('is-expanded');
+    const hasOverflow = box.scrollHeight > box.clientHeight + 8;
+    button.hidden = !expanded && !hasOverflow;
+    button.textContent = expanded ? '收起' : '展开全部';
+  });
+}
+
+function bindCollapsibleData() {
+  document.querySelectorAll('[data-collapse-toggle]').forEach((button) => {
+    if (button.dataset.bound === 'true') return;
+    button.dataset.bound = 'true';
+    button.addEventListener('click', () => {
+      const box = button.parentElement?.querySelector('[data-collapsible-data]');
+      if (!box) return;
+      box.classList.toggle('is-expanded');
+      syncCollapsibleData();
+    });
+  });
+}
+
 function renderFactors(rows) {
   elements.factorTable.innerHTML = rows
     .map((row) => {
@@ -2718,6 +2742,8 @@ async function refreshDashboard() {
   renderLiveStrategies(liveStrategies);
   renderBacktestCenter(backtestStatus);
   renderResearchPipeline(researchPipeline);
+  bindCollapsibleData();
+  requestAnimationFrame(syncCollapsibleData);
 }
 
 async function boot() {
@@ -2930,7 +2956,12 @@ elements.askResearchAssistant?.addEventListener('click', async () => {
 elements.navButtons.forEach((button) => {
   button.addEventListener('click', () => {
     showView(button.dataset.viewTarget);
+    requestAnimationFrame(syncCollapsibleData);
   });
+});
+
+window.addEventListener('resize', () => {
+  requestAnimationFrame(syncCollapsibleData);
 });
 
 boot();
