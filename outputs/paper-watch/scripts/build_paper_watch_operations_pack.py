@@ -283,7 +283,7 @@ def initial_ledger_rows(routes: list[dict]) -> list[dict]:
             "selected_count": latest.get("selected_count", None),
             "selected_codes": latest.get("selected_codes", []),
             "paper_action": "open_allowed" if can_start else "record_only",
-            "planned_weight": 1.0 if can_start and route.get("sleeve_id") == "jq_controller" else 0.0,
+            "planned_weight": 1.0 if can_start else 0.0,
             "paper_nav": None,
             "period_return": None,
             "benchmark_return": None,
@@ -334,7 +334,7 @@ def write_doc(pack: dict) -> None:
         "## 边界",
         "",
         "- 本运行包不生成任何纸面收益、净值、成交或持仓。",
-        "- AkShare 本地路线必须等 JoinQuant 交易可行性复核通过后，才允许 planned_weight 大于 0。",
+        "- AkShare 本地路线若缺 JoinQuant 交易可行性复核，planned_weight 必须为 0；复核通过后可作为独立观察资金袖记录。",
         "- JoinQuant 组件监控路线不作为独立资金袖重复开仓。",
         "",
     ])
@@ -375,7 +375,7 @@ def main() -> int:
         "global_rules": [
             "每个 sleeve_id 独立记录，不得把组件监控路线当作第二资金袖。",
             "planned_weight 只能在 can_start_observation=true 时大于 0。",
-            "AkShare 本地信号缺 JoinQuant 交易复核时只能 record_only。",
+            "AkShare 本地信号缺 JoinQuant 交易复核时只能 record_only；复核通过后可独立记录 open_allowed。",
             "核心量价中波动小市值资金袖只有在 JoinQuant 最新信号复核 ready 后才允许 planned_weight 大于 0。",
             "任何暂停规则触发后，paper_action 只能是 pause_new_entry 或 close_only。",
         ],

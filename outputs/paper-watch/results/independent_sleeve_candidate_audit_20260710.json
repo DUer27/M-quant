@@ -1,6 +1,6 @@
 {
   "source": "m_quant_independent_sleeve_candidate_audit",
-  "generated_at": "2026-07-10T15:37:26",
+  "generated_at": "2026-07-13T11:35:15",
   "data_policy": "只读取已审计 JoinQuant、AkShare 与用户导入复核文件；不生成收益、净值、成交、持仓或交易可行性结论。",
   "target_independent_sleeves": 2,
   "eligible_independent_sleeve_count": 2,
