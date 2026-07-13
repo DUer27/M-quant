@@ -136,38 +136,41 @@
           </section>
 
           <section class="content-grid lower">
-            <section class="panel">
+            <section class="panel dashboard-factor-panel">
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Real Factor Ranking</p>
                   <h2>真实截面因子排名</h2>
                 </div>
               </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>股票</th>
-                    <th>综合分</th>
-                    <th>趋势</th>
-                    <th>过伸</th>
-                    <th>量价</th>
-                    <th>背离</th>
-                    <th>日内</th>
-                    <th>收盘位</th>
-                    <th>上影</th>
-                    <th>爆量</th>
-                    <th>K线</th>
-                    <th>拥挤风险</th>
-                    <th>交易挤</th>
-                    <th>警报</th>
-                    <th>标签</th>
-                  </tr>
-                </thead>
-                <tbody id="factor-table"></tbody>
-              </table>
+              <div class="collapsible-data dashboard-factor-preview" data-collapsible-data>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>股票</th>
+                      <th>综合分</th>
+                      <th>趋势</th>
+                      <th>过伸</th>
+                      <th>量价</th>
+                      <th>背离</th>
+                      <th>日内</th>
+                      <th>收盘位</th>
+                      <th>上影</th>
+                      <th>爆量</th>
+                      <th>K线</th>
+                      <th>拥挤风险</th>
+                      <th>交易挤</th>
+                      <th>警报</th>
+                      <th>标签</th>
+                    </tr>
+                  </thead>
+                  <tbody id="factor-table"></tbody>
+                </table>
+              </div>
+              <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
             </section>
 
-            <section class="panel">
+            <section class="panel dashboard-risk-panel">
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Risk Monitor</p>
@@ -276,7 +279,7 @@
               <div class="ledger-import">
                 <label>
                   粘贴模拟观察账本 JSON 或 CSV
-                  <textarea id="paper-watch-ledger-json" rows="5" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
+                  <textarea id="paper-watch-ledger-json" rows="5" title="这里是给系统读取的账本格式。sleeve_id 是观察账户编号，strategy_id 是策略编号，planned_weight 是计划观察比例。" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
                 </label>
                 <div class="backtest-actions">
                   <button id="download-paper-watch-ledger-csv" type="button">下载CSV模板</button>
@@ -325,17 +328,20 @@
               </div>
             </div>
             <div class="library-source" id="library-source-file">数据源等待加载</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>因子</th>
-                  <th>状态</th>
-                  <th>真实字段/公式</th>
-                  <th>说明</th>
-                </tr>
-              </thead>
-              <tbody id="factor-library-table"></tbody>
-            </table>
+            <div class="collapsible-data" data-collapsible-data>
+              <table>
+                <thead>
+                  <tr>
+                    <th>因子</th>
+                    <th>状态</th>
+                    <th>真实字段/公式</th>
+                    <th>说明</th>
+                  </tr>
+                </thead>
+                <tbody id="factor-library-table"></tbody>
+              </table>
+            </div>
+            <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
           </section>
 
           <section class="content-grid lower">
@@ -346,18 +352,21 @@
                   <h2>单根K线打分规则</h2>
                 </div>
               </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>形态</th>
-                    <th>分数</th>
-                    <th>持有期</th>
-                    <th>Kelly</th>
-                    <th>口径</th>
-                  </tr>
-                </thead>
-                <tbody id="kline-rules-table"></tbody>
-              </table>
+              <div class="collapsible-data compact-preview" data-collapsible-data>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>形态</th>
+                      <th>分数</th>
+                      <th>持有期</th>
+                      <th>Kelly</th>
+                      <th>口径</th>
+                    </tr>
+                  </thead>
+                  <tbody id="kline-rules-table"></tbody>
+                </table>
+              </div>
+              <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
             </section>
 
             <section class="panel">
@@ -430,24 +439,27 @@
                 <h2>策略候选明细</h2>
               </div>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>策略/日期</th>
-                  <th>股票</th>
-                  <th>决策分</th>
-                  <th>趋势/资金</th>
-                  <th>量价/吸筹</th>
-                  <th>拥挤/过热</th>
-                  <th>背离/持续</th>
-                  <th>警报/来源</th>
-                  <th>动作</th>
-                  <th>仓位</th>
-                  <th>原因</th>
-                </tr>
-              </thead>
-              <tbody id="strategy-candidate-table"></tbody>
-            </table>
+            <div class="collapsible-data" data-collapsible-data>
+              <table>
+                <thead>
+                  <tr>
+                    <th>策略/日期</th>
+                    <th>股票</th>
+                    <th>决策分</th>
+                    <th>趋势/资金</th>
+                    <th>量价/吸筹</th>
+                    <th>拥挤/过热</th>
+                    <th>背离/持续</th>
+                    <th>警报/来源</th>
+                    <th>动作</th>
+                    <th>仓位</th>
+                    <th>原因</th>
+                  </tr>
+                </thead>
+                <tbody id="strategy-candidate-table"></tbody>
+              </table>
+            </div>
+            <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
           </section>
 
           <section class="content-grid lower">
@@ -612,19 +624,22 @@
                 <h2>可送去 JoinQuant 复测的因子</h2>
               </div>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>因子</th>
-                  <th>方向</th>
-                  <th>状态</th>
-                  <th>用途</th>
-                  <th>阻塞项</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody id="backtest-factor-table"></tbody>
-            </table>
+            <div class="collapsible-data compact-preview" data-collapsible-data>
+              <table>
+                <thead>
+                  <tr>
+                    <th>因子</th>
+                    <th>方向</th>
+                    <th>状态</th>
+                    <th>用途</th>
+                    <th>阻塞项</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="backtest-factor-table"></tbody>
+              </table>
+            </div>
+            <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
           </section>
 
           <section class="content-grid lower">
@@ -649,11 +664,11 @@
               </summary>
               <div class="disclosure-content">
                 <label>
-                  粘贴 JoinQuant 复测或交易复核 JSON
-                  <textarea id="backtest-result-json" rows="8" placeholder='{"source":"joinquant_akshare_latest_signal_tradeability_review","strategy_id":"ak_mean_reversion_quality_combo","decision":"tradeability_review_passed"}'></textarea>
+                  粘贴 JoinQuant 检查结果文件
+                  <textarea id="backtest-result-json" rows="8" title="这里粘贴 JoinQuant 或其他真实检查产出的结果文件。source 表示来源，strategy_id 表示策略编号，decision 表示检查结论。" placeholder='{"source":"joinquant_akshare_latest_signal_tradeability_review","strategy_id":"ak_mean_reversion_quality_combo","decision":"tradeability_review_passed"}'></textarea>
                 </label>
                 <div class="backtest-actions">
-                  <button id="validate-tradeability-review" type="button">校验复核JSON</button>
+                  <button id="validate-tradeability-review" type="button">校验检查结果</button>
                   <button id="import-backtest-result" class="primary" type="button">导入结果</button>
                 </div>
                 <p id="backtest-import-message" class="form-message">只接收你实际在 JoinQuant 跑出的结果；交易复核会单独入库，不计入收益回测。</p>
@@ -683,7 +698,7 @@
             <article class="metric">
               <span>最佳周期</span>
               <strong id="validated-best-horizon">-</strong>
-              <small>按多空收益观察</small>
+              <small>按好坏组差距观察</small>
             </article>
           </section>
 
@@ -691,7 +706,7 @@
             <div class="panel-head">
               <div>
                 <p class="eyebrow">Validated Results</p>
-                <h2>JoinQuant 实测结果</h2>
+                <h2>因子检查结果</h2>
               </div>
             </div>
             <div id="validated-factor-directory" class="factor-directory" aria-label="实测因子目录"></div>
@@ -704,10 +719,10 @@
                     <th>周期</th>
                     <th>方向</th>
                     <th>样本</th>
-                    <th>RankIC</th>
-                    <th>RankIC t</th>
-                    <th>多空收益</th>
-                    <th>正向占比</th>
+                    <th>排序有效度</th>
+                    <th>稳定性参考</th>
+                    <th>好坏组差距</th>
+                    <th>赚钱次数占比</th>
                     <th>来源</th>
                     <th>判断</th>
                   </tr>
@@ -739,7 +754,7 @@
             <article class="metric">
               <span>最佳周期</span>
               <strong id="strategy-result-best-horizon">-</strong>
-              <small>按平均收益观察</small>
+              <small>按历史表现观察</small>
             </article>
           </section>
 
@@ -747,7 +762,7 @@
             <div class="panel-head">
               <div>
                 <p class="eyebrow">Strategy Results</p>
-                <h2>策略实测结果</h2>
+                <h2>策略检查结果</h2>
               </div>
 		            </div>
 		            <div id="strategy-result-directory" class="factor-directory" aria-label="策略实测目录"></div>
@@ -761,12 +776,12 @@
 		                    <th>策略</th>
 		                    <th>周期</th>
 		                    <th>市场状态</th>
-		                    <th>市值层</th>
-		                    <th>样本</th>
-	                    <th>平均收益</th>
-                    <th>日均收益</th>
-                    <th>正向占比</th>
-                    <th>最好/最差日</th>
+		                    <th>股票范围</th>
+		                    <th>结论和样本</th>
+	                    <th>历史收益</th>
+                    <th>年化参考</th>
+                    <th>赚钱次数占比</th>
+                    <th>最好/最差一次</th>
                     <th>候选数</th>
                     <th>来源</th>
                     <th>判断</th>

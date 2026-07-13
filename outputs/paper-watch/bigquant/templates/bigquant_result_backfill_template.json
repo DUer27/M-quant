@@ -1,0 +1,43 @@
+{
+  "source": "bigquant_paper_watch_result",
+  "platform": "BigQuant",
+  "imported_at": "",
+  "records": [
+    {
+      "sleeve_id": "jq_controller",
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "bigquant_task_name": "",
+      "test_start": "",
+      "test_end": "",
+      "benchmark": "000300.SH",
+      "annual_return": null,
+      "period_return": null,
+      "max_drawdown": null,
+      "sharpe": null,
+      "win_rate": null,
+      "turnover": null,
+      "net_value_curve": [],
+      "positions_or_selected_codes": [],
+      "pause_events": [],
+      "data_policy": "Fill only with real BigQuant output. Do not estimate missing result fields."
+    },
+    {
+      "sleeve_id": "akshare_local_switch",
+      "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+      "bigquant_task_name": "",
+      "test_start": "",
+      "test_end": "",
+      "benchmark": "000300.SH",
+      "annual_return": null,
+      "period_return": null,
+      "max_drawdown": null,
+      "sharpe": null,
+      "win_rate": null,
+      "turnover": null,
+      "net_value_curve": [],
+      "positions_or_selected_codes": [],
+      "pause_events": [],
+      "data_policy": "Fill only with real BigQuant output. Do not estimate missing result fields."
+    }
+  ]
+}

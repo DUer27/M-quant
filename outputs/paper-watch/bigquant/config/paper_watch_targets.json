@@ -1,0 +1,95 @@
+{
+  "source": "m_quant_bigquant_paper_watch_execution_package",
+  "generated_at": "2026-07-13",
+  "result_status": "pending_bigquant_real_backtest",
+  "data_policy": "Only audited M-quant evidence is used. This file does not create BigQuant return, NAV, fill, or position results.",
+  "blocked_targets": [
+    {
+      "sleeve_id": "jq_medium_vol_small_cap_core",
+      "strategy_id": "core_volume_price_trend_v1",
+      "reason": "Latest JoinQuant signal review did not pass promotion_signal_ready and selected_count is below 10."
+    }
+  ],
+  "targets": [
+    {
+      "sleeve_id": "jq_controller",
+      "strategy_id": "regime_switch_quality_kline_v1",
+      "strategy_name": "Market regime switch controller v1",
+      "paper_action": "open_allowed",
+      "planned_weight": 1.0,
+      "benchmark": "000300.SH",
+      "rebalance_days": 5,
+      "top_n": 30,
+      "logic": {
+        "high_volatility": "jq_quality_profit_liquidity_v1",
+        "low_volatility": "kline_assisted_confirmation",
+        "medium_volatility": "cash_watch"
+      },
+      "baseline": {
+        "sample_dates": 70,
+        "strategy_return": 0.8328872072774001,
+        "max_drawdown": -0.09068798084469964,
+        "sharpe": 1.8039399491070465,
+        "win_rate": 0.6285714285714286,
+        "avg_selected_count": 29.357142857142858
+      },
+      "pause_rules": [
+        "rolling_drawdown_guard: pause new entries if paper-watch drawdown is below -11.336% or below -8%, whichever guard triggers first.",
+        "three_rebalance_underperformance: pause and review after three rebalance periods underperform HS300 with hit rate below historical win rate.",
+        "layer_violation: do not open positions when the market layer is not high_volatility or low_volatility."
+      ]
+    },
+    {
+      "sleeve_id": "akshare_local_switch",
+      "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
+      "component_strategy_id": "ak_mean_reversion_quality_combo",
+      "strategy_name": "AkShare local high/low volatility switch v1",
+      "paper_action": "open_allowed",
+      "planned_weight": 1.0,
+      "benchmark": "000300.SH",
+      "rebalance_days": 5,
+      "signal_date": "2026-07-09",
+      "top_n": 15,
+      "selected_codes": [
+        "002001.SZ",
+        "000568.SZ",
+        "000858.SZ",
+        "000425.SZ",
+        "000338.SZ",
+        "000651.SZ",
+        "000001.SZ",
+        "002142.SZ",
+        "000776.SZ",
+        "002027.SZ",
+        "002241.SZ",
+        "002179.SZ",
+        "002230.SZ",
+        "002415.SZ",
+        "002714.SZ"
+      ],
+      "tradeability_review": {
+        "decision": "tradeability_review_passed",
+        "tradable_count": 15,
+        "blocked_count": 0
+      },
+      "bigquant_visual_upload": {
+        "input_csv": "outputs/paper-watch/bigquant/uploads/akshare_local_switch_score_input_20260709.csv",
+        "node_config": "outputs/paper-watch/bigquant/uploads/akshare_local_switch_score_to_position_config.md",
+        "score_to_position_score_column": "score",
+        "instrument_column": "instrument",
+        "date_column": "date",
+        "top_n": 15,
+        "weight_method": "equal_weight",
+        "target_weight_column": "target_weight"
+      },
+      "baseline": {
+        "sample_trades": 72,
+        "strategy_return": 1.740866685270742,
+        "max_drawdown": -0.06597592399323748,
+        "sharpe": 3.14203779176307,
+        "positive_trade_ratio": 0.6805555555555556,
+        "avg_stock_count": 20.0
+      }
+    }
+  ]
+}

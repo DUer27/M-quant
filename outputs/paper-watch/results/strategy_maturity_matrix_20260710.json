@@ -1,6 +1,6 @@
 {
   "source": "m_quant_strategy_maturity_matrix",
-  "generated_at": "2026-07-10T15:37:26",
+  "generated_at": "2026-07-13T11:36:12",
   "target_ready_strategy_count": 2,
   "ready_strategy_count": 2,
   "goal_status": "target_met",
@@ -218,27 +218,6 @@
       ],
       "next_action": "作为控制器组件、候选池或参数来源；不要重复计算独立资金袖数量。",
       "data_policy": "真实 JoinQuant 数据生成候选池；5日等权调仓净值由真实未来5日收益扣交易成本和滑点计算；未生成任何虚构绩效。"
-    },
-    {
-      "id": "akshare_joinquant_review_gap",
-      "strategy_id": "akshare_regime_switch_contraction_mean_reversion_v1",
-      "strategy_name": "AkShare本地高低波动切换策略 v1",
-      "category": "maturity_gap",
-      "evidence_system": "AkShare local OHLCV + pending JoinQuant review",
-      "decision": "needs_joinquant_tradeability_and_candidate_review",
-      "decision_name": "缺聚宽准入复核",
-      "counts_toward_two_strategy_goal": false,
-      "can_start_observation": false,
-      "local_decision": "robust_local_switch_paper_watch",
-      "local_failed_checks": [],
-      "awaiting_joinquant_candidate_count": 6,
-      "latest_tradeability_review_imported": false,
-      "blocked_reasons": [
-        "AkShare 本地切换策略虽通过本地稳健性审计，但最新信号未导入 JoinQuant 交易可行性复核。",
-        "6 条 AkShare 本地强分层候选仍等待 JoinQuant OHLCV/valuation 批量复核。"
-      ],
-      "next_action": "先运行并回填最新信号交易可行性复核；再运行 AkShare 强分层候选 JoinQuant 批量复核，决定是否升级第二资金袖。",
-      "data_policy": "只汇总已有本地 AkShare 与待导入 JoinQuant 证据；不生成新收益。"
     }
   ],
   "independent_sleeve_candidate_audit": {
@@ -628,18 +607,13 @@
   "next_actions": [
     {
       "priority": 1,
-      "action": "运行并回填 AkShare 最新信号 JoinQuant 交易可行性复核脚本。",
-      "reason": "这是把 AkShare 本地切换策略从 record_only 升级为可观察资金袖的最近阻塞项。"
+      "action": "对已准入资金袖开始真实模拟观察账本记录。",
+      "reason": "市场状态切换策略 v1 与 AkShare 本地高低波动切换策略 v1 都需要样本外观察数据，而不是继续只看历史回测。"
     },
     {
       "priority": 2,
       "action": "运行 AkShare 强分层候选 JoinQuant 批量复核并回填 records。",
-      "reason": "用于判断本地 6 条强候选能否在 JoinQuant OHLCV/valuation 口径下继续保留。"
-    },
-    {
-      "priority": 3,
-      "action": "对 jq_controller 开始真实模拟观察账本记录。",
-      "reason": "当前唯一已准入资金袖需要样本外观察数据，而不是继续只看历史回测。"
+      "reason": "这只用于扩展候选储备，不影响当前两条已准入资金袖的观察启动。"
     }
   ]
 }

@@ -4,6 +4,7 @@ const appConfig = window.__QUANT_APP_CONFIG__ || {};
 
 document.title = appConfig.title || fallbackPreferences.app.name;
 document.querySelector('#api-url').textContent = appConfig.apiURL || '/api';
+document.querySelector('#api-url').title = fieldHint('api_url');
 
 const factorAvailabilityAliases = {
   chip_health_factor: 'chip_health',
@@ -175,6 +176,74 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function fieldHint(name, value) {
+  const key = String(name || '').trim();
+  const text = String(value || key || '').trim();
+  const hints = {
+    amount_ma20_mean: '近 20 日平均成交额，用来看股票交易是否活跃。',
+    api_url: '当前页面请求本地服务的接口地址。',
+    close: '收盘价。',
+    data_source: '这条数据来自哪个文件或外部数据源。',
+    dea: 'MACD 指标里的慢线。',
+    diff: 'MACD 指标里的快线。',
+    factor_id: '因子的机器名，系统内部用它定位计算规则。',
+    factor_variant: '这次检查使用的因子版本或变体名称。',
+    gate_status: '准入状态，表示当前是否满足开始观察的条件。',
+    high: '最高价。',
+    huolipan: '获利盘比例，粗略表示当前有多少筹码处于盈利状态。',
+    hslv: '换手率，用来看股票当天交易有多活跃。',
+    liquidity_metric20_mean: '近 20 日流动性指标，用来看买卖是否顺畅。',
+    low: '最低价。',
+    ma5: '5 日均线，表示最近 5 个交易日的平均价格。',
+    ma13: '13 日均线，表示最近 13 个交易日的平均价格。',
+    ma20: '20 日均线，常用来观察短中期趋势。',
+    ma30: '30 日均线，常用来观察中期趋势。',
+    ma60: '60 日均线，常用来观察较长一段时间的趋势。',
+    ma120: '120 日均线，常用来观察长期趋势。',
+    ma250: '250 日均线，接近一年交易日的平均价格。',
+    macd: 'MACD 指标，用来看价格动能变化。',
+    market_cap: '市值，表示公司在市场上的总估值。',
+    mavol5: '5 日平均成交量。',
+    mavol10: '10 日平均成交量。',
+    open: '开盘价。',
+    paper_action: '模拟观察动作，例如允许观察、等待或暂停。',
+    pinjunchengben: '平均成本，粗略表示市场持仓成本位置。',
+    planned_weight: '计划观察比例，只用于账本记录，不代表真实下单。',
+    qishijizhong: '70% 筹码集中度，用来看筹码是否集中。',
+    qujianchonghe: '筹码区间重合度，用来看成本区间是否集中。',
+    signal_state: '策略当天给出的信号状态。',
+    sleeve_id: '观察账户编号，用来区分不同策略或资金分组。',
+    source: '结果来源，说明这条记录由哪个真实检查流程生成。',
+    source_file: '本页当前读取的数据文件路径，用来追溯结果从哪里来。',
+    stockd: 'KDJ 指标里的 D 值。',
+    stockj: 'KDJ 指标里的 J 值，常用来看短期过热或转弱。',
+    stockk: 'KDJ 指标里的 K 值。',
+    strategy_id: '策略的机器名，系统内部用它定位一套策略规则。',
+    taolaopan: '套牢盘比例，粗略表示上方卖压。',
+    turnover_ratio: '换手率，用来看交易活跃程度。',
+    volume: '成交量。',
+  };
+  if (hints[text]) return hints[text];
+  if (hints[key]) return hints[key];
+  if (text.includes('_')) return '系统内部字段名，用来稳定匹配数据；悬浮查看不影响页面判断。';
+  if (text.includes('\\') || text.includes('/')) return '本地文件路径，用来追溯这条数据来自哪个文件。';
+  if (/^[a-z][a-z0-9_./-]*$/i.test(text)) return '系统内部名称或文件路径，用来追溯数据来源。';
+  return '字段说明';
+}
+
+function explainable(value, name, className = 'field-token') {
+  const displayValue = value === null || value === undefined || value === '' ? '-' : value;
+  return `<span class="${escapeHtml(className)}" title="${escapeHtml(fieldHint(name, value))}">${escapeHtml(displayValue)}</span>`;
+}
+
+function explainFieldList(value) {
+  const fields = Array.isArray(value)
+    ? value
+    : String(value || '').split(/[,，]/).map((item) => item.trim()).filter(Boolean);
+  if (!fields.length) return '-';
+  return fields.map((field) => explainable(field, field)).join('<span class="field-separator">, </span>');
+}
+
 async function request(path, options = {}) {
   const response = await fetch(path, {
     headers: {
@@ -213,6 +282,30 @@ function renderSummary(summary) {
   elements.validFactorCount.textContent = summary.validFactorCount;
   elements.pendingFactorCount.textContent = summary.pendingFactorCount;
   elements.demoFactorCount.textContent = summary.demoFactorCount;
+}
+
+function syncCollapsibleData() {
+  document.querySelectorAll('[data-collapsible-data]').forEach((box) => {
+    const button = box.parentElement?.querySelector('[data-collapse-toggle]');
+    if (!button) return;
+    const expanded = box.classList.contains('is-expanded');
+    const hasOverflow = box.scrollHeight > box.clientHeight + 8;
+    button.hidden = !expanded && !hasOverflow;
+    button.textContent = expanded ? '收起' : '展开全部';
+  });
+}
+
+function bindCollapsibleData() {
+  document.querySelectorAll('[data-collapse-toggle]').forEach((button) => {
+    if (button.dataset.bound === 'true') return;
+    button.dataset.bound = 'true';
+    button.addEventListener('click', () => {
+      const box = button.parentElement?.querySelector('[data-collapsible-data]');
+      if (!box) return;
+      box.classList.toggle('is-expanded');
+      syncCollapsibleData();
+    });
+  });
 }
 
 function renderFactors(rows) {
@@ -288,34 +381,35 @@ function renderMaturityMatrix(matrix) {
   const sleeveAudit = matrix.independent_sleeve_candidate_audit || {};
   const sleeveCandidates = Array.isArray(sleeveAudit.candidates) ? sleeveAudit.candidates : [];
   const goalMet = matrix.goal_status === 'target_met';
+  const matrixConclusion = goalMet
+    ? `已找到 ${matrix.ready_strategy_count ?? 0} 条可以开始模拟观察的策略。注意：这只是可以开始记录模拟观察，不代表可以实盘。`
+    : `目前只有 ${matrix.ready_strategy_count ?? 0} 条策略可以观察，还没达到 ${matrix.target_ready_strategy_count ?? 2} 条目标。`;
   return `
     <div class="paper-watch-note">
-      <strong>成熟策略推进矩阵</strong>
+      <strong>策略当前结论</strong>
       <span class="tag ${goalMet ? 'good' : 'watch'}">
-        ${escapeHtml(matrix.ready_strategy_count ?? 0)} / ${escapeHtml(matrix.target_ready_strategy_count ?? 2)}
+        ${goalMet ? '已达标' : '未达标'}
       </span>
-      <p>${escapeHtml(matrix.goal_status_name || '等待矩阵生成')}</p>
-      ${blockers.length ? `<p>${escapeHtml(blockers.join('；'))}</p>` : ''}
+      <p>${escapeHtml(matrixConclusion)}</p>
+      ${blockers.length ? `<p>${escapeHtml(plainScope(blockers.join('；')))}</p>` : ''}
       <details class="compact-details">
-        <summary>查看策略成熟度明细</summary>
+        <summary>查看详细检查记录</summary>
         <table class="mini-table">
           <thead>
             <tr>
               <th>策略</th>
-              <th>类型</th>
-              <th>决策</th>
-              <th>计入</th>
-              <th>收益</th>
-              <th>回撤</th>
-              <th>Sharpe</th>
+              <th>当前判断</th>
+              <th>是否算达标</th>
+              <th>历史收益</th>
+              <th>最大下跌</th>
+              <th>稳定度</th>
             </tr>
           </thead>
           <tbody>
             ${entries.map((item) => `
               <tr>
                 <td>${escapeHtml(item.strategy_name || item.id || '-')}</td>
-                <td>${escapeHtml(item.category || '-')}</td>
-                <td>${escapeHtml(item.decision_name || item.decision || '-')}</td>
+                <td>${escapeHtml(plainStatus(item.decision_name || item.decision || '-'))}</td>
                 <td>${item.counts_toward_two_strategy_goal ? '是' : '否'}</td>
                 <td>${formatPercent(item.strategy_return, 2)}</td>
                 <td>${formatPercent(item.max_drawdown, 2)}</td>
@@ -328,17 +422,17 @@ function renderMaturityMatrix(matrix) {
           ${sleeveCandidates.length ? `
             <details class="compact-details">
               <summary>
-                独立资金袖候选：
-                ${escapeHtml(sleeveAudit.eligible_independent_sleeve_count ?? 0)} 个准入，
-                ${escapeHtml(sleeveAudit.blocked_candidate_count ?? 0)} 个阻塞
+                其他候选策略：
+                ${escapeHtml(sleeveAudit.eligible_independent_sleeve_count ?? 0)} 个可用，
+                ${escapeHtml(sleeveAudit.blocked_candidate_count ?? 0)} 个暂时不能用
               </summary>
               <table class="mini-table">
                 <thead>
                   <tr>
                     <th>候选</th>
-                    <th>决策</th>
-                    <th>计入</th>
-                    <th>缺口</th>
+                    <th>当前判断</th>
+                    <th>是否算达标</th>
+                    <th>还缺什么</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -356,9 +450,9 @@ function renderMaturityMatrix(matrix) {
                     return `
                       <tr>
                         <td>${escapeHtml(candidateName)}</td>
-                        <td>${escapeHtml(item.decision_name || item.decision || '-')}</td>
+                        <td>${escapeHtml(plainStatus(item.decision_name || item.decision || '-'))}</td>
                         <td>${item.counts_as_independent_sleeve ? '是' : '否'}</td>
-                        <td>${escapeHtml(gaps || '-')}</td>
+                        <td>${escapeHtml(plainScope(gaps || '-'))}</td>
                       </tr>
                     `;
                   }).join('')}
@@ -367,9 +461,9 @@ function renderMaturityMatrix(matrix) {
             </details>
           ` : ''}
           <strong>下一步</strong>
-          ${renderTextList(actions.map((item) => `${item.priority}. ${item.action} ${item.reason}`))}
+          ${renderTextList(actions.map((item) => `${item.priority}. ${plainScope(item.action)} ${plainScope(item.reason)}`))}
           <strong>数据原则</strong>
-          ${renderTextList([matrix.data_policy || '只读取已有真实证据，不生成收益。'])}
+          ${renderTextList([plainScope(matrix.data_policy || '只读取已有真实证据，不生成收益。')])}
         </div>
       </details>
     </div>
@@ -385,36 +479,36 @@ function renderTradeabilityReviewTaskPack(pack) {
   const steps = Array.isArray(pack.steps) ? pack.steps : [];
   const selectedCodes = Array.isArray(target.selected_codes) ? target.selected_codes : [];
   const imported = pack.status === 'review_passed' || pack.status === 'review_failed' || pack.status === 'review_imported';
+  const canStart = Boolean(gate.can_start_observation);
   return `
     <div class="paper-watch-note">
-      <strong>交易可行性复核任务包</strong>
-      <span class="tag ${imported ? 'good' : 'pending'}">${escapeHtml(pack.status || 'missing')}</span>
+      <strong>开仓前检查</strong>
+      <span class="tag ${imported ? 'good' : 'pending'}">${escapeHtml(plainStatus(pack.status || 'missing'))}</span>
       <p>
         ${escapeHtml(target.strategy_name || target.strategy_id || '-')}：
         ${escapeHtml(target.signal_date || '-')}，
         入选 ${escapeHtml(target.selected_count ?? 0)} 只，
-        当前 ${gate.can_start_observation ? '已可观察' : '仍需 JoinQuant 真实复核'}。
+        当前${canStart ? '已经通过检查，可以开始模拟观察。' : '还没通过真实交易检查，先不要开始。'}
       </p>
       <p>
-        通过门槛：可交易数量不少于 ${escapeHtml(passGate.min_tradable_count ?? 10)}，
-        decision 必须为 ${escapeHtml(passGate.required_decision || 'tradeability_review_passed')}。
+        要通过，至少要有 ${escapeHtml(passGate.min_tradable_count ?? 10)} 只股票确认可以买卖。
       </p>
       <div class="inline-actions">
         ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载交易复核脚本</a>` : ''}
         <button type="button" data-paper-watch-rebuild="true">刷新派生包</button>
       </div>
       <details class="compact-details">
-        <summary>查看复核步骤和候选</summary>
+        <summary>查看检查步骤和股票名单</summary>
         <div class="paper-watch-rules">
-          <strong>执行步骤</strong>
-          ${renderTextList(steps)}
+          <strong>要做什么</strong>
+          ${renderTextList(steps.map(plainScope))}
           <strong>入选代码</strong>
           ${renderTextList(selectedCodes)}
           <strong>导入要求</strong>
           ${renderTextList([
             `导入接口：${passGate.import_endpoint || '/backtest-api/import-results'}`,
-            `预期 source：${script.expected_source || 'joinquant_akshare_latest_signal_tradeability_review'}`,
-            passGate.after_import_expected_effect || '导入后才允许继续判断是否解除阻塞。',
+            `文件来源：${plainSource(script.expected_source || 'joinquant_akshare_latest_signal_tradeability_review')}`,
+            plainScope(passGate.after_import_expected_effect || '导入后才允许继续判断是否解除阻塞。'),
           ])}
         </div>
       </details>
@@ -438,24 +532,21 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
       <span class="tag ${reviewReady ? 'good' : review ? 'watch' : 'pending'}">${escapeHtml(pack.status || 'waiting')}</span>
       <p>
         ${escapeHtml(target.strategy_name || target.strategy_id || '-')}：
-        ${escapeHtml(target.layer || '中波动/小市值')}，
+        ${escapeHtml(target.layer || '市场适中、小市值股票')}，
         历史收益 ${formatPercent(baseline.strategy_return, 2)}，
-        回撤 ${formatPercent(baseline.max_drawdown, 2)}，
-        Sharpe ${formatNumber(baseline.sharpe, 2)}。
+        最大下跌 ${formatPercent(baseline.max_drawdown, 2)}，
+        稳定度 ${formatNumber(baseline.sharpe, 2)}。
       </p>
       <p>
-        通过门槛：source=${escapeHtml(gate.required_source || '-')}，
-        decision=${escapeHtml(gate.required_decision || '-')}，
-        市场状态 ${escapeHtml(gate.required_market_regime || '-')}，
-        入选不少于 ${escapeHtml(gate.min_selected_count ?? 10)} 只。
+        要晋级，必须刚好遇到目标市场环境，并且至少选出 ${escapeHtml(gate.min_selected_count ?? 10)} 只股票。
       </p>
       ${review ? `
         <p>
           最新导入：${escapeHtml(review.signal_date || '-')}，
-          ${escapeHtml(review.market_regime || '-')}，
+          ${escapeHtml(plainStatus(review.market_regime || '-'))}，
           目标 ${escapeHtml(review.target_market_regime || '-')} / ${escapeHtml(review.target_market_cap_bucket || '-')}，
           入选 ${escapeHtml(review.selected_count ?? 0)} / 门槛 ${escapeHtml(review.min_selected_count ?? gate.min_selected_count ?? 10)}，
-          结论 ${escapeHtml(review.decision || '-')}。
+          结论：${escapeHtml(plainStatus(review.decision || '-'))}。
         </p>
         ${review.decision_reason ? `<p>${escapeHtml(review.decision_reason)}</p>` : ''}
       ` : ''}
@@ -465,7 +556,7 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
       <details class="compact-details">
         <summary>查看晋级步骤</summary>
         <div class="paper-watch-rules">
-          ${renderTextList(steps)}
+          ${renderTextList(steps.map(plainScope))}
           ${reviewRecords.length ? `
             <strong>最近复核候选</strong>
             ${renderTextList(reviewRecords.slice(0, 10).map((item) => (
@@ -473,7 +564,7 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
             )))}
           ` : ''}
           <strong>数据原则</strong>
-          ${renderTextList([pack.data_policy || '只生成复核任务，不生成结果。'])}
+          ${renderTextList([plainScope(pack.data_policy || '只生成复核任务，不生成结果。')])}
         </div>
       </details>
     </div>
@@ -804,39 +895,38 @@ function renderPaperWatchRoutes(pack) {
     ? `
       ${independence.summary ? `
         <div class="paper-watch-note">
-          <strong>${escapeHtml(independence.decisionName || '独立性审计')}</strong>
-          <span>独立资金袖 ${escapeHtml(independence.independentCapitalSleeves || 0)} 个</span>
-          <p>${escapeHtml(independence.summary)}</p>
+          <strong>是否重复使用同一套方法</strong>
+          <span>${escapeHtml(independence.independentCapitalSleeves || 0)} 个独立观察账户</span>
+          <p>${escapeHtml(plainScope(independence.summary))}</p>
         </div>
       ` : ''}
       ${pack.localBacktest?.tradeabilityReviewScriptEndpoint ? `
         <div class="paper-watch-note">
-          <strong>AkShare 最新信号需 JoinQuant 复核</strong>
+          <strong>AkShare 最新信号还要做交易检查</strong>
           <span>${pack.localBacktest.latestTradeabilityReview ? '已有导入复核' : '等待真实复核 JSON'}</span>
-          <p>本地 OHLCV 只证明策略历史表现，最新开仓前还要用 JoinQuant 检查停牌、ST、涨跌停、行业和市值暴露。</p>
+          <p>本地历史表现不错还不够。开始观察前，还要确认这些股票当天没有停牌、涨跌停等买不了卖不了的问题。</p>
           <a class="inline-link" href="${escapeHtml(pack.localBacktest.tradeabilityReviewScriptEndpoint)}">下载复核脚本</a>
         </div>
       ` : ''}
       ${pack.localBacktest?.regimeSwitch ? `
         <div class="paper-watch-note">
           <strong>${escapeHtml(pack.localBacktest.regimeSwitch.strategy_name || 'AkShare本地切换策略')}</strong>
-          <span class="tag ${pack.localBacktest.regimeSwitch.decision === 'ready_local_switch_paper_watch' ? 'good' : 'watch'}">${escapeHtml(pack.localBacktest.regimeSwitch.decision || '-')}</span>
+          <span class="tag ${pack.localBacktest.regimeSwitch.decision === 'ready_local_switch_paper_watch' ? 'good' : 'watch'}">${escapeHtml(plainStatus(pack.localBacktest.regimeSwitch.decision || '-'))}</span>
           <p>
-            本地真实 OHLCV 合成高/低波动控制器：
+            用本地真实行情做过历史检查：
             ${escapeHtml(pack.localBacktest.regimeSwitch.baseline?.sample_trades ?? 0)} 次调仓，
-            收益 ${formatPercent(pack.localBacktest.regimeSwitch.baseline?.strategy_return, 2)}，
-            回撤 ${formatPercent(pack.localBacktest.regimeSwitch.baseline?.max_drawdown, 2)}，
-            Sharpe ${formatNumber(pack.localBacktest.regimeSwitch.baseline?.sharpe, 2)}。
+            历史收益 ${formatPercent(pack.localBacktest.regimeSwitch.baseline?.strategy_return, 2)}，
+            最大下跌 ${formatPercent(pack.localBacktest.regimeSwitch.baseline?.max_drawdown, 2)}，
+            稳定度 ${formatNumber(pack.localBacktest.regimeSwitch.baseline?.sharpe, 2)}。
           </p>
           ${pack.localBacktest?.regimeSwitchRobustness ? `
             <p>
-              稳健性 ${escapeHtml(pack.localBacktest.regimeSwitchRobustness.decision || '-')}：
-              留一年最差收益 ${formatPercent(pack.localBacktest.regimeSwitchRobustness.summary?.min_leave_one_year_return, 2)}，
-              滚动12期正收益 ${formatPercent(pack.localBacktest.regimeSwitchRobustness.summary?.rolling_12_positive_ratio, 2)}，
-              最差滚动收益 ${formatPercent(pack.localBacktest.regimeSwitchRobustness.summary?.worst_rolling_12_return, 2)}。
+              稳定性检查：${escapeHtml(plainStatus(pack.localBacktest.regimeSwitchRobustness.decision || '-'))}。
+              最差一年仍有 ${formatPercent(pack.localBacktest.regimeSwitchRobustness.summary?.min_leave_one_year_return, 2)}，
+              连续 12 期赚钱比例 ${formatPercent(pack.localBacktest.regimeSwitchRobustness.summary?.rolling_12_positive_ratio, 2)}。
             </p>
           ` : ''}
-          <p>${escapeHtml(pack.localBacktest.regimeSwitch.paper_scope || '进入模拟观察前仍需交易可行性复核。')}</p>
+          <p>${escapeHtml(plainScope(pack.localBacktest.regimeSwitch.paper_scope || '进入模拟观察前仍需交易可行性复核。'))}</p>
         </div>
       ` : ''}
       ${renderTradeabilityReviewTaskPack(pack.tradeabilityReviewTaskPack)}
@@ -845,20 +935,20 @@ function renderPaperWatchRoutes(pack) {
       ${pack.operationsPack ? `
         <div class="paper-watch-note">
           <strong>模拟观察运行包</strong>
-          <span>${escapeHtml(pack.operationsPack.ready_sleeve_count ?? 0)} 可观察 / ${escapeHtml(pack.operationsPack.sleeve_count ?? 0)} 资金袖</span>
-          <p>${escapeHtml(pack.operationsPack.data_policy || '')}</p>
+          <span>${escapeHtml(pack.operationsPack.ready_sleeve_count ?? 0)} 个可观察 / 共 ${escapeHtml(pack.operationsPack.sleeve_count ?? 0)} 个</span>
+          <p>${escapeHtml(plainScope(pack.operationsPack.data_policy || ''))}</p>
           <p>已导入账本 ${escapeHtml(pack.operationsPack.importedLedgerCount ?? 0)} 条。</p>
           <p>
             初始账本：
             ${(pack.operationsPack.initial_ledger_rows || []).map((row) => (
-              `${escapeHtml(row.sleeve_id || '-')}: ${escapeHtml(row.paper_action || '-')} / ${escapeHtml(row.gate_status || '-')}`
+              `${explainable(row.sleeve_id || '-', 'sleeve_id')}: ${explainable(plainStatus(row.paper_action || '-'), 'paper_action')} / ${explainable(plainStatus(row.gate_status || '-'), 'gate_status')}`
             )).join('；')}
           </p>
           ${(pack.operationsPack.latestLedgerRows || []).length ? `
             <p>
               最近记录：
               ${(pack.operationsPack.latestLedgerRows || []).map((row) => (
-                `${escapeHtml(row.date || '-')}/${escapeHtml(row.sleeve_id || '-')}/${escapeHtml(row.paper_action || '-')}/权重 ${escapeHtml(row.planned_weight ?? '-')}`
+                `${escapeHtml(row.date || '-')}/${explainable(row.sleeve_id || '-', 'sleeve_id')}/${explainable(plainStatus(row.paper_action || '-'), 'paper_action')}/计划比例 ${explainable(row.planned_weight ?? '-', 'planned_weight')}`
               )).join('；')}
             </p>
           ` : ''}
@@ -890,6 +980,13 @@ function renderPaperWatchRoutes(pack) {
           ? 'watch'
           : 'pending';
       const evidenceSystem = route.evidence_system || (route.is_local_backtest ? 'AkShare本地OHLCV' : 'JoinQuant');
+      const canStart = readiness.decision === 'ready_controlled_paper_watch'
+        || readiness.decision === 'ready_local_paper_watch';
+      const directConclusion = canStart
+        ? '结论：可以开始模拟观察，但要记录真实账本。'
+        : readiness.decision === 'not_ready'
+          ? '结论：现在还不能开始。'
+          : '结论：先等指定市场条件出现。';
       const executionRoleLabel = {
         primary_local_sleeve: '主观察',
         high_volatility_backup_sleeve: '高波动备选',
@@ -898,21 +995,22 @@ function renderPaperWatchRoutes(pack) {
       return `
         <article class="paper-watch-item">
           <div>
-            <strong>${escapeHtml(route.strategy_name || route.strategy_id)}</strong>
-            <span class="tag ${readinessTone}">${escapeHtml(readiness.decision || route.layer || '-')}</span>
-            <span class="tag neutral">${escapeHtml(evidenceSystem)}</span>
+            <strong>${route.strategy_name ? escapeHtml(route.strategy_name) : explainable(route.strategy_id, 'strategy_id')}</strong>
+            <span class="tag ${readinessTone}">${escapeHtml(plainStatus(readiness.decision || route.layer || '-'))}</span>
+            <span class="tag neutral">${escapeHtml(plainEvidence(evidenceSystem))}</span>
             ${executionRoleLabel ? `<span class="tag neutral">${escapeHtml(executionRoleLabel)}</span>` : ''}
             ${tradeabilityLabel ? `<span class="tag ${tradeabilityTone}">${escapeHtml(tradeabilityLabel)}</span>` : ''}
           </div>
+          <p class="plain-conclusion">${escapeHtml(directConclusion)}</p>
           <div class="paper-watch-metrics">
-            <span>收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>
-            <span>回撤 ${(Number(route.max_drawdown || 0) * 100).toFixed(2)}%</span>
-            <span>Sharpe ${Number(route.sharpe || 0).toFixed(2)}</span>
+            <span>历史收益 ${(Number(route.strategy_return || 0) * 100).toFixed(2)}%</span>
+            <span>最大下跌 ${(Number(route.max_drawdown || 0) * 100).toFixed(2)}%</span>
+            <span>稳定度 ${Number(route.sharpe || 0).toFixed(2)}</span>
             ${route.avg_selected_count ? `<span>平均入选 ${Number(route.avg_selected_count || 0).toFixed(0)}</span>` : ''}
           </div>
           ${signal.action ? `
             <div class="paper-watch-metrics">
-              <span>信号 ${escapeHtml(signal.action)}</span>
+              <span>信号 ${escapeHtml(plainStatus(signal.action))}</span>
               <span>日期 ${escapeHtml(signal.signal_date || '-')}</span>
               <span>候选 ${escapeHtml(signal.candidate_count ?? 0)}</span>
               <span>入选 ${escapeHtml(signal.selected_count ?? 0)}</span>
@@ -923,7 +1021,7 @@ function renderPaperWatchRoutes(pack) {
               <span>可交易 ${escapeHtml(tradeabilityReview.tradable_count ?? 0)}/${escapeHtml(tradeabilityReview.candidate_count ?? 0)}</span>
               <span>阻塞 ${escapeHtml(tradeabilityReview.blocked_count ?? 0)}</span>
               <span>复核 ${escapeHtml(tradeabilityReview.signal_date || '-')}</span>
-              <span>${escapeHtml(tradeabilityReview.decision || '-')}</span>
+              <span>${escapeHtml(plainStatus(tradeabilityReview.decision || '-'))}</span>
             </div>
           ` : signal.action === 'paper_watch_open_allowed' ? `
             <div class="paper-watch-metrics">
@@ -931,38 +1029,38 @@ function renderPaperWatchRoutes(pack) {
               <span>需 JoinQuant 真实 JSON</span>
             </div>
           ` : ''}
-          <p>${escapeHtml(route.paper_scope || '')}</p>
-          ${signal.reason ? `<p>${escapeHtml(signal.reason)}</p>` : ''}
-          ${tradeabilityReview?.decision_reason ? `<p>${escapeHtml(tradeabilityReview.decision_reason)}</p>` : ''}
-          ${readiness.decision_reason ? `<p>${escapeHtml(readiness.decision_reason)}</p>` : ''}
+          <p>${escapeHtml(plainScope(route.paper_scope || ''))}</p>
+          ${signal.reason ? `<p>${escapeHtml(plainScope(signal.reason))}</p>` : ''}
+          ${tradeabilityReview?.decision_reason ? `<p>${escapeHtml(plainScope(tradeabilityReview.decision_reason))}</p>` : ''}
+          ${readiness.decision_reason ? `<p>${escapeHtml(plainScope(readiness.decision_reason))}</p>` : ''}
           <details class="compact-details">
-            <summary>执行与审计规则</summary>
+            <summary>查看执行规则</summary>
             <div class="paper-watch-rules">
-              <strong>开仓边界</strong>
-              ${renderTextList(execution.entry_gate || [
+              <strong>什么时候能开始</strong>
+              ${renderTextList((execution.entry_gate || [
                 route.paper_scope || '只允许在本路线审计通过的分层和股票池内观察',
                 route.is_local_backtest ? '本路线来自 AkShare 本地真实OHLCV回测，需独立记录样本外净值并等待后续 JoinQuant/模拟盘复核。' : '',
-              ].filter(Boolean))}
-              <strong>就绪检查</strong>
+              ].filter(Boolean)).map(plainScope))}
+              <strong>没通过的检查</strong>
               ${renderTextList(failedChecks.length
-                ? failedChecks.map((item) => `${item.name}: ${item.detail}`)
+                ? failedChecks.map((item) => `${plainScope(item.name)}: ${plainScope(item.detail)}`)
                 : ['当前无硬失败项'])}
-              <strong>成本压力</strong>
+              <strong>交易成本变高后</strong>
               ${renderTextList(readiness.cost_stress ? [
-                `1.5x成本收益 ${formatPercent(readiness.cost_stress.cost_1_5x?.strategy_return, 2)}`,
-                `2.0x成本收益 ${formatPercent(readiness.cost_stress.cost_2_0x?.strategy_return, 2)}`,
+                `成本提高 1.5 倍后，历史收益 ${formatPercent(readiness.cost_stress.cost_1_5x?.strategy_return, 2)}`,
+                `成本提高 2 倍后，历史收益 ${formatPercent(readiness.cost_stress.cost_2_0x?.strategy_return, 2)}`,
               ] : [])}
               <strong>暂停规则</strong>
-              ${renderTextList((execution.pause_rules || []).map((item) => item.meaning || item.rule))}
+              ${renderTextList((execution.pause_rules || []).map((item) => plainScope(item.meaning || item.rule)))}
               <strong>最新候选</strong>
-              ${renderTextList((signal.selected || []).slice(0, 20).map((item) => `${item.code} ${item.name || ''} score ${Number(item.score || 0).toFixed(3)}`))}
-              <strong>JoinQuant 交易复核</strong>
+              ${renderTextList((signal.selected || []).slice(0, 20).map((item) => `${item.code} ${item.name || ''} 分数 ${Number(item.score || 0).toFixed(3)}`))}
+              <strong>交易检查</strong>
               ${renderTextList(tradeabilityReview ? [
-                `结论：${tradeabilityReview.decision}`,
+                `结论：${plainStatus(tradeabilityReview.decision)}`,
                 `可交易：${tradeabilityReview.tradable_count}/${tradeabilityReview.candidate_count}`,
-                `数据边界：${tradeabilityReview.data_policy || 'JoinQuant 真实交易状态复核'}`,
+                `数据说明：${plainScope(tradeabilityReview.data_policy || 'JoinQuant 真实交易状态复核')}`,
               ] : signal.action === 'paper_watch_open_allowed' ? [
-                '尚未导入 JoinQuant 复核 JSON，不能把本地最新信号视为已可开仓。',
+                '尚未导入 JoinQuant 检查结果，不能把本地最新信号当成已经可以买。',
               ] : [])}
             </div>
           </details>
@@ -1077,6 +1175,89 @@ function formatPercent(value, digits = 2) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '-';
   return `${(number * 100).toFixed(digits)}%`;
+}
+
+function plainStatus(value) {
+  const text = String(value || '').trim();
+  const labels = {
+    blocked_by_latest_signal_review: '最新检查没通过，先不要开始',
+    candidate_monitor: '先观察，不操作',
+    conditional_local_paper_watch: '等条件出现后再观察',
+    conditional_paper_watch: '等条件出现后再观察',
+    high_volatility: '市场波动较大',
+    low_volatility: '市场较平稳',
+    medium_volatility: '市场波动适中',
+    missing_result: '缺少真实检查结果',
+    not_ready: '还不能开始',
+    open_allowed: '允许开始观察',
+    paper_watch_open_allowed: '允许开始观察',
+    promotion_signal_not_ready: '晋级条件没满足',
+    promotion_signal_ready: '晋级条件满足',
+    ready_controlled_paper_watch: '可以开始模拟观察',
+    ready_for_controlled_paper_watch: '可以开始模拟观察',
+    ready_local_paper_watch: '可以开始本地模拟观察',
+    ready_local_switch_paper_watch: '本地切换策略已可观察',
+    review_failed: '复核没通过',
+    review_imported: '复核结果已导入',
+    review_passed: '复核通过',
+    target_met: '目标已达成',
+    tradeability_review_failed: '交易检查没通过',
+    tradeability_review_passed: '交易检查通过',
+  };
+  return labels[text] || text.replaceAll('_', ' ') || '-';
+}
+
+function plainSource(value) {
+  const text = String(value || '').trim();
+  if (!text) return '-';
+  if (text.includes('akshare')) return 'AkShare 本地真实行情';
+  if (text.includes('joinquant')) return 'JoinQuant 真实检查';
+  if (text.includes('yiwan')) return 'Yiwan 采集数据';
+  return text.replaceAll('_', ' ');
+}
+
+function plainEvidence(value) {
+  const text = String(value || '').trim();
+  if (!text) return '-';
+  if (text === 'AkShare本地OHLCV') return 'AkShare 本地真实行情';
+  if (text === 'JoinQuant') return 'JoinQuant 真实检查';
+  return plainSource(text);
+}
+
+function plainScope(text) {
+  return String(text || '')
+    .replaceAll('资金袖', '观察账户')
+    .replaceAll('分层路线', '指定情况')
+    .replaceAll('分层', '指定情况')
+    .replaceAll('模拟盘', '模拟观察')
+    .replaceAll('硬门槛', '必须满足的条件')
+    .replaceAll('JoinQuant', 'JoinQuant')
+    .replaceAll('JSON', '结果文件');
+}
+
+function plainFactorJudgement(result) {
+  const dates = Number(result.sample_dates ?? 0);
+  const longShort = Number(result.long_short_mean ?? result.longShort);
+  const positiveRatio = Number(result.long_short_positive_ratio ?? result.positiveRatio);
+  if (dates < 20) return '样本太少，只能先看着。';
+  if (Number.isFinite(longShort) && longShort > 0 && Number.isFinite(positiveRatio) && positiveRatio >= 0.55) {
+    return '历史检查偏正面，可以继续研究。';
+  }
+  if (Number.isFinite(longShort) && longShort > 0) return '有一点效果，但还不够稳。';
+  return '这次结果偏弱，暂时别靠它做决定。';
+}
+
+function plainStrategyJudgement(result) {
+  const strategyReturn = Number(result.strategy_return ?? result.mean_return ?? result.daily_mean_return);
+  const positiveRatio = Number(result.daily_positive_ratio ?? result.positive_ratio ?? result.daily_win_rate);
+  const drawdown = Number(result.max_drawdown);
+  if (Number.isFinite(strategyReturn) && strategyReturn > 0 && Number.isFinite(positiveRatio) && positiveRatio >= 0.55) {
+    return Number.isFinite(drawdown)
+      ? `历史表现偏正面，最大下跌 ${formatPercent(drawdown)}。`
+      : '历史表现偏正面，可以继续复核。';
+  }
+  if (Number.isFinite(strategyReturn) && strategyReturn > 0) return '历史有赚钱，但稳定性还要继续看。';
+  return '这组历史结果不理想，先不要推进。';
 }
 
 function resultTone(result) {
@@ -1246,20 +1427,27 @@ function strategyResultTone(result) {
   return ['偏弱', 'watch'];
 }
 
+function plainStrategySummary(result) {
+  return [
+    `历史收益 ${formatPercent(result.strategy_return ?? result.mean_return ?? result.daily_mean_return)}`,
+    `最大下跌 ${formatPercent(result.max_drawdown)}`,
+    `赚钱次数占比 ${formatPercent(result.daily_positive_ratio ?? result.positive_ratio ?? result.daily_win_rate)}`,
+  ].filter((item) => !item.endsWith(' -')).join(' / ');
+}
+
 function isTradingStrategyResult(result) {
   return result.result_type === 'trading_backtest' || result.result_type === 'strategy_trading_backtest' || result.result_type === 'local_strategy_backtest';
 }
 
 function strategyResultPerformanceLabel(result) {
   if (!isTradingStrategyResult(result)) {
-    return result.date_range || `${result.sample_dates ?? '-'} 日 / ${result.sample_trades ?? '-'} 条`;
+    return result.date_range || `${result.sample_dates ?? '-'} 天记录 / ${result.sample_trades ?? '-'} 次样本`;
   }
 
   return [
-    `净值 ${formatNumber(result.final_net_value ?? (1 + Number(result.strategy_return || 0)), 3)}`,
-    `年化 ${formatPercent(result.strategy_annual_return ?? result.annual_return)}`,
-    `回撤 ${formatPercent(result.max_drawdown)}`,
-    `Sharpe ${formatNumber(result.sharpe, 2)}`,
+    `历史收益 ${formatPercent(result.strategy_return)}`,
+    `最大下跌 ${formatPercent(result.max_drawdown)}`,
+    `稳定度 ${formatNumber(result.sharpe, 2)}`,
     `换手 ${formatNumber(result.avg_turnover ?? result.turnover, 2)}`,
   ].join(' / ');
 }
@@ -1552,6 +1740,11 @@ function renderStrategyResultSummary(rows) {
   elements.strategyResultBestHorizon.textContent = formatStrategyHorizon(bestMean?.horizon);
 
   elements.strategyResultSummary.innerHTML = `
+    <div class="result-card result-card-wide">
+      <span>直接结论</span>
+      <strong>${escapeHtml(plainStrategyJudgement(bestMean || visibleRows[0]))}</strong>
+      <small>只根据已导入的真实结果判断</small>
+    </div>
     <div class="result-card">
       <span>结果记录</span>
       <strong>${escapeHtml(visibleRows.length)}</strong>
@@ -1568,7 +1761,7 @@ function renderStrategyResultSummary(rows) {
       <small>${escapeHtml(visibleRows.length)} 条真实结果</small>
     </div>
       <div class="result-card">
-        <span>最佳周期</span>
+        <span>表现最好周期</span>
         <strong>${escapeHtml(formatStrategyHorizon(bestMean?.horizon))}</strong>
         <small>${formatPercent(bestMean?.daily_mean_return ?? bestMean?.mean_return)} 平均收益</small>
       </div>
@@ -1589,17 +1782,17 @@ function renderStrategyResultSummary(rows) {
       const [label, tone] = strategyResultTone(result);
       return `
         <tr>
-          <td><strong>${escapeHtml(strategyResultName(result))}</strong><br><small>${escapeHtml(resultStrategyId(result))}</small></td>
+          <td><strong>${escapeHtml(strategyResultName(result))}</strong><br><small>${explainable(resultStrategyId(result), 'strategy_id')}</small></td>
           <td>${escapeHtml(formatStrategyHorizon(result.horizon))}</td>
           <td>${escapeHtml(strategyResultMarketRegime(result))}<br><small>${formatPercent(result.market_vol_mean)}</small></td>
           <td>${escapeHtml(strategyResultSizeBucket(result))}<br><small>${formatSizeOrLiquidityMeta(result)}</small></td>
-          <td>${escapeHtml(strategyResultPerformanceLabel(result))}</td>
+          <td><strong>${escapeHtml(plainStrategyJudgement(result))}</strong><br><small>${escapeHtml(strategyResultPerformanceLabel(result))}</small></td>
           <td>${formatPercent(result.mean_return)}</td>
           <td>${formatPercent(result.daily_mean_return)}</td>
           <td>${formatPercent(result.daily_positive_ratio ?? result.positive_ratio)}</td>
           <td>${formatPercent(result.best_daily_return)} / ${formatPercent(result.worst_daily_return)}</td>
           <td>${formatNumber(result.avg_candidates_per_date, 1)}</td>
-          <td>${escapeHtml(result.source || 'joinquant')}</td>
+          <td>${explainable(plainSource(result.source || 'joinquant'), 'source')}</td>
           <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
         </tr>
       `;
@@ -1607,10 +1800,12 @@ function renderStrategyResultSummary(rows) {
     .join('');
 
   elements.strategyResultNotes.innerHTML = `
-    <strong>结果边界：</strong>
+    <strong>怎么看：</strong>
+    “历史收益”表示过去这段测试里赚了多少；“最大下跌”表示中间最难受时亏到多少；“赚钱次数占比”表示有多少次结果是正的。
+    <br><strong>边界：</strong>
     ${activeStrategyResult === 'all' ? '当前展示全部策略' : `当前策略：${escapeHtml(strategyResultName(visibleRows[0]))}`}；
-    市场状态：${escapeHtml(activeRegimeOption.label)}；市值层：${escapeHtml(activeSizeOption.label)}；正收益记录 ${escapeHtml(positiveRows)} 条。
-    分层结果只来自 JoinQuant 对应脚本导入的真实 JSON；未导入则不展示。
+    市场状态：${escapeHtml(activeRegimeOption.label)}；股票范围：${escapeHtml(activeSizeOption.label)}；赚钱记录 ${escapeHtml(positiveRows)} 条。
+    只展示真实导入的检查结果，没导入就不编结论。
   `;
 }
 
@@ -1736,6 +1931,11 @@ function renderBacktestResultSummary(results) {
   elements.validatedBestHorizon.textContent = bestLongShort?.horizon ? `${bestLongShort.horizon}日` : '-';
 
   elements.backtestResultSummary.innerHTML = `
+    <div class="result-card result-card-wide">
+      <span>直接结论</span>
+      <strong>${escapeHtml(plainFactorJudgement(bestLongShort || bestRankIc || visibleResults[0]))}</strong>
+      <small>只代表当前导入结果，不代表实盘建议</small>
+    </div>
     <div class="result-card">
       <span>${activeValidatedFactor === 'all' ? '结果记录' : '当前因子结果'}</span>
       <strong>${escapeHtml(visibleResults.length)}</strong>
@@ -1747,12 +1947,12 @@ function renderBacktestResultSummary(results) {
       <small>样本期不少于 20 个截面</small>
     </div>
     <div class="result-card">
-      <span>最佳 RankIC</span>
+      <span>排序最有效</span>
       <strong>${formatNumber(bestRankIc?.rank_ic_mean ?? bestRankIc?.rankIc)}</strong>
-      <small>${escapeHtml(factorDisplayName(bestRankIc?.factor_name || bestRankIc?.factor || '-'))} / ${escapeHtml(bestRankIc?.horizon ?? '-')}日</small>
+      <small>${escapeHtml(factorDisplayName(bestRankIc?.factor_name || bestRankIc?.factor || '-'))} / ${escapeHtml(bestRankIc?.horizon ?? '-')}日，越高说明排序越有用</small>
     </div>
     <div class="result-card">
-      <span>最佳多空</span>
+      <span>好坏组差距最大</span>
       <strong>${formatPercent(bestLongShort?.long_short_mean ?? bestLongShort?.longShort)}</strong>
       <small>${escapeHtml(factorDisplayName(bestLongShort?.factor_name || bestLongShort?.factor || '-'))} / ${escapeHtml(bestLongShort?.horizon ?? '-')}日</small>
     </div>
@@ -1771,15 +1971,15 @@ function renderBacktestResultSummary(results) {
       const factor = resultFactorId(result);
       return `
         <tr>
-          <td><strong>${escapeHtml(factorDisplayName(factor))}</strong><br><small>${escapeHtml(result.factor_variant || factor)}</small></td>
+          <td><strong>${escapeHtml(factorDisplayName(factor))}</strong><br><small>${explainable(result.factor_variant || factor, result.factor_variant ? 'factor_variant' : 'factor_id')}</small></td>
           <td>${escapeHtml(result.horizon ?? '-')}日</td>
           <td>${result.direction === 'negative' ? '风险越高越差' : '分数越高越好'}</td>
           <td>${escapeHtml(result.sample_dates ?? '-')} / ${formatNumber(result.coverage_mean, 0)}</td>
-          <td>${formatNumber(result.rank_ic_mean ?? result.rankIc)}</td>
-          <td>${formatNumber(result.rank_ic_t ?? result.rankIcT)}</td>
-          <td>${formatPercent(result.long_short_mean ?? result.longShort)}</td>
-          <td>${formatPercent(result.long_short_positive_ratio ?? result.positiveRatio)}</td>
-          <td>${escapeHtml(result.source || 'joinquant')}</td>
+          <td>${formatNumber(result.rank_ic_mean ?? result.rankIc)}<br><small>排序有效度</small></td>
+          <td>${formatNumber(result.rank_ic_t ?? result.rankIcT)}<br><small>稳定性参考</small></td>
+          <td>${formatPercent(result.long_short_mean ?? result.longShort)}<br><small>好组减差组</small></td>
+          <td>${formatPercent(result.long_short_positive_ratio ?? result.positiveRatio)}<br><small>赚钱次数占比</small></td>
+          <td>${explainable(plainSource(result.source || 'joinquant'), 'source')}</td>
           <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
         </tr>
       `;
@@ -1788,10 +1988,12 @@ function renderBacktestResultSummary(results) {
 
   const singleDayCount = visibleResults.filter((item) => Number(item.sample_dates ?? 0) < 20).length;
   elements.backtestResultNotes.innerHTML = `
-    <strong>结果边界：</strong>
+    <strong>怎么看：</strong>
+    “排序有效度”越高，说明这个指标越能把表现较好的股票排到前面；“好坏组差距”越大，说明排前面的股票历史上比排后面的更好。
+    <br><strong>边界：</strong>
     ${activeValidatedFactor === 'all' ? '当前展示全部因子。' : `当前筛选：${escapeHtml(factorDisplayName(activeValidatedFactor))}。`}
-    已导入结果来自 JoinQuant 实跑。${singleDayCount ? `${singleDayCount} 条为单日截面，只能跟踪，不能定论。` : ''}
-    历史重建结果基于 JoinQuant OHLCV，和 Yiwan 全字段因子不是完全等价复刻。
+    已导入结果来自真实检查。${singleDayCount ? `${singleDayCount} 条样本太少，只能跟踪，不能定论。` : ''}
+    这些结果只说明历史检查情况，不等于可以买入建议。
   `;
 }
 
@@ -1808,12 +2010,15 @@ function renderResearchDetail(entry) {
   const dependencies = entry.dataDependencies?.length
     ? entry.dataDependencies.join(', ')
     : '当前没有登记字段依赖';
+  const dependenciesHtml = entry.dataDependencies?.length
+    ? explainFieldList(entry.dataDependencies)
+    : '当前没有登记字段依赖';
 
   elements.researchFactorDetail.innerHTML = `
     <div class="research-detail-head">
       <div>
         <h3>${escapeHtml(entry.name)}</h3>
-        <small>${escapeHtml(entry.factorId)} / ${escapeHtml(categoryNames[entry.category] || entry.category || 'research')}</small>
+        <small>${explainable(entry.factorId, 'factor_id')} / ${escapeHtml(categoryNames[entry.category] || entry.category || 'research')}</small>
       </div>
       <span class="tag ${escapeHtml(entry.decisionTone)}">${escapeHtml(entry.decision)}</span>
     </div>
@@ -1847,15 +2052,15 @@ function renderResearchDetail(entry) {
       <strong>实测证据</strong>
       <p>${escapeHtml(entry.evidence)}</p>
       <div class="research-detail-grid compact">
-        <div><span>RankIC</span><strong>${formatNumber(entry.test?.bestRankIc)}</strong></div>
-        <div><span>RankIC t</span><strong>${formatNumber(entry.test?.bestRankIcT, 2)}</strong></div>
-        <div><span>多空收益</span><strong>${formatPercent(entry.test?.bestLongShort)}</strong></div>
+        <div><span>排序有效度</span><strong>${formatNumber(entry.test?.bestRankIc)}</strong></div>
+        <div><span>稳定性参考</span><strong>${formatNumber(entry.test?.bestRankIcT, 2)}</strong></div>
+        <div><span>好坏组差距</span><strong>${formatPercent(entry.test?.bestLongShort)}</strong></div>
         <div><span>最佳周期</span><strong>${entry.test?.bestHorizon ? `${escapeHtml(entry.test.bestHorizon)}日` : '-'}</strong></div>
       </div>
     </div>
     <div class="research-section">
       <strong>数据依赖</strong>
-      <p>${escapeHtml(dependencies)}</p>
+      <p>${dependenciesHtml}</p>
     </div>
     <div class="research-section">
       <strong>数据缺口</strong>
@@ -1884,6 +2089,7 @@ function renderResearchPipeline(pipeline) {
   elements.researchSourceFile.textContent = pipeline.source?.file
     ? `当前研究数据源：${pipeline.source.file}`
     : '当前研究数据源：未加载';
+  elements.researchSourceFile.title = pipeline.source?.file ? fieldHint('source_file', pipeline.source.file) : '';
 
   elements.researchAssistantStatus.innerHTML = `
     <span class="tag ${pipeline.assistant?.llmStatus === 'configured' ? 'good' : 'pending'}">
@@ -2231,12 +2437,14 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
 
   elements.libraryRowCount.textContent = meta.rows ?? '-';
   elements.librarySourceKind.textContent = summary.input_kind || '未知输入';
+  elements.librarySourceKind.title = fieldHint('input_kind', summary.input_kind);
   elements.libraryComputedCount.textContent = computed.length;
   elements.libraryUnavailableCount.textContent = unavailable.length;
   elements.libraryKlineRuleCount.textContent = `${scoredRules.length}/${unscoredRules.length}`;
   elements.librarySourceFile.textContent = summary.source_file
     ? `当前数据源：${summary.source_file}`
     : '当前数据源：未加载';
+  elements.librarySourceFile.title = summary.source_file ? fieldHint('source_file', summary.source_file) : '';
   renderFactorRolePools(entries, researchPipeline);
 
   elements.factorLibraryTable.innerHTML = entries
@@ -2257,8 +2465,8 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
         <tr>
           <td>
             <strong>${escapeHtml(value.displayName || factorDisplayName(id))}</strong>
-            <br><small>${escapeHtml(id)}</small>
-            <br><small>${escapeHtml(category)}${source ? ` / ${escapeHtml(source)}` : ''}</small>
+            <br><small>${explainable(id, 'factor_id')}</small>
+            <br><small>${escapeHtml(category)}${source ? ` / ${explainable(value.dataSource, 'data_source')}` : ''}</small>
           </td>
           <td>
             <span class="tag ${escapeHtml(profile.tone)}">${escapeHtml(profile.type)}</span>
@@ -2274,7 +2482,7 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
             ${value.usage ? `<br><small>${escapeHtml(value.usage)}</small>` : ''}
             <details class="library-detail">
               <summary>字段/口径</summary>
-              <small>${escapeHtml(fields)}</small>
+              <small>${explainFieldList(fields)}</small>
             </details>
           </td>
         </tr>
@@ -2295,7 +2503,7 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
 
       return `
         <tr>
-          <td><strong>${escapeHtml(rule.name)}</strong><br><small>${escapeHtml(rule.id)}</small></td>
+          <td><strong>${escapeHtml(rule.name)}</strong><br><small>${explainable(rule.id, 'factor_id')}</small></td>
           <td>${escapeHtml(score)}</td>
           <td>${escapeHtml(holding)}</td>
           <td>${escapeHtml(kelly)}</td>
@@ -2402,10 +2610,10 @@ function renderFactorBacktestDetail(item, strategyId) {
         <thead>
           <tr>
             <th>周期</th>
-            <th>RankIC</th>
-            <th>RankIC t</th>
-            <th>多空收益</th>
-            <th>正收益占比</th>
+            <th>排序有效度</th>
+            <th>稳定性参考</th>
+            <th>好坏组差距</th>
+            <th>赚钱次数占比</th>
             <th>样本日</th>
           </tr>
         </thead>
@@ -2445,7 +2653,7 @@ function renderFactorChips(items, strategyId = 'strategy') {
         return `
           <button class="factor-chip strategy-factor-button" type="button" data-factor-panel="${escapeHtml(panelId)}">
             <span>${escapeHtml(label)}</span>
-            ${subLabel ? `<small>${escapeHtml(subLabel)}</small>` : ''}
+            ${subLabel ? `<small>${explainable(factorId, 'factor_id')} / ${escapeHtml(subLabel)}</small>` : ''}
           </button>
         `;
       }).join('')}
@@ -2477,6 +2685,7 @@ function renderStrategyCard(strategy, options = {}) {
       <div class="strategy-head">
         <div>
           <h3>${escapeHtml(strategy.name)}</h3>
+          <small>${explainable(strategy.id, 'strategy_id')}</small>
           <p>${escapeHtml(strategy.objective)}</p>
           <p>${escapeHtml(strategy.validationState || '')}</p>
         </div>
@@ -2642,7 +2851,7 @@ function syncDraftStrategyJump(strategies) {
   const selected = elements.draftStrategyJump.value;
   elements.draftStrategyJump.innerHTML = [
     '<option value="">全部策略</option>',
-    ...strategies.map((strategy) => `<option value="${escapeHtml(strategy.id)}">${escapeHtml(strategy.displayGrade || strategyGradeLabel(strategy))} · ${escapeHtml(strategy.name)}</option>`),
+    ...strategies.map((strategy) => `<option value="${escapeHtml(strategy.id)}" title="${escapeHtml(fieldHint('strategy_id', strategy.id))}">${escapeHtml(strategy.displayGrade || strategyGradeLabel(strategy))} · ${escapeHtml(strategy.name)}</option>`),
   ].join('');
   if (strategies.some((strategy) => strategy.id === selected)) {
     elements.draftStrategyJump.value = selected;
@@ -2716,6 +2925,18 @@ function renderDraftStrategies(signalPack) {
 
 function renderFormalStrategies(signalPack) {
   const formalStrategies = signalPack.formalStrategies || [];
+  const metrics = signalPack.metrics || {};
+  currentStrategySignalPack = signalPack;
+  elements.strategyStrongCount.textContent = metrics.draftStrategies ?? (signalPack.strategies || []).length;
+  elements.strategyObservationCount.textContent = metrics.entryCandidates ?? '-';
+  elements.strategyPartialCount.textContent = metrics.capitalCandidates ?? metrics.partialStrategies ?? '-';
+  elements.strategyBlockedCount.textContent = metrics.formalStrategies ?? formalStrategies.length;
+  elements.strategySourceFile.textContent = signalPack.source?.file
+    ? `当前策略数据源：${signalPack.source.file}；技术截面 ${signalPack.source.primaryRows ?? 0} 条，资金截面 ${signalPack.source.capitalRows ?? 0} 条`
+    : '当前策略数据源：未加载';
+  elements.strategySourceFile.title = signalPack.source?.file ? fieldHint('source_file', signalPack.source.file) : '';
+
+  renderDraftStrategies(signalPack);
   const formalPolicy = signalPack.formalPolicy || {};
   syncFormalStrategyJump(formalStrategies);
 
@@ -2838,6 +3059,7 @@ function renderBacktestCenter(status) {
   elements.backtestSourceFile.textContent = source.file
     ? `当前复测数据源：${source.file}`
     : '当前复测数据源：未加载';
+  elements.backtestSourceFile.title = source.file ? fieldHint('source_file', source.file) : '';
 
   elements.backtestStatusList.innerHTML = (status.blockers || [])
     .map((item) => {
@@ -2918,8 +3140,8 @@ function renderBacktestCenter(status) {
         ? result.strategy_name || result.summary?.[0]?.strategy_name || '策略实测结果'
         : result.factor_name || result.factor || result.name || 'JoinQuant结果';
       const detail = isStrategy
-        ? `策略结果: ${escapeHtml(result.summary?.length ?? 1)} 条 / 来源: ${escapeHtml(result.source || result.summary?.[0]?.source || 'joinquant')}`
-        : `IC: ${escapeHtml(result.ic_mean ?? result.ic ?? '-')} / RankIC: ${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 来源: ${escapeHtml(result.source || 'joinquant')}`;
+        ? `策略检查结果：${escapeHtml(result.summary?.length ?? 1)} 条 / 来源：${escapeHtml(plainSource(result.source || result.summary?.[0]?.source || 'joinquant'))}`
+        : `排序有效度：${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 好坏组差距：${formatPercent(result.long_short_mean ?? result.longShort)} / 来源：${escapeHtml(plainSource(result.source || 'joinquant'))}`;
       return `
         <div class="status-item">
           <div>
@@ -3029,6 +3251,8 @@ async function refreshDashboard() {
   renderLiveStrategies(liveStrategies);
   renderBacktestCenter(backtestStatus);
   renderResearchPipeline(researchPipeline);
+  bindCollapsibleData();
+  requestAnimationFrame(syncCollapsibleData);
 }
 
 async function boot() {
@@ -3364,7 +3588,12 @@ elements.askResearchAssistant?.addEventListener('click', async () => {
 elements.navButtons.forEach((button) => {
   button.addEventListener('click', () => {
     showView(button.dataset.viewTarget);
+    requestAnimationFrame(syncCollapsibleData);
   });
+});
+
+window.addEventListener('resize', () => {
+  requestAnimationFrame(syncCollapsibleData);
 });
 
 boot();

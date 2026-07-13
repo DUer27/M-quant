@@ -1,6 +1,6 @@
 {
   "source": "m_quant_paper_watch_operations_pack",
-  "generated_at": "2026-07-10T15:37:26",
+  "generated_at": "2026-07-13T11:35:15",
   "status": "ready_with_blockers",
   "data_policy": "只读取已审计 JoinQuant 曲线、AkShare 本地 OHLCV 策略与已导入交易复核；不生成收益、净值、成交或持仓。",
   "sleeve_count": 3,
@@ -953,7 +953,7 @@
         "002714"
       ],
       "paper_action": "open_allowed",
-      "planned_weight": 0.0,
+      "planned_weight": 1.0,
       "paper_nav": null,
       "period_return": null,
       "benchmark_return": null,
@@ -969,7 +969,7 @@
   "global_rules": [
     "每个 sleeve_id 独立记录，不得把组件监控路线当作第二资金袖。",
     "planned_weight 只能在 can_start_observation=true 时大于 0。",
-    "AkShare 本地信号缺 JoinQuant 交易复核时只能 record_only。",
+    "AkShare 本地信号缺 JoinQuant 交易复核时只能 record_only；复核通过后可独立记录 open_allowed。",
     "核心量价中波动小市值资金袖只有在 JoinQuant 最新信号复核 ready 后才允许 planned_weight 大于 0。",
     "任何暂停规则触发后，paper_action 只能是 pause_new_entry 或 close_only。"
   ]

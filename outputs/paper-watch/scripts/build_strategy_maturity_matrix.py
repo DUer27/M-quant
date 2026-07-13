@@ -53,7 +53,7 @@ def number(value, digits=2) -> str:
 def latest_tradeability_review(reviews: list[dict], strategy_id: str, signal_date: str) -> dict | None:
     matches = [
         item for item in reviews
-        if item.get("strategy_id") == strategy_id and item.get("signal_date") == signal_date
+        if item.get("strategy_id") == strategy_id and (not signal_date or item.get("signal_date") == signal_date)
     ]
     return sorted(matches, key=lambda item: item.get("importedAt", ""), reverse=True)[0] if matches else None
 
@@ -151,12 +151,14 @@ def promoted_candidate_route_entry(route: dict, candidate: dict) -> dict:
     return entry
 
 
-def akshare_review_gap_entry(ak_audit: dict, switch: dict, robustness: dict, reviews: list[dict]) -> dict:
+def akshare_review_gap_entry(ak_audit: dict, switch: dict, robustness: dict, reviews: list[dict]) -> dict | None:
     latest_signal = (switch.get("latest_signal") or {}) if switch else {}
     signal_date = latest_signal.get("signal_date", "")
     review = latest_tradeability_review(reviews, "ak_mean_reversion_quality_combo", signal_date)
     strategy_candidates = ak_audit.get("strategies", [])
     awaiting = [item for item in strategy_candidates if item.get("decision") == "awaiting_joinquant_review"]
+    if review and review.get("decision") == "tradeability_review_passed":
+        return None
     return {
         "id": "akshare_joinquant_review_gap",
         "strategy_id": switch.get("strategy_id") if switch else "akshare_regime_switch_contraction_mean_reversion_v1",
@@ -212,7 +214,9 @@ def build_matrix() -> dict:
         else:
             entries.append(controlled_route_entry(route))
 
-    entries.append(akshare_review_gap_entry(ak_audit, ak_switch, ak_robustness, tradeability_reviews))
+    ak_gap = akshare_review_gap_entry(ak_audit, ak_switch, ak_robustness, tradeability_reviews)
+    if ak_gap:
+        entries.append(ak_gap)
 
     ready_goal_entries = [item for item in entries if item.get("counts_toward_two_strategy_goal")]
     blockers = []
@@ -242,21 +246,29 @@ def build_matrix() -> dict:
             "action": "确认是否将核心量价趋势策略 v1 的中波动/小市值路线晋级为第二模拟观察资金袖。",
             "reason": "该路线来自 JoinQuant 真实分层交易回测，且与主控制器中波动空仓逻辑互斥；晋级前仍需最新信号和执行配置。",
         })
-    next_actions.extend([
-        {
-            "priority": 2 if has_mutually_exclusive_candidate else 1,
+    latest_ak_signal = (ak_switch.get("latest_signal") or {}) if ak_switch else {}
+    latest_ak_review = latest_tradeability_review(
+        tradeability_reviews,
+        "ak_mean_reversion_quality_combo",
+        latest_ak_signal.get("signal_date", ""),
+    )
+    ak_review_passed = bool(latest_ak_review and latest_ak_review.get("decision") == "tradeability_review_passed")
+    if not ak_review_passed:
+        next_actions.append({
+            "priority": len(next_actions) + 1,
             "action": "运行并回填 AkShare 最新信号 JoinQuant 交易可行性复核脚本。",
             "reason": "这是把 AkShare 本地切换策略从 record_only 升级为可观察资金袖的最近阻塞项。",
+        })
+    next_actions.extend([
+        {
+            "priority": len(next_actions) + 1,
+            "action": "对已准入资金袖开始真实模拟观察账本记录。",
+            "reason": "市场状态切换策略 v1 与 AkShare 本地高低波动切换策略 v1 都需要样本外观察数据，而不是继续只看历史回测。",
         },
         {
-            "priority": 3 if has_mutually_exclusive_candidate else 2,
+            "priority": len(next_actions) + 2,
             "action": "运行 AkShare 强分层候选 JoinQuant 批量复核并回填 records。",
-            "reason": "用于判断本地 6 条强候选能否在 JoinQuant OHLCV/valuation 口径下继续保留。",
-        },
-        {
-            "priority": 4 if has_mutually_exclusive_candidate else 3,
-            "action": "对 jq_controller 开始真实模拟观察账本记录。",
-            "reason": "当前唯一已准入资金袖需要样本外观察数据，而不是继续只看历史回测。",
+            "reason": "这只用于扩展候选储备，不影响当前两条已准入资金袖的观察启动。",
         },
     ])
 
