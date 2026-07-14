@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>量化因子策略平台</title>
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260714-position-stress-layout" />
     <script src="/config/app-config.js"></script>
   </head>
   <body>
@@ -22,6 +22,7 @@
           <button data-view-target="factor-library">因子库</button>
           <button data-view-target="strategy-library">策略池</button>
           <button data-view-target="paper-watch">准模拟盘</button>
+          <button data-view-target="position-stress">建仓压力测试</button>
           <button data-view-target="research-pipeline">研究流水线</button>
           <button data-view-target="backtest-center">回测中心</button>
           <button data-view-target="validated-results">实测结果</button>
@@ -485,6 +486,217 @@
           </section>
         </div>
 
+        <div id="position-stress-view" class="view position-stress-page">
+          <section class="metrics-grid" aria-label="建仓压力测试摘要">
+            <article class="metric">
+              <span>数据完整性</span>
+              <strong id="position-stress-complete">-</strong>
+              <small id="position-stress-date-range">等待导入</small>
+            </article>
+            <article class="metric">
+              <span>覆盖股票</span>
+              <strong id="position-stress-stock-count">-</strong>
+              <small id="position-stress-row-count">行情行数</small>
+            </article>
+            <article class="metric">
+              <span>组合收益</span>
+              <strong id="position-stress-return">-</strong>
+              <small id="position-stress-run-status">完整数据后正式放行</small>
+            </article>
+            <article class="metric">
+              <span>最大回撤</span>
+              <strong id="position-stress-drawdown">-</strong>
+              <small id="position-stress-trades">成交样本</small>
+            </article>
+          </section>
+
+          <section class="content-grid position-stress-hero">
+            <section class="panel position-stress-kline-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">K-Line Review</p>
+                  <h2>入选股票K线</h2>
+                </div>
+                <select id="position-stress-kline-select" aria-label="选择股票K线"></select>
+              </div>
+              <canvas id="position-stress-kline-canvas" width="920" height="360"></canvas>
+              <div id="position-stress-kline-note" class="library-source">等待数据</div>
+              <div class="table-scroll stress-matrix-table kline-stress-matrix">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>类别</th>
+                      <th>场景</th>
+                      <th>收益</th>
+                      <th>回撤</th>
+                      <th>交易</th>
+                      <th>含义</th>
+                    </tr>
+                  </thead>
+                  <tbody id="position-stress-scenarios"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel position-stress-control-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Import & Run</p>
+                  <h2>一键导入运行</h2>
+                </div>
+              </div>
+              <div id="position-stress-selected-strategy" class="stress-selected-strategy">等待从策略池选择策略</div>
+              <div class="stress-controls">
+                <label>
+                  开始日期
+                  <input id="position-stress-start" type="date" value="2026-07-06" />
+                </label>
+                <label>
+                  结束日期
+                  <input id="position-stress-end" type="date" value="2026-07-13" />
+                </label>
+                <label>
+                  持仓数量
+                  <input id="position-stress-top-n" type="number" min="1" max="50" step="1" value="10" />
+                </label>
+                <label>
+                  初始资金
+                  <input id="position-stress-capital" type="number" min="10000" step="10000" value="1000000" />
+                </label>
+                <label>
+                  数据源
+                  <select id="position-stress-source">
+                    <option value="auto">JoinQuant优先</option>
+                    <option value="joinquant">只用JoinQuant</option>
+                    <option value="akshare">AkShare联网补齐</option>
+                    <option value="akshare_cache">本地真实缓存</option>
+                  </select>
+                </label>
+                <label>
+                  压测策略
+                  <select id="position-stress-strategy-select">
+                    <option value="">从策略池选择</option>
+                  </select>
+                </label>
+              </div>
+              <div class="backtest-actions stress-actions">
+                <button id="run-position-stress" class="primary" type="button">一键导入运行</button>
+                <button id="refresh-position-stress" type="button">刷新报告</button>
+              </div>
+              <label class="stress-import-box">
+                粘贴真实行情CSV/JSON
+                <textarea id="position-stress-import-ohlcv" rows="5" placeholder="date,code,open,high,low,close,volume,amount&#10;2026-07-13,000001,10.5,10.8,10.4,10.7,123456,123456789"></textarea>
+              </label>
+              <div class="backtest-actions stress-actions">
+                <button id="import-position-stress-ohlcv" type="button">导入真实行情</button>
+              </div>
+              <p id="position-stress-message" class="form-message">缺少任一请求日期真实行情时，正式运行会被阻断。</p>
+              <div id="position-stress-warnings" class="status-list compact-status-list"></div>
+            </section>
+          </section>
+
+          <section class="content-grid lower position-stress-results-grid">
+            <section class="panel position-stress-equity-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Equity Result</p>
+                  <h2>组合净值结果</h2>
+                </div>
+              </div>
+              <canvas id="position-stress-equity-canvas" width="920" height="300"></canvas>
+              <div id="position-stress-result-summary" class="result-summary-grid"></div>
+              <div id="position-stress-diagnostics" class="stress-diagnostics"></div>
+            </section>
+
+            <section class="panel position-stress-trades-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Trade Detail</p>
+                  <h2>成交明细</h2>
+                </div>
+              </div>
+              <div class="table-scroll stress-trade-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>信号日</th>
+                      <th>股票</th>
+                      <th>权重</th>
+                      <th>收益</th>
+                    </tr>
+                  </thead>
+                  <tbody id="position-stress-trade-table"></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section class="content-grid lower position-stress-support-grid">
+            <section class="panel position-stress-selection-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Portfolio Build</p>
+                  <h2>每日建仓选择</h2>
+                </div>
+              </div>
+              <div id="position-stress-selection-list" class="status-list"></div>
+            </section>
+
+            <section class="panel position-stress-notes-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Signal Notes</p>
+                  <h2>策略运行说明</h2>
+                </div>
+              </div>
+              <div class="status-list compact-status-list">
+                <div class="status-item">
+                  <div>
+                    <strong>压力矩阵已前置</strong>
+                    <span>成本、持仓数量、市场冲击、单票冲击、流动性折扣和延迟成交已移动到 K 线图下方，便于和入选股票走势一起查看。</span>
+                  </div>
+                  <span class="tag good">已优化</span>
+                </div>
+                <div class="status-item">
+                  <div>
+                    <strong>短窗口边界</strong>
+                    <span>当前结果用于建仓链路压力测试，不作为长期策略有效性结论；后续需要扩展股票池和时间窗口。</span>
+                  </div>
+                  <span class="tag pending">提示</span>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel position-stress-data-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">OHLCV Data</p>
+                <h2>行情与策略分数</h2>
+              </div>
+              <div id="position-stress-artifacts" class="library-source">等待产物</div>
+            </div>
+            <div class="table-scroll result-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>日期</th>
+                    <th>股票</th>
+                    <th>开高低收</th>
+                    <th>成交</th>
+                    <th>趋势</th>
+                    <th>量价</th>
+                    <th>拥挤</th>
+                    <th>策略分</th>
+                    <th>交易</th>
+                  </tr>
+                </thead>
+                <tbody id="position-stress-data-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
         <div id="research-pipeline-view" class="view">
           <section class="metrics-grid" aria-label="因子研究流水线指标">
             <article class="metric">
@@ -796,6 +1008,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260710-paper-watch-performance"></script>
+    <script type="module" src="/assets/app.js?v=20260714-position-stress-layout"></script>
   </body>
 </html>

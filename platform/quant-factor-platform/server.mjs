@@ -37,6 +37,7 @@ const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.jso
 const importedTradeabilityReviewsPath = join(dataDir, 'imported-tradeability-reviews.json');
 const importedCoreMediumSmallSignalReviewsPath = join(dataDir, 'imported-core-medium-small-signal-reviews.json');
 const importedPaperWatchLedgerPath = join(dataDir, 'imported-paper-watch-ledger.json');
+const positionStressSelectionPath = join(dataDir, 'position-stress-selection.json');
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
@@ -56,6 +57,8 @@ const bigQuantPaperWatchPackPath = outputPath('paper-watch', 'results', 'bigquan
 const joinQuantPaperWatchReportPath = outputPath('paper-watch', 'results', 'joinquant_paper_watch_report_latest.json');
 const paperWatchPerformanceReportPath = outputPath('paper-watch', 'results', 'paper_watch_performance_report_latest.json');
 const joinQuantResultsDir = outputPath('sources', 'joinquant', 'results');
+const positionStressLatestPath = outputPath('position-stress', 'results', 'position_stress_latest.json');
+const positionStressScriptPath = outputPath('position-stress', 'scripts', 'position_stress_lab.py');
 const paperWatchDerivedScriptPaths = [
   outputPath('paper-watch', 'scripts', 'build_paper_watch_operations_pack.py'),
   outputPath('paper-watch', 'scripts', 'audit_independent_sleeve_candidates.py'),
@@ -3457,6 +3460,183 @@ function runPythonRefreshStep(name, scriptPath, args = [], timeout = 180_000) {
   };
 }
 
+function readPositionStressReport() {
+  const report = readJsonFile(positionStressLatestPath, {
+    status: 'missing',
+    sourceMode: '',
+    sourceMessage: '尚未生成建仓压力测试报告。',
+    dataPolicy: '点击一键导入运行后生成 2026-07-06 至 2026-07-13 的行情、K线、建仓模拟和压力测试报告。',
+    requestedDateRange: { start: '2026-07-06', end: '2026-07-13' },
+    actualDates: [],
+    missingDates: [],
+    stockCount: 0,
+    rowCount: 0,
+    artifacts: {},
+    dataTable: [],
+    kline: [],
+    strategy: { dailySelections: [], equityCurve: [], trades: [], metrics: {} },
+    stress: [],
+    warnings: ['还没有运行导入。'],
+    nextActions: ['点击一键导入运行生成第一版报告。'],
+  });
+  return {
+    ...report,
+    selectedStrategy: report.selectedStrategy || readPositionStressSelection(),
+  };
+}
+
+function readPositionStressSelection() {
+  return readJsonFile(positionStressSelectionPath, null);
+}
+
+function positionStressAdapterFor(strategyId, selectedCodes = []) {
+  if (strategyId === 'akshare_regime_switch_contraction_mean_reversion_v1') {
+    return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_mean_reversion';
+  }
+  if (strategyId === 'kline_assisted_confirmation') return 'ohlcv_kline_confirmation';
+  if (strategyId === 'core_volume_price_trend_v1') return 'ohlcv_core_volume_price';
+  if (strategyId === 'jq_quality_profit_liquidity_v1') return 'ohlcv_liquidity_quality_proxy';
+  return 'ohlcv_core_volume_price';
+}
+
+function normalizePositionStressStrategy(item) {
+  const selectedCodes = selectedCodesList(item.selected_codes || item.selectedCodes || item.latestSignal?.selected_codes);
+  const strategyId = item.strategy_id || item.strategyId || item.id || '';
+  const adapter = item.adapter || positionStressAdapterFor(strategyId, selectedCodes);
+  const runnable = item.runnable !== false && adapter !== 'controller_not_directly_executable';
+  return {
+    adapter,
+    baseline: item.baseline || null,
+    evidence: item.evidence || item.evidence_system || item.source || '',
+    gateStatus: item.operational_status || item.gateStatus || item.readiness_decision || item.decision || '',
+    layer: item.layer || item.allowed_layer || item.market_regime || '',
+    name: item.strategy_name || item.strategyName || item.name || strategyId,
+    runnable,
+    runnableReason: item.runnableReason || (runnable ? '可进入建仓压力测试。' : '该策略是控制器或缺少可复现选股名单，不能直接压测。'),
+    selectedCodes,
+    source: item.source || item.evidence_system || '',
+    strategyId,
+  };
+}
+
+function buildPositionStressStrategyCatalog() {
+  const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
+  const sleeves = Array.isArray(operationsPack.capital_sleeves) ? operationsPack.capital_sleeves : [];
+  const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
+  const recommendedRoutes = Array.isArray(readinessAudit.recommended_routes) ? readinessAudit.recommended_routes : [];
+  const routes = Array.isArray(readinessAudit.routes) ? readinessAudit.routes : [];
+  const readyDecisions = new Set(['ready_controlled_paper_watch', 'ready_local_paper_watch']);
+  const byId = new Map();
+
+  sleeves
+    .filter((sleeve) => sleeve?.can_start_observation || sleeve?.operational_status === 'ready_for_controlled_paper_watch')
+    .forEach((sleeve) => {
+      const latestSignal = sleeve.latest_signal || {};
+      const item = normalizePositionStressStrategy({
+        ...sleeve,
+        evidence: sleeve.evidence_system,
+        latestSignal,
+        selectedCodes: latestSignal.selected_codes || [],
+        runnable: sleeve.strategy_id !== 'regime_switch_quality_kline_v1' || selectedCodesList(latestSignal.selected_codes).length > 0,
+        runnableReason: sleeve.strategy_id === 'regime_switch_quality_kline_v1'
+          ? '市场状态控制器没有单独选股名单；请压测其组件策略。'
+          : '准模拟盘运行包已允许观察，可进入短窗口建仓压力测试。',
+      });
+      byId.set(item.strategyId, item);
+    });
+
+  [...recommendedRoutes, ...routes]
+    .filter((route) => readyDecisions.has(route?.readiness_decision || route?.decision))
+    .forEach((route) => {
+      const item = normalizePositionStressStrategy({
+        ...route,
+        strategyName: route.strategy_name,
+        strategyId: route.strategy_id,
+        evidence: route.source,
+        gateStatus: route.readiness_decision || route.decision,
+        runnable: route.strategy_id !== 'regime_switch_quality_kline_v1',
+      });
+      if (!byId.has(item.strategyId)) byId.set(item.strategyId, item);
+    });
+
+  const strategies = [...byId.values()].sort((left, right) => {
+    if (left.runnable !== right.runnable) return left.runnable ? -1 : 1;
+    return String(left.name).localeCompare(String(right.name), 'zh-CN');
+  });
+  const current = readPositionStressSelection();
+  return {
+    current,
+    dataPolicy: '只允许准模拟盘运行包或准入审计中已达标的策略进入建仓压力测试；控制器类策略没有明确选股名单时不能直接运行。',
+    strategies,
+  };
+}
+
+function selectPositionStressStrategy(strategyId) {
+  const catalog = buildPositionStressStrategyCatalog();
+  const strategy = catalog.strategies.find((item) => item.strategyId === strategyId);
+  if (!strategy) {
+    throw new Error('该策略未达到准模拟盘标准，不能进入建仓压力测试。');
+  }
+  if (!strategy.runnable) {
+    throw new Error(strategy.runnableReason || '该策略当前不能直接进入建仓压力测试。');
+  }
+  const selected = {
+    ...strategy,
+    selectedAt: new Date().toISOString(),
+  };
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(positionStressSelectionPath, `${JSON.stringify(selected, null, 2)}\n`);
+  return selected;
+}
+
+function runPositionStressLab(options = {}) {
+  const start = String(options.start || '2026-07-06');
+  const end = String(options.end || '2026-07-13');
+  const topN = String(Number(options.topN || 10));
+  const capital = String(Number(options.capital || 1_000_000));
+  const source = ['auto', 'joinquant', 'akshare', 'akshare_cache'].includes(options.source) ? options.source : 'auto';
+  const selectedStrategy = options.strategyId
+    ? selectPositionStressStrategy(String(options.strategyId))
+    : readPositionStressSelection();
+  const args = [
+    '--start', start,
+    '--end', end,
+    '--top-n', topN,
+    '--capital', capital,
+    '--source', source,
+  ];
+  if (selectedStrategy?.strategyId) {
+    args.push('--strategy-id', selectedStrategy.strategyId);
+    args.push('--strategy-name', selectedStrategy.name || selectedStrategy.strategyId);
+    args.push('--strategy-adapter', selectedStrategy.adapter || 'ohlcv_core_volume_price');
+    if (Array.isArray(selectedStrategy.selectedCodes) && selectedStrategy.selectedCodes.length) {
+      args.push('--selected-codes', selectedStrategy.selectedCodes.join(','));
+    }
+  }
+  if (options.importFile) {
+    args.push('--import-file', String(options.importFile));
+  }
+  const step = runPythonRefreshStep('position_stress_lab', positionStressScriptPath, args, 240_000);
+  return {
+    ok: step.ok,
+    step,
+    report: readPositionStressReport(),
+  };
+}
+
+function writePositionStressImportFile(text) {
+  const importDir = outputPath('position-stress', 'data');
+  mkdirSync(importDir, { recursive: true });
+  const trimmed = String(text || '').trim();
+  if (!trimmed) {
+    throw new Error('导入内容为空。');
+  }
+  const isJson = trimmed.startsWith('{') || trimmed.startsWith('[');
+  const path = join(importDir, `manual_ohlcv_import_${todayYmd()}.${isJson ? 'json' : 'csv'}`);
+  writeFileSync(path, `${trimmed}\n`, 'utf8');
+  return path;
+}
+
 function reviewIdentity(review) {
   return [
     review?.source || '',
@@ -6250,6 +6430,54 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/position-stress-api/report') {
+    sendJson(res, readPositionStressReport());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/position-stress-api/strategies') {
+    sendJson(res, buildPositionStressStrategyCatalog());
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/position-stress-api/select-strategy') {
+    const body = await readJsonBody(req);
+    const selected = selectPositionStressStrategy(String(body.strategyId || ''));
+    sendJson(res, {
+      message: `${selected.name} 已送入建仓压力测试。`,
+      selected,
+      catalog: buildPositionStressStrategyCatalog(),
+      report: readPositionStressReport(),
+    });
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/position-stress-api/run') {
+    const body = await readJsonBody(req);
+    const result = runPositionStressLab(body);
+    sendJson(res, {
+      message: result.report?.runGate?.formalRunAllowed
+        ? '建仓压力测试数据完整，短窗口结果已生成。'
+        : '建仓压力测试已生成预览，但数据不完整，正式运行已阻断。',
+      ...result,
+    }, result.ok ? 200 : 500);
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/position-stress-api/import-ohlcv') {
+    const bodyText = await readTextBody(req);
+    const importFile = writePositionStressImportFile(bodyText);
+    const result = runPositionStressLab({ importFile, source: 'akshare_cache' });
+    sendJson(res, {
+      message: result.report?.runGate?.formalRunAllowed
+        ? '真实行情已导入，数据完整，正式建仓压力测试已放行。'
+        : '真实行情已导入并重跑，但数据仍不完整，请查看缺失日期。',
+      importFile: relativeProjectPath(importFile),
+      ...result,
+    }, result.ok ? 200 : 500);
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/strategy-api/paper-watch-routes') {
     sendJson(res, buildPaperWatchRoutes());
     return true;
@@ -6907,7 +7135,8 @@ createServer(async (req, res) => {
     || pathname.startsWith('/market-api/')
     || pathname.startsWith('/research-api/')
     || pathname.startsWith('/strategy-api/')
-    || pathname.startsWith('/paper-watch-api/');
+    || pathname.startsWith('/paper-watch-api/')
+    || pathname.startsWith('/position-stress-api/');
 
   if (isApiRequest) {
     try {

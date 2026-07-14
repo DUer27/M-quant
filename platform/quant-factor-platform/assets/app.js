@@ -93,6 +93,38 @@ const elements = {
   paperWatchStatus: document.querySelector('#paper-watch-status'),
   paperWatchUpgradeList: document.querySelector('#paper-watch-upgrade-list'),
   runPaperWatchDailyRefresh: document.querySelector('#run-paper-watch-daily-refresh'),
+  positionStressArtifacts: document.querySelector('#position-stress-artifacts'),
+  positionStressCapital: document.querySelector('#position-stress-capital'),
+  positionStressComplete: document.querySelector('#position-stress-complete'),
+  positionStressDataTable: document.querySelector('#position-stress-data-table'),
+  positionStressDateRange: document.querySelector('#position-stress-date-range'),
+  positionStressDrawdown: document.querySelector('#position-stress-drawdown'),
+  positionStressDiagnostics: document.querySelector('#position-stress-diagnostics'),
+  positionStressEnd: document.querySelector('#position-stress-end'),
+  positionStressEquityCanvas: document.querySelector('#position-stress-equity-canvas'),
+  positionStressImportOhlcv: document.querySelector('#position-stress-import-ohlcv'),
+  positionStressKlineCanvas: document.querySelector('#position-stress-kline-canvas'),
+  positionStressKlineNote: document.querySelector('#position-stress-kline-note'),
+  positionStressKlineSelect: document.querySelector('#position-stress-kline-select'),
+  positionStressMessage: document.querySelector('#position-stress-message'),
+  positionStressSelectedStrategy: document.querySelector('#position-stress-selected-strategy'),
+  positionStressReturn: document.querySelector('#position-stress-return'),
+  positionStressResultSummary: document.querySelector('#position-stress-result-summary'),
+  positionStressRowCount: document.querySelector('#position-stress-row-count'),
+  positionStressRunStatus: document.querySelector('#position-stress-run-status'),
+  positionStressScenarios: document.querySelector('#position-stress-scenarios'),
+  positionStressSelectionList: document.querySelector('#position-stress-selection-list'),
+  positionStressSource: document.querySelector('#position-stress-source'),
+  positionStressStart: document.querySelector('#position-stress-start'),
+  positionStressStrategySelect: document.querySelector('#position-stress-strategy-select'),
+  positionStressStockCount: document.querySelector('#position-stress-stock-count'),
+  positionStressTopN: document.querySelector('#position-stress-top-n'),
+  positionStressTradeTable: document.querySelector('#position-stress-trade-table'),
+  positionStressTrades: document.querySelector('#position-stress-trades'),
+  positionStressWarnings: document.querySelector('#position-stress-warnings'),
+  refreshPositionStress: document.querySelector('#refresh-position-stress'),
+  importPositionStressOhlcv: document.querySelector('#import-position-stress-ohlcv'),
+  runPositionStress: document.querySelector('#run-position-stress'),
   downloadPaperWatchLedgerCsv: document.querySelector('#download-paper-watch-ledger-csv'),
   downloadPaperWatchLedgerJson: document.querySelector('#download-paper-watch-ledger-json'),
   importPaperWatchLedger: document.querySelector('#import-paper-watch-ledger'),
@@ -155,6 +187,8 @@ let activeValidatedFactor = 'all';
 let activeResearchFactor = null;
 let currentResearchPipeline = null;
 let currentStrategySignalPack = null;
+let currentPositionStressCatalog = null;
+let currentPositionStressReport = null;
 let draftStrategyExpanded = false;
 let draftStrategyGrade = 'all';
 let draftStrategyPage = 1;
@@ -2680,6 +2714,7 @@ function renderStrategyCard(strategy, options = {}) {
   const marketCapScript = `/strategy-api/joinquant-market-cap-script.py?strategy=${encodeURIComponent(strategy.id)}`;
   const volatilitySizeScript = `/strategy-api/joinquant-volatility-size-script.py?strategy=${encodeURIComponent(strategy.id)}`;
   const tradingBacktestScript = `/strategy-api/joinquant-trading-backtest-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const canSendToStress = strategy.canSendToPositionStress || strategy.positionStressReady;
   return `
     <article class="strategy-item${compactClass}">
       <div class="strategy-head">
@@ -2745,6 +2780,7 @@ function renderStrategyCard(strategy, options = {}) {
           ` : ''}
         </div>`
         : `<div class="strategy-export-actions">
+          ${canSendToStress ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">送入建仓压测</button>` : ''}
           <button type="button" data-strategy-download="${escapeHtml(exportBase)}">路线JSON</button>
           <button type="button" data-strategy-download="${escapeHtml(exportCsv)}">策略CSV</button>
           <button type="button" data-strategy-download="${escapeHtml(exportScript)}">聚宽脚本</button>
@@ -2754,6 +2790,11 @@ function renderStrategyCard(strategy, options = {}) {
           <button type="button" data-strategy-download="${escapeHtml(volatilitySizeScript)}">交叉脚本</button>
           <button type="button" data-strategy-download="${escapeHtml(tradingBacktestScript)}">回测脚本</button>
         </div>`}
+      ${strategy.exportable === false && canSendToStress ? `
+        <div class="strategy-export-actions inline-actions">
+          <button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">送入建仓压测</button>
+        </div>
+      ` : ''}
     </article>
   `;
 }
@@ -2816,13 +2857,16 @@ function strategyGradeLabel(strategy) {
 }
 
 function buildUnifiedStrategies(signalPack) {
+  const stressReady = new Set((currentPositionStressCatalog?.strategies || [])
+    .filter((item) => item.runnable)
+    .map((item) => item.strategyId));
   const map = new Map();
   (signalPack.formalStrategies || []).forEach((strategy) => {
-    map.set(strategy.id, { ...strategy, sourcePoolLabel: '高等级证据', displayGrade: strategyGradeLabel(strategy) });
+    map.set(strategy.id, { ...strategy, sourcePoolLabel: '高等级证据', displayGrade: strategyGradeLabel(strategy), canSendToPositionStress: stressReady.has(strategy.id) });
   });
   (signalPack.strategies || []).forEach((strategy) => {
     if (!map.has(strategy.id)) {
-      map.set(strategy.id, { ...strategy, sourcePoolLabel: '研究路线', displayGrade: strategyGradeLabel(strategy) });
+      map.set(strategy.id, { ...strategy, sourcePoolLabel: '研究路线', displayGrade: strategyGradeLabel(strategy), canSendToPositionStress: stressReady.has(strategy.id) });
     }
   });
   return [...map.values()].sort((left, right) => {
@@ -3155,6 +3199,385 @@ function renderBacktestCenter(status) {
     .join('') || '<div class="library-source">暂无导入结果。等你在 JoinQuant 跑完，把真实结果 JSON 粘贴回来。</div>';
 }
 
+function drawPositionStressKline(item) {
+  const canvas = elements.positionStressKlineCanvas;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  const padding = 44;
+  const rows = (item?.rows || []).filter((row) => Number.isFinite(Number(row.high)) && Number.isFinite(Number(row.low)));
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  if (!rows.length) {
+    ctx.fillStyle = '#607086';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('暂无K线数据', padding, height / 2);
+    return;
+  }
+
+  const highs = rows.map((row) => Number(row.high));
+  const lows = rows.map((row) => Number(row.low));
+  const maxPrice = Math.max(...highs);
+  const minPrice = Math.min(...lows);
+  const span = Math.max(maxPrice - minPrice, 0.01);
+  const paddedMax = maxPrice + span * 0.08;
+  const paddedMin = minPrice - span * 0.08;
+  const paddedSpan = Math.max(paddedMax - paddedMin, 0.01);
+  const chartHeight = height - padding * 2;
+  const chartWidth = width - padding * 2;
+
+  function y(price) {
+    return padding + ((paddedMax - price) / paddedSpan) * chartHeight;
+  }
+
+  ctx.strokeStyle = '#d7e0ea';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i += 1) {
+    const yy = padding + (chartHeight / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding, yy);
+    ctx.lineTo(width - padding, yy);
+    ctx.stroke();
+  }
+
+  const slot = chartWidth / Math.max(rows.length, 1);
+  const candleWidth = Math.max(12, Math.min(34, slot * 0.34));
+
+  const closes = rows.map((row) => Number(row.close));
+  ctx.strokeStyle = '#146eb4';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  closes.forEach((close, index) => {
+    const x = padding + slot * index + slot / 2;
+    const yy = y(close);
+    if (index === 0) ctx.moveTo(x, yy);
+    else ctx.lineTo(x, yy);
+  });
+  ctx.stroke();
+
+  rows.forEach((row, index) => {
+    const x = padding + slot * index + slot / 2;
+    const open = Number(row.open);
+    const close = Number(row.close);
+    const high = Number(row.high);
+    const low = Number(row.low);
+    const up = close >= open;
+    const color = up ? '#d64b4b' : '#0f8b6f';
+    ctx.strokeStyle = '#162033';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y(high));
+    ctx.lineTo(x, y(low));
+    ctx.stroke();
+    const top = y(Math.max(open, close));
+    const bottom = y(Math.min(open, close));
+    ctx.fillStyle = up ? 'rgba(214, 75, 75, 0.82)' : 'rgba(15, 139, 111, 0.82)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.fillRect(x - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 3));
+    ctx.strokeRect(x - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 3));
+    ctx.fillStyle = '#607086';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(String(row.date).slice(5), x - 16, height - 16);
+  });
+
+  ctx.fillStyle = '#162033';
+  ctx.font = '16px sans-serif';
+  ctx.fillText(`${item.name || item.code} ${item.code || ''}`, padding, 24);
+  ctx.fillStyle = '#607086';
+  ctx.font = '13px sans-serif';
+  ctx.fillText(`策略分 ${formatNumber(item.latestScore, 4)} / ${rows.length} 根日K / 蓝线=收盘`, padding + 170, 24);
+}
+
+function formatAmountYi(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return '-';
+  return `${formatNumber(number / 100000000, 2)}亿`;
+}
+
+function drawPositionStressEquity(curve = []) {
+  const canvas = elements.positionStressEquityCanvas;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  const padding = 42;
+  const points = curve.filter((item) => Number.isFinite(Number(item.equity)));
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  if (!points.length) {
+    ctx.fillStyle = '#607086';
+    ctx.font = '15px sans-serif';
+    ctx.fillText('暂无净值数据', padding, height / 2);
+    return;
+  }
+
+  const values = points.map((item) => Number(item.equity));
+  const min = Math.min(...values, 1);
+  const max = Math.max(...values, 1);
+  const span = Math.max(max - min, 0.01);
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+  const paddedMin = min - span * 0.16;
+  const paddedMax = max + span * 0.16;
+  const paddedSpan = paddedMax - paddedMin;
+
+  function point(value, index) {
+    const x = padding + (chartWidth / Math.max(points.length - 1, 1)) * index;
+    const y = padding + ((paddedMax - value) / paddedSpan) * chartHeight;
+    return [x, y];
+  }
+
+  ctx.strokeStyle = '#d7e0ea';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 4; i += 1) {
+    const yy = padding + (chartHeight / 3) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding, yy);
+    ctx.lineTo(width - padding, yy);
+    ctx.stroke();
+  }
+
+  const [baseX, baseY] = point(1, 0);
+  ctx.strokeStyle = '#95a3b5';
+  ctx.setLineDash([6, 5]);
+  ctx.beginPath();
+  ctx.moveTo(baseX, baseY);
+  ctx.lineTo(width - padding, baseY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = '#146eb4';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  points.forEach((item, index) => {
+    const [x, y] = point(Number(item.equity), index);
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  points.forEach((item, index) => {
+    const [x, y] = point(Number(item.equity), index);
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#146eb4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#607086';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(String(item.date).slice(5), x - 16, height - 14);
+  });
+
+  ctx.fillStyle = '#162033';
+  ctx.font = '15px sans-serif';
+  ctx.fillText('组合净值', padding, 24);
+  ctx.fillStyle = '#607086';
+  ctx.font = '12px sans-serif';
+  ctx.fillText(`起点 1.0000 / 终点 ${formatNumber(values.at(-1), 4)}`, padding + 76, 24);
+}
+
+function renderPositionStress(report) {
+  if (!elements.positionStressComplete) return;
+  currentPositionStressReport = report;
+  const metrics = report.strategy?.metrics || {};
+  const gate = report.runGate || {};
+  const complete = Boolean(report.complete || gate.formalRunAllowed);
+  const dateRange = report.requestedDateRange || {};
+  const missingText = (report.missingDates || []).length ? `缺 ${report.missingDates.join(', ')}` : '日期完整';
+  const statusTone = complete ? 'good' : 'watch';
+
+  elements.positionStressComplete.innerHTML = `<span class="tag ${statusTone}">${complete ? '完整' : '缺数据'}</span>`;
+  elements.positionStressDateRange.textContent = `${dateRange.start || '-'} 至 ${dateRange.end || '-'} / ${missingText}`;
+  elements.positionStressStockCount.textContent = report.stockCount ?? '-';
+  elements.positionStressRowCount.textContent = `${report.rowCount ?? 0} 行 / ${report.actualDates?.length ?? 0} 天`;
+  elements.positionStressReturn.textContent = formatPercent(metrics.totalReturn, 2);
+  elements.positionStressRunStatus.textContent = report.strategy?.runStatus === 'complete_short_window' ? '短窗压测' : '仅链路预览';
+  elements.positionStressDrawdown.textContent = formatPercent(metrics.maxDrawdown, 2);
+  elements.positionStressTrades.textContent = `${metrics.tradeCount ?? 0} 笔 / ${metrics.simulatedReturnDays ?? 0} 天`;
+  elements.positionStressMessage.textContent = gate.reason || report.sourceMessage || '等待报告';
+  elements.positionStressMessage.dataset.tone = complete ? 'success' : 'error';
+  elements.positionStressArtifacts.textContent = report.artifacts?.dailyCsv ? `行情文件：${report.artifacts.dailyCsv}` : '等待产物';
+  elements.positionStressArtifacts.title = report.artifacts?.dailyCsv ? fieldHint('source_file', report.artifacts.dailyCsv) : '';
+  if (elements.positionStressSelectedStrategy) {
+    const selected = report.selectedStrategy || currentPositionStressCatalog?.current || null;
+    const strategyName = report.strategy?.name || selected?.name || '默认策略';
+    const adapterNote = report.strategy?.adapterNote || selected?.runnableReason || '从策略池选择达标策略后，这里会显示压测口径。';
+    const gateStatus = selected?.gateStatus || report.strategy?.adapter || '默认口径';
+    elements.positionStressSelectedStrategy.innerHTML = `
+      <div>
+        <strong>${escapeHtml(strategyName)}</strong>
+        <span>${escapeHtml(adapterNote)}</span>
+      </div>
+      <span class="tag ${selected ? 'good' : 'pending'}">${escapeHtml(selected ? gateStatus || '已选择' : '未选择')}</span>
+    `;
+  }
+
+  drawPositionStressEquity(report.strategy?.equityCurve || []);
+  if (elements.positionStressResultSummary) {
+    const summaryCards = [
+      ['总收益', formatPercent(metrics.totalReturn, 2)],
+      ['最大回撤', formatPercent(metrics.maxDrawdown, 2)],
+      ['收益回撤比', formatNumber(metrics.returnDrawdownRatio, 2)],
+      ['Calmar 类指标', formatNumber(metrics.calmarLike, 2)],
+      ['收益波动比', formatNumber(metrics.returnVolatilityRatio, 2)],
+      ['简化 Sharpe', formatNumber(metrics.simplifiedSharpe, 2)],
+      ['平均盈利', formatPercent(metrics.averageWinReturn, 2)],
+      ['平均亏损', formatPercent(metrics.averageLossReturn, 2)],
+      ['盈亏比', formatNumber(metrics.profitLossRatio, 2)],
+      ['盈利贡献', formatPercent(metrics.profitContribution, 2)],
+      ['亏损贡献', formatPercent(metrics.lossContribution, 2)],
+      ['收益集中度', formatNumber(metrics.returnConcentration, 2)],
+      ['单日最大贡献', formatPercent(metrics.maxDailyContribution, 2)],
+      ['单票最大贡献', formatPercent(metrics.maxSingleStockContribution, 2)],
+      ['日胜率', formatPercent(metrics.dailyWinRate, 1)],
+      ['交易胜率', formatPercent(metrics.tradeWinRate, 1)],
+      ['平均单笔', formatPercent(metrics.averageTradeReturn, 2)],
+      ['最差单笔', formatPercent(metrics.worstTradeReturn, 2)],
+      ['持仓覆盖', `${escapeHtml(metrics.uniqueHeldStocks ?? '-')}只`],
+    ];
+    elements.positionStressResultSummary.innerHTML = summaryCards.map(([label, value]) => `
+      <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
+    `).join('');
+  }
+  if (elements.positionStressDiagnostics) {
+    const bestTrade = metrics.bestTrade || {};
+    const worstTrade = metrics.worstTrade || {};
+    const bestDay = metrics.bestDay || {};
+    const worstDay = metrics.worstDay || {};
+    const diagnostics = [
+      ['最好单笔', `${bestTrade.name || '-'} ${formatPercent(bestTrade.return, 2)} / ${bestTrade.signalDate || '-'}`],
+      ['最差单笔', `${worstTrade.name || '-'} ${formatPercent(worstTrade.return, 2)} / ${worstTrade.signalDate || '-'}`],
+      ['最好交易日', `${bestDay.date || '-'} ${formatPercent(bestDay.dailyReturn, 2)}`],
+      ['最差交易日', `${worstDay.date || '-'} ${formatPercent(worstDay.dailyReturn, 2)}`],
+      ['调仓次数', `${metrics.rebalanceCount ?? '-'} 次`],
+      ['平均持仓数', `${metrics.averageHoldingCount ?? '-'} 只`],
+      ['日波动', formatPercent(metrics.dailyVolatility, 2)],
+      ['年化收益', formatPercent(metrics.annualizedReturn, 2)],
+    ];
+    elements.positionStressDiagnostics.innerHTML = diagnostics.map(([label, value]) => `
+      <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
+    `).join('');
+  }
+
+  const warnings = report.warnings || [];
+  const tencentFallbackCount = warnings.filter((item) => String(item).includes('腾讯真实K线补齐')).length;
+  const actualDateCount = (report.actualDates || []).length;
+  const sourceRows = [
+    `覆盖：${report.stockCount ?? 0} 只 / ${report.rowCount ?? 0} 行 / ${actualDateCount} 个交易日。`,
+    report.dataPolicy,
+    report.sourceMessage,
+    tencentFallbackCount ? `${tencentFallbackCount} 只股票使用腾讯真实K线补齐，成交额字段为空；已有本地/东方财富成交额的行会优先保留。` : '',
+    `短窗口说明：当前 ${actualDateCount || '-'} 个交易日只适合检查数据链路、建仓流程、K线展示和极短期执行压力，不适合作为策略有效性结论。`,
+  ].filter(Boolean);
+  const detailRows = [...warnings, ...(report.nextActions || [])].filter(Boolean);
+
+  elements.positionStressWarnings.innerHTML = sourceRows.map((item, index) => `
+    <div class="status-item">
+      <div>
+        <strong>${index === 0 ? '覆盖状态' : index === 1 ? '数据原则' : index === 2 ? '数据源状态' : index === 3 ? '补齐口径' : '测试边界'}</strong>
+        <span>${escapeHtml(item)}</span>
+      </div>
+      <span class="tag ${complete ? 'good' : 'watch'}">${index === 0 ? (complete ? '完整' : '缺失') : '口径'}</span>
+    </div>
+  `).join('') + (detailRows.length ? `
+    <details class="stress-source-log">
+      <summary>查看数据源日志 ${detailRows.length} 条</summary>
+      <div>
+        ${detailRows.map((item) => `<p>${escapeHtml(item)}</p>`).join('')}
+      </div>
+    </details>
+  ` : '');
+
+  elements.positionStressSelectionList.innerHTML = (report.strategy?.dailySelections || [])
+    .map((day) => `
+      <div class="status-item">
+        <div>
+          <strong>${escapeHtml(day.date)} 入选 ${escapeHtml(day.selectedCount)} 只</strong>
+          <span>${escapeHtml((day.names || []).join('、'))}</span>
+        </div>
+        <span class="tag ${complete ? 'good' : 'pending'}">${complete ? '可运行' : '预览'}</span>
+      </div>
+    `).join('') || '<div class="library-source">暂无建仓选择。</div>';
+
+  elements.positionStressScenarios.innerHTML = (report.stress || [])
+    .map((scenario) => `
+      <tr>
+        <td><span class="tag neutral">${escapeHtml(scenario.category || '压力')}</span></td>
+        <td><strong>${escapeHtml(scenario.name)}</strong></td>
+        <td><strong class="${Number(scenario.resultReturn) >= 0 ? 'positive-number' : 'negative-number'}">${formatPercent(scenario.resultReturn, 2)}</strong></td>
+        <td>${formatPercent(scenario.maxDrawdown, 2)}</td>
+        <td>${escapeHtml(scenario.tradeCount ?? '-')}</td>
+        <td>${escapeHtml(scenario.impact)}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="6">暂无压力场景。</td></tr>';
+
+  if (elements.positionStressTradeTable) {
+    elements.positionStressTradeTable.innerHTML = (report.strategy?.trades || []).slice(0, 80)
+      .map((trade) => `
+        <tr>
+          <td>${escapeHtml(trade.signalDate)}<br><small>${escapeHtml(trade.exitDate || '')}</small></td>
+          <td><strong>${escapeHtml(trade.name)}</strong><br><small>${escapeHtml(trade.security || trade.code)}</small></td>
+          <td>${formatPercent(trade.targetWeight, 1)}<br><small>${formatNumber(trade.notional, 0)}</small></td>
+          <td><strong>${formatPercent(trade.return, 2)}</strong><br><small>${formatNumber(trade.entryClose, 2)} -> ${formatNumber(trade.exitClose, 2)}</small></td>
+        </tr>
+      `).join('') || '<tr><td colspan="4">暂无成交明细。</td></tr>';
+  }
+
+  elements.positionStressDataTable.innerHTML = (report.dataTable || []).slice(0, 120)
+    .map((row) => `
+      <tr>
+        <td>${escapeHtml(row.date)}</td>
+        <td><strong>${escapeHtml(row.name)}</strong><br><small>${escapeHtml(row.security || row.code)}</small></td>
+        <td>${formatNumber(row.open, 2)} / ${formatNumber(row.high, 2)} / ${formatNumber(row.low, 2)} / ${formatNumber(row.close, 2)}</td>
+        <td>${formatNumber(row.volume, 0)}<br><small>${formatAmountYi(row.amount)}</small></td>
+        <td>${formatNumber(row.trend_alignment, 3)}</td>
+        <td>${formatNumber(row.volume_price_confirmation, 3)}</td>
+        <td>${formatNumber(row.crowding_risk, 3)}</td>
+        <td><strong>${formatNumber(row.strategy_score, 3)}</strong></td>
+        <td><span class="tag ${row.tradable ? 'good' : 'watch'}">${row.tradable ? '可交易' : '阻断'}</span></td>
+      </tr>
+    `).join('') || '<tr><td colspan="9">暂无行情数据。</td></tr>';
+
+  const klineItems = report.kline || [];
+  const selectedCode = elements.positionStressKlineSelect.value;
+  elements.positionStressKlineSelect.innerHTML = klineItems
+    .map((item) => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.name)} ${escapeHtml(item.code)}</option>`)
+    .join('');
+  if (selectedCode && klineItems.some((item) => item.code === selectedCode)) {
+    elements.positionStressKlineSelect.value = selectedCode;
+  }
+  const activeItem = klineItems.find((item) => item.code === elements.positionStressKlineSelect.value) || klineItems[0];
+  if (activeItem) {
+    elements.positionStressKlineSelect.value = activeItem.code;
+  }
+  elements.positionStressKlineNote.textContent = complete
+    ? 'K线来自完整真实行情窗口。'
+    : 'K线来自当前已落地真实行情，缺失日期不会补画。';
+  drawPositionStressKline(activeItem);
+}
+
+function renderPositionStressCatalog(catalog) {
+  currentPositionStressCatalog = catalog;
+  if (elements.positionStressStrategySelect) {
+    const runnable = (catalog?.strategies || []).filter((item) => item.runnable);
+    const currentId = catalog?.current?.strategyId || '';
+    elements.positionStressStrategySelect.innerHTML = [
+      '<option value="">从策略池选择</option>',
+      ...runnable.map((item) => `<option value="${escapeHtml(item.strategyId)}">${escapeHtml(item.name)}</option>`),
+    ].join('');
+    if (currentId) elements.positionStressStrategySelect.value = currentId;
+  }
+  if (currentPositionStressReport) {
+    renderPositionStress({ ...currentPositionStressReport, selectedStrategy: catalog.current || currentPositionStressReport.selectedStrategy });
+  }
+}
+
 function showView(viewName) {
   elements.views.forEach((view) => {
     view.classList.toggle('active', view.id === `${viewName}-view`);
@@ -3227,7 +3650,7 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
-  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline] = await Promise.all([
+  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
@@ -3239,8 +3662,11 @@ async function refreshDashboard() {
     request('/strategy-api/live-signals'),
     request('/backtest-api/research-status'),
     request('/research-api/pipeline'),
+    request('/position-stress-api/report'),
+    request('/position-stress-api/strategies'),
   ]);
 
+  currentPositionStressCatalog = positionStressCatalog;
   renderSummary(summary);
   renderFactors(factors);
   renderRisk(risks);
@@ -3251,6 +3677,8 @@ async function refreshDashboard() {
   renderLiveStrategies(liveStrategies);
   renderBacktestCenter(backtestStatus);
   renderResearchPipeline(researchPipeline);
+  renderPositionStress(positionStress);
+  renderPositionStressCatalog(positionStressCatalog);
   bindCollapsibleData();
   requestAnimationFrame(syncCollapsibleData);
 }
@@ -3370,6 +3798,38 @@ elements.formalStrategyPagination?.addEventListener('click', (event) => {
 });
 
 function handleStrategyCardClick(event) {
+  const stressButton = event.target.closest('[data-position-stress-strategy]');
+  if (stressButton) {
+    const strategyId = stressButton.dataset.positionStressStrategy;
+    stressButton.disabled = true;
+    const originalText = stressButton.textContent;
+    stressButton.textContent = '送入中';
+    request('/position-stress-api/select-strategy', {
+      body: JSON.stringify({ strategyId }),
+      method: 'POST',
+    })
+      .then(async (response) => {
+        currentPositionStressCatalog = response.catalog;
+        renderPositionStress(response.report);
+        showView('position-stress');
+        elements.navButtons.forEach((button) => {
+          button.classList.toggle('active', button.dataset.viewTarget === 'position-stress');
+        });
+        elements.positionStressMessage.textContent = `${response.message} 可以点击一键导入运行。`;
+        elements.positionStressMessage.dataset.tone = 'success';
+      })
+      .catch((error) => {
+        stressButton.textContent = `失败：${error.message}`;
+      })
+      .finally(() => {
+        window.setTimeout(() => {
+          stressButton.disabled = false;
+          stressButton.textContent = originalText || '送入建仓压测';
+        }, 1000);
+      });
+    return;
+  }
+
   const downloadButton = event.target.closest('[data-strategy-download]');
   if (downloadButton) {
     window.location.href = downloadButton.dataset.strategyDownload;
@@ -3490,6 +3950,111 @@ elements.downloadJoinquantCsv?.addEventListener('click', () => {
 
 elements.downloadJoinquantFactorScript?.addEventListener('click', () => {
   window.location.href = '/backtest-api/joinquant-factor-test-script.py';
+});
+
+elements.positionStressKlineSelect?.addEventListener('change', async () => {
+  try {
+    const report = await request('/position-stress-api/report');
+    renderPositionStress(report);
+  } catch (error) {
+    elements.positionStressKlineNote.textContent = `K线刷新失败：${error.message}`;
+  }
+});
+
+elements.refreshPositionStress?.addEventListener('click', async () => {
+  try {
+    const [report, catalog] = await Promise.all([
+      request('/position-stress-api/report'),
+      request('/position-stress-api/strategies'),
+    ]);
+    renderPositionStress(report);
+    renderPositionStressCatalog(catalog);
+    elements.positionStressMessage.textContent = '建仓压力测试报告已刷新';
+    elements.positionStressMessage.dataset.tone = 'success';
+  } catch (error) {
+    elements.positionStressMessage.textContent = `刷新失败：${error.message}`;
+    elements.positionStressMessage.dataset.tone = 'error';
+  }
+});
+
+elements.positionStressStrategySelect?.addEventListener('change', async () => {
+  const strategyId = elements.positionStressStrategySelect.value;
+  if (!strategyId) return;
+  try {
+    const response = await request('/position-stress-api/select-strategy', {
+      body: JSON.stringify({ strategyId }),
+      method: 'POST',
+    });
+    currentPositionStressCatalog = response.catalog;
+    renderPositionStress(response.report);
+    renderPositionStressCatalog(response.catalog);
+    elements.positionStressMessage.textContent = `${response.message} 可以点击一键导入运行。`;
+    elements.positionStressMessage.dataset.tone = 'success';
+  } catch (error) {
+    elements.positionStressMessage.textContent = `策略选择失败：${error.message}`;
+    elements.positionStressMessage.dataset.tone = 'error';
+  }
+});
+
+elements.runPositionStress?.addEventListener('click', async () => {
+  const button = elements.runPositionStress;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = '导入运行中';
+  elements.positionStressMessage.textContent = '正在拉取/导入真实行情并生成建仓压力测试报告。';
+  elements.positionStressMessage.dataset.tone = 'success';
+  try {
+    const response = await request('/position-stress-api/run', {
+      body: JSON.stringify({
+        capital: Number(elements.positionStressCapital?.value || 1000000),
+        end: elements.positionStressEnd?.value || '2026-07-13',
+        source: elements.positionStressSource?.value || 'auto',
+        start: elements.positionStressStart?.value || '2026-07-06',
+        strategyId: currentPositionStressCatalog?.current?.strategyId || currentPositionStressReport?.selectedStrategy?.strategyId || '',
+        topN: Number(elements.positionStressTopN?.value || 10),
+      }),
+      method: 'POST',
+    });
+    renderPositionStress(response.report);
+    elements.positionStressMessage.textContent = response.message || response.report?.runGate?.reason || '运行完成';
+    elements.positionStressMessage.dataset.tone = response.report?.runGate?.formalRunAllowed ? 'success' : 'error';
+  } catch (error) {
+    elements.positionStressMessage.textContent = `运行失败：${error.message}`;
+    elements.positionStressMessage.dataset.tone = 'error';
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText || '一键导入运行';
+  }
+});
+
+elements.importPositionStressOhlcv?.addEventListener('click', async () => {
+  const button = elements.importPositionStressOhlcv;
+  const originalText = button.textContent;
+  const text = elements.positionStressImportOhlcv?.value?.trim() || '';
+  if (!text) {
+    elements.positionStressMessage.textContent = '请先粘贴真实行情 CSV 或 JSON。';
+    elements.positionStressMessage.dataset.tone = 'error';
+    return;
+  }
+  button.disabled = true;
+  button.textContent = '导入中';
+  try {
+    const response = await request('/position-stress-api/import-ohlcv', {
+      body: text,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      method: 'POST',
+    });
+    renderPositionStress(response.report);
+    elements.positionStressImportOhlcv.value = '';
+    elements.positionStressMessage.textContent = response.message || '真实行情已导入';
+    elements.positionStressMessage.dataset.tone = response.report?.runGate?.formalRunAllowed ? 'success' : 'error';
+  } catch (error) {
+    elements.positionStressMessage.textContent = `导入失败：${error.message}`;
+    elements.positionStressMessage.dataset.tone = 'error';
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText || '导入真实行情';
+  }
 });
 
 elements.refreshBacktestCenter?.addEventListener('click', async () => {
