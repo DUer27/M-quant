@@ -1,0 +1,23 @@
+{
+  "index_symbol": "000905",
+  "index_name": "csi500",
+  "generated_at": "2026-07-14T12:29:54",
+  "start": "20200101",
+  "end": "20260714",
+  "adjust": "qfq",
+  "provider": "tx",
+  "pool_path": "outputs/sources/akshare/index_enhancement/processed/csi500_pool.csv",
+  "stocks_requested": 500,
+  "stocks_success": 500,
+  "rows": 732652,
+  "dates": 1580,
+  "earliest_date": "2020-01-02",
+  "latest_date": "2026-07-13",
+  "reused_existing": 0,
+  "source_counts": {
+    "akshare.stock_zh_a_hist_tx": 732652
+  },
+  "combined_path": "outputs/sources/akshare/index_enhancement/processed/csi500_daily_20200101_20260714_qfq.csv",
+  "failures_path": "outputs/sources/akshare/index_enhancement/results/csi500_fetch_failures.csv",
+  "failures": []
+}

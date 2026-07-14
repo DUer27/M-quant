@@ -3,3 +3,13 @@ __pycache__/
 *.pyc
 node_modules/
 .env.local
+
+# Large local research data; scripts and compact reports are committed instead.
+outputs/sources/akshare/index_enhancement/raw/
+outputs/sources/akshare/index_enhancement/processed/*_daily_*.csv
+outputs/sources/akshare/index_enhancement/results/*_factor_values.csv
+outputs/sources/akshare/index_enhancement/results/*_trades.csv
+!outputs/sources/akshare/index_enhancement/results/csi300_z_f_volume_confirmation_top30_core75_buf150_risk0_trades.csv
+!outputs/sources/akshare/index_enhancement/results/csi300_z_f_volume_confirmation_top40_core85_buf200_risk0_trades.csv
+!outputs/sources/akshare/index_enhancement/results/csi500_z_f_volume_confirmation_top80_core75_buf200_risk0_trades.csv
+!outputs/sources/akshare/index_enhancement/results/csi500_z_f_volume_confirmation_top100_core85_buf200_risk0_trades.csv
