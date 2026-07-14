@@ -1,0 +1,14 @@
+{
+  "adapter": "ohlcv_liquidity_quality_proxy",
+  "baseline": null,
+  "evidence": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+  "gateStatus": "ready_controlled_paper_watch",
+  "layer": "高波动",
+  "name": "JQ质量利润流动性策略 v1",
+  "runnable": true,
+  "runnableReason": "可进入建仓压力测试。",
+  "selectedCodes": [],
+  "source": "joinquant_jq_quality_profit_liquidity_v1_trading_simulation_v1",
+  "strategyId": "jq_quality_profit_liquidity_v1",
+  "selectedAt": "2026-07-14T02:07:18.522Z"
+}

@@ -189,6 +189,62 @@ h2 {
   grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.9fr);
 }
 
+.content-grid.position-stress-hero {
+  align-items: start;
+  grid-template-columns: minmax(640px, 1.48fr) minmax(360px, 0.92fr);
+}
+
+.position-stress-kline-panel,
+.position-stress-control-panel {
+  min-height: 0;
+}
+
+.position-stress-kline-panel {
+  grid-template-rows: auto auto auto;
+}
+
+.position-stress-kline-panel #position-stress-kline-canvas {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: 320px;
+  width: 100%;
+}
+
+.position-stress-control-panel {
+  align-content: start;
+}
+
+.position-stress-page {
+  align-content: start;
+}
+
+.position-stress-results-grid {
+  align-items: start;
+  grid-template-columns: minmax(720px, 1.6fr) minmax(320px, 0.72fr);
+}
+
+.position-stress-support-grid {
+  align-items: start;
+  grid-template-columns: minmax(520px, 1fr) minmax(420px, 0.95fr);
+}
+
+.position-stress-equity-panel,
+.position-stress-trades-panel,
+.position-stress-selection-panel,
+.position-stress-notes-panel,
+.position-stress-data-panel {
+  min-width: 0;
+}
+
+.position-stress-equity-panel #position-stress-equity-canvas {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: 260px;
+  width: 100%;
+}
+
 .content-grid.lower {
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
 }
@@ -329,6 +385,208 @@ textarea {
   border-color: var(--primary);
   color: #ffffff;
   font-weight: 700;
+}
+
+.stress-controls {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stress-controls label {
+  color: var(--muted);
+  display: grid;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.stress-controls input,
+.stress-controls select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-height: 38px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.stress-actions {
+  margin-bottom: 0;
+}
+
+.stress-import-box {
+  color: var(--muted);
+  display: grid;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.stress-import-box textarea {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  min-height: 112px;
+  padding: 10px;
+  resize: vertical;
+  width: 100%;
+}
+
+.stress-selected-strategy {
+  align-items: start;
+  background: #f7fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  padding: 12px;
+}
+
+.stress-selected-strategy strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stress-selected-strategy span:not(.tag) {
+  color: var(--muted);
+  display: block;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.stress-source-log {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 10px 12px;
+}
+
+.stress-source-log summary {
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stress-source-log div {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 220px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.stress-source-log p {
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+
+.stress-source-log p:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.stress-trade-table {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 560px;
+}
+
+.stress-matrix-table {
+  max-height: 360px;
+}
+
+.kline-stress-matrix {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: auto;
+  max-height: 340px;
+  min-height: 0;
+}
+
+.kline-stress-matrix table {
+  margin: 0;
+}
+
+.kline-stress-matrix thead th {
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.stress-matrix-table td:nth-child(6) {
+  min-width: 260px;
+}
+
+.positive-number {
+  color: var(--success);
+}
+
+.negative-number {
+  color: #b42318;
+}
+
+#position-stress-result-summary {
+  margin-top: 0;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+}
+
+#position-stress-result-summary div {
+  background: #f7fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  min-height: 70px;
+  min-width: 0;
+  padding: 11px 12px;
+}
+
+#position-stress-result-summary span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+#position-stress-result-summary strong {
+  display: block;
+  font-size: 17px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.stress-diagnostics {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.stress-diagnostics div {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 12px;
+}
+
+.stress-diagnostics span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.stress-diagnostics strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .result-summary-grid {
@@ -767,6 +1025,15 @@ textarea {
   z-index: 1;
 }
 
+.position-stress-data-panel .table-scroll {
+  max-height: 520px;
+}
+
+.position-stress-page table th,
+.position-stress-page table td {
+  vertical-align: top;
+}
+
 .collapsible-data {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -999,6 +1266,14 @@ td small {
   padding: 0 0 12px;
 }
 
+#position-stress-warnings .status-item {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+#position-stress-warnings .status-item span:not(.tag) {
+  overflow-wrap: anywhere;
+}
+
 .status-item:last-child {
   border-bottom: 0;
   padding-bottom: 0;
@@ -1222,6 +1497,13 @@ td small {
   cursor: pointer;
   height: 34px;
   padding: 0 10px;
+}
+
+.strategy-export-actions button.primary-lite {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .strategy-export-actions button:hover {
@@ -1629,6 +1911,9 @@ meter {
   .result-summary-grid,
   .content-grid,
   .content-grid.lower,
+  .content-grid.position-stress-hero,
+  .position-stress-results-grid,
+  .position-stress-support-grid,
   .paper-watch-console-grid,
   .paper-watch-console-summary,
   .research-layout,
