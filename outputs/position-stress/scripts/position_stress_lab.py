@@ -842,9 +842,9 @@ def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConf
     ending_nav = ending_value / initial_capital if initial_capital > 0 else None
     annualized_return = (ending_nav ** (252 / len(returns)) - 1) if returns and ending_nav and ending_nav > 0 else None
     single_stock_contribution = None
-    if trades:
+    if filled_trades:
         best_contribution_trade = max(
-            trades,
+            filled_trades,
             key=lambda item: float(item.get("contribution") or 0),
         )
         single_stock_contribution = float(best_contribution_trade.get("contribution") or 0)
@@ -923,7 +923,8 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
     base_return = float(metrics.get("totalReturn") or 0)
     trade_returns = [float(trade["return"]) for trade in trades if trade.get("return") is not None]
     worst_trade = min(trade_returns) if trade_returns else 0.0
-    avg_weight = float(np.mean([float(trade.get("targetWeight") or 0) for trade in trades])) if trades else 0.0
+    filled_trades = [trade for trade in trades if float(trade.get("filledNotional") or 0) > 0]
+    avg_weight = float(np.mean([float(trade.get("actualWeight") or 0) for trade in filled_trades])) if filled_trades else 0.0
     rebalance_count = max(1, len(set(t.get("signalDate") for t in trades)))
     items = [stress_item("基准", "收盘建仓次日观察", base_return, "按当前缓存数据直接计算。", metrics)]
 
@@ -939,19 +940,19 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
         items.append(stress_item("持仓数量", f"Top{top_n} 等权", top_metrics.get("totalReturn"), f"每期取分数前 {top_n} 只，观察集中度敏感性。", top_metrics))
 
     for shock in [-0.02, -0.05, -0.08]:
-        items.append(stress_item("市场冲击", f"全组合 {format_percent_label(shock)}", base_return + shock, "假设组合整体立即遭遇市场下跌冲击。", metrics))
+        items.append(stress_item("近似冲击", f"全组合 {format_percent_label(shock)}", base_return + shock, "近似情景：在基准收益上叠加组合整体下跌冲击，未重跑资金账本。", metrics))
 
     for shock in [-0.05, -0.10, -0.20]:
-        items.append(stress_item("单票冲击", f"单票隔夜 {format_percent_label(shock)}", base_return + shock * avg_weight, "假设任一等权持仓隔夜跳空且无法提前退出。", metrics))
+        items.append(stress_item("近似冲击", f"单票隔夜 {format_percent_label(shock)}", base_return + shock * avg_weight, "近似情景：按实际成交平均权重估算单票跳空影响，未重跑资金账本。", metrics))
 
     for fill_ratio in [0.8, 0.5, 0.2]:
-        items.append(stress_item("流动性折扣", f"只成交 {int(fill_ratio * 100)}%", base_return * fill_ratio, "未成交资金视为现金，观察收益对成交比例的敏感性。", metrics))
+        items.append(stress_item("近似流动性", f"只成交 {int(fill_ratio * 100)}%", base_return * fill_ratio, "近似情景：按基准收益乘成交比例估算，容量模型阶段会改为逐笔重跑。", metrics))
 
     for delay in [1, 2]:
         _, delay_trades, delay_metrics = simulate_equity(scored, build_signals(scored, config.top_n), config, delay_days=delay)
         items.append(stress_item("延迟成交", f"T+{delay} 执行", delay_metrics.get("totalReturn"), f"信号出现后延迟 {delay} 个交易日执行，短窗口样本会减少。", delay_metrics))
 
-    items.append(stress_item("尾部复现", "最差成交重复一次", base_return + worst_trade * avg_weight, "把样本内最差单票结果额外压一次，用于看组合缓冲。", metrics))
+    items.append(stress_item("近似冲击", "最差成交重复一次", base_return + worst_trade * avg_weight, "近似情景：按实际成交平均权重额外叠加样本内最差单票结果。", metrics))
     return items
 
 
