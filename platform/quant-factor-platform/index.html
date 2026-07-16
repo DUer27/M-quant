@@ -510,50 +510,46 @@
             </article>
           </section>
 
-          <section class="content-grid position-stress-hero">
-            <section class="panel position-stress-kline-panel">
+          <section class="panel position-stress-kline-panel">
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">K-Line Review</p>
                   <h2>入选股票K线</h2>
                 </div>
-                <select id="position-stress-kline-select" aria-label="选择股票K线"></select>
+                <div class="kline-toolbar">
+                  <select id="position-stress-kline-select" aria-label="选择股票K线"></select>
+                  <div class="segmented-control" aria-label="K线周期">
+                    <button id="position-stress-kline-daily" class="active" type="button" data-kline-period="daily">日K</button>
+                    <button id="position-stress-kline-monthly" type="button" data-kline-period="monthly">月K</button>
+                    <button id="position-stress-kline-yearly" type="button" data-kline-period="yearly">年K</button>
+                  </div>
+                  <button id="position-stress-kline-reset" type="button">重置</button>
+                </div>
               </div>
-              <canvas id="position-stress-kline-canvas" width="920" height="360"></canvas>
+              <div class="kline-chart-shell">
+                <canvas id="position-stress-kline-canvas" width="1280" height="520"></canvas>
+                <div id="position-stress-kline-tooltip" class="kline-tooltip" hidden></div>
+              </div>
               <div id="position-stress-kline-note" class="library-source">等待数据</div>
-              <div class="table-scroll stress-matrix-table kline-stress-matrix">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>类别</th>
-                      <th>场景</th>
-                      <th>收益</th>
-                      <th>回撤</th>
-                      <th>交易</th>
-                      <th>含义</th>
-                    </tr>
-                  </thead>
-                  <tbody id="position-stress-scenarios"></tbody>
-                </table>
-              </div>
             </section>
 
+          <section class="content-grid position-stress-hero">
             <section class="panel position-stress-control-panel">
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Import & Run</p>
-                  <h2>一键导入运行</h2>
+                  <h2>策略选股压测</h2>
                 </div>
               </div>
               <div id="position-stress-selected-strategy" class="stress-selected-strategy">等待从策略池选择策略</div>
               <div class="stress-controls">
                 <label>
                   开始日期
-                  <input id="position-stress-start" type="date" value="2026-07-06" />
+                  <input id="position-stress-start" type="date" value="2025-01-01" />
                 </label>
                 <label>
                   结束日期
-                  <input id="position-stress-end" type="date" value="2026-07-13" />
+                  <input id="position-stress-end" type="date" value="2026-07-15" />
                 </label>
                 <label>
                   持仓数量
@@ -580,12 +576,12 @@
                 </label>
               </div>
               <div class="backtest-actions stress-actions">
-                <button id="run-position-stress" class="primary" type="button">一键导入运行</button>
+                <button id="run-position-stress" class="primary" type="button">运行</button>
                 <button id="refresh-position-stress" type="button">刷新报告</button>
               </div>
               <label class="stress-import-box">
                 粘贴真实行情CSV/JSON
-                <textarea id="position-stress-import-ohlcv" rows="5" placeholder="date,code,open,high,low,close,volume,amount&#10;2026-07-13,000001,10.5,10.8,10.4,10.7,123456,123456789"></textarea>
+                <textarea id="position-stress-import-ohlcv" rows="5" placeholder="date,code,open,high,low,close,volume,amount&#10;2026-07-15,000001,10.5,10.8,10.4,10.7,123456,123456789"></textarea>
               </label>
               <div class="backtest-actions stress-actions">
                 <button id="import-position-stress-ohlcv" type="button">导入真实行情</button>
@@ -595,40 +591,67 @@
             </section>
           </section>
 
-          <section class="content-grid lower position-stress-results-grid">
-            <section class="panel position-stress-equity-panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Equity Result</p>
-                  <h2>组合净值结果</h2>
-                </div>
+          <section class="panel position-stress-equity-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Equity Result</p>
+                <h2>组合净值结果</h2>
               </div>
-              <canvas id="position-stress-equity-canvas" width="920" height="300"></canvas>
-              <div id="position-stress-result-summary" class="result-summary-grid"></div>
-              <div id="position-stress-diagnostics" class="stress-diagnostics"></div>
-            </section>
+              <button id="export-position-stress-equity" type="button">导出Excel</button>
+            </div>
+            <canvas id="position-stress-equity-canvas" width="1280" height="380"></canvas>
+            <div id="position-stress-result-summary" class="result-summary-grid"></div>
+            <div id="position-stress-diagnostics" class="stress-diagnostics"></div>
+          </section>
 
-            <section class="panel position-stress-trades-panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Trade Detail</p>
-                  <h2>成交明细</h2>
-                </div>
+          <section class="panel position-stress-trades-panel position-stress-trades-row">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Trade Detail</p>
+                <h2>成交明细</h2>
               </div>
-              <div class="table-scroll stress-trade-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>信号日</th>
-                      <th>股票</th>
-                      <th>权重</th>
-                      <th>收益</th>
-                    </tr>
-                  </thead>
-                  <tbody id="position-stress-trade-table"></tbody>
-                </table>
+            </div>
+            <div class="table-scroll stress-trade-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>信号日</th>
+                    <th>股票</th>
+                    <th>权重/股数</th>
+                    <th>成交金额</th>
+                    <th>盈亏/成本</th>
+                    <th>收益</th>
+                  </tr>
+                </thead>
+                <tbody id="position-stress-trade-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel position-stress-scenarios-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Stress Matrix</p>
+                <h2>压力场景矩阵</h2>
               </div>
-            </section>
+            </div>
+            <div class="table-scroll stress-matrix-table kline-stress-matrix">
+              <table>
+                <thead>
+                  <tr>
+                    <th>类别</th>
+                    <th>场景</th>
+                    <th>收益</th>
+                    <th>回撤</th>
+                    <th>交易</th>
+                    <th>期末资产</th>
+                    <th>成本</th>
+                    <th>成交率</th>
+                    <th>含义</th>
+                  </tr>
+                </thead>
+                <tbody id="position-stress-scenarios"></tbody>
+              </table>
+            </div>
           </section>
 
           <section class="content-grid lower position-stress-support-grid">

@@ -102,10 +102,16 @@ const elements = {
   positionStressDiagnostics: document.querySelector('#position-stress-diagnostics'),
   positionStressEnd: document.querySelector('#position-stress-end'),
   positionStressEquityCanvas: document.querySelector('#position-stress-equity-canvas'),
+  exportPositionStressEquity: document.querySelector('#export-position-stress-equity'),
   positionStressImportOhlcv: document.querySelector('#position-stress-import-ohlcv'),
   positionStressKlineCanvas: document.querySelector('#position-stress-kline-canvas'),
+  positionStressKlineDaily: document.querySelector('#position-stress-kline-daily'),
+  positionStressKlineMonthly: document.querySelector('#position-stress-kline-monthly'),
   positionStressKlineNote: document.querySelector('#position-stress-kline-note'),
+  positionStressKlineReset: document.querySelector('#position-stress-kline-reset'),
   positionStressKlineSelect: document.querySelector('#position-stress-kline-select'),
+  positionStressKlineTooltip: document.querySelector('#position-stress-kline-tooltip'),
+  positionStressKlineYearly: document.querySelector('#position-stress-kline-yearly'),
   positionStressMessage: document.querySelector('#position-stress-message'),
   positionStressSelectedStrategy: document.querySelector('#position-stress-selected-strategy'),
   positionStressReturn: document.querySelector('#position-stress-return'),
@@ -189,6 +195,9 @@ let currentResearchPipeline = null;
 let currentStrategySignalPack = null;
 let currentPositionStressCatalog = null;
 let currentPositionStressReport = null;
+let currentPositionStressExplicitStrategyId = '';
+let positionStressKlinePeriod = 'daily';
+const positionStressKlineView = { start: 0, count: 70, dragging: false, dragX: 0, dragStart: 0, hoverIndex: null };
 let draftStrategyExpanded = false;
 let draftStrategyGrade = 'all';
 let draftStrategyPage = 1;
@@ -1153,18 +1162,69 @@ function factorDisplayName(id) {
     ak_liquidity_stability: 'AkShare流动性稳定',
     ak_mean_reversion_quality_combo: 'AkShare均值回归组合',
     ak_trend_quality: 'AkShare趋势质量',
+    f_anti_crowding: '指数增长反拥挤',
+    f_close_strength: '指数增长收盘强度',
+    f_drawdown_control: '指数增长回撤控制',
+    f_gap_risk_control: '指数增长跳空风险控制',
+    f_long_momentum: '指数增长长期趋势',
+    f_market_regime_fit: '指数增强市场适配',
+    f_medium_momentum: '指数增长中期趋势',
+    f_orderly_trend: '指数增强有序趋势',
+    f_residual_low_volatility: '指数增强残差低波',
+    f_short_reversal: '指数增长短期反转',
+    f_volume_stability: '指数增长量能稳定',
+    f_volume_confirmation: '指数增长量价确认',
+    z_f_volume_confirmation: '指数增长量价确认',
+    csi300_index_growth_anti_crowding: '沪深300指数增长反拥挤',
+    csi300_index_growth_close_strength: '沪深300指数增长收盘强度',
+    csi300_index_growth_drawdown_control: '沪深300指数增长回撤控制',
+    csi300_index_growth_gap_risk_control: '沪深300指数增长跳空风险控制',
+    csi300_index_growth_long_trend: '沪深300指数增长长期趋势',
+    csi300_index_growth_low_volatility: '沪深300指数增长低波动',
+    csi300_index_growth_medium_trend: '沪深300指数增长中期趋势',
+    csi300_index_growth_short_reversal: '沪深300指数增长短期反转',
+    csi300_index_growth_volume_price_confirmation: '沪深300指数增长量价确认',
+    csi300_index_growth_volume_stability: '沪深300指数增长量能稳定',
+    csi500_index_growth_anti_crowding: '中证500指数增长反拥挤',
+    csi500_index_growth_close_strength: '中证500指数增长收盘强度',
+    csi500_index_growth_drawdown_control: '中证500指数增长回撤控制',
+    csi500_index_growth_gap_risk_control: '中证500指数增长跳空风险控制',
+    csi500_index_growth_long_trend: '中证500指数增长长期趋势',
+    csi500_index_growth_low_volatility: '中证500指数增长低波动',
+    csi500_index_growth_medium_trend: '中证500指数增长中期趋势',
+    csi500_index_growth_short_reversal: '中证500指数增长短期反转',
+    csi500_index_growth_volume_price_confirmation: '中证500指数增长量价确认',
+    csi500_index_growth_volume_stability: '中证500指数增长量能稳定',
+    index_enhancement_csi300_anti_crowding: '沪深300指数增强反拥挤',
+    index_enhancement_csi300_close_strength: '沪深300指数增强收盘强度',
+    index_enhancement_csi300_drawdown_control: '沪深300指数增强回撤控制',
+    index_enhancement_csi300_gap_risk_control: '沪深300指数增强跳空风险控制',
+    index_enhancement_csi300_long_trend: '沪深300指数增强长期趋势',
+    index_enhancement_csi300_low_volatility: '沪深300指数增强低波动',
+    index_enhancement_csi300_medium_trend: '沪深300指数增强中期趋势',
+    index_enhancement_csi300_short_reversal: '沪深300指数增强短期反转',
+    index_enhancement_csi300_volume_price_confirmation: '沪深300指数增强量价确认',
+    index_enhancement_csi300_volume_stability: '沪深300指数增强量能稳定',
+    index_enhancement_csi500_anti_crowding: '中证500指数增强反拥挤',
+    index_enhancement_csi500_close_strength: '中证500指数增强收盘强度',
+    index_enhancement_csi500_drawdown_control: '中证500指数增强回撤控制',
+    index_enhancement_csi500_gap_risk_control: '中证500指数增强跳空风险控制',
+    index_enhancement_csi500_long_trend: '中证500指数增强长期趋势',
+    index_enhancement_csi500_low_volatility: '中证500指数增强低波动',
+    index_enhancement_csi500_medium_trend: '中证500指数增强中期趋势',
+    index_enhancement_csi500_short_reversal: '中证500指数增强短期反转',
+    index_enhancement_csi500_volume_price_confirmation: '中证500指数增强量价确认',
+    index_enhancement_csi500_volume_stability: '中证500指数增强量能稳定',
     ak_volatility_contraction_quality: 'AkShare波动收缩质量',
     ak_volume_price_confirmation: 'AkShare量价确认',
     capital_source_count: '资金来源数',
     chip_health: '筹码健康',
     crowding_risk: '拥挤风险',
-    emotion_weighted_kline_score: '情绪加权K线',
     flow_vs_ma: '资金相对均值',
     intraday_strength: '日内强度',
     intraday_ap_slope: '日内暗盘斜率',
     kdj_momentum: 'KDJ动能',
     kline_event_score: '单根K线评分',
-    low_emotion_score: '低情绪反向',
     macd_acceleration: 'MACD动能加速',
     professional_sub_factors: '专业解释子因子',
     liquidity_quality_jq: '流动性质量_JQ',
@@ -1178,7 +1238,6 @@ function factorDisplayName(id) {
     valuation_safety_jq: '估值安全垫_JQ',
     volume_price_confirmation: '量价确认',
     volume_price_divergence_risk: '量价背离风险',
-    volume_price_resonance_60_5: '价量共振_60_5',
     active_ap_accumulation: '活跃暗盘吸筹',
     active_large_order_accumulation: '超大/大单吸筹代理',
     capital_follow_factor: '资金跟随因子',
@@ -1209,6 +1268,13 @@ function formatPercent(value, digits = 2) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '-';
   return `${(number * 100).toFixed(digits)}%`;
+}
+
+function formatCurrency(value, digits = 0) {
+  if (value === undefined || value === null || value === '') return '-';
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  return `¥${number.toLocaleString('zh-CN', { maximumFractionDigits: digits, minimumFractionDigits: digits })}`;
 }
 
 function plainStatus(value) {
@@ -2347,6 +2413,16 @@ function factorLibraryProfile(id, value, pipelineEntry) {
     macd_acceleration: 'confirmation',
     main_force_alignment: 'confirmation',
     market_capital_regime: 'environment',
+    f_anti_crowding: 'risk_filter',
+    f_close_strength: 'confirmation',
+    f_gap_risk_control: 'risk_filter',
+    f_market_regime_fit: 'environment',
+    f_medium_momentum: 'main_signal',
+    f_orderly_trend: 'confirmation',
+    f_residual_low_volatility: 'risk_filter',
+    f_short_reversal: 'confirmation',
+    f_volume_stability: 'confirmation',
+    f_volume_confirmation: 'main_signal',
     profit_growth_jq: 'fundamental',
     quality_growth_jq: 'fundamental',
     sentiment_overheat_factor: 'risk_filter',
@@ -2780,7 +2856,7 @@ function renderStrategyCard(strategy, options = {}) {
           ` : ''}
         </div>`
         : `<div class="strategy-export-actions">
-          ${canSendToStress ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">送入建仓压测</button>` : ''}
+          ${canSendToStress ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">选为压测策略</button>` : ''}
           <button type="button" data-strategy-download="${escapeHtml(exportBase)}">路线JSON</button>
           <button type="button" data-strategy-download="${escapeHtml(exportCsv)}">策略CSV</button>
           <button type="button" data-strategy-download="${escapeHtml(exportScript)}">聚宽脚本</button>
@@ -2792,7 +2868,7 @@ function renderStrategyCard(strategy, options = {}) {
         </div>`}
       ${strategy.exportable === false && canSendToStress ? `
         <div class="strategy-export-actions inline-actions">
-          <button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">送入建仓压测</button>
+          <button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">选为压测策略</button>
         </div>
       ` : ''}
     </article>
@@ -3177,118 +3253,305 @@ function renderBacktestCenter(status) {
   renderBacktestResultSummary(factorResults);
   renderStrategyResultSummary(strategyResults);
 
-  elements.importedBacktestList.innerHTML = importedResults
-    .map((result) => {
-      const isStrategy = isStrategyBacktestResult(result);
-      const title = isStrategy
-        ? result.strategy_name || result.summary?.[0]?.strategy_name || '策略实测结果'
-        : result.factor_name || result.factor || result.name || 'JoinQuant结果';
-      const detail = isStrategy
-        ? `策略检查结果：${escapeHtml(result.summary?.length ?? 1)} 条 / 来源：${escapeHtml(plainSource(result.source || result.summary?.[0]?.source || 'joinquant'))}`
-        : `排序有效度：${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 好坏组差距：${formatPercent(result.long_short_mean ?? result.longShort)} / 来源：${escapeHtml(plainSource(result.source || 'joinquant'))}`;
-      return `
-        <div class="status-item">
-          <div>
-            <strong>${escapeHtml(title)}</strong>
-            <span>${detail}</span>
+  const importedFactorResults = importedResults.filter((result) => !isStrategyBacktestResult(result));
+  const importedStrategyResults = importedResults.filter(isStrategyBacktestResult);
+  const renderImportedGroup = (title, rows, renderRow, emptyText) => `
+    <div class="library-source"><strong>${escapeHtml(title)}</strong></div>
+    ${rows.length ? rows.map(renderRow).join('') : `<div class="library-source">${escapeHtml(emptyText)}</div>`}
+  `;
+  elements.importedBacktestList.innerHTML = importedResults.length
+    ? [
+      renderImportedGroup('因子回测结果', importedFactorResults, (result) => {
+        const factor = resultFactorId(result);
+        const title = result.factor_display_name || factorDisplayName(factor);
+        const detail = `排序有效度：${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 好坏组差距：${formatPercent(result.long_short_mean ?? result.longShort)} / 来源：${escapeHtml(plainSource(result.source || 'joinquant'))}`;
+        return `
+          <div class="status-item">
+            <div>
+              <strong>${escapeHtml(title)}</strong>
+              <span>${detail}</span>
+            </div>
+            <span class="tag pending">因子</span>
           </div>
-          <span class="tag good">已导入</span>
-        </div>
-      `;
-    })
-    .join('') || '<div class="library-source">暂无导入结果。等你在 JoinQuant 跑完，把真实结果 JSON 粘贴回来。</div>';
+        `;
+      }, '暂无因子回测导入结果。'),
+      renderImportedGroup('策略回测结果', importedStrategyResults, (result) => {
+        const title = result.strategy_name || result.summary?.[0]?.strategy_name || '策略实测结果';
+        const detail = `策略检查结果：${escapeHtml(result.summary?.length ?? 1)} 条 / 来源：${escapeHtml(plainSource(result.source || result.summary?.[0]?.source || 'joinquant'))}`;
+        return `
+          <div class="status-item">
+            <div>
+              <strong>${escapeHtml(title)}</strong>
+              <span>${detail}</span>
+            </div>
+            <span class="tag good">策略</span>
+          </div>
+        `;
+      }, '暂无策略回测导入结果。'),
+    ].join('')
+    : '<div class="library-source">暂无导入结果。等你在 JoinQuant 跑完，把真实结果 JSON 粘贴回来。</div>';
 }
 
-function drawPositionStressKline(item) {
+function positionStressKlineRows(item) {
+  const rows = (item?.rows || [])
+    .filter((row) => Number.isFinite(Number(row.high)) && Number.isFinite(Number(row.low)))
+    .map((row) => ({
+      ...row,
+      amount: Number(row.amount),
+      close: Number(row.close),
+      high: Number(row.high),
+      low: Number(row.low),
+      open: Number(row.open),
+      volume: Number(row.volume),
+    }));
+  if (positionStressKlinePeriod === 'daily') return rows;
+  const buckets = new Map();
+  rows.forEach((row) => {
+    const key = positionStressKlinePeriod === 'yearly' ? String(row.date || '').slice(0, 4) : String(row.date || '').slice(0, 7);
+    if (!key) return;
+    const current = buckets.get(key);
+    if (!current) {
+      buckets.set(key, {
+        ...row,
+        amount: Number.isFinite(row.amount) ? row.amount : 0,
+        date: key,
+        high: row.high,
+        low: row.low,
+        volume: Number.isFinite(row.volume) ? row.volume : 0,
+      });
+      return;
+    }
+    current.close = row.close;
+    current.high = Math.max(current.high, row.high);
+    current.low = Math.min(current.low, row.low);
+    current.volume += Number.isFinite(row.volume) ? row.volume : 0;
+    current.amount += Number.isFinite(row.amount) ? row.amount : 0;
+    current.strategy_score = row.strategy_score;
+  });
+  return [...buckets.values()];
+}
+
+function movingAverage(rows, windowSize) {
+  return rows.map((_, index) => {
+    if (index + 1 < windowSize) return null;
+    const slice = rows.slice(index + 1 - windowSize, index + 1);
+    return slice.reduce((sum, row) => sum + row.close, 0) / windowSize;
+  });
+}
+
+function fitPositionStressKlineView(rows, force = false) {
+  const maxCount = positionStressKlinePeriod === 'yearly' ? 12 : positionStressKlinePeriod === 'monthly' ? 36 : 90;
+  const minCount = positionStressKlinePeriod === 'yearly' ? 2 : positionStressKlinePeriod === 'monthly' ? 6 : 18;
+  const desired = Math.min(maxCount, Math.max(minCount, rows.length));
+  if (force || !positionStressKlineView.count || positionStressKlineView.count > rows.length) {
+    positionStressKlineView.count = desired;
+    positionStressKlineView.start = Math.max(0, rows.length - desired);
+  }
+  positionStressKlineView.count = Math.min(Math.max(positionStressKlineView.count, minCount), Math.max(rows.length, minCount));
+  positionStressKlineView.start = Math.min(Math.max(0, positionStressKlineView.start), Math.max(0, rows.length - positionStressKlineView.count));
+}
+
+function activePositionStressKlineItem() {
+  const report = currentPositionStressReport || {};
+  const klineItems = report.kline || [];
+  return klineItems.find((item) => item.code === elements.positionStressKlineSelect?.value) || klineItems[0];
+}
+
+function drawPositionStressKline(item, options = {}) {
   const canvas = elements.positionStressKlineCanvas;
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const width = canvas.width;
-  const height = canvas.height;
-  const padding = 44;
-  const rows = (item?.rows || []).filter((row) => Number.isFinite(Number(row.high)) && Number.isFinite(Number(row.low)));
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = Math.max(760, Math.floor(rect.width || canvas.clientWidth || 1280));
+  const cssHeight = Math.max(480, Math.floor(rect.height || 520));
+  if (canvas.width !== Math.floor(cssWidth * dpr) || canvas.height !== Math.floor(cssHeight * dpr)) {
+    canvas.width = Math.floor(cssWidth * dpr);
+    canvas.height = Math.floor(cssHeight * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = cssWidth;
+  const height = cssHeight;
+  const rows = positionStressKlineRows(item);
+  fitPositionStressKlineView(rows, options.resetView);
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
   if (!rows.length) {
     ctx.fillStyle = '#607086';
     ctx.font = '16px sans-serif';
-    ctx.fillText('暂无K线数据', padding, height / 2);
+    ctx.fillText('暂无K线数据', 48, height / 2);
     return;
   }
 
-  const highs = rows.map((row) => Number(row.high));
-  const lows = rows.map((row) => Number(row.low));
+  const leftPad = 58;
+  const rightPad = 72;
+  const topPad = 36;
+  const bottomPad = 34;
+  const volumeHeight = 90;
+  const gap = 16;
+  const chartWidth = width - leftPad - rightPad;
+  const priceHeight = height - topPad - bottomPad - volumeHeight - gap;
+  const volumeTop = topPad + priceHeight + gap;
+  const start = Math.floor(positionStressKlineView.start);
+  const count = Math.min(Math.floor(positionStressKlineView.count), rows.length);
+  const visible = rows.slice(start, start + count);
+  const ma5 = movingAverage(rows, 5);
+  const ma20 = movingAverage(rows, 20);
+  const highs = visible.map((row) => row.high);
+  const lows = visible.map((row) => row.low);
+  const maVisible = [...ma5.slice(start, start + count), ...ma20.slice(start, start + count)].filter((value) => Number.isFinite(value));
+  if (maVisible.length) {
+    highs.push(Math.max(...maVisible));
+    lows.push(Math.min(...maVisible));
+  }
   const maxPrice = Math.max(...highs);
   const minPrice = Math.min(...lows);
   const span = Math.max(maxPrice - minPrice, 0.01);
-  const paddedMax = maxPrice + span * 0.08;
-  const paddedMin = minPrice - span * 0.08;
+  const paddedMax = maxPrice + span * 0.10;
+  const paddedMin = minPrice - span * 0.10;
   const paddedSpan = Math.max(paddedMax - paddedMin, 0.01);
-  const chartHeight = height - padding * 2;
-  const chartWidth = width - padding * 2;
+  const maxVolume = Math.max(...visible.map((row) => Number.isFinite(row.volume) ? row.volume : 0), 1);
 
   function y(price) {
-    return padding + ((paddedMax - price) / paddedSpan) * chartHeight;
+    return topPad + ((paddedMax - price) / paddedSpan) * priceHeight;
+  }
+
+  function x(index) {
+    const slot = chartWidth / Math.max(visible.length, 1);
+    return leftPad + slot * index + slot / 2;
   }
 
   ctx.strokeStyle = '#d7e0ea';
   ctx.lineWidth = 1;
-  for (let i = 0; i < 5; i += 1) {
-    const yy = padding + (chartHeight / 4) * i;
+  ctx.font = '12px sans-serif';
+  for (let i = 0; i <= 5; i += 1) {
+    const yy = topPad + (priceHeight / 5) * i;
+    const price = paddedMax - (paddedSpan / 5) * i;
     ctx.beginPath();
-    ctx.moveTo(padding, yy);
-    ctx.lineTo(width - padding, yy);
+    ctx.moveTo(leftPad, yy);
+    ctx.lineTo(width - rightPad, yy);
     ctx.stroke();
+    ctx.fillStyle = '#607086';
+    ctx.fillText(formatNumber(price, 2), width - rightPad + 10, yy + 4);
   }
 
-  const slot = chartWidth / Math.max(rows.length, 1);
-  const candleWidth = Math.max(12, Math.min(34, slot * 0.34));
-
-  const closes = rows.map((row) => Number(row.close));
-  ctx.strokeStyle = '#146eb4';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  closes.forEach((close, index) => {
-    const x = padding + slot * index + slot / 2;
-    const yy = y(close);
-    if (index === 0) ctx.moveTo(x, yy);
-    else ctx.lineTo(x, yy);
+  const firstOpen = visible[0]?.open;
+  const latestClose = visible.at(-1)?.close;
+  [firstOpen, latestClose].filter((value) => Number.isFinite(value)).forEach((value, index) => {
+    const yy = y(value);
+    ctx.strokeStyle = index === 0 ? '#95a3b5' : '#146eb4';
+    ctx.setLineDash(index === 0 ? [6, 5] : [4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(leftPad, yy);
+    ctx.lineTo(width - rightPad, yy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = index === 0 ? '#607086' : '#146eb4';
+    ctx.fillText(index === 0 ? `开盘 ${formatNumber(value, 2)}` : `最新 ${formatNumber(value, 2)}`, leftPad + 8, yy - 6);
   });
-  ctx.stroke();
 
-  rows.forEach((row, index) => {
-    const x = padding + slot * index + slot / 2;
-    const open = Number(row.open);
-    const close = Number(row.close);
-    const high = Number(row.high);
-    const low = Number(row.low);
+  const slot = chartWidth / Math.max(visible.length, 1);
+  const candleWidth = Math.max(4, Math.min(18, slot * 0.58));
+
+  function drawLine(values, color, label, labelX) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    let moved = false;
+    values.slice(start, start + count).forEach((value, index) => {
+      if (!Number.isFinite(value)) return;
+      const xx = x(index);
+      const yy = y(value);
+      if (!moved) {
+        ctx.moveTo(xx, yy);
+        moved = true;
+      } else {
+        ctx.lineTo(xx, yy);
+      }
+    });
+    if (moved) ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fillText(label, labelX, topPad - 12);
+  }
+
+  drawLine(ma5, '#e0a326', 'MA5', leftPad + 260);
+  drawLine(ma20, '#6d5bd0', 'MA20', leftPad + 308);
+
+  visible.forEach((row, index) => {
+    const xx = x(index);
+    const open = row.open;
+    const close = row.close;
+    const high = row.high;
+    const low = row.low;
     const up = close >= open;
     const color = up ? '#d64b4b' : '#0f8b6f';
-    ctx.strokeStyle = '#162033';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.moveTo(x, y(high));
-    ctx.lineTo(x, y(low));
+    ctx.moveTo(xx, y(high));
+    ctx.lineTo(xx, y(low));
     ctx.stroke();
     const top = y(Math.max(open, close));
     const bottom = y(Math.min(open, close));
-    ctx.fillStyle = up ? 'rgba(214, 75, 75, 0.82)' : 'rgba(15, 139, 111, 0.82)';
+    ctx.fillStyle = up ? 'rgba(214, 75, 75, 0.82)' : '#ffffff';
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.fillRect(x - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 3));
-    ctx.strokeRect(x - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 3));
-    ctx.fillStyle = '#607086';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(String(row.date).slice(5), x - 16, height - 16);
+    ctx.lineWidth = 1.4;
+    ctx.fillRect(xx - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 2));
+    ctx.strokeRect(xx - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 2));
+
+    const volumeBarHeight = ((Number.isFinite(row.volume) ? row.volume : 0) / maxVolume) * (volumeHeight - 18);
+    ctx.fillStyle = up ? 'rgba(214, 75, 75, 0.45)' : 'rgba(15, 139, 111, 0.45)';
+    ctx.fillRect(xx - candleWidth / 2, volumeTop + volumeHeight - volumeBarHeight, candleWidth, volumeBarHeight);
   });
+
+  const highRow = visible.reduce((best, row, index) => (row.high > best.row.high ? { row, index } : best), { row: visible[0], index: 0 });
+  const lowRow = visible.reduce((best, row, index) => (row.low < best.row.low ? { row, index } : best), { row: visible[0], index: 0 });
+  ctx.fillStyle = '#162033';
+  ctx.font = '12px sans-serif';
+  ctx.fillText(`高 ${formatNumber(highRow.row.high, 2)}`, x(highRow.index) + 6, y(highRow.row.high) - 6);
+  ctx.fillText(`低 ${formatNumber(lowRow.row.low, 2)}`, x(lowRow.index) + 6, y(lowRow.row.low) + 16);
+
+  ctx.strokeStyle = '#d7e0ea';
+  ctx.beginPath();
+  ctx.moveTo(leftPad, volumeTop);
+  ctx.lineTo(width - rightPad, volumeTop);
+  ctx.stroke();
+  ctx.fillStyle = '#607086';
+  ctx.fillText(`成交量 max ${formatNumber(maxVolume / 10000, 0)}万`, leftPad, volumeTop + 14);
+
+  const tickEvery = Math.max(1, Math.ceil(visible.length / 8));
+  visible.forEach((row, index) => {
+    if (index % tickEvery !== 0 && index !== visible.length - 1) return;
+    ctx.fillStyle = '#607086';
+    ctx.fillText(positionStressKlinePeriod === 'daily' ? String(row.date).slice(5) : row.date, x(index) - 18, height - 12);
+  });
+
+  const hoverIndex = Number.isInteger(positionStressKlineView.hoverIndex) ? positionStressKlineView.hoverIndex : null;
+  if (hoverIndex !== null && hoverIndex >= 0 && hoverIndex < visible.length) {
+    const row = visible[hoverIndex];
+    const xx = x(hoverIndex);
+    ctx.strokeStyle = '#162033';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(xx, topPad);
+    ctx.lineTo(xx, volumeTop + volumeHeight);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(leftPad, y(row.close));
+    ctx.lineTo(width - rightPad, y(row.close));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   ctx.fillStyle = '#162033';
   ctx.font = '16px sans-serif';
-  ctx.fillText(`${item.name || item.code} ${item.code || ''}`, padding, 24);
+  ctx.fillText(`${item.name || item.code} ${item.code || ''}`, leftPad, 24);
   ctx.fillStyle = '#607086';
   ctx.font = '13px sans-serif';
-  ctx.fillText(`策略分 ${formatNumber(item.latestScore, 4)} / ${rows.length} 根日K / 蓝线=收盘`, padding + 170, 24);
+  const periodLabel = positionStressKlinePeriod === 'yearly' ? '年K' : positionStressKlinePeriod === 'monthly' ? '月K' : '日K';
+  ctx.fillText(`${periodLabel} ${visible.length}/${rows.length} 根 / 滚轮缩放 / 拖拽平移 / 策略分 ${formatNumber(item.latestScore, 4)}`, leftPad + 170, 24);
 }
 
 function formatAmountYi(value) {
@@ -3405,16 +3668,24 @@ function renderPositionStress(report) {
   elements.positionStressArtifacts.textContent = report.artifacts?.dailyCsv ? `行情文件：${report.artifacts.dailyCsv}` : '等待产物';
   elements.positionStressArtifacts.title = report.artifacts?.dailyCsv ? fieldHint('source_file', report.artifacts.dailyCsv) : '';
   if (elements.positionStressSelectedStrategy) {
-    const selected = report.selectedStrategy || currentPositionStressCatalog?.current || null;
-    const strategyName = report.strategy?.name || selected?.name || '默认策略';
-    const adapterNote = report.strategy?.adapterNote || selected?.runnableReason || '从策略池选择达标策略后，这里会显示压测口径。';
-    const gateStatus = selected?.gateStatus || report.strategy?.adapter || '默认口径';
+    const runnable = currentPositionStressCatalog?.strategies || [];
+    const reportStrategyId = report.strategy?.id || report.selectedStrategy?.strategyId || '';
+    const hasPendingSelection = currentPositionStressExplicitStrategyId && currentPositionStressExplicitStrategyId !== reportStrategyId;
+    const pendingStrategy = hasPendingSelection
+      ? runnable.find((item) => item.strategyId === currentPositionStressExplicitStrategyId)
+      : null;
+    const selected = pendingStrategy || report.selectedStrategy || currentPositionStressCatalog?.current || null;
+    const strategyName = pendingStrategy?.name || report.strategy?.name || selected?.name || '等待选择策略';
+    const adapterNote = pendingStrategy
+      ? '已选择，点击运行后将保存策略、执行策略选股并生成建仓压力测试结果。'
+      : report.strategy?.adapterNote || selected?.runnableReason || '从策略池选择达标策略后，点击运行生成结果。';
+    const gateStatus = pendingStrategy ? '待运行' : selected?.gateStatus || report.strategy?.adapter || '未运行';
     elements.positionStressSelectedStrategy.innerHTML = `
       <div>
         <strong>${escapeHtml(strategyName)}</strong>
         <span>${escapeHtml(adapterNote)}</span>
       </div>
-      <span class="tag ${selected ? 'good' : 'pending'}">${escapeHtml(selected ? gateStatus || '已选择' : '未选择')}</span>
+      <span class="tag ${pendingStrategy ? 'pending' : selected ? 'good' : 'pending'}">${escapeHtml(selected ? gateStatus || '已选择' : '未选择')}</span>
     `;
   }
 
@@ -3422,7 +3693,13 @@ function renderPositionStress(report) {
   if (elements.positionStressResultSummary) {
     const summaryCards = [
       ['总收益', formatPercent(metrics.totalReturn, 2)],
+      ['期初资金', formatCurrency(metrics.initialCapital, 0)],
+      ['期末资产', formatCurrency(metrics.endingValue, 0)],
+      ['累计盈亏', formatCurrency(metrics.totalPnl, 0)],
       ['最大回撤', formatPercent(metrics.maxDrawdown, 2)],
+      ['累计成本', formatCurrency(metrics.totalCostAmount, 0)],
+      ['平均成交率', formatPercent(metrics.averageFillRatio, 1)],
+      ['换手倍数', formatNumber(metrics.turnover, 2)],
       ['收益回撤比', formatNumber(metrics.returnDrawdownRatio, 2)],
       ['Calmar 类指标', formatNumber(metrics.calmarLike, 2)],
       ['收益波动比', formatNumber(metrics.returnVolatilityRatio, 2)],
@@ -3439,6 +3716,7 @@ function renderPositionStress(report) {
       ['交易胜率', formatPercent(metrics.tradeWinRate, 1)],
       ['平均单笔', formatPercent(metrics.averageTradeReturn, 2)],
       ['最差单笔', formatPercent(metrics.worstTradeReturn, 2)],
+      ['成交订单', `${escapeHtml(metrics.tradeCount ?? 0)}/${escapeHtml(metrics.orderCount ?? 0)} 笔`],
       ['持仓覆盖', `${escapeHtml(metrics.uniqueHeldStocks ?? '-')}只`],
     ];
     elements.positionStressResultSummary.innerHTML = summaryCards.map(([label, value]) => `
@@ -3457,6 +3735,8 @@ function renderPositionStress(report) {
       ['最差交易日', `${worstDay.date || '-'} ${formatPercent(worstDay.dailyReturn, 2)}`],
       ['调仓次数', `${metrics.rebalanceCount ?? '-'} 次`],
       ['平均持仓数', `${metrics.averageHoldingCount ?? '-'} 只`],
+      ['期末资产', formatCurrency(metrics.endingValue, 0)],
+      ['累计成本', formatCurrency(metrics.totalCostAmount, 0)],
       ['日波动', formatPercent(metrics.dailyVolatility, 2)],
       ['年化收益', formatPercent(metrics.annualizedReturn, 2)],
     ];
@@ -3513,9 +3793,12 @@ function renderPositionStress(report) {
         <td><strong class="${Number(scenario.resultReturn) >= 0 ? 'positive-number' : 'negative-number'}">${formatPercent(scenario.resultReturn, 2)}</strong></td>
         <td>${formatPercent(scenario.maxDrawdown, 2)}</td>
         <td>${escapeHtml(scenario.tradeCount ?? '-')}</td>
+        <td>${formatCurrency(scenario.endingValue, 0)}</td>
+        <td>${formatCurrency(scenario.totalCostAmount, 0)}</td>
+        <td>${formatPercent(scenario.averageFillRatio, 1)}</td>
         <td>${escapeHtml(scenario.impact)}</td>
       </tr>
-    `).join('') || '<tr><td colspan="6">暂无压力场景。</td></tr>';
+    `).join('') || '<tr><td colspan="9">暂无压力场景。</td></tr>';
 
   if (elements.positionStressTradeTable) {
     elements.positionStressTradeTable.innerHTML = (report.strategy?.trades || []).slice(0, 80)
@@ -3523,10 +3806,12 @@ function renderPositionStress(report) {
         <tr>
           <td>${escapeHtml(trade.signalDate)}<br><small>${escapeHtml(trade.exitDate || '')}</small></td>
           <td><strong>${escapeHtml(trade.name)}</strong><br><small>${escapeHtml(trade.security || trade.code)}</small></td>
-          <td>${formatPercent(trade.targetWeight, 1)}<br><small>${formatNumber(trade.notional, 0)}</small></td>
-          <td><strong>${formatPercent(trade.return, 2)}</strong><br><small>${formatNumber(trade.entryClose, 2)} -> ${formatNumber(trade.exitClose, 2)}</small></td>
+          <td>${formatPercent(trade.targetWeight, 1)} / ${formatPercent(trade.actualWeight, 1)}<br><small>${formatNumber(trade.shares, 0)} 股</small></td>
+          <td>${formatCurrency(trade.filledNotional, 0)}<br><small>成交 ${formatPercent(trade.fillRatio, 1)}</small></td>
+          <td>${formatCurrency(trade.pnl, 0)}<br><small>成本 ${formatCurrency(trade.costAmount, 0)}</small></td>
+          <td><strong>${formatPercent(trade.return, 2)}</strong><br><small>${formatNumber(trade.entryPrice ?? trade.entryClose, 2)} -> ${formatNumber(trade.exitPrice ?? trade.exitClose, 2)}</small></td>
         </tr>
-      `).join('') || '<tr><td colspan="4">暂无成交明细。</td></tr>';
+      `).join('') || '<tr><td colspan="6">暂无成交明细。</td></tr>';
   }
 
   elements.positionStressDataTable.innerHTML = (report.dataTable || []).slice(0, 120)
@@ -3556,9 +3841,12 @@ function renderPositionStress(report) {
   if (activeItem) {
     elements.positionStressKlineSelect.value = activeItem.code;
   }
+  const latestSelection = (report.strategy?.dailySelections || []).at(-1);
+  const klineCount = klineItems.length;
+  const selectedCount = latestSelection?.selectedCount ?? report.strategy?.parameters?.topN ?? klineCount;
   elements.positionStressKlineNote.textContent = complete
-    ? 'K线来自完整真实行情窗口。'
-    : 'K线来自当前已落地真实行情，缺失日期不会补画。';
+    ? `展示最新调仓日入选股票 K 线：${klineCount}/${selectedCount} 只。`
+    : `展示当前已落地的最新入选股票 K 线：${klineCount}/${selectedCount} 只，缺失日期不会补画。`;
   drawPositionStressKline(activeItem);
 }
 
@@ -3566,16 +3854,85 @@ function renderPositionStressCatalog(catalog) {
   currentPositionStressCatalog = catalog;
   if (elements.positionStressStrategySelect) {
     const runnable = (catalog?.strategies || []).filter((item) => item.runnable);
-    const currentId = catalog?.current?.strategyId || '';
     elements.positionStressStrategySelect.innerHTML = [
       '<option value="">从策略池选择</option>',
       ...runnable.map((item) => `<option value="${escapeHtml(item.strategyId)}">${escapeHtml(item.name)}</option>`),
     ].join('');
-    if (currentId) elements.positionStressStrategySelect.value = currentId;
+    if (currentPositionStressExplicitStrategyId && runnable.some((item) => item.strategyId === currentPositionStressExplicitStrategyId)) {
+      elements.positionStressStrategySelect.value = currentPositionStressExplicitStrategyId;
+    }
   }
   if (currentPositionStressReport) {
     renderPositionStress({ ...currentPositionStressReport, selectedStrategy: catalog.current || currentPositionStressReport.selectedStrategy });
   }
+}
+
+function selectedPositionStressStrategyId() {
+  return String(elements.positionStressStrategySelect?.value || '').trim();
+}
+
+function requireSelectedPositionStressStrategy() {
+  const strategyId = selectedPositionStressStrategyId();
+  if (!strategyId) {
+    elements.positionStressMessage.textContent = '请先从策略池选择压测策略，再运行建仓压力测试。';
+    elements.positionStressMessage.dataset.tone = 'error';
+    elements.positionStressStrategySelect?.focus();
+    return '';
+  }
+  return strategyId;
+}
+
+function refreshPositionStressKline(options = {}) {
+  drawPositionStressKline(activePositionStressKlineItem(), options);
+}
+
+function setPositionStressKlinePeriod(period) {
+  positionStressKlinePeriod = ['daily', 'monthly', 'yearly'].includes(period) ? period : 'daily';
+  elements.positionStressKlineDaily?.classList.toggle('active', positionStressKlinePeriod === 'daily');
+  elements.positionStressKlineMonthly?.classList.toggle('active', positionStressKlinePeriod === 'monthly');
+  elements.positionStressKlineYearly?.classList.toggle('active', positionStressKlinePeriod === 'yearly');
+  positionStressKlineView.hoverIndex = null;
+  elements.positionStressKlineTooltip.hidden = true;
+  refreshPositionStressKline({ resetView: true });
+}
+
+function updatePositionStressKlineTooltip(event) {
+  const canvas = elements.positionStressKlineCanvas;
+  const tooltip = elements.positionStressKlineTooltip;
+  if (!canvas || !tooltip) return;
+  const item = activePositionStressKlineItem();
+  const rows = positionStressKlineRows(item);
+  if (!rows.length) return;
+  fitPositionStressKlineView(rows);
+  const rect = canvas.getBoundingClientRect();
+  const leftPad = 58;
+  const rightPad = 72;
+  const chartWidth = rect.width - leftPad - rightPad;
+  const count = Math.min(Math.floor(positionStressKlineView.count), rows.length);
+  const slot = chartWidth / Math.max(count, 1);
+  const localX = event.clientX - rect.left;
+  const index = Math.min(Math.max(0, Math.floor((localX - leftPad) / slot)), count - 1);
+  const row = rows[Math.floor(positionStressKlineView.start) + index];
+  if (!row || localX < leftPad || localX > rect.width - rightPad) {
+    tooltip.hidden = true;
+    positionStressKlineView.hoverIndex = null;
+    refreshPositionStressKline();
+    return;
+  }
+  positionStressKlineView.hoverIndex = index;
+  const change = row.open ? row.close / row.open - 1 : null;
+  tooltip.innerHTML = `
+    <strong>${escapeHtml(item?.name || item?.code || '')} ${escapeHtml(row.date)}</strong>
+    开 ${formatNumber(row.open, 2)}　高 ${formatNumber(row.high, 2)}　低 ${formatNumber(row.low, 2)}　收 ${formatNumber(row.close, 2)}<br>
+    涨跌 ${formatPercent(change, 2)}　成交量 ${formatNumber(row.volume / 10000, 1)}万<br>
+    成交额 ${formatAmountYi(row.amount)}　策略分 ${formatNumber(row.strategy_score, 4)}
+  `;
+  const tipLeft = Math.min(Math.max(10, event.clientX - rect.left + 16), rect.width - 280);
+  const tipTop = Math.min(Math.max(10, event.clientY - rect.top + 16), rect.height - 110);
+  tooltip.style.left = `${tipLeft}px`;
+  tooltip.style.top = `${tipTop}px`;
+  tooltip.hidden = false;
+  refreshPositionStressKline();
 }
 
 function showView(viewName) {
@@ -3801,32 +4158,18 @@ function handleStrategyCardClick(event) {
   const stressButton = event.target.closest('[data-position-stress-strategy]');
   if (stressButton) {
     const strategyId = stressButton.dataset.positionStressStrategy;
-    stressButton.disabled = true;
-    const originalText = stressButton.textContent;
-    stressButton.textContent = '送入中';
-    request('/position-stress-api/select-strategy', {
-      body: JSON.stringify({ strategyId }),
-      method: 'POST',
-    })
-      .then(async (response) => {
-        currentPositionStressCatalog = response.catalog;
-        renderPositionStress(response.report);
-        showView('position-stress');
-        elements.navButtons.forEach((button) => {
-          button.classList.toggle('active', button.dataset.viewTarget === 'position-stress');
-        });
-        elements.positionStressMessage.textContent = `${response.message} 可以点击一键导入运行。`;
-        elements.positionStressMessage.dataset.tone = 'success';
-      })
-      .catch((error) => {
-        stressButton.textContent = `失败：${error.message}`;
-      })
-      .finally(() => {
-        window.setTimeout(() => {
-          stressButton.disabled = false;
-          stressButton.textContent = originalText || '送入建仓压测';
-        }, 1000);
-      });
+    currentPositionStressExplicitStrategyId = strategyId;
+    showView('position-stress');
+    elements.navButtons.forEach((button) => {
+      button.classList.toggle('active', button.dataset.viewTarget === 'position-stress');
+    });
+    renderPositionStressCatalog(currentPositionStressCatalog || { strategies: [], current: null });
+    if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
+    elements.positionStressMessage.textContent = '已选择策略，点击运行生成选股和压测结果。';
+    elements.positionStressMessage.dataset.tone = 'success';
+    window.setTimeout(() => {
+      elements.positionStressStrategySelect?.focus();
+    }, 1000);
     return;
   }
 
@@ -3955,10 +4298,69 @@ elements.downloadJoinquantFactorScript?.addEventListener('click', () => {
 elements.positionStressKlineSelect?.addEventListener('change', async () => {
   try {
     const report = await request('/position-stress-api/report');
+    positionStressKlineView.hoverIndex = null;
     renderPositionStress(report);
   } catch (error) {
     elements.positionStressKlineNote.textContent = `K线刷新失败：${error.message}`;
   }
+});
+
+elements.positionStressKlineDaily?.addEventListener('click', () => setPositionStressKlinePeriod('daily'));
+elements.positionStressKlineMonthly?.addEventListener('click', () => setPositionStressKlinePeriod('monthly'));
+elements.positionStressKlineYearly?.addEventListener('click', () => setPositionStressKlinePeriod('yearly'));
+elements.positionStressKlineReset?.addEventListener('click', () => refreshPositionStressKline({ resetView: true }));
+
+elements.positionStressKlineCanvas?.addEventListener('wheel', (event) => {
+  event.preventDefault();
+  const item = activePositionStressKlineItem();
+  const rows = positionStressKlineRows(item);
+  if (!rows.length) return;
+  const minCount = positionStressKlinePeriod === 'yearly' ? 2 : positionStressKlinePeriod === 'monthly' ? 6 : 18;
+  const oldCount = positionStressKlineView.count || Math.min(rows.length, 70);
+  const nextCount = Math.min(rows.length, Math.max(minCount, Math.round(oldCount * (event.deltaY > 0 ? 1.18 : 0.84))));
+  const rect = elements.positionStressKlineCanvas.getBoundingClientRect();
+  const ratio = Math.min(Math.max((event.clientX - rect.left - 58) / Math.max(rect.width - 130, 1), 0), 1);
+  const anchor = positionStressKlineView.start + oldCount * ratio;
+  positionStressKlineView.count = nextCount;
+  positionStressKlineView.start = Math.round(anchor - nextCount * ratio);
+  positionStressKlineView.hoverIndex = null;
+  elements.positionStressKlineTooltip.hidden = true;
+  refreshPositionStressKline();
+}, { passive: false });
+
+elements.positionStressKlineCanvas?.addEventListener('pointerdown', (event) => {
+  positionStressKlineView.dragging = true;
+  positionStressKlineView.dragX = event.clientX;
+  positionStressKlineView.dragStart = positionStressKlineView.start;
+  elements.positionStressKlineCanvas.setPointerCapture?.(event.pointerId);
+});
+
+elements.positionStressKlineCanvas?.addEventListener('pointermove', (event) => {
+  if (positionStressKlineView.dragging) {
+    const item = activePositionStressKlineItem();
+    const rows = positionStressKlineRows(item);
+    const rect = elements.positionStressKlineCanvas.getBoundingClientRect();
+    const slot = Math.max((rect.width - 130) / Math.max(positionStressKlineView.count, 1), 1);
+    const delta = Math.round((event.clientX - positionStressKlineView.dragX) / slot);
+    positionStressKlineView.start = positionStressKlineView.dragStart - delta;
+    fitPositionStressKlineView(rows);
+    positionStressKlineView.hoverIndex = null;
+    elements.positionStressKlineTooltip.hidden = true;
+    refreshPositionStressKline();
+    return;
+  }
+  updatePositionStressKlineTooltip(event);
+});
+
+['pointerup', 'pointercancel', 'pointerleave'].forEach((eventName) => {
+  elements.positionStressKlineCanvas?.addEventListener(eventName, () => {
+    positionStressKlineView.dragging = false;
+    if (eventName === 'pointerleave') {
+      positionStressKlineView.hoverIndex = null;
+      elements.positionStressKlineTooltip.hidden = true;
+      refreshPositionStressKline();
+    }
+  });
 });
 
 elements.refreshPositionStress?.addEventListener('click', async () => {
@@ -3977,40 +4379,35 @@ elements.refreshPositionStress?.addEventListener('click', async () => {
   }
 });
 
+elements.exportPositionStressEquity?.addEventListener('click', () => {
+  window.location.href = '/position-stress-api/equity-export.xlsx';
+});
+
 elements.positionStressStrategySelect?.addEventListener('change', async () => {
   const strategyId = elements.positionStressStrategySelect.value;
-  if (!strategyId) return;
-  try {
-    const response = await request('/position-stress-api/select-strategy', {
-      body: JSON.stringify({ strategyId }),
-      method: 'POST',
-    });
-    currentPositionStressCatalog = response.catalog;
-    renderPositionStress(response.report);
-    renderPositionStressCatalog(response.catalog);
-    elements.positionStressMessage.textContent = `${response.message} 可以点击一键导入运行。`;
-    elements.positionStressMessage.dataset.tone = 'success';
-  } catch (error) {
-    elements.positionStressMessage.textContent = `策略选择失败：${error.message}`;
-    elements.positionStressMessage.dataset.tone = 'error';
-  }
+  currentPositionStressExplicitStrategyId = strategyId;
+  if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
+  elements.positionStressMessage.textContent = strategyId ? '已选择策略，点击运行生成选股和压测结果。' : '请先选择压测策略。';
+  elements.positionStressMessage.dataset.tone = strategyId ? 'success' : 'error';
 });
 
 elements.runPositionStress?.addEventListener('click', async () => {
+  const strategyId = requireSelectedPositionStressStrategy();
+  if (!strategyId) return;
   const button = elements.runPositionStress;
   const originalText = button.textContent;
   button.disabled = true;
-  button.textContent = '导入运行中';
-  elements.positionStressMessage.textContent = '正在拉取/导入真实行情并生成建仓压力测试报告。';
+  button.textContent = '运行中';
+  elements.positionStressMessage.textContent = '正在保存策略、执行策略选股并生成建仓压力测试结果。';
   elements.positionStressMessage.dataset.tone = 'success';
   try {
     const response = await request('/position-stress-api/run', {
       body: JSON.stringify({
         capital: Number(elements.positionStressCapital?.value || 1000000),
-        end: elements.positionStressEnd?.value || '2026-07-13',
+        end: elements.positionStressEnd?.value || '2026-07-15',
         source: elements.positionStressSource?.value || 'auto',
-        start: elements.positionStressStart?.value || '2026-07-06',
-        strategyId: currentPositionStressCatalog?.current?.strategyId || currentPositionStressReport?.selectedStrategy?.strategyId || '',
+        start: elements.positionStressStart?.value || '2025-01-01',
+        strategyId,
         topN: Number(elements.positionStressTopN?.value || 10),
       }),
       method: 'POST',
@@ -4023,11 +4420,13 @@ elements.runPositionStress?.addEventListener('click', async () => {
     elements.positionStressMessage.dataset.tone = 'error';
   } finally {
     button.disabled = false;
-    button.textContent = originalText || '一键导入运行';
+    button.textContent = originalText || '运行';
   }
 });
 
 elements.importPositionStressOhlcv?.addEventListener('click', async () => {
+  const strategyId = requireSelectedPositionStressStrategy();
+  if (!strategyId) return;
   const button = elements.importPositionStressOhlcv;
   const originalText = button.textContent;
   const text = elements.positionStressImportOhlcv?.value?.trim() || '';
@@ -4039,7 +4438,7 @@ elements.importPositionStressOhlcv?.addEventListener('click', async () => {
   button.disabled = true;
   button.textContent = '导入中';
   try {
-    const response = await request('/position-stress-api/import-ohlcv', {
+    const response = await request(`/position-stress-api/import-ohlcv?strategyId=${encodeURIComponent(strategyId)}`, {
       body: text,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       method: 'POST',
