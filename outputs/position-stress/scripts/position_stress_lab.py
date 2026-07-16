@@ -17,7 +17,7 @@ import os
 import time
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
@@ -28,7 +28,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[3]
 AKSHARE_RAW_DIR = ROOT / "outputs" / "sources" / "akshare" / "raw" / "a_share_daily"
-DEFAULT_SYMBOLS_FILE = ROOT / "outputs" / "sources" / "akshare" / "symbols" / "core_liquid_50.csv"
+DEFAULT_SYMBOLS_FILE = ROOT / "outputs" / "sources" / "akshare" / "symbols" / "position_stress_core_100.csv"
 OUT_DIR = ROOT / "outputs" / "position-stress"
 DATA_DIR = OUT_DIR / "data"
 RESULTS_DIR = OUT_DIR / "results"
@@ -47,6 +47,12 @@ class RunConfig:
     strategy_adapter: str = "ohlcv_core_volume_price"
     strategy_id: str = "m_quant_trend_volume_pressure_v1"
     strategy_name: str = "趋势量价建仓压力测试 v1"
+    lot_size: int = 100
+    commission_bps: float = 2.5
+    min_commission: float = 5.0
+    stamp_duty_bps: float = 5.0
+    slippage_bps: float = 5.0
+    cash_buffer_pct: float = 0.01
 
 
 def normalize_code(value: str) -> str:
@@ -253,7 +259,8 @@ def merge_raw_cache(df: pd.DataFrame) -> None:
         path = AKSHARE_RAW_DIR / f"{code}.csv"
         if path.exists():
             old = pd.read_csv(path, dtype={"code": str}, encoding="utf-8-sig")
-            merged = pd.concat([old, part], ignore_index=True)
+            frames = [frame for frame in [old, part] if not frame.empty]
+            merged = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
         else:
             merged = part.copy()
         merged = normalize_ohlcv(merged)
@@ -518,6 +525,13 @@ def add_strategy_scores(data: pd.DataFrame, history: pd.DataFrame) -> pd.DataFra
             + 0.22 * volume_price_confirmation
             + 0.20 * (1 - crowding_risk)
         )
+        low_crowding_reversal_score = clip01(
+            0.34 * mean_reversion_score
+            + 0.26 * (1 - crowding_risk)
+            + 0.18 * rank_pct(part["amount_ma20"])
+            + 0.14 * rank_pct(part["volume_ratio"], higher_is_better=False)
+            + 0.08 * close_position
+        )
         strategy_score = clip01(
             0.42 * trend_alignment
             + 0.38 * volume_price_confirmation
@@ -530,6 +544,7 @@ def add_strategy_scores(data: pd.DataFrame, history: pd.DataFrame) -> pd.DataFra
         part["mean_reversion_score"] = mean_reversion_score
         part["kline_confirmation_score"] = kline_confirmation_score
         part["liquidity_quality_proxy"] = liquidity_quality_proxy
+        part["low_crowding_reversal_score"] = low_crowding_reversal_score
         part["strategy_score"] = strategy_score
         part["tradable"] = (part["volume"].fillna(0) > 0) & part[["open", "high", "low", "close"]].notna().all(axis=1)
         result_frames.append(part)
@@ -553,6 +568,8 @@ def apply_strategy_adapter(scored: pd.DataFrame, config: RunConfig) -> pd.DataFr
         out["strategy_score"] = out["kline_confirmation_score"]
     elif adapter == "ohlcv_liquidity_quality_proxy":
         out["strategy_score"] = out["liquidity_quality_proxy"]
+    elif adapter == "ohlcv_low_crowding_reversal_proxy":
+        out["strategy_score"] = out["low_crowding_reversal_score"]
     else:
         out["strategy_score"] = out["strategy_score"]
     return out.sort_values(["date", "strategy_score"], ascending=[True, False])
@@ -607,19 +624,52 @@ def strategy_adapter_note(config: RunConfig) -> str:
         "ohlcv_mean_reversion": "使用 OHLCV 可复现的高波动均值回归代理分数。",
         "selected_codes_mean_reversion": "优先使用准模拟盘最新选股名单，并在名单内按均值回归代理分数排序。",
         "ohlcv_liquidity_quality_proxy": "使用 OHLCV 成交额、趋势和量价确认构造 JQ质量流动性代理；不等价于 JoinQuant 基本面原策略。",
+        "ohlcv_low_crowding_reversal_proxy": "使用 OHLCV 低拥挤、反转修复、成交活跃和收盘强度构造中证500低拥挤反转代理；用于建仓链路压测，不等价于 JoinQuant 原生指数增强回测。",
     }
     return notes.get(config.strategy_adapter, notes["ohlcv_core_volume_price"])
 
 
-def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, capital: float, delay_days: int = 0) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
+def trade_commission(notional: float, config: RunConfig) -> float:
+    if notional <= 0:
+        return 0.0
+    return max(notional * config.commission_bps / 10000, config.min_commission)
+
+
+def lot_shares(target_notional: float, price: float, lot_size: int) -> int:
+    if target_notional <= 0 or price <= 0:
+        return 0
+    lot = max(1, int(lot_size or 1))
+    return int(math.floor(target_notional / price / lot) * lot)
+
+
+def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConfig, delay_days: int = 0) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
     price = scored[["date", "code", "security", "name", "close"]].dropna().copy()
     dates = sorted(price["date"].unique())
-    date_to_index = {date: index for index, date in enumerate(dates)}
     close_map = {(row.date, row.code): row.close for row in price.itertuples()}
-    equity = 1.0
-    curve = [{"date": dates[0], "equity": 1.0, "dailyReturn": 0.0}] if dates else []
+    initial_capital = max(float(config.capital or 0), 0.0)
+    cash = initial_capital
+    curve = [{
+        "date": dates[0],
+        "equity": 1.0,
+        "nav": 1.0,
+        "portfolioValue": finite_float(initial_capital, 2),
+        "cash": finite_float(initial_capital, 2),
+        "marketValue": 0.0,
+        "tradedNotional": 0.0,
+        "dailyPnl": 0.0,
+        "dailyReturn": 0.0,
+        "drawdown": 0.0,
+        "costAmount": 0.0,
+    }] if dates else []
     trades: list[dict[str, object]] = []
     returns: list[float] = []
+    daily_costs: list[float] = []
+    total_buy_notional = 0.0
+    total_sell_notional = 0.0
+    total_cost_amount = 0.0
+    total_order_notional = 0.0
+    total_filled_notional = 0.0
+    peak_value = initial_capital if initial_capital > 0 else 1.0
 
     for i in range(len(dates) - 1):
         date = dates[i]
@@ -627,18 +677,85 @@ def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, capital: float,
         exit_index = entry_index + 1
         next_date = dates[i + 1]
         picks = signals[signals["date"] == date].copy()
-        if picks.empty or exit_index >= len(dates):
+        portfolio_before = cash
+        day_cost = 0.0
+        day_pnl = 0.0
+        traded_notional = 0.0
+        if picks.empty or entry_index >= len(dates) or exit_index >= len(dates) or portfolio_before <= 0:
             daily_return = 0.0
         else:
             entry_date = dates[entry_index]
             exit_date = dates[exit_index]
-            stock_returns = []
+            investable_value = portfolio_before * max(0.0, 1 - config.cash_buffer_pct)
+            available_buy_cash = cash
+            exit_proceeds = 0.0
             for row in picks.itertuples():
                 start_close = close_map.get((entry_date, row.code))
                 end_close = close_map.get((exit_date, row.code))
                 if start_close and end_close and start_close > 0:
-                    ret = end_close / start_close - 1
-                    stock_returns.append(ret)
+                    target_weight = float(row.target_weight or 0)
+                    target_notional = investable_value * target_weight
+                    buy_price = float(start_close) * (1 + config.slippage_bps / 10000)
+                    sell_price = float(end_close) * (1 - config.slippage_bps / 10000)
+                    shares = lot_shares(target_notional, buy_price, config.lot_size)
+                    buy_notional = shares * buy_price
+                    buy_commission = trade_commission(buy_notional, config)
+                    while shares > 0 and buy_notional + buy_commission > available_buy_cash:
+                        shares -= max(1, int(config.lot_size or 1))
+                        buy_notional = shares * buy_price
+                        buy_commission = trade_commission(buy_notional, config)
+                    if shares <= 0:
+                        fill_ratio = 0.0
+                        trades.append({
+                            "signalDate": date,
+                            "entryDate": entry_date,
+                            "exitDate": exit_date,
+                            "code": row.code,
+                            "security": row.security,
+                            "name": row.name,
+                            "entryClose": finite_float(start_close, 4),
+                            "exitClose": finite_float(end_close, 4),
+                            "entryPrice": finite_float(buy_price, 4),
+                            "exitPrice": finite_float(sell_price, 4),
+                            "targetWeight": finite_float(target_weight, 4),
+                            "actualWeight": 0.0,
+                            "shares": 0,
+                            "orderNotional": finite_float(target_notional, 2),
+                            "filledNotional": 0.0,
+                            "notional": 0.0,
+                            "unfilledNotional": finite_float(target_notional, 2),
+                            "fillRatio": fill_ratio,
+                            "return": None,
+                            "pnl": 0.0,
+                            "costAmount": 0.0,
+                            "strategyScore": finite_float(row.strategy_score, 4),
+                            "portfolioValueBefore": finite_float(portfolio_before, 2),
+                            "portfolioValueAfter": finite_float(portfolio_before, 2),
+                            "cashAfterTrade": finite_float(available_buy_cash, 2),
+                        })
+                        total_order_notional += target_notional
+                        continue
+
+                    available_buy_cash -= buy_notional + buy_commission
+                    sell_notional = shares * sell_price
+                    sell_commission = trade_commission(sell_notional, config)
+                    stamp_duty = sell_notional * config.stamp_duty_bps / 10000
+                    sell_cost = sell_commission + stamp_duty
+                    proceeds = sell_notional - sell_cost
+                    exit_proceeds += proceeds
+                    cost_amount = buy_commission + sell_cost
+                    pnl = proceeds - buy_notional - buy_commission
+                    ret = pnl / (buy_notional + buy_commission) if (buy_notional + buy_commission) > 0 else None
+                    contribution = pnl / portfolio_before if portfolio_before > 0 else 0.0
+                    day_pnl += pnl
+                    day_cost += cost_amount
+                    total_buy_notional += buy_notional
+                    total_sell_notional += sell_notional
+                    total_cost_amount += cost_amount
+                    total_order_notional += target_notional
+                    total_filled_notional += buy_notional
+                    traded_notional += buy_notional + sell_notional
+                    fill_ratio = buy_notional / target_notional if target_notional > 0 else None
                     trades.append({
                         "signalDate": date,
                         "entryDate": entry_date,
@@ -648,26 +765,58 @@ def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, capital: float,
                         "name": row.name,
                         "entryClose": finite_float(start_close, 4),
                         "exitClose": finite_float(end_close, 4),
-                        "targetWeight": finite_float(row.target_weight, 4),
-                        "notional": finite_float(capital * row.target_weight, 2),
-                        "return": finite_float(ret, 6),
+                        "entryPrice": finite_float(buy_price, 4),
+                        "exitPrice": finite_float(sell_price, 4),
+                        "targetWeight": finite_float(target_weight, 4),
+                        "actualWeight": finite_float(buy_notional / portfolio_before, 6) if portfolio_before > 0 else None,
+                        "shares": int(shares),
+                        "orderNotional": finite_float(target_notional, 2),
+                        "filledNotional": finite_float(buy_notional, 2),
+                        "notional": finite_float(buy_notional, 2),
+                        "unfilledNotional": finite_float(max(target_notional - buy_notional, 0), 2),
+                        "fillRatio": finite_float(fill_ratio, 4) if fill_ratio is not None else None,
+                        "return": finite_float(ret, 6) if ret is not None else None,
+                        "pnl": finite_float(pnl, 2),
+                        "contribution": finite_float(contribution, 6),
+                        "buyCost": finite_float(buy_commission, 2),
+                        "sellCost": finite_float(sell_cost, 2),
+                        "costAmount": finite_float(cost_amount, 2),
                         "strategyScore": finite_float(row.strategy_score, 4),
+                        "portfolioValueBefore": finite_float(portfolio_before, 2),
+                        "portfolioValueAfter": finite_float(available_buy_cash + exit_proceeds, 2),
+                        "cashAfterTrade": finite_float(available_buy_cash, 2),
                     })
-            daily_return = float(np.mean(stock_returns)) if stock_returns else 0.0
-        equity *= 1 + daily_return
+            cash = available_buy_cash + exit_proceeds
+            portfolio_after = cash
+            daily_return = (portfolio_after / portfolio_before - 1) if portfolio_before > 0 else 0.0
         returns.append(daily_return)
-        curve.append({"date": next_date, "equity": finite_float(equity, 6), "dailyReturn": finite_float(daily_return, 6)})
+        daily_costs.append(day_cost)
+        peak_value = max(peak_value, cash)
+        drawdown = cash / peak_value - 1 if peak_value > 0 else 0.0
+        curve.append({
+            "date": dates[exit_index] if (not picks.empty and exit_index < len(dates)) else next_date,
+            "equity": finite_float(cash / initial_capital, 6) if initial_capital > 0 else None,
+            "nav": finite_float(cash / initial_capital, 6) if initial_capital > 0 else None,
+            "portfolioValue": finite_float(cash, 2),
+            "cash": finite_float(cash, 2),
+            "marketValue": 0.0,
+            "tradedNotional": finite_float(traded_notional, 2),
+            "dailyPnl": finite_float(day_pnl, 2),
+            "dailyReturn": finite_float(daily_return, 6),
+            "drawdown": finite_float(drawdown, 6),
+            "costAmount": finite_float(day_cost, 2),
+        })
 
     max_drawdown = 0.0
     peak = 1.0
     for point in curve:
-        value = float(point["equity"])
+        value = float(point["equity"] or 0)
         peak = max(peak, value)
         max_drawdown = min(max_drawdown, value / peak - 1)
     trade_return_values = [float(trade["return"]) for trade in trades if trade.get("return") is not None]
     positive_trades = [value for value in trade_return_values if value > 0]
     negative_trades = [value for value in trade_return_values if value < 0]
-    trade_contributions = [float(trade.get("targetWeight") or 0) * float(trade["return"]) for trade in trades if trade.get("return") is not None]
+    trade_contributions = [float(trade.get("contribution") or 0) for trade in trades if trade.get("return") is not None]
     positive_contributions = [value for value in trade_contributions if value > 0]
     negative_contributions = [value for value in trade_contributions if value < 0]
     profit_contribution = float(np.sum(positive_contributions)) if positive_contributions else 0.0
@@ -677,30 +826,49 @@ def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, capital: float,
         if profit_contribution > 0
         else None
     )
-    unique_signal_dates = len(set(trade.get("signalDate") for trade in trades))
-    unique_codes = len(set(trade.get("code") for trade in trades))
-    avg_holding_count = (len(trades) / unique_signal_dates) if unique_signal_dates else 0
-    best_trade = max(trades, key=lambda item: item.get("return") if item.get("return") is not None else -999) if trades else None
-    worst_trade = min(trades, key=lambda item: item.get("return") if item.get("return") is not None else 999) if trades else None
+    filled_trades = [trade for trade in trades if float(trade.get("filledNotional") or 0) > 0]
+    unique_signal_dates = len(set(trade.get("signalDate") for trade in filled_trades))
+    unique_codes = len(set(trade.get("code") for trade in filled_trades))
+    avg_holding_count = (len(filled_trades) / unique_signal_dates) if unique_signal_dates else 0
+    best_trade = max(filled_trades, key=lambda item: item.get("return") if item.get("return") is not None else -999) if filled_trades else None
+    worst_trade = min(filled_trades, key=lambda item: item.get("return") if item.get("return") is not None else 999) if filled_trades else None
     best_day = max(curve[1:], key=lambda item: item.get("dailyReturn") if item.get("dailyReturn") is not None else -999) if len(curve) > 1 else None
     worst_day = min(curve[1:], key=lambda item: item.get("dailyReturn") if item.get("dailyReturn") is not None else 999) if len(curve) > 1 else None
     daily_volatility = float(np.std(returns, ddof=0)) if returns else None
     average_daily_return = float(np.mean(returns)) if returns else None
-    total_return = equity - 1
+    ending_value = cash
+    total_return = ending_value / initial_capital - 1 if initial_capital > 0 else 0.0
     drawdown_abs = abs(max_drawdown) if max_drawdown else None
-    annualized_return = (equity ** (252 / len(returns)) - 1) if returns and equity > 0 else None
+    ending_nav = ending_value / initial_capital if initial_capital > 0 else None
+    annualized_return = (ending_nav ** (252 / len(returns)) - 1) if returns and ending_nav and ending_nav > 0 else None
     single_stock_contribution = None
     if trades:
         best_contribution_trade = max(
             trades,
-            key=lambda item: (float(item.get("targetWeight") or 0) * float(item.get("return") or 0)),
+            key=lambda item: float(item.get("contribution") or 0),
         )
-        single_stock_contribution = float(best_contribution_trade.get("targetWeight") or 0) * float(best_contribution_trade.get("return") or 0)
+        single_stock_contribution = float(best_contribution_trade.get("contribution") or 0)
     else:
         best_contribution_trade = None
+    avg_fill_ratio = float(np.mean([float(trade.get("fillRatio") or 0) for trade in trades])) if trades else None
+    turnover = (total_buy_notional + total_sell_notional) / initial_capital if initial_capital > 0 else None
+    cash_ratio = ending_value / ending_value if ending_value > 0 else None
     metrics = {
         "totalReturn": finite_float(total_return, 6),
         "maxDrawdown": finite_float(max_drawdown, 6),
+        "initialCapital": finite_float(initial_capital, 2),
+        "endingValue": finite_float(ending_value, 2),
+        "totalPnl": finite_float(ending_value - initial_capital, 2),
+        "totalCostAmount": finite_float(total_cost_amount, 2),
+        "averageDailyCost": finite_float(np.mean(daily_costs), 2) if daily_costs else None,
+        "totalBuyNotional": finite_float(total_buy_notional, 2),
+        "totalSellNotional": finite_float(total_sell_notional, 2),
+        "totalOrderNotional": finite_float(total_order_notional, 2),
+        "totalFilledNotional": finite_float(total_filled_notional, 2),
+        "averageFillRatio": finite_float(avg_fill_ratio, 4) if avg_fill_ratio is not None else None,
+        "endingCash": finite_float(cash, 2),
+        "endingCashRatio": finite_float(cash_ratio, 4) if cash_ratio is not None else None,
+        "turnover": finite_float(turnover, 4) if turnover is not None else None,
         "dailyWinRate": finite_float(np.mean([ret > 0 for ret in returns]), 4) if returns else None,
         "averageDailyReturn": finite_float(average_daily_return, 6) if average_daily_return is not None else None,
         "dailyVolatility": finite_float(daily_volatility, 6) if daily_volatility is not None else None,
@@ -731,7 +899,8 @@ def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, capital: float,
         "rebalanceCount": unique_signal_dates,
         "tradingDays": len(dates),
         "simulatedReturnDays": len(returns),
-        "tradeCount": len(trades),
+        "tradeCount": len(filled_trades),
+        "orderCount": len(trades),
     }
     return curve, trades, metrics
 
@@ -743,6 +912,9 @@ def stress_item(category: str, name: str, result_return: float | None, impact: s
         "resultReturn": finite_float(result_return, 6),
         "maxDrawdown": finite_float(metrics.get("maxDrawdown"), 6) if metrics else None,
         "tradeCount": metrics.get("tradeCount") if metrics else None,
+        "endingValue": finite_float(metrics.get("endingValue"), 2) if metrics else None,
+        "totalCostAmount": finite_float(metrics.get("totalCostAmount"), 2) if metrics else None,
+        "averageFillRatio": finite_float(metrics.get("averageFillRatio"), 4) if metrics else None,
         "impact": impact,
     }
 
@@ -756,13 +928,14 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
     items = [stress_item("基准", "收盘建仓次日观察", base_return, "按当前缓存数据直接计算。", metrics)]
 
     for bps in [10, 20, 50, 100]:
-        cost = (bps / 10000) * rebalance_count
-        items.append(stress_item("成本阶梯", f"滑点/成本 {bps}bp", base_return - cost, f"每次调仓扣 {bps}bp，累计 {rebalance_count} 次调仓。", metrics))
+        cost_config = replace(config, commission_bps=bps / 2, slippage_bps=bps / 2)
+        _, _, cost_metrics = simulate_equity(scored, build_signals(scored, config.top_n), cost_config)
+        items.append(stress_item("成本阶梯", f"佣金+滑点 {bps}bp", cost_metrics.get("totalReturn"), f"用真实资金账本重跑：佣金 {bps / 2:g}bp、滑点 {bps / 2:g}bp，累计成本 {cost_metrics.get('totalCostAmount')} 元。", cost_metrics))
 
     for top_n in [5, 10, 20, 30]:
         if top_n > int(scored["code"].nunique()):
             continue
-        _, top_trades, top_metrics = simulate_equity(scored, build_signals(scored, top_n), config.capital)
+        _, top_trades, top_metrics = simulate_equity(scored, build_signals(scored, top_n), config)
         items.append(stress_item("持仓数量", f"Top{top_n} 等权", top_metrics.get("totalReturn"), f"每期取分数前 {top_n} 只，观察集中度敏感性。", top_metrics))
 
     for shock in [-0.02, -0.05, -0.08]:
@@ -775,7 +948,7 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
         items.append(stress_item("流动性折扣", f"只成交 {int(fill_ratio * 100)}%", base_return * fill_ratio, "未成交资金视为现金，观察收益对成交比例的敏感性。", metrics))
 
     for delay in [1, 2]:
-        _, delay_trades, delay_metrics = simulate_equity(scored, build_signals(scored, config.top_n), config.capital, delay_days=delay)
+        _, delay_trades, delay_metrics = simulate_equity(scored, build_signals(scored, config.top_n), config, delay_days=delay)
         items.append(stress_item("延迟成交", f"T+{delay} 执行", delay_metrics.get("totalReturn"), f"信号出现后延迟 {delay} 个交易日执行，短窗口样本会减少。", delay_metrics))
 
     items.append(stress_item("尾部复现", "最差成交重复一次", base_return + worst_trade * avg_weight, "把样本内最差单票结果额外压一次，用于看组合缓冲。", metrics))
@@ -815,10 +988,10 @@ def build_report(config: RunConfig) -> dict[str, object]:
     history = load_history_for_indicators(pool, raw_data)
     scored = apply_strategy_adapter(add_strategy_scores(raw_data, history), config)
     signals = build_signals(scored, config.top_n)
-    curve, trades, metrics = simulate_equity(scored, signals, config.capital)
+    curve, trades, metrics = simulate_equity(scored, signals, config)
     stress = build_stress(metrics, trades, scored, config)
 
-    requested_dates = pd.bdate_range(config.start, config.end).strftime("%Y-%m-%d").tolist()
+    requested_dates = sorted(raw_data["date"].dropna().unique().tolist())
     actual_dates = sorted(scored["date"].dropna().unique().tolist())
     expected_codes = set(pool["code"].tolist())
     missing_coverage = []
@@ -840,13 +1013,14 @@ def build_report(config: RunConfig) -> dict[str, object]:
 
     display_fields = [
         "date", "code", "security", "name", "open", "high", "low", "close", "volume", "amount",
-        "change_pct", "trend_alignment", "volume_price_confirmation", "crowding_risk", "mean_reversion_score", "kline_confirmation_score", "liquidity_quality_proxy", "strategy_score", "tradable",
+        "change_pct", "trend_alignment", "volume_price_confirmation", "crowding_risk", "mean_reversion_score", "kline_confirmation_score", "liquidity_quality_proxy", "low_crowding_reversal_score", "strategy_score", "tradable",
     ]
     table_rows = [row_dict(row, display_fields) for _, row in scored.sort_values(["date", "strategy_score"], ascending=[False, False]).head(300).iterrows()]
 
     kline_items = []
-    latest_ranked = scored[scored["date"] == latest_date].sort_values("strategy_score", ascending=False).head(12)
-    for row in latest_ranked.itertuples():
+    latest_signal_date = sorted(signals["date"].dropna().unique().tolist())[-1] if not signals.empty else latest_date
+    latest_selected = signals[signals["date"] == latest_signal_date].sort_values("strategy_score", ascending=False).head(config.top_n)
+    for row in latest_selected.itertuples():
         stock_rows = scored[scored["code"] == row.code].sort_values("date")
         kline_items.append({
             "code": row.code,
@@ -861,7 +1035,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
         daily_selections.append({
             "date": date,
             "selectedCount": int(len(part)),
-            "names": [f"{r.name}({r.code})" for r in part.head(10).itertuples()],
+            "names": [f"{r.name}({r.code})" for r in part.itertuples()],
             "items": [row_dict(row, ["code", "security", "name", "close", "target_weight", "strategy_score", "trend_alignment", "volume_price_confirmation", "crowding_risk"]) for _, row in part.iterrows()],
         })
 
@@ -875,7 +1049,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
         },
         "sourceMode": source_mode,
         "sourceMessage": "；".join([item for item in [manual_message, jq_message] if item]),
-        "dataPolicy": "优先使用 JoinQuant get_price 前复权日线；若本机未配置 JoinQuant，则尝试 AkShare 联网真实行情补齐；仍失败时只使用项目已有 AkShare 真实缓存。全流程不生成、不补造缺失交易日。",
+        "dataPolicy": "优先使用 JoinQuant get_price 前复权日线；若本机未配置 JoinQuant，则尝试 AkShare 联网真实行情补齐；仍失败时只使用项目已有 AkShare 真实缓存。全流程不生成、不补造缺失交易日；完整性按真实源返回的交易日覆盖检查，不推测节假日行情。组合结果使用真实资金账本计算，初始资金会影响股数取整、成交金额、现金闲置、交易成本、净值和回撤。",
         "requestedDateRange": {"start": config.start, "end": config.end},
         "actualDates": actual_dates,
         "missingDates": missing_dates,
@@ -899,7 +1073,17 @@ def build_report(config: RunConfig) -> dict[str, object]:
             "adapterNote": strategy_adapter_note(config),
             "selectedCodes": list(config.selected_codes),
             "runStatus": "complete_short_window" if is_complete else "preview_only_incomplete_data",
-            "parameters": {"topN": config.top_n, "capital": config.capital, "rebalance": "daily_close"},
+            "parameters": {
+                "topN": config.top_n,
+                "capital": config.capital,
+                "rebalance": "daily_close",
+                "lotSize": config.lot_size,
+                "commissionBps": config.commission_bps,
+                "minCommission": config.min_commission,
+                "stampDutyBps": config.stamp_duty_bps,
+                "slippageBps": config.slippage_bps,
+                "cashBufferPct": config.cash_buffer_pct,
+            },
             "dailySelections": daily_selections,
             "equityCurve": curve,
             "trades": trades[:500],
@@ -912,6 +1096,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
             *( ["当前报告使用 AkShare 联网真实行情补齐，不等同于已成功拉取 JoinQuant 数据。"] if source_mode == "akshare_network_fallback" else [] ),
             *( ["当前报告使用 AkShare 本地缓存回退，不等同于已成功拉取 JoinQuant 数据。"] if source_mode == "akshare_cache_fallback" else [] ),
             *( ["已合并手动导入真实行情文件。"] if not manual_data.empty else [] ),
+            f"资金账本口径：{config.lot_size} 股一手，佣金 {config.commission_bps}bp，最低佣金 {config.min_commission} 元，卖出印花税 {config.stamp_duty_bps}bp，滑点 {config.slippage_bps}bp，现金缓冲 {config.cash_buffer_pct:.2%}。",
             *fallback_failures[:10],
         ],
         "nextActions": [
@@ -930,8 +1115,8 @@ def build_report(config: RunConfig) -> dict[str, object]:
 
 def parse_args() -> RunConfig:
     parser = argparse.ArgumentParser(description="生成 M-Quant 建仓压力测试数据包")
-    parser.add_argument("--start", default="2026-07-06")
-    parser.add_argument("--end", default="2026-07-13")
+    parser.add_argument("--start", default="2025-01-01")
+    parser.add_argument("--end", default="2026-07-15")
     parser.add_argument("--symbols-file", default=str(DEFAULT_SYMBOLS_FILE))
     parser.add_argument("--top-n", type=int, default=10)
     parser.add_argument("--capital", type=float, default=1_000_000)
@@ -941,6 +1126,12 @@ def parse_args() -> RunConfig:
     parser.add_argument("--strategy-adapter", default="ohlcv_core_volume_price")
     parser.add_argument("--strategy-id", default="m_quant_trend_volume_pressure_v1")
     parser.add_argument("--strategy-name", default="趋势量价建仓压力测试 v1")
+    parser.add_argument("--lot-size", type=int, default=100)
+    parser.add_argument("--commission-bps", type=float, default=2.5)
+    parser.add_argument("--min-commission", type=float, default=5.0)
+    parser.add_argument("--stamp-duty-bps", type=float, default=5.0)
+    parser.add_argument("--slippage-bps", type=float, default=5.0)
+    parser.add_argument("--cash-buffer-pct", type=float, default=0.01)
     args = parser.parse_args()
     path = Path(args.symbols_file).expanduser()
     if not path.is_absolute():
@@ -957,6 +1148,12 @@ def parse_args() -> RunConfig:
         strategy_adapter=args.strategy_adapter,
         strategy_id=args.strategy_id,
         strategy_name=args.strategy_name,
+        lot_size=args.lot_size,
+        commission_bps=args.commission_bps,
+        min_commission=args.min_commission,
+        stamp_duty_bps=args.stamp_duty_bps,
+        slippage_bps=args.slippage_bps,
+        cash_buffer_pct=args.cash_buffer_pct,
     )
 
 
