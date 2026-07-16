@@ -3,6 +3,10 @@ __pycache__/
 *.pyc
 node_modules/
 .env.local
+.env.joinquant
+.env.joinquant.local
+platform/quant-factor-platform/.env.joinquant
+platform/quant-factor-platform/.env.local
 
 # Large local research data; scripts and compact reports are committed instead.
 outputs/sources/akshare/index_enhancement/raw/
