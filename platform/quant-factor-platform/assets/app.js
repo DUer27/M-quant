@@ -4379,8 +4379,35 @@ elements.refreshPositionStress?.addEventListener('click', async () => {
   }
 });
 
-elements.exportPositionStressEquity?.addEventListener('click', () => {
-  window.location.href = '/position-stress-api/equity-export.xlsx';
+elements.exportPositionStressEquity?.addEventListener('click', async () => {
+  const button = elements.exportPositionStressEquity;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = '导出中';
+  try {
+    const response = await fetch(new URL('/position-stress-api/equity-export.xlsx', window.location.origin));
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `导出接口返回 ${response.status}`);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `m-quant-position-stress-equity-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    elements.positionStressMessage.textContent = 'Excel 已导出。';
+    elements.positionStressMessage.dataset.tone = 'success';
+  } catch (error) {
+    elements.positionStressMessage.textContent = `导出失败：${error.message}`;
+    elements.positionStressMessage.dataset.tone = 'error';
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText || '导出Excel';
+  }
 });
 
 elements.positionStressStrategySelect?.addEventListener('change', async () => {
