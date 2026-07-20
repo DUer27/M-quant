@@ -1,0 +1,19 @@
+{
+  "skipped_full": 1027,
+  "fetched_em": 108,
+  "fetched_tx": 119,
+  "failed": 0,
+  "partial_existing": 68,
+  "checked": 0,
+  "pool_codes": 3000,
+  "combined_codes": 1514,
+  "combined_rows": 525518,
+  "combined_dates": 370,
+  "full_370_codes": 1221,
+  "partial_codes": 293,
+  "missing_codes": 1486,
+  "output": "outputs/sources/akshare/processed/position_stress_core_3000_candidate_20250101_20260715_qfq.csv",
+  "failures_output": "outputs/sources/akshare/results/position_stress_core_3000_direct_fetch_failures.csv",
+  "elapsed_seconds": 467.6,
+  "generated_at": "2026-07-17T11:15:35"
+}

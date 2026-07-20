@@ -191,7 +191,7 @@ h2 {
 
 .content-grid.position-stress-hero {
   align-items: start;
-  grid-template-columns: minmax(640px, 1.48fr) minmax(360px, 0.92fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .position-stress-kline-panel,
@@ -201,14 +201,88 @@ h2 {
 
 .position-stress-kline-panel {
   grid-template-rows: auto auto auto;
+  margin-bottom: var(--gap);
+}
+
+.kline-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.kline-toolbar select,
+.kline-toolbar button,
+.segmented-control button {
+  min-height: 36px;
+}
+
+.segmented-control {
+  background: #eef3f8;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+}
+
+.segmented-control button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  padding: 0 12px;
+}
+
+.segmented-control button.active {
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(22, 32, 51, 0.12);
+  color: var(--text);
+}
+
+.kline-chart-shell {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 520px;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
 }
 
 .position-stress-kline-panel #position-stress-kline-canvas {
   background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  height: 320px;
+  cursor: crosshair;
+  display: block;
+  height: 520px;
   width: 100%;
+}
+
+.kline-tooltip {
+  background: rgba(22, 32, 51, 0.92);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(22, 32, 51, 0.2);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1.55;
+  max-width: 260px;
+  min-width: 210px;
+  padding: 10px 12px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+}
+
+.kline-tooltip strong {
+  color: #ffffff;
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.position-stress-scenarios-panel {
+  margin-top: var(--gap);
 }
 
 .position-stress-control-panel {
@@ -221,7 +295,7 @@ h2 {
 
 .position-stress-results-grid {
   align-items: start;
-  grid-template-columns: minmax(720px, 1.6fr) minmax(320px, 0.72fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .position-stress-support-grid {
@@ -241,8 +315,17 @@ h2 {
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 8px;
-  height: 260px;
+  height: 380px;
   width: 100%;
+}
+
+.position-stress-equity-panel,
+.position-stress-trades-row {
+  margin-top: var(--gap);
+}
+
+.position-stress-trades-row .stress-trade-table {
+  max-height: 460px;
 }
 
 .content-grid.lower {

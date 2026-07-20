@@ -1,0 +1,5 @@
+﻿date,code,open,close,high,low,volume,amount,amplitude,change_pct,change_amount,turnover,security,source,adjust,name
+2026-07-10,920081,55.0,47.02,58.88,46.88,151702,782923210.71,31.02,21.53,8.33,88.71,920081.XBSE,eastmoney.push2his.kline,qfq,欧伦电气
+2026-07-13,920081,45.0,40.03,45.79,39.85,76040,314360314.04,12.63,-14.87,-6.99,44.47,920081.XBSE,eastmoney.push2his.kline,qfq,欧伦电气
+2026-07-14,920081,40.49,40.99,41.99,39.36,46286,189122414.08,6.57,2.4,0.96,27.07,920081.XBSE,eastmoney.push2his.kline,qfq,欧伦电气
+2026-07-15,920081,40.8,39.37,40.87,39.1,37952,150927536.76,4.32,-3.95,-1.62,22.19,920081.XBSE,eastmoney.push2his.kline,qfq,欧伦电气

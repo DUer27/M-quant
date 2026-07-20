@@ -765,46 +765,6 @@ def detect_kline_patterns(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any
     return result, availability
 
 
-def build_volume_price_resonance(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
-    required = ["code", "date", "close", "volume"]
-    if not has_columns(df, required):
-        return pd.DataFrame(index=df.index), {
-            "volume_price_resonance_60_5": {
-                "status": "unavailable",
-                "reason": "缺少 code/date/close/volume，无法计算价量共振。",
-            }
-        }
-
-    work = df.copy()
-    work["_date"] = pd.to_datetime(work["date"], errors="coerce")
-    work["_close"] = num_series(work["close"])
-    work["_volume"] = num_series(work["volume"])
-    work = work.sort_values(["code", "_date"])
-    group = work.groupby("code", group_keys=False)
-
-    volume_short = group["_volume"].rolling(5, min_periods=5).mean().reset_index(level=0, drop=True)
-    volume_long = group["_volume"].rolling(240, min_periods=240).mean().reset_index(level=0, drop=True)
-    price_ma60 = group["_close"].rolling(60, min_periods=60).mean().reset_index(level=0, drop=True)
-    price_ma60_lag5 = group[price_ma60.name if price_ma60.name else "_close"] if False else price_ma60.groupby(work["code"]).shift(5)
-
-    resonance = (volume_short / volume_long.replace(0, np.nan)) * (price_ma60 / price_ma60_lag5.replace(0, np.nan))
-    output = pd.DataFrame(index=work.index)
-    output["volume_price_resonance_60_5"] = resonance
-    output["emotion_overheat_flag"] = resonance > 2
-
-    valid_count = int(output["volume_price_resonance_60_5"].notna().sum())
-    availability = {
-        "volume_price_resonance_60_5": {
-            "status": "computed" if valid_count else "unavailable",
-            "fields": required,
-            "valid_rows": valid_count,
-            "reason": "" if valid_count else "有效行数为0；该因子需要每只股票至少240个交易日的成交量和65个交易日的价格。",
-            "formula": "MA(volume,5)/MA(volume,240) * MA(close,60)/lag(MA(close,60),5)",
-        }
-    }
-    return output.reindex(df.index), availability
-
-
 def classify(row: pd.Series) -> str:
     score = row.get("technical_composite", 0.5)
     crowding = row.get("crowding_risk", 0.5)
@@ -861,23 +821,8 @@ def build_factor_rows(input_kind: str, datasets: dict[str, pd.DataFrame]) -> tup
     df, field_mapping = canonicalize_columns(df)
     factors, availability = build_indicator_factors(df)
     kline_factors, kline_availability = detect_kline_patterns(df)
-    resonance_factors, resonance_availability = build_volume_price_resonance(df)
-
-    merged = pd.concat([factors, kline_factors, resonance_factors], axis=1)
+    merged = pd.concat([factors, kline_factors], axis=1)
     availability.update(kline_availability)
-    availability.update(resonance_availability)
-
-    if "volume_price_resonance_60_5" in merged and merged["volume_price_resonance_60_5"].notna().any():
-        z = merged.groupby(df["date"])["volume_price_resonance_60_5"].transform(lambda s: (s - s.mean()) / s.std(ddof=0) if s.std(ddof=0) else np.nan)
-        merged["low_emotion_score"] = -z
-        merged["emotion_weighted_kline_score"] = merged["low_emotion_score"] * merged.get("kline_event_score", 0)
-        availability["low_emotion_score"] = {"status": "computed", "formula": "-zscore(volume_price_resonance_60_5) by date"}
-        availability["emotion_weighted_kline_score"] = {"status": "computed", "formula": "low_emotion_score * kline_event_score"}
-    else:
-        merged["low_emotion_score"] = np.nan
-        merged["emotion_weighted_kline_score"] = np.nan
-        availability["low_emotion_score"] = {"status": "unavailable", "reason": "价量共振因子无有效值，无法横截面标准化。"}
-        availability["emotion_weighted_kline_score"] = {"status": "unavailable", "reason": "缺少有效价量共振或K线评分。"}
 
     id_columns = [column for column in ["code", "name", "date", "close", "change_pct", "amplitude", "volume_ratio", "turnover", "amount"] if column in df.columns]
     result = pd.concat([df[id_columns].copy(), merged], axis=1)
@@ -926,25 +871,9 @@ def main() -> None:
                 "name": "K线形态离散评分因子",
                 "status": factor_meta.get("availability", {}).get("kline_event_score", {}).get("status", "unavailable") if isinstance(factor_meta, dict) else "unavailable",
             },
-            {
-                "id": "volume_price_resonance_60_5",
-                "name": "价量共振情绪因子",
-                "status": factor_meta.get("availability", {}).get("volume_price_resonance_60_5", {}).get("status", "unavailable") if isinstance(factor_meta, dict) else "unavailable",
-            },
-            {
-                "id": "low_emotion_score",
-                "name": "低情绪反向因子",
-                "status": factor_meta.get("availability", {}).get("low_emotion_score", {}).get("status", "unavailable") if isinstance(factor_meta, dict) else "unavailable",
-            },
-            {
-                "id": "emotion_weighted_kline_score",
-                "name": "情绪系数加权K线因子",
-                "status": factor_meta.get("availability", {}).get("emotion_weighted_kline_score", {}).get("status", "unavailable") if isinstance(factor_meta, dict) else "unavailable",
-            },
         ],
         "validation_limits": [
             "没有未来收益标签时，不输出IC、胜率、年化收益或Top组合表现。",
-            "价量共振_60_5严格需要至少240个交易日成交量；历史不足时不使用短样本替代。",
             "当前K线评分只复现PDF中可由单日OHLC明确识别的子集，多根形态需后续补充规则和更长历史。",
         ],
     }

@@ -1,0 +1,8 @@
+﻿date,code,open,close,high,low,volume,amount,amplitude,change_pct,change_amount,turnover,security,source,adjust,name
+2025-01-02,600898,1.0,1.0,1.0,1.0,1628,162800.0,0.0,-4.76,-0.05,0.06,600898.XSHG,eastmoney.push2his.kline,qfq,*ST美讯
+2025-01-03,600898,0.95,0.95,0.95,0.95,1207,114665.0,0.0,-5.0,-0.05,0.05,600898.XSHG,eastmoney.push2his.kline,qfq,*ST美讯
+2025-01-06,600898,0.9,0.9,0.9,0.9,906,81540.0,0.0,-5.26,-0.05,0.04,600898.XSHG,eastmoney.push2his.kline,qfq,*ST美讯
+2025-01-07,600898,0.86,0.86,0.86,0.86,3103,266858.0,0.0,-4.44,-0.04,0.12,600898.XSHG,eastmoney.push2his.kline,qfq,*ST美讯
+2025-01-08,600898,0.82,0.82,0.82,0.82,9357,767274.0,0.0,-4.65,-0.04,0.37,600898.XSHG,eastmoney.push2his.kline,qfq,*ST美讯
+2025-01-09,600898,0.78,0.78,0.78,0.78,13093,1021254.0,0.0,-4.88,-0.04,0.52,600898.XSHG,eastmoney.push2his.kline,qfq,*ST美讯
+2025-01-10,600898,0.74,0.74,0.74,0.74,15681,1160394.0,0.0,-5.13,-0.04,0.62,600898.XSHG,eastmoney.push2his.kline,qfq,*ST美讯

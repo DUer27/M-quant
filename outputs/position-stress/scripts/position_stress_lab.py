@@ -28,7 +28,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[3]
 AKSHARE_RAW_DIR = ROOT / "outputs" / "sources" / "akshare" / "raw" / "a_share_daily"
-DEFAULT_SYMBOLS_FILE = ROOT / "outputs" / "sources" / "akshare" / "symbols" / "position_stress_core_100.csv"
+DEFAULT_SYMBOLS_FILE = ROOT / "outputs" / "sources" / "akshare" / "symbols" / "position_stress_core_3000.csv"
 OUT_DIR = ROOT / "outputs" / "position-stress"
 DATA_DIR = OUT_DIR / "data"
 RESULTS_DIR = OUT_DIR / "results"
