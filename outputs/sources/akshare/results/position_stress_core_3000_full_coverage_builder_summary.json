@@ -1,0 +1,10 @@
+{
+  "checked": 5000,
+  "full_370_codes": 1503,
+  "fetched_eastmoney": 325,
+  "partial_codes": 334,
+  "missing_codes": 3163,
+  "failed_fetch_attempts": 3456,
+  "elapsed_seconds": 15032.2,
+  "generated_at": "2026-07-17T15:27:18"
+}

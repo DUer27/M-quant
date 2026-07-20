@@ -1,0 +1,14 @@
+{
+  "checked_retry": 1839,
+  "full_370_codes": 3000,
+  "target": 3000,
+  "fetched": 1839,
+  "improved_to_full": 1497,
+  "failed": 0,
+  "elapsed_seconds": 678.6,
+  "generated_at": "2026-07-20T03:34:15",
+  "pool_output": "outputs/sources/akshare/symbols/position_stress_core_3000.csv",
+  "combined_output": "outputs/sources/akshare/processed/position_stress_core_3000_full_coverage_20250101_20260715_qfq.csv",
+  "combined_rows": 1110000,
+  "combined_dates": 370
+}

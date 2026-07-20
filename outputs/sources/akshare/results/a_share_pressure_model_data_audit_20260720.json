@@ -1,0 +1,30 @@
+{
+  "all_real_codes": 5578,
+  "all_real_rows": 2010890,
+  "all_real_dates": 370,
+  "all_source_counts": {
+    "eastmoney.push2his.kline": 1594039,
+    "akshare.stock_zh_a_hist": 279270,
+    "akshare.stock_zh_a_hist_tx": 136091,
+    "tencent.ifzq.fqkline": 1490
+  },
+  "model_pool_codes": 4407,
+  "model_rows": 1630590,
+  "model_dates": 370,
+  "model_min_daily_codes": 4407,
+  "model_max_daily_codes": 4407,
+  "model_min_code_dates": 370,
+  "model_max_code_dates": 370,
+  "model_source_counts": {
+    "eastmoney.push2his.kline": 1213739,
+    "akshare.stock_zh_a_hist": 279270,
+    "akshare.stock_zh_a_hist_tx": 136091,
+    "tencent.ifzq.fqkline": 1490
+  },
+  "model_duplicate_code_date_rows": 0,
+  "model_missing_ohlcv_rows": 0,
+  "model_missing_amount_rows": 137581,
+  "model_non_positive_price_rows": 0,
+  "model_bad_high_low_rows": 0,
+  "audit_pressure_full_370": 4407
+}

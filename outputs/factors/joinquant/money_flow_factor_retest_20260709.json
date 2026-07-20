@@ -18,7 +18,6 @@
       "capital_follow_signal": 0.4,
       "active_large_order_accumulation": 0.25,
       "main_force_alignment": 0.2,
-      "capital_persistence_5d": 0.15,
       "capital_overheat_risk": -0.25
     },
     "money_flow_fields": [
@@ -324,54 +323,6 @@
       "long_short_mean": 0.003724780207063059,
       "long_short_positive_ratio": 0.5508474576271186,
       "note": "JoinQuant 2日主力资金持续性代理，匹配M-quant当前策略字段。"
-    },
-    {
-      "source": "joinquant_money_flow_factor_retest_20260709",
-      "factor_name": "capital_persistence_5d",
-      "factor_variant": "capital_persistence_5d_joinquant_money_flow",
-      "horizon": 5,
-      "direction": "positive",
-      "sample_dates": 118,
-      "coverage_mean": 299.9830508474576,
-      "ic_mean": 0.0005156987495023184,
-      "rank_ic_mean": -0.006739044018507323,
-      "rank_ic_t": -0.6423627160308022,
-      "rank_ic_positive_ratio": 0.5,
-      "long_short_mean": -0.0005284641710976168,
-      "long_short_positive_ratio": 0.5508474576271186,
-      "note": "JoinQuant 5日主力资金持续性代理，作为稳定性参考。"
-    },
-    {
-      "source": "joinquant_money_flow_factor_retest_20260709",
-      "factor_name": "capital_persistence_5d",
-      "factor_variant": "capital_persistence_5d_joinquant_money_flow",
-      "horizon": 10,
-      "direction": "positive",
-      "sample_dates": 118,
-      "coverage_mean": 299.96610169491527,
-      "ic_mean": -0.002300682383105211,
-      "rank_ic_mean": -0.005268175754015953,
-      "rank_ic_t": -0.48846234198373883,
-      "rank_ic_positive_ratio": 0.4745762711864407,
-      "long_short_mean": -0.0012867611490537131,
-      "long_short_positive_ratio": 0.5084745762711864,
-      "note": "JoinQuant 5日主力资金持续性代理，作为稳定性参考。"
-    },
-    {
-      "source": "joinquant_money_flow_factor_retest_20260709",
-      "factor_name": "capital_persistence_5d",
-      "factor_variant": "capital_persistence_5d_joinquant_money_flow",
-      "horizon": 20,
-      "direction": "positive",
-      "sample_dates": 118,
-      "coverage_mean": 299.93220338983053,
-      "ic_mean": 0.009573266324235925,
-      "rank_ic_mean": 0.0037321366782812767,
-      "rank_ic_t": 0.30923491277560466,
-      "rank_ic_positive_ratio": 0.5169491525423728,
-      "long_short_mean": 0.0020368736161342814,
-      "long_short_positive_ratio": 0.5084745762711864,
-      "note": "JoinQuant 5日主力资金持续性代理，作为稳定性参考。"
     },
     {
       "source": "joinquant_money_flow_factor_retest_20260709",

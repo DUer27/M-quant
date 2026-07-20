@@ -1,0 +1,57 @@
+{
+  "name": "a_share_all_history_completion",
+  "description": "Long-term paths and commands for completing and auditing real A-share OHLCV history.",
+  "request_window": {
+    "start": "2025-01-01",
+    "end": "2026-07-15",
+    "actual_first_trading_date": "2025-01-02",
+    "expected_trading_days": 370,
+    "adjust": "qfq"
+  },
+  "data_policy": "Only real returned OHLCV rows are saved. No generated, interpolated, or forward-filled rows.",
+  "entrypoints": {
+    "stable_wrapper": "tools/a_share_all_history.py",
+    "implementation": "outputs/sources/akshare/scripts/complete_a_share_all_history.py",
+    "operations_doc": "docs/a-share-history-operations.md"
+  },
+  "commands": {
+    "audit_offline": "/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 tools/a_share_all_history.py",
+    "fetch_all_and_audit": "/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 tools/a_share_all_history.py --fetch --scope all --timeout 12 --sleep 0.05",
+    "fetch_pressure_supported_non_st": "/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 tools/a_share_all_history.py --fetch --scope pressure_non_st --timeout 12 --sleep 0.06",
+    "smoke_fetch": "/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 tools/a_share_all_history.py --fetch --scope all --max-fetch 20"
+  },
+  "inputs": {
+    "all_a_pool": "outputs/sources/akshare/processed/a_share_eastmoney_all_a_20260720.csv",
+    "raw_cache_dir": "outputs/sources/akshare/raw/a_share_daily/"
+  },
+  "outputs": {
+    "combined_real_ohlcv": "outputs/sources/akshare/processed/a_share_all_real_20250101_20260715_qfq.csv",
+    "available_pool": "outputs/sources/akshare/processed/a_share_all_available_pool_20250101_20260715.csv",
+    "full_370_pool": "outputs/sources/akshare/processed/a_share_all_full_370_pool_20250101_20260715.csv",
+    "pressure_supported_non_st_full_370_pool": "outputs/sources/akshare/processed/a_share_pressure_supported_non_st_full_370_pool_20250101_20260715.csv",
+    "audit": "outputs/sources/akshare/results/a_share_all_completion_audit_20260720.csv",
+    "missing_or_partial": "outputs/sources/akshare/results/a_share_all_completion_missing_or_partial_20260720.csv",
+    "fetch_failures": "outputs/sources/akshare/results/a_share_all_completion_fetch_failures_20260720.csv",
+    "summary": "outputs/sources/akshare/results/a_share_all_completion_summary_20260720.json"
+  },
+  "latest_summary": {
+    "generated_at": "2026-07-20T04:23:55",
+    "pool_total": 5879,
+    "pool_unique_codes": 5879,
+    "st_or_delist_name_count": 483,
+    "all": {
+      "full_370": 4672,
+      "partial": 906,
+      "missing_raw": 301
+    },
+    "pressure_supported_non_st": {
+      "total": 5061,
+      "full_370": 4407,
+      "partial": 589,
+      "missing_raw": 65
+    },
+    "combined_codes": 5578,
+    "combined_rows": 2010890,
+    "combined_dates": 370
+  }
+}

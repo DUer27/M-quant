@@ -241,8 +241,8 @@ def build_price_base():
     price["money_stability"] = 1 / (1 + price["money_std60"] / price["money_ma60"].replace(0, np.nan))
     price["volume_ma20"] = group["volume"].rolling(20, min_periods=10).mean().reset_index(level=0, drop=True)
     price["volume_ratio"] = price["volume"] / price["volume_ma20"].replace(0, np.nan)
-    price["volatility_20d"] = group["stock_return"].rolling(20, min_periods=15).std().reset_index(level=0, drop=True) * math.sqrt(252)
-    price["volatility_60d"] = group["stock_return"].rolling(60, min_periods=40).std().reset_index(level=0, drop=True) * math.sqrt(252)
+    price["realized_vol_20d"] = group["stock_return"].rolling(20, min_periods=15).std().reset_index(level=0, drop=True) * math.sqrt(252)
+    price["realized_vol_60d"] = group["stock_return"].rolling(60, min_periods=40).std().reset_index(level=0, drop=True) * math.sqrt(252)
     price["max_drawdown_60d"] = group["close"].transform(max_drawdown)
     price["beta_60d"] = group.apply(lambda g: rolling_beta(g["stock_return"], g["index_return"])).reset_index(level=0, drop=True)
 
@@ -337,8 +337,8 @@ def build_key_factor_table():
         ).clip(0, 1)
 
         low_volatility_quality = (
-            0.30 * rank01(part["volatility_20d"], False)
-            + 0.25 * rank01(part["volatility_60d"], False)
+            0.30 * rank01(part["realized_vol_20d"], False)
+            + 0.25 * rank01(part["realized_vol_60d"], False)
             + 0.22 * rank01(part["max_drawdown_60d"].abs(), False)
             + 0.13 * rank01(part["money_stability"], True)
             + 0.10 * rank01(np.log1p(part["money_ma20"]), True)
@@ -346,7 +346,7 @@ def build_key_factor_table():
 
         market_sensitivity_risk = (
             0.40 * rank01(part["beta_60d"], True)
-            + 0.24 * rank01(part["volatility_60d"], True)
+            + 0.24 * rank01(part["realized_vol_60d"], True)
             + 0.20 * rank01(part["max_drawdown_60d"].abs(), True)
             + 0.16 * rank01(part["turnover_ratio"], True)
         ).clip(0, 1)

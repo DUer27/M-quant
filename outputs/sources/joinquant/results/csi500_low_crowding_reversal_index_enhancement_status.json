@@ -1,0 +1,235 @@
+{
+  "generated_at": "2026-07-16T11:59:31.550Z",
+  "strategy_id": "csi500_low_crowding_reversal_index_enhancement_v0",
+  "source": "joinquant_csi500_low_crowding_reversal_index_enhancement_v0",
+  "ok": true,
+  "mode": "merge_existing_slices",
+  "slice_count": 10,
+  "output_path": "outputs/sources/joinquant/results/csi500_low_crowding_reversal_index_enhancement_v0_merged_existing_slices_20260716-115505.json",
+  "merge_result": {
+    "ok": true,
+    "input_files": [
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q1_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q2_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q3_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q4_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q1_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q2_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q3_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q4_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2026q1_batched.json",
+      "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2026q2_batched.json"
+    ],
+    "output_path": "outputs/sources/joinquant/results/csi500_low_crowding_reversal_index_enhancement_v0_merged_existing_slices_20260716-115505.json",
+    "report_path": "outputs/_docs/joinquant-csi500-low-crowding-reversal-slice-merge-20260716-115519.md",
+    "audit": {
+      "slice_count": 10,
+      "slice_meta": [
+        {
+          "slice_start": "2024-01-01",
+          "slice_end": "2024-03-31",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 500
+        },
+        {
+          "slice_start": "2024-04-01",
+          "slice_end": "2024-06-30",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 550
+        },
+        {
+          "slice_start": "2024-07-01",
+          "slice_end": "2024-09-30",
+          "factor_rows": 6500,
+          "factor_dates": 13,
+          "unique_securities": 500
+        },
+        {
+          "slice_start": "2024-10-01",
+          "slice_end": "2024-12-31",
+          "factor_rows": 6500,
+          "factor_dates": 13,
+          "unique_securities": 550
+        },
+        {
+          "slice_start": "2025-01-01",
+          "slice_end": "2025-03-31",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 501
+        },
+        {
+          "slice_start": "2025-04-01",
+          "slice_end": "2025-06-30",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 550
+        },
+        {
+          "slice_start": "2025-07-01",
+          "slice_end": "2025-09-30",
+          "factor_rows": 7000,
+          "factor_dates": 14,
+          "unique_securities": 500
+        },
+        {
+          "slice_start": "2025-10-01",
+          "slice_end": "2025-12-31",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 550
+        },
+        {
+          "slice_start": "2026-01-01",
+          "slice_end": "2026-03-31",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 501
+        },
+        {
+          "slice_start": "2026-04-01",
+          "slice_end": "2026-06-30",
+          "factor_rows": 5500,
+          "factor_dates": 11,
+          "unique_securities": 550
+        }
+      ],
+      "input_factor_rows": 61500,
+      "merged_factor_rows": 61500,
+      "dropped_duplicate_date_code_rows": 0,
+      "factor_dates": 123,
+      "date_range": "2024-01-02 至 2026-06-16",
+      "unique_securities": 730
+    },
+    "sample": {
+      "factor_rows": 61500,
+      "factor_dates": 123,
+      "unique_securities": 730,
+      "factor_records": 24,
+      "strategy_records": 80
+    },
+    "strategy_status": "real_strategy_backtested",
+    "strategy_status_name": "已有真实策略回测，未达准模拟盘标准"
+  },
+  "optimization_result": {
+    "ok": true,
+    "output_path": "outputs/sources/joinquant/results/csi500_low_crowding_reversal_index_enhancement_v0_candidate_optimization_20260716-115931.json",
+    "report_path": "outputs/_docs/joinquant-csi500-lcr-candidate-optimization-20260716-115931.md",
+    "sample_warning": "样本日期满足因子门禁样本数。",
+    "best_variant_id": "v1_volume_only_cap_neutral",
+    "best_status": "real_strategy_backtested",
+    "best_status_name": "已有真实策略回测，未达准模拟盘标准",
+    "slice_audit": {
+      "input_files": [
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q1_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q2_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q3_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q4_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q1_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q2_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q3_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q4_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2026q1_batched.json",
+        "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2026q2_batched.json"
+      ],
+      "slice_meta": [
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q1_batched.json",
+          "slice_start": "2024-01-01",
+          "slice_end": "2024-03-31",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 500
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q2_batched.json",
+          "slice_start": "2024-04-01",
+          "slice_end": "2024-06-30",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 550
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q3_batched.json",
+          "slice_start": "2024-07-01",
+          "slice_end": "2024-09-30",
+          "factor_rows": 6500,
+          "factor_dates": 13,
+          "unique_securities": 500
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2024q4_batched.json",
+          "slice_start": "2024-10-01",
+          "slice_end": "2024-12-31",
+          "factor_rows": 6500,
+          "factor_dates": 13,
+          "unique_securities": 550
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q1_batched.json",
+          "slice_start": "2025-01-01",
+          "slice_end": "2025-03-31",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 501
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q2_batched.json",
+          "slice_start": "2025-04-01",
+          "slice_end": "2025-06-30",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 550
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q3_batched.json",
+          "slice_start": "2025-07-01",
+          "slice_end": "2025-09-30",
+          "factor_rows": 7000,
+          "factor_dates": 14,
+          "unique_securities": 500
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2025q4_batched.json",
+          "slice_start": "2025-10-01",
+          "slice_end": "2025-12-31",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 550
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2026q1_batched.json",
+          "slice_start": "2026-01-01",
+          "slice_end": "2026-03-31",
+          "factor_rows": 6000,
+          "factor_dates": 12,
+          "unique_securities": 501
+        },
+        {
+          "path": "outputs/sources/joinquant/inbox/csi500_lcr_slices/joinquant_csi500_lcr_slice_2026q2_batched.json",
+          "slice_start": "2026-04-01",
+          "slice_end": "2026-06-30",
+          "factor_rows": 5500,
+          "factor_dates": 11,
+          "unique_securities": 550
+        }
+      ],
+      "input_factor_rows": 61500,
+      "merged_factor_rows": 61500,
+      "dropped_duplicate_date_code_rows": 0,
+      "factor_dates": 123,
+      "unique_securities": 730,
+      "date_range": "2024-01-02 至 2026-06-16",
+      "slice_count": 10
+    }
+  },
+  "sample": {
+    "factor_rows": 61500,
+    "factor_dates": 123,
+    "unique_securities": 730,
+    "factor_records": 24,
+    "strategy_records": 80
+  }
+}
