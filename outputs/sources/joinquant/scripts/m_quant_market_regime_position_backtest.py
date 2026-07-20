@@ -90,8 +90,8 @@ def build_market_table():
     price["volume_ratio120"] = price["volume"] / price["volume_ma120"].replace(0, np.nan)
     price["money_ratio20"] = price["money"] / price["money_ma20"].replace(0, np.nan)
     price["money_ratio120"] = price["money"] / price["money_ma120"].replace(0, np.nan)
-    price["volatility_20d"] = price["ret_1d"].rolling(20, min_periods=10).std() * np.sqrt(252)
-    price["volatility_60d"] = price["ret_1d"].rolling(60, min_periods=30).std() * np.sqrt(252)
+    price["realized_vol_20d"] = price["ret_1d"].rolling(20, min_periods=10).std() * np.sqrt(252)
+    price["realized_vol_60d"] = price["ret_1d"].rolling(60, min_periods=30).std() * np.sqrt(252)
     price["high_60d"] = price["close"].rolling(60, min_periods=30).max()
     price["drawdown_60d"] = price["close"] / price["high_60d"].replace(0, np.nan) - 1
 
@@ -113,7 +113,7 @@ def build_market_table():
         + 0.20 * (frame["volume_ratio20"] - 0.75) / 0.75
         + 0.20 * (frame["volume_ratio120"] - 0.75) / 0.75
     )
-    volatility_risk = clip01((frame["volatility_20d"] - 0.12) / 0.22)
+    volatility_risk = clip01((frame["realized_vol_20d"] - 0.12) / 0.22)
     drawdown_risk = clip01((-frame["drawdown_60d"] - 0.02) / 0.10)
 
     frame["market_capital_regime"] = clip01(
@@ -132,7 +132,7 @@ def build_market_table():
         [1.15, 0.85, 0.45],
         default=0.15,
     )
-    frame["volatility_bucket"] = frame["volatility_20d"].apply(volatility_bucket)
+    frame["volatility_bucket"] = frame["realized_vol_20d"].apply(volatility_bucket)
     frame["position_bucket"] = frame["position_multiplier"].apply(position_bucket)
     frame["trend_score"] = trend_score
     frame["capital_heat"] = capital_heat

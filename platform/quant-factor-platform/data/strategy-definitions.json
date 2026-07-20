@@ -4,7 +4,16 @@
     "name": "华福情绪系数加权K线评分策略",
     "source": {
       "file": "/Users/Admin/Desktop/2026-05-28_华福证券_情绪系数加权个股K线评分的选股策略.pdf",
-      "pages": [16, 17, 18, 24, 25, 29, 30, 31],
+      "pages": [
+        16,
+        17,
+        18,
+        24,
+        25,
+        29,
+        30,
+        31
+      ],
       "note": "仅复现报告中可由当前真实数据支持的逻辑；报告原始业绩不作为本平台业绩。"
     },
     "status": "partial_real_data",
@@ -23,37 +32,25 @@
         "id": "kline_event_score",
         "name": "K线形态离散评分因子",
         "formula": "识别K线形态后按PDF第17页Kelly离散分数赋值；当前已覆盖PDF第17页有明确分数的单根K线形态。",
-        "requiredFields": ["kaipan", "zuigao", "zuidi", "zuixin", "liangbi", "ma5", "ma13", "ma20", "ma5_dir", "ma13_dir", "ma20_dir"],
+        "requiredFields": [
+          "kaipan",
+          "zuigao",
+          "zuidi",
+          "zuixin",
+          "liangbi",
+          "ma5",
+          "ma13",
+          "ma20",
+          "ma5_dir",
+          "ma13_dir",
+          "ma20_dir"
+        ],
         "currentStatus": "computed",
         "currentLimit": "倒锤头、低成交量纺锤线已识别但不计分，因为PDF第17页未给出明确Kelly分数；多根形态需要更长OHLCV历史和更完整形态规则。"
-      },
-      {
-        "id": "volume_price_resonance_60_5",
-        "name": "价量共振情绪因子",
-        "formula": "MA(volume,5)/MA(volume,240) * MA(close,60)/lag(MA(close,60),5)",
-        "requiredFields": ["stock_code", "date", "zuixin", "zongshou"],
-        "currentStatus": "insufficient_history",
-        "currentLimit": "每只股票至少需要240个交易日成交量和65个交易日价格。"
-      },
-      {
-        "id": "low_emotion_score",
-        "name": "低情绪反向因子",
-        "formula": "-zscore(volume_price_resonance_60_5) by date",
-        "requiredFields": ["volume_price_resonance_60_5"],
-        "currentStatus": "blocked_by_resonance_history",
-        "currentLimit": "价量共振暂无有效值，不能标准化。"
-      },
-      {
-        "id": "emotion_weighted_kline_score",
-        "name": "情绪系数加权K线因子",
-        "formula": "low_emotion_score * kline_event_score",
-        "requiredFields": ["low_emotion_score", "kline_event_score"],
-        "currentStatus": "blocked_by_resonance_history",
-        "currentLimit": "等待足够历史后才可计算。"
       }
     ],
     "portfolioRules": {
-      "ranking": "按 emotion_weighted_kline_score 降序；当前历史不足时仅可观察 kline_event_score 与 technical_composite。",
+      "ranking": "当前仅以 kline_event_score 作为辅助观察；主排序使用 technical_composite。",
       "selection": "报告使用Top50等权多头；本平台必须等待足够历史和未来收益标签后再启用真实回测。",
       "rebalance": "日频生成信号，实际调仓频率待回测确认。",
       "riskControls": [
@@ -67,8 +64,23 @@
       "computedRows": 600,
       "latestMergedPack": "/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/merged-batches/yiwan-merged-indicators-20260707-093737-p001-p020.json",
       "latestFactorOutput": "/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-results.json",
-      "effectiveNow": ["kline_event_score", "kline_unscored_patterns", "technical_composite", "trend_alignment", "volume_price_confirmation", "kdj_momentum", "macd_acceleration", "chip_health", "crowding_risk"],
-      "notEffectiveYet": ["volume_price_resonance_60_5", "low_emotion_score", "emotion_weighted_kline_score", "IC", "RankIC", "win_rate", "annual_return"]
+      "effectiveNow": [
+        "kline_event_score",
+        "kline_unscored_patterns",
+        "technical_composite",
+        "trend_alignment",
+        "volume_price_confirmation",
+        "kdj_momentum",
+        "macd_acceleration",
+        "chip_health",
+        "crowding_risk"
+      ],
+      "notEffectiveYet": [
+        "IC",
+        "RankIC",
+        "win_rate",
+        "annual_return"
+      ]
     }
   }
 ]

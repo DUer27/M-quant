@@ -9,6 +9,33 @@
 
 所有结果必须保留来源字段、下载时间、数据周期和计算口径。没有真实数据支持的指标不要放进 `results/`。
 
+## A股全量历史行情长期入口
+
+2026-07-20 起，全 A 历史行情补齐和审计固定使用以下项目入口，避免依赖对话记录里的临时命令：
+
+```bash
+/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 \
+  tools/a_share_all_history.py
+```
+
+长期文件：
+
+- 操作说明：`docs/a-share-history-operations.md`
+- 路径 manifest：`outputs/sources/akshare/a_share_all_history_manifest.json`
+- 短入口：`tools/a_share_all_history.py`
+- 实现脚本：`outputs/sources/akshare/scripts/complete_a_share_all_history.py`
+
+固定口径：`2025-01-01` 到 `2026-07-15`，前复权 `qfq`。由于 `2025-01-01` 休市，完整交易窗口从 `2025-01-02` 起，共 `370` 个交易日。脚本只保存真实返回行情，不补造缺失交易日。
+
+最新核心产物：
+
+- 全 A 真实行情合并文件：`outputs/sources/akshare/processed/a_share_all_real_20250101_20260715_qfq.csv`
+- 全 A 满 370 天股票池：`outputs/sources/akshare/processed/a_share_all_full_370_pool_20250101_20260715.csv`
+- 当前压力测试支持范围的非 ST 满覆盖池：`outputs/sources/akshare/processed/a_share_pressure_supported_non_st_full_370_pool_20250101_20260715.csv`
+- 全量审计表：`outputs/sources/akshare/results/a_share_all_completion_audit_20260720.csv`
+- 缺失或不满覆盖清单：`outputs/sources/akshare/results/a_share_all_completion_missing_or_partial_20260720.csv`
+- 汇总 JSON：`outputs/sources/akshare/results/a_share_all_completion_summary_20260720.json`
+
 ## 当前已验证通道
 
 2026-07-09 已用 AkShare 真实接口完成小批量验证，并补齐沪深300 300 股本地样本：

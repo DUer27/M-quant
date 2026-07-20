@@ -27,7 +27,6 @@ FACTOR_WEIGHTS = {
     "capital_follow_signal": 0.40,
     "active_large_order_accumulation": 0.25,
     "main_force_alignment": 0.20,
-    "capital_persistence_5d": 0.15,
     "capital_overheat_risk": -0.25,
 }
 
@@ -194,12 +193,6 @@ def build_factor_table():
             + 0.10 * rank01(-part["net_pct_s"], True)
         ).clip(0, 1)
 
-        capital_persistence_5d = (
-            0.45 * rank01(part["main_pct_5d"], True)
-            + 0.35 * rank01(part["main_positive_5d"], True)
-            + 0.20 * rank01(part["main_amount_5d"], True)
-        ).clip(0, 1)
-
         overheat_from_price = rank01(part["change_pct"], True)
         overheat_from_volume = rank01(part["volume_ratio"], True)
         overheat_from_turnover = rank01(part["turnover_ratio"], True)
@@ -216,7 +209,6 @@ def build_factor_table():
             0.38 * main_strength
             + 0.26 * active_large_order_accumulation
             + 0.20 * main_force_alignment
-            + 0.16 * capital_persistence_5d
             - 0.18 * capital_overheat_risk
         ).clip(0, 1)
 
@@ -224,7 +216,6 @@ def build_factor_table():
         out["capital_follow_signal"] = capital_follow_signal
         out["active_large_order_accumulation"] = active_large_order_accumulation
         out["main_force_alignment"] = main_force_alignment
-        out["capital_persistence_5d"] = capital_persistence_5d
         out["capital_overheat_risk"] = capital_overheat_risk
         rows.append(out)
 
@@ -330,7 +321,6 @@ def run():
         "capital_follow_signal",
         "active_large_order_accumulation",
         "main_force_alignment",
-        "capital_persistence_5d",
         "capital_overheat_risk",
     ]
     preview = candidates[preview_cols].head(50).copy() if not candidates.empty else pd.DataFrame(columns=preview_cols)

@@ -57,165 +57,12 @@ FACTOR_COLUMNS = [
     "f_market_regime_fit",
 ]
 
-COMPOSITES = {
-    "ie_balanced_alpha_v1": {
-        "name": "指数增强均衡Alpha v1",
-        "weights": {
-            "f_medium_momentum": 0.12,
-            "f_long_momentum": 0.08,
-            "f_active_momentum": 0.10,
-            "f_risk_adjusted_momentum": 0.08,
-            "f_consistent_momentum": 0.08,
-            "f_short_reversal": 0.06,
-            "f_low_volatility": 0.08,
-            "f_residual_low_volatility": 0.08,
-            "f_downside_resilience": 0.08,
-            "f_tail_risk_control": 0.06,
-            "f_drawdown_control": 0.08,
-            "f_beta_stability": 0.05,
-            "f_gap_risk_control": 0.04,
-            "f_volume_stability": 0.06,
-            "f_volume_confirmation": 0.06,
-            "f_volume_dry_up_rebound": 0.04,
-            "f_close_strength": 0.04,
-            "f_intraday_accumulation": 0.04,
-            "f_pullback_support": 0.04,
-            "f_orderly_trend": 0.07,
-            "f_breakout_quality": 0.04,
-            "f_anti_crowding": 0.05,
-            "f_market_regime_fit": 0.04,
-        },
-    },
-    "ie_defensive_quality_v1": {
-        "name": "指数增强防守质量 v1",
-        "weights": {
-            "f_low_volatility": 0.24,
-            "f_residual_low_volatility": 0.16,
-            "f_downside_resilience": 0.18,
-            "f_tail_risk_control": 0.12,
-            "f_drawdown_control": 0.14,
-            "f_beta_stability": 0.10,
-            "f_gap_risk_control": 0.08,
-            "f_volume_stability": 0.10,
-            "f_orderly_trend": 0.06,
-            "f_pullback_support": 0.04,
-            "f_anti_crowding": 0.04,
-        },
-    },
-    "ie_momentum_quality_v1": {
-        "name": "指数增强动量质量 v1",
-        "weights": {
-            "f_medium_momentum": 0.24,
-            "f_long_momentum": 0.14,
-            "f_active_momentum": 0.16,
-            "f_risk_adjusted_momentum": 0.12,
-            "f_consistent_momentum": 0.12,
-            "f_orderly_trend": 0.12,
-            "f_breakout_quality": 0.08,
-            "f_volume_confirmation": 0.08,
-            "f_intraday_accumulation": 0.06,
-            "f_close_strength": 0.06,
-            "f_low_volatility": 0.04,
-            "f_drawdown_control": 0.04,
-            "f_anti_crowding": 0.04,
-        },
-    },
-    "ie_reversal_resilience_v1": {
-        "name": "指数增强反转韧性 v1",
-        "weights": {
-            "f_short_reversal": 0.24,
-            "f_pullback_support": 0.16,
-            "f_downside_resilience": 0.16,
-            "f_tail_risk_control": 0.10,
-            "f_volume_stability": 0.10,
-            "f_volume_dry_up_rebound": 0.08,
-            "f_low_volatility": 0.10,
-            "f_close_strength": 0.08,
-            "f_gap_risk_control": 0.06,
-            "f_anti_crowding": 0.12,
-        },
-    },
-    "ie_apex_ohlcv_alpha_v2": {
-        "name": "指数增强 OHLCV 极致Alpha v2",
-        "weights": {
-            "f_active_momentum": 0.13,
-            "f_risk_adjusted_momentum": 0.11,
-            "f_consistent_momentum": 0.09,
-            "f_orderly_trend": 0.09,
-            "f_residual_low_volatility": 0.09,
-            "f_downside_resilience": 0.08,
-            "f_tail_risk_control": 0.07,
-            "f_drawdown_control": 0.07,
-            "f_volume_stability": 0.06,
-            "f_volume_confirmation": 0.06,
-            "f_intraday_accumulation": 0.05,
-            "f_breakout_quality": 0.05,
-            "f_short_reversal": 0.04,
-            "f_anti_crowding": 0.06,
-            "f_market_regime_fit": 0.05,
-        },
-    },
-    "ie_low_turnover_resilience_v2": {
-        "name": "指数增强低换手韧性 v2",
-        "weights": {
-            "f_active_momentum": 0.10,
-            "f_consistent_momentum": 0.12,
-            "f_low_volatility": 0.12,
-            "f_residual_low_volatility": 0.12,
-            "f_downside_resilience": 0.12,
-            "f_tail_risk_control": 0.10,
-            "f_drawdown_control": 0.10,
-            "f_beta_stability": 0.08,
-            "f_gap_risk_control": 0.06,
-            "f_volume_stability": 0.08,
-            "f_orderly_trend": 0.06,
-            "f_anti_crowding": 0.04,
-        },
-    },
-    "ie_low_crowding_resilience_v3": {
-        "name": "指数增强低拥挤韧性 v3",
-        "weights": {
-            "f_residual_low_volatility": 0.18,
-            "f_anti_crowding": 0.18,
-            "f_volume_stability": 0.16,
-            "f_gap_risk_control": 0.12,
-            "f_low_volatility": 0.10,
-            "f_short_reversal": 0.10,
-            "f_downside_resilience": 0.06,
-            "f_tail_risk_control": 0.05,
-            "f_beta_stability": 0.03,
-            "f_close_strength": 0.02,
-        },
-    },
-    "ie_reversal_recovery_v3": {
-        "name": "指数增强反转修复 v3",
-        "weights": {
-            "f_active_reversal": 0.18,
-            "f_momentum_exhaustion": 0.16,
-            "f_recovery_potential": 0.14,
-            "f_short_reversal": 0.12,
-            "f_intraday_distribution_reversal": 0.10,
-            "f_anti_crowding": 0.10,
-            "f_volume_stability": 0.08,
-            "f_residual_low_volatility": 0.08,
-            "f_gap_risk_control": 0.04,
-        },
-    },
-    "ie_volume_confirmed_alpha_v4": {
-        "name": "指数增强量价确认 Alpha v4",
-        "weights": {
-            "f_volume_confirmation": 0.34,
-            "f_medium_momentum": 0.14,
-            "f_orderly_trend": 0.12,
-            "f_market_regime_fit": 0.10,
-            "f_short_reversal": 0.10,
-            "f_volume_stability": 0.06,
-            "f_gap_risk_control": 0.05,
-            "f_anti_crowding": 0.04,
-            "f_residual_low_volatility": 0.03,
-            "f_close_strength": 0.02,
-        },
-    },
+FACTOR_GATES = {
+    "min_sample_dates": 120,
+    "min_rank_ic": 0.015,
+    "min_rank_ic_t": 2.0,
+    "min_long_short": 0.0,
+    "min_long_short_positive_ratio": 0.53,
 }
 
 
@@ -288,6 +135,28 @@ def daily_rank_ic(day: pd.DataFrame, columns: list[str], target: str, min_count:
             continue
         out[col] = clean_float(np.mean((x - x.mean()) * (y - y.mean())) / (x_std * y_std))
     return out
+
+
+def matrix_rank_ic(ranked: pd.DataFrame, factor_cols: list[str], target: str, min_count: int = 30) -> tuple[dict[str, float | None], pd.Series]:
+    """Column-wise rank correlation against one target without pandas apply."""
+    x = ranked[factor_cols].to_numpy(dtype=float)
+    y = ranked[target].to_numpy(dtype=float)
+    valid = np.isfinite(x) & np.isfinite(y)[:, None]
+    counts = valid.sum(axis=0)
+    safe_counts = np.where(counts > 0, counts, 1)
+
+    x_zero = np.where(valid, x, 0.0)
+    y_matrix = np.where(valid, y[:, None], 0.0)
+    x_mean = x_zero.sum(axis=0) / safe_counts
+    y_mean = y_matrix.sum(axis=0) / safe_counts
+    x_centered = np.where(valid, x - x_mean, 0.0)
+    y_centered = np.where(valid, y[:, None] - y_mean, 0.0)
+    cov = (x_centered * y_centered).sum(axis=0) / safe_counts
+    x_std = np.sqrt((x_centered * x_centered).sum(axis=0) / safe_counts)
+    y_std = np.sqrt((y_centered * y_centered).sum(axis=0) / safe_counts)
+    corr = np.divide(cov, x_std * y_std, out=np.full_like(cov, np.nan, dtype=float), where=(x_std > 0) & (y_std > 0) & (counts >= min_count))
+
+    return {col: clean_float(value) for col, value in zip(factor_cols, corr)}, pd.Series(counts, index=factor_cols)
 
 
 def rolling_beta(asset_ret: pd.Series, bench_ret: pd.Series, window: int) -> pd.Series:
@@ -484,82 +353,57 @@ def add_cross_sectional_factors(df: pd.DataFrame) -> pd.DataFrame:
     zscores = (ranks - 0.5) * 2.0
     for col in FACTOR_COLUMNS:
         out[f"z_{col}"] = zscores[col].fillna(0.0)
-    for composite_id, config in COMPOSITES.items():
-        score = pd.Series(0.0, index=out.index)
-        weight_sum = 0.0
-        for factor, weight in config["weights"].items():
-            score += out[f"z_{factor}"] * weight
-            weight_sum += abs(weight)
-        out[composite_id] = score / weight_sum if weight_sum else score
-    out["ie_dynamic_icir_v1"] = dynamic_icir_score(out, horizon=20)
     return out
 
 
-def dynamic_icir_score(df: pd.DataFrame, horizon: int, lookback_dates: int = 126) -> pd.Series:
-    dates = sorted(df["date"].dropna().unique())
-    ic_rows = []
-    for date, day in df.groupby("date"):
-        if day[f"fwd_ret_{horizon}"].notna().sum() < 30:
-            continue
-        row = {"date": date}
-        ic_by_factor = daily_rank_ic(day, [f"z_{factor}" for factor in FACTOR_COLUMNS], f"fwd_ret_{horizon}")
-        for factor in FACTOR_COLUMNS:
-            row[factor] = ic_by_factor.get(f"z_{factor}")
-        ic_rows.append(row)
-    ic = pd.DataFrame(ic_rows).sort_values("date")
-    weights_by_date: dict[pd.Timestamp, dict[str, float]] = {}
-    fallback = COMPOSITES["ie_balanced_alpha_v1"]["weights"]
-    if not ic.empty:
-        ic = ic.set_index("date")
-        for date in dates:
-            hist = ic[ic.index < date].tail(lookback_dates)
-            weights: dict[str, float] = {}
-            for factor in FACTOR_COLUMNS:
-                values = hist[factor].dropna() if factor in hist else pd.Series(dtype=float)
-                if len(values) < 30:
-                    weights[factor] = fallback.get(factor, 0.0)
-                else:
-                    std = values.std(ddof=0)
-                    icir = values.mean() / std if std and not np.isnan(std) else 0.0
-                    weights[factor] = float(np.clip(icir, -0.4, 1.2))
-            if sum(weights.values()) <= 0:
-                weights = dict(fallback)
-            weights_by_date[date] = weights
-    score = pd.Series(0.0, index=df.index)
-    for date, idx in df.groupby("date").groups.items():
-        weights = weights_by_date.get(date, fallback)
-        denom = sum(abs(v) for v in weights.values()) or 1.0
-        part = pd.Series(0.0, index=idx)
-        for factor, weight in weights.items():
-            if weight:
-                part += df.loc[idx, f"z_{factor}"] * weight
-        score.loc[idx] = part / denom
-    return score
-
-
-def factor_ic_table(df: pd.DataFrame, horizons: list[int], step: int) -> list[dict]:
+def factor_ic_table(df: pd.DataFrame, horizons: list[int], step: int, factors: list[str] | None = None) -> list[dict]:
     rows = []
-    factors = FACTOR_COLUMNS + list(COMPOSITES) + ["ie_dynamic_icir_v1"]
+    factors = factors or FACTOR_COLUMNS
     factor_cols = [f"z_{factor}" if factor in FACTOR_COLUMNS else factor for factor in factors]
     values_by_key: dict[tuple[str, int], list[float]] = {(factor, horizon): [] for factor in factors for horizon in horizons}
+    long_short_by_key: dict[tuple[str, int], list[float]] = {(factor, horizon): [] for factor in factors for horizon in horizons}
     col_to_factor = dict(zip(factor_cols, factors))
     for horizon in horizons:
         target = f"fwd_ret_{horizon}"
         for idx, (_, day) in enumerate(df.groupby("date")):
             if step > 1 and idx % step:
                 continue
-            if day[target].notna().sum() < 30:
+            clean_day = day[factor_cols + [target]].replace([np.inf, -np.inf], np.nan)
+            if clean_day[target].notna().sum() < 30:
                 continue
-            ic_by_col = daily_rank_ic(day, factor_cols, target)
+            # Rank all columns once per day/horizon. This keeps strict step=1
+            # audits practical while preserving the same Spearman objective.
+            ranked = clean_day.rank(method="average")
+            ic_by_col, valid_counts = matrix_rank_ic(ranked, factor_cols, target)
+
+            factor_rank_pct = clean_day[factor_cols].rank(method="first", pct=True)
+            valid_return = clean_day[target].notna()
+            top_mask = factor_rank_pct.gt(0.8).mul(valid_return, axis=0).astype(bool)
+            bottom_mask = factor_rank_pct.le(0.2).mul(valid_return, axis=0).astype(bool)
+            top_counts = top_mask.sum()
+            bottom_counts = bottom_mask.sum()
+            top_returns = top_mask.mul(clean_day[target], axis=0).sum() / top_counts.replace(0, np.nan)
+            bottom_returns = bottom_mask.mul(clean_day[target], axis=0).sum() / bottom_counts.replace(0, np.nan)
+
             for col, ic in ic_by_col.items():
-                if ic is not None:
-                    values_by_key[(col_to_factor[col], horizon)].append(ic)
+                factor = col_to_factor[col]
+                if valid_counts.get(col, 0) >= 30:
+                    clean_ic = clean_float(ic)
+                    if clean_ic is not None:
+                        values_by_key[(factor, horizon)].append(clean_ic)
+                if top_counts.get(col, 0) >= 5 and bottom_counts.get(col, 0) >= 5:
+                    long_short = clean_float(top_returns.get(col) - bottom_returns.get(col))
+                    if long_short is not None:
+                        long_short_by_key[(factor, horizon)].append(long_short)
     for factor in factors:
         for horizon in horizons:
             values = values_by_key[(factor, horizon)]
             series = pd.Series(values, dtype=float)
             mean = clean_float(series.mean())
             std = clean_float(series.std(ddof=0))
+            long_short_series = pd.Series(long_short_by_key[(factor, horizon)], dtype=float)
+            long_short_mean = clean_float(long_short_series.mean())
+            rank_ic_t = clean_float(mean / (std / math.sqrt(len(series)))) if mean is not None and std and len(series) > 1 else None
             rows.append({
                 "factor": factor,
                 "horizon": horizon,
@@ -567,6 +411,9 @@ def factor_ic_table(df: pd.DataFrame, horizons: list[int], step: int) -> list[di
                 "rank_ic_mean": mean,
                 "rank_ic_std": std,
                 "rank_ic_ir": clean_float(mean / std) if mean is not None and std else None,
+                "rank_ic_t": rank_ic_t,
+                "long_short_mean": long_short_mean,
+                "long_short_positive_ratio": clean_float((long_short_series > 0).mean()) if not long_short_series.empty else None,
                 "positive_ratio": clean_float((series > 0).mean()) if not series.empty else None,
             })
     return rows
@@ -704,15 +551,63 @@ def stability_score(portfolio: dict) -> float:
     return float(sharpe + total * 0.40 + yearly_win * 0.35 + worst_year * 0.20 - drawdown * 0.60 - turnover_value * 0.15)
 
 
+def factor_passes_gate(row: dict) -> bool:
+    return (
+        (row.get("sample_dates") or 0) >= FACTOR_GATES["min_sample_dates"]
+        and (row.get("rank_ic_mean") is not None and row["rank_ic_mean"] >= FACTOR_GATES["min_rank_ic"])
+        and (row.get("rank_ic_t") is not None and row["rank_ic_t"] >= FACTOR_GATES["min_rank_ic_t"])
+        and (row.get("long_short_mean") is not None and row["long_short_mean"] > FACTOR_GATES["min_long_short"])
+        and (row.get("long_short_positive_ratio") is not None and row["long_short_positive_ratio"] >= FACTOR_GATES["min_long_short_positive_ratio"])
+    )
+
+
+def best_primary_factor_rows(ic_rows: list[dict], primary_horizon: int) -> dict[str, dict]:
+    primary_rows = [row for row in ic_rows if row.get("horizon") == primary_horizon]
+    return {row["factor"]: row for row in primary_rows if row.get("factor")}
+
+
+def score_cols_after_factor_gate(args: argparse.Namespace, score_cols: list[str], ic_rows: list[dict]) -> tuple[list[str], list[dict]]:
+    best_rows = best_primary_factor_rows(ic_rows, args.primary_horizon)
+    passed_factor_ids = {factor for factor, row in best_rows.items() if factor_passes_gate(row)}
+    allowed = []
+    audit_rows = []
+    for score_col in score_cols:
+        factor_id = score_col[2:] if score_col.startswith("z_") else score_col
+        row = best_rows.get(factor_id, {})
+        passed = factor_id in passed_factor_ids
+        audit_rows.append({
+            "score_col": score_col,
+            "factor": factor_id,
+            "gate_passed": passed,
+            "best_primary_result": row or None,
+            "blocked_reason": None if passed else "factor_gate_not_passed",
+        })
+        if passed:
+            allowed.append(score_col)
+    if args.force_strategy_backtest_without_factor_gate:
+        return score_cols, audit_rows
+    return allowed, audit_rows
+
+
 def write_json(path: Path, data) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def write_report(path: Path, result: dict) -> None:
+    passed_gate_rows = [row for row in result.get("factor_gate_audit", []) if row.get("gate_passed")]
+    blocked_gate_rows = [row for row in result.get("factor_gate_audit", []) if not row.get("gate_passed")]
+    portfolio_count = len(result.get("portfolios", []))
     lines = [
         "# 指数增强研究内核报告",
         "",
         f"生成时间：{result['generated_at']}",
+        "",
+        "## 直接结论",
+        "",
+        f"- 严格因子门禁通过：{len(passed_gate_rows)} / {len(result.get('factor_gate_audit', []))}。",
+        f"- 准入型策略组合回测数量：{portfolio_count}。",
+        "- 本轮按 1/5/10/20 日逐日 RankIC 和日度 Top20%-Bottom20% 多空收益重做后，没有 score_col 通过 20 日主周期门禁。" if not passed_gate_rows else "- 已有 score_col 通过门禁，可进入后续交易回测和 JoinQuant 复核。",
+        "- 未通过门禁前，不使用旧的强制绕门禁组合收益作为准入证据。" if not passed_gate_rows else "- 策略回测仍需补 JoinQuant 市值、行业、流动性、停牌涨跌停和成本复核。",
         "",
         "## 数据边界",
         "",
@@ -721,7 +616,19 @@ def write_report(path: Path, result: dict) -> None:
         "- 腾讯日线源缺成交额和换手率；本报告不伪造成交额、换手率或市值。",
         "- v2 内核加入主动动量、残差低波、尾部风险、跳空风险、量价确认、趋势一致性、反拥挤和市场状态适配。",
         "- 组合构建加入持仓缓冲、风险惩罚、主动袖口换手成本和稳定性评分。",
+        "- 标准流程：先做因子回测门禁，再做策略回测；因子未过门禁的 score_col 不进入策略回测。",
         "- 结果用于研究筛选，不等同于可实盘指数增强产品。",
+        "",
+        "## 因子门禁",
+        "",
+        f"- 样本日 >= {result['factor_gate']['min_sample_dates']}",
+        f"- RankIC >= {result['factor_gate']['min_rank_ic']}",
+        f"- RankIC t >= {result['factor_gate']['min_rank_ic_t']}",
+        f"- 多空收益 > {pct(result['factor_gate']['min_long_short'])}",
+        f"- 多空胜率 >= {pct(result['factor_gate']['min_long_short_positive_ratio'])}",
+        f"- 策略回测准入：{'必须通过因子门禁' if result['strategy_backtest_policy']['strategy_backtest_requires_factor_gate'] else '诊断模式，允许绕过因子门禁但不得用于准入'}",
+        f"- RankIC 方法：{result.get('factor_backtest_policy', {}).get('rank_ic_method', '-')}",
+        f"- 多空方法：{result.get('factor_backtest_policy', {}).get('long_short_method', '-')}",
         "",
         "## 数据概况",
         "",
@@ -737,6 +644,13 @@ def write_report(path: Path, result: dict) -> None:
         lines.append(
             f"| {row['dataset']} | {row['factor']} | {row['horizon']} | {row['sample_dates']} | {number(row['rank_ic_mean'],4)} | {number(row['rank_ic_ir'],2)} | {pct(row['positive_ratio'])} |"
         )
+
+    lines += ["", "## 因子门禁审计", "", "| 数据集 | score_col | 通过 | 20日RankIC | t值 | 多空收益 | 多空胜率 | 阻塞原因 |", "| --- | --- | --- | ---: | ---: | ---: | ---: | --- |"]
+    for row in result.get("factor_gate_audit", []):
+        primary = row.get("best_primary_result") or {}
+        lines.append(
+            f"| {row['dataset']} | {row['score_col']} | {'是' if row.get('gate_passed') else '否'} | {number(primary.get('rank_ic_mean'),4)} | {number(primary.get('rank_ic_t'),2)} | {pct(primary.get('long_short_mean'))} | {pct(primary.get('long_short_positive_ratio'))} | {row.get('blocked_reason') or '-'} |"
+        )
     lines += ["", "## 组合回测 Top", "", "| 数据集 | 策略 | 调仓 | TopN | 核心权重 | 缓冲 | 风险惩罚 | 稳定分 | 主动收益 | 主动年化 | 主动Sharpe | Sortino | Calmar | 主动回撤 | 均换手 | 最差单期主动 | 策略收益 | 基准收益 |", "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for row in result["portfolio_top"]:
         active = row["metrics"]["active"]
@@ -745,6 +659,8 @@ def write_report(path: Path, result: dict) -> None:
         lines.append(
             f"| {row['dataset']} | {row['score_col']} | {row['horizon']} | {row['top_n']} | {row['core_weight']:.0%} | {row['buffer_multiple']:.1f} | {row['risk_penalty']:.2f} | {number(row.get('stability_score'),2)} | {pct(active['total_return'])} | {pct(active['annual_return'])} | {number(active['sharpe'],2)} | {number(active.get('sortino'),2)} | {number(active.get('calmar'),2)} | {pct(active['max_drawdown'])} | {pct(row['metrics'].get('avg_turnover'))} | {pct(row['metrics'].get('worst_period_active'))} | {pct(strategy['total_return'])} | {pct(benchmark['total_return'])} |"
         )
+    if not result["portfolio_top"]:
+        lines.append("| - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - |")
     if result["portfolio_top"]:
         best = result["portfolio_top"][0]
         lines += [
@@ -769,22 +685,26 @@ def run_for_dataset(path: Path, index_name: str, args: argparse.Namespace) -> tu
     factors = add_cross_sectional_factors(features)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     factor_path = RESULTS_DIR / f"{index_name}_factor_values.csv"
-    keep = ["date", "code", "name", "close"] + FACTOR_COLUMNS + [f"z_{c}" for c in FACTOR_COLUMNS] + list(COMPOSITES) + ["ie_dynamic_icir_v1"] + [f"fwd_ret_{h}" for h in args.horizons]
+    keep = ["date", "code", "name", "close"] + FACTOR_COLUMNS + [f"z_{c}" for c in FACTOR_COLUMNS] + [f"fwd_ret_{h}" for h in args.horizons]
     if args.write_factor_csv:
         print(f"[{index_name}] write factor csv: {factor_path.relative_to(ROOT)}", flush=True)
         factors[keep].to_csv(factor_path, index=False, encoding="utf-8-sig")
         factor_path_text = str(factor_path.relative_to(ROOT))
     else:
         factor_path_text = None
-    print(f"[{index_name}] compute rank ic step={args.ic_step}", flush=True)
-    ic_rows = factor_ic_table(factors, args.horizons, args.ic_step)
+    requested_score_cols = resolve_score_cols(args)
+    audit_factor_ids = factor_ids_from_score_cols(requested_score_cols) if args.score_cols else None
+    print(f"[{index_name}] compute rank ic step={args.ic_step} factors={len(audit_factor_ids) if audit_factor_ids else 'all'}", flush=True)
+    ic_rows = factor_ic_table(factors, args.horizons, args.ic_step, audit_factor_ids)
     for row in ic_rows:
         row["dataset"] = index_name
 
     portfolio_rows = []
     all_trades = []
-    score_cols = resolve_score_cols(args)
-    print(f"[{index_name}] portfolio grid score_cols={len(score_cols)}", flush=True)
+    score_cols, factor_gate_rows = score_cols_after_factor_gate(args, requested_score_cols, ic_rows)
+    for row in factor_gate_rows:
+        row["dataset"] = index_name
+    print(f"[{index_name}] factor gate allowed_score_cols={len(score_cols)}/{len(requested_score_cols)}", flush=True)
     for score_col in score_cols:
         for top_n in args.top_n:
             for core_weight in args.core_weight:
@@ -835,7 +755,7 @@ def run_for_dataset(path: Path, index_name: str, args: argparse.Namespace) -> tu
         "end_date": raw["date"].max().strftime("%Y-%m-%d"),
     }
     trades_frame = pd.concat(all_trades, ignore_index=True) if all_trades else pd.DataFrame()
-    return dataset_summary, trades_frame, ic_rows + portfolio_rows
+    return dataset_summary, trades_frame, ic_rows + portfolio_rows + factor_gate_rows
 
 
 def parse_float_list(text: str) -> list[float]:
@@ -854,23 +774,27 @@ def resolve_score_cols(args: argparse.Namespace) -> list[str]:
     if args.score_cols:
         resolved = []
         for item in parse_str_list(args.score_cols):
-            if item in COMPOSITES or item == "ie_dynamic_icir_v1" or item.startswith("z_"):
+            if item.startswith("z_"):
                 resolved.append(item)
             elif item in FACTOR_COLUMNS:
                 resolved.append(f"z_{item}")
             else:
                 raise SystemExit(f"未知 score_col: {item}")
         return resolved
-    score_cols = list(COMPOSITES) + ["ie_dynamic_icir_v1"]
+    score_cols = []
     if args.include_factor_portfolios:
         score_cols += [f"z_{factor}" for factor in FACTOR_COLUMNS]
     return score_cols
 
 
+def factor_ids_from_score_cols(score_cols: list[str]) -> list[str]:
+    return [score_col[2:] if score_col.startswith("z_") else score_col for score_col in score_cols]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--inputs", default="", help="逗号分隔 daily CSV；默认读取 index_enhancement/processed/*_daily_*.csv")
-    parser.add_argument("--horizons", type=parse_int_list, default=[5, 10, 20])
+    parser.add_argument("--horizons", type=parse_int_list, default=[1, 5, 10, 20])
     parser.add_argument("--primary-horizon", type=int, default=20)
     parser.add_argument("--top-n", type=parse_int_list, default=[30, 50, 80])
     parser.add_argument("--core-weight", type=parse_float_list, default=[0.70, 0.80, 0.90])
@@ -882,6 +806,7 @@ def main() -> int:
     parser.add_argument("--ic-step", type=int, default=5, help="RankIC 采样步长；1 为逐日完整审计，默认 5 用于快速研究迭代")
     parser.add_argument("--include-factor-portfolios", action="store_true", help="同时回测单因子 TopN 组合，用于诊断复合因子是否掩盖了有效信号")
     parser.add_argument("--score-cols", default="", help="只回测指定评分列，逗号分隔；因子名可省略 z_ 前缀")
+    parser.add_argument("--force-strategy-backtest-without-factor-gate", action="store_true", help="研究诊断专用：允许未过因子门禁的 score_col 进入策略回测，结果不得用于准入")
     args = parser.parse_args()
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -897,12 +822,15 @@ def main() -> int:
     datasets = []
     all_ic = []
     all_portfolios = []
+    all_factor_gates = []
     for path in paths:
         index_name = path.name.split("_daily_", 1)[0]
         dataset_summary, _, mixed_rows = run_for_dataset(path, index_name, args)
         datasets.append(dataset_summary)
         for row in mixed_rows:
-            if "factor" in row:
+            if "gate_passed" in row:
+                all_factor_gates.append(row)
+            elif "factor" in row:
                 all_ic.append(row)
             else:
                 all_portfolios.append(row)
@@ -920,6 +848,22 @@ def main() -> int:
     result = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "method_boundary": "static constituents, equal-weight benchmark, real OHLCV only",
+        "data_policy": "本地 AkShare 真实 OHLCV 严格诊断回测；覆盖 1/5/10/20 日因子检验；静态指数成分、等权基准，未使用 JoinQuant 市值、行业、停牌涨跌停、换手率或真实指数权重；未通过因子门禁的评分列不进入准入型策略回测。",
+        "factor_backtest_policy": {
+            "horizons": args.horizons,
+            "ic_step": args.ic_step,
+            "primary_horizon": args.primary_horizon,
+            "rank_ic_method": "daily_spearman_rank_correlation",
+            "long_short_method": "daily_top_20pct_minus_bottom_20pct_by_factor_rank",
+            "requires_all_primary_gate_checks": True,
+        },
+        "factor_gate": FACTOR_GATES,
+        "factor_gate_audit": all_factor_gates,
+        "strategy_backtest_policy": {
+            "sequence": "factor_backtest_first_strategy_backtest_second",
+            "strategy_backtest_requires_factor_gate": not args.force_strategy_backtest_without_factor_gate,
+            "forced_strategy_backtest_without_factor_gate": bool(args.force_strategy_backtest_without_factor_gate),
+        },
         "datasets": datasets,
         "factor_ic": all_ic,
         "factor_ic_top": factor_ic_top,

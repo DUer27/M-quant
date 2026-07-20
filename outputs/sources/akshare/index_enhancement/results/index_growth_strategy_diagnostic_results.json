@@ -1,0 +1,5315 @@
+{
+  "source": "akshare_index_growth_strategy_diagnostic_20260715",
+  "generated_at": "2026-07-15T14:16:02",
+  "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准，不作为正式准入。",
+  "strategy_name_policy": "中文指数名 + 指数增长趋势/稳健/综合策略 v1",
+  "factor_framework": {
+    "trend_growth": [
+      "中期趋势",
+      "长期趋势",
+      "量价确认",
+      "收盘强度",
+      "反拥挤"
+    ],
+    "stable_growth": [
+      "低波动",
+      "量能稳定",
+      "回撤控制",
+      "跳空风险控制",
+      "反拥挤",
+      "短期反转"
+    ]
+  },
+  "datasets": [
+    {
+      "dataset": "csi300",
+      "display": "沪深300",
+      "rows": 453844,
+      "stocks": 300,
+      "dates": 1580,
+      "start_date": "2020-01-02",
+      "end_date": "2026-07-13"
+    },
+    {
+      "dataset": "csi500",
+      "display": "中证500",
+      "rows": 732652,
+      "stocks": 500,
+      "dates": 1580,
+      "start_date": "2020-01-02",
+      "end_date": "2026-07-13"
+    }
+  ],
+  "strategies": [
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_trend_growth_v1",
+      "strategy_name": "沪深300指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 2.081463163082084,
+      "strategy_annual_return": 0.2245492494910597,
+      "annual_return": 0.2245492494910597,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": 0.15769610442263238,
+      "active_annual_return": 0.026708181877224346,
+      "active_sharpe": 0.4478002421940692,
+      "max_drawdown": -0.19417739316067273,
+      "active_max_drawdown": -0.15029831583009423,
+      "sharpe": 0.9767318329113927,
+      "daily_win_rate": 0.4857142857142857,
+      "period_mean_return": 0.01822335764696768,
+      "active_period_mean_return": 0.0022342741286045663,
+      "avg_turnover": 0.6867434715821812,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.03914989800854449,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_trend_growth_top30_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.3138688234025182,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.07862723841680452,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.2133469886070074,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": 0.011015861795296233,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.08556126548900089,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.035645609466806505,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.03211868273653118,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": -0.006294009689660429,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.21654821493826204,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.07690972672393037,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.6044055575855369,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": 0.12611268402141307,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.04928199189980398,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.06572370135593153,
+          "active_win_rate": 0.8
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_trend_growth_v1",
+      "strategy_name": "沪深300指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.9342639270277866,
+      "strategy_annual_return": 0.21380759725150145,
+      "annual_return": 0.21380759725150145,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": 0.09443587309139012,
+      "active_annual_return": 0.016375663445552302,
+      "active_sharpe": 0.4576017248644564,
+      "max_drawdown": -0.18717819017804393,
+      "active_max_drawdown": -0.09237669233607426,
+      "sharpe": 0.9743663904359912,
+      "daily_win_rate": 0.4857142857142857,
+      "period_mean_return": 0.017329647995525842,
+      "active_period_mean_return": 0.0013405644771627386,
+      "avg_turnover": 0.6867434715821812,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.023489938805126703,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_trend_growth_top30_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2779934593502549,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.04683643443913588,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.21375465967454077,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": 0.007180257334710172,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.07281281106870074,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.02139505981663714,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.03501283362986718,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": -0.0035952797931673164,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2532165125165253,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.0465413810375811,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5374274223058513,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": 0.07448213112035118,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.023070929578721255,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.03910649528079113,
+          "active_win_rate": 0.8
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_trend_growth_v1",
+      "strategy_name": "沪深300指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.936667812799267,
+      "strategy_annual_return": 0.21398653055547157,
+      "annual_return": 0.21398653055547157,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": 0.09808300044116014,
+      "active_annual_return": 0.016984491686669267,
+      "active_sharpe": 0.34434912738263024,
+      "max_drawdown": -0.18656113711622702,
+      "active_max_drawdown": -0.1319997219886443,
+      "sharpe": 0.9554317315486108,
+      "daily_win_rate": 0.5142857142857142,
+      "period_mean_return": 0.017422844493258826,
+      "active_period_mean_return": 0.001433760974895717,
+      "avg_turnover": 0.602750700280112,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.035453473581655265,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_trend_growth_top50_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2986885240349073,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.06555904589895878,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.19543901976883848,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.005962704604752345,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.07935983472559172,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.029161279934796003,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.02632472121540763,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": -0.01191655623779686,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.23164540614036921,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.06554100971133692,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.575971317691351,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": 0.10421034339807744,
+          "active_win_rate": 0.6923076923076923
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.031368075613519064,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.047374991428705604,
+          "active_win_rate": 0.8
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_trend_growth_v1",
+      "strategy_name": "沪深300指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.8487982074090814,
+      "strategy_annual_return": 0.20736645031250034,
+      "annual_return": 0.20736645031250034,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": 0.059467569297817935,
+      "active_annual_return": 0.010452214711776486,
+      "active_sharpe": 0.35318602028392954,
+      "max_drawdown": -0.1841904083981012,
+      "active_max_drawdown": -0.0808348713169974,
+      "sharpe": 0.9584946707156091,
+      "daily_win_rate": 0.5142857142857142,
+      "period_mean_return": 0.016849340103300536,
+      "active_period_mean_return": 0.0008602565849374287,
+      "avg_turnover": 0.602750700280112,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.021272084148993176,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_trend_growth_top50_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2689615192645358,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.039055756037347455,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.20273908216399805,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.0032014961250436125,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06908335728809956,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.01749265795155963,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.031462555716897045,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": -0.0070398078329289016,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.26245164444746627,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.03958535885998726,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5207921596577698,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": 0.06170937618100347,
+          "active_win_rate": 0.6923076923076923
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.012495106663522604,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.028275220175944416,
+          "active_win_rate": 0.8
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_stable_growth_v1",
+      "strategy_name": "沪深300指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.3762773580732817,
+      "strategy_annual_return": 0.16858816433986124,
+      "annual_return": 0.16858816433986124,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.15780341304351508,
+      "active_annual_return": -0.03044058968598673,
+      "active_sharpe": -0.7203852086335114,
+      "max_drawdown": -0.1484591807014961,
+      "active_max_drawdown": -0.15527867598563105,
+      "sharpe": 0.9607823696669779,
+      "daily_win_rate": 0.44285714285714284,
+      "period_mean_return": 0.013609775441525359,
+      "active_period_mean_return": -0.0023793080768377507,
+      "avg_turnover": 0.6449923195084484,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.03141423799954532,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_stable_growth_top30_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.18846303020382282,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": -0.032675715990887366,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.17522455567912143,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.03572318899390803,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06287710125673618,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.012278002538899435,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.06183499891999844,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.018125116097769567,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.3123489841019149,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.012109842731933051,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.33384141037003,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.08146122399351985,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.023249877486468784,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": -0.010541387059666896,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_stable_growth_v1",
+      "strategy_name": "沪深300指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5080571462641745,
+      "strategy_annual_return": 0.17999654848255942,
+      "annual_return": 0.17999654848255942,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.0967850409272285,
+      "active_annual_return": -0.018156200294947134,
+      "active_sharpe": -0.716119402437661,
+      "max_drawdown": -0.16142795305018176,
+      "active_max_drawdown": -0.0951623919122968,
+      "sharpe": 0.9575156403031158,
+      "daily_win_rate": 0.44285714285714284,
+      "period_mean_return": 0.014561498672260462,
+      "active_period_mean_return": -0.0014275848461026519,
+      "avg_turnover": 0.6449923195084484,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.018848542799727197,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_stable_growth_top30_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.20303901352825116,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": -0.01968804994386364,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.19022702410666636,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.0214313142322623,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.05912202381011511,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.00727850775733474,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.052794150696982456,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.011030483306491812,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.3115739603669003,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.006906778521381107,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.37581242767350953,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.04944258879280017,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.020060802721426296,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": -0.00625383297532367,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_stable_growth_v1",
+      "strategy_name": "沪深300指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.3333168389110148,
+      "strategy_annual_return": 0.1647568379453448,
+      "annual_return": 0.1647568379453448,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.17140894283048402,
+      "active_annual_return": -0.033278798166649914,
+      "active_sharpe": -0.8339766350000825,
+      "max_drawdown": -0.15333786738414645,
+      "active_max_drawdown": -0.16983147870176818,
+      "sharpe": 0.9294117908915097,
+      "daily_win_rate": 0.45714285714285713,
+      "period_mean_return": 0.01337004708388171,
+      "active_period_mean_return": -0.0026190364344813987,
+      "avg_turnover": 0.5615406162464988,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.030939447713029644,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_stable_growth_top50_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.19272000734175965,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": -0.029028841602088407,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.1665260663774688,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.0427512858202983,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06863283487928573,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.017980607976150198,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.05952174034159241,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.01669290606346774,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.30770315809506665,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.015162983108145789,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.33335481005653,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.08187723074293252,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.02533569071266839,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": -0.012506737789352185,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_stable_growth_v1",
+      "strategy_name": "沪深300指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.4804659001452212,
+      "strategy_annual_return": 0.17764932362727714,
+      "annual_return": 0.17764932362727714,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.10567432654903208,
+      "active_annual_return": -0.019902625766122783,
+      "active_sharpe": -0.8312762568817208,
+      "max_drawdown": -0.1643256371872207,
+      "active_max_drawdown": -0.10465353843940173,
+      "sharpe": 0.9393654538083789,
+      "daily_win_rate": 0.45714285714285713,
+      "period_mean_return": 0.014417661657674273,
+      "active_period_mean_return": -0.0015714218606888398,
+      "avg_turnover": 0.5615406162464988,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.018563668627817803,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_stable_growth_top50_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.20561632584503653,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": -0.017478316461633336,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.1849367271796034,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.025711982034528735,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06261712877691972,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.01074652858558467,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.051366091067593045,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.01012515943592196,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.30874403176052123,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.008783178629178878,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.3755128684452411,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.049699994032242234,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.02132469751909083,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": -0.007446269105572667,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_combined_growth_v1",
+      "strategy_name": "沪深300指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi300",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5295994852549715,
+      "strategy_annual_return": 0.18181450926954312,
+      "annual_return": 0.18181450926954312,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.08438528824545344,
+      "active_annual_return": -0.015743487204573192,
+      "active_sharpe": -0.3565554684743973,
+      "max_drawdown": -0.15613366540879503,
+      "active_max_drawdown": -0.1445414804360956,
+      "sharpe": 0.929885118055974,
+      "daily_win_rate": 0.4714285714285714,
+      "period_mean_return": 0.014808239784323765,
+      "active_period_mean_return": -0.0011808437340393451,
+      "avg_turnover": 0.7318433179723502,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.04158825687169437,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_combined_growth_top30_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2952754238078632,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.06116284987672649,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.13135805498360464,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.06248220134784932,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.053326277806815536,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.003473652659891857,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.0723847707535834,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.029377275049265794,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2717010102836066,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.0434247130744575,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.353817771338901,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.06409541500356453,
+          "active_win_rate": 0.23076923076923078
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.012372035105060797,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.002160104481535363,
+          "active_win_rate": 0.4
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_combined_growth_v1",
+      "strategy_name": "沪深300指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi300",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.6041128867513885,
+      "strategy_annual_return": 0.1880063587922598,
+      "annual_return": 0.1880063587922598,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.050263106897207255,
+      "active_annual_return": -0.009239700917866522,
+      "active_sharpe": -0.34876494710949796,
+      "max_drawdown": -0.16002247777452583,
+      "active_max_drawdown": -0.08834540956039028,
+      "sharpe": 0.9428394651950627,
+      "daily_win_rate": 0.4714285714285714,
+      "period_mean_return": 0.0152805772779395,
+      "active_period_mean_return": -0.000708506240423609,
+      "avg_turnover": 0.7318433179723502,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.024952954123016624,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_combined_growth_top30_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2668750995584457,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.036385280746038084,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.1635159957473824,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.03770188721251544,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.05334140089207029,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.0019385500663730015,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.05896326756725134,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.017625611218925696,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.28712802620346345,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.02582091486611604,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.3879451136018133,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.03884678626895677,
+          "active_win_rate": 0.23076923076923078
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.013526713653410849,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.0013726019366795406,
+          "active_win_rate": 0.4
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_combined_growth_v1",
+      "strategy_name": "沪深300指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi300",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5376163414233437,
+      "strategy_annual_return": 0.18248781227619393,
+      "annual_return": 0.18248781227619393,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.07914339736102771,
+      "active_annual_return": -0.014731584036043688,
+      "active_sharpe": -0.3923036065583404,
+      "max_drawdown": -0.1595332854186119,
+      "active_max_drawdown": -0.12540140363073282,
+      "sharpe": 0.928987983719963,
+      "daily_win_rate": 0.4714285714285714,
+      "period_mean_return": 0.0148682295109187,
+      "active_period_mean_return": -0.0011208540074444091,
+      "avg_turnover": 0.6451820728291315,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.039335106027403005,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_combined_growth_top50_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2719896136262774,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.040920040824054205,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.14776044872297334,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.049291759212071296,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06464916139502896,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.014541555614708712,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.06271362029748517,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.020307732065057094,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.27028902856325954,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.04332864380132273,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.38776464748665873,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.03909105611091035,
+          "active_win_rate": 0.23076923076923078
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.008067800184633933,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.006729693098398215,
+          "active_win_rate": 0.4
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_combined_growth_v1",
+      "strategy_name": "沪深300指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi300",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.6081838499952603,
+      "strategy_annual_return": 0.18834043877939788,
+      "annual_return": 0.18834043877939788,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.04735051211798935,
+      "active_annual_return": -0.008693474797239809,
+      "active_sharpe": -0.38584688835190284,
+      "max_drawdown": -0.16145373056925783,
+      "active_max_drawdown": -0.07642579131990679,
+      "sharpe": 0.9404515505998464,
+      "daily_win_rate": 0.4714285714285714,
+      "period_mean_return": 0.01531657111389646,
+      "active_period_mean_return": -0.0006725124044666454,
+      "avg_turnover": 0.6451820728291315,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.023601063616441792,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_combined_growth_top50_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.25308720425025943,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.024409073883310706,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.1735090791834326,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.029682633265012748,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06019194725620691,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.008646939876839066,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.05319330266840416,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.012207449828896877,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2861984642643016,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.025828378176842248,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.408636321372301,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.023587251987845725,
+          "active_win_rate": 0.23076923076923078
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.010954360917280526,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.00410498048664687,
+          "active_win_rate": 0.4
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_trend_growth_v1",
+      "strategy_name": "中证500指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.934398052966201,
+      "strategy_annual_return": 0.21381758408516327,
+      "annual_return": 0.21381758408516327,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": 0.06327142570911382,
+      "active_annual_return": 0.01110427289976923,
+      "active_sharpe": 0.2455240251046676,
+      "max_drawdown": -0.2736282426906119,
+      "active_max_drawdown": -0.10551992115754472,
+      "sharpe": 0.8510096310632058,
+      "daily_win_rate": 0.5285714285714286,
+      "period_mean_return": 0.017914999736694696,
+      "active_period_mean_return": 0.0009580306002290789,
+      "avg_turnover": 0.6035097001763668,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.03122079226304126,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_trend_growth_top80_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.10754397414821226,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.03394056701650894,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.46393022700573505,
+          "benchmark_return": 0.456625576380258,
+          "active_return": 0.009716465878726543,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.08597810146271856,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.041109043656232025,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.04375021732830686,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": -0.003097917224579416,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.15435813135014032,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.0517008280542971,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.7260521955368457,
+          "benchmark_return": 0.616230633165687,
+          "active_return": 0.08052330276394604,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.03923850089033798,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.03979540573384166,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_trend_growth_v1",
+      "strategy_name": "中证500指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.8761772287378253,
+      "strategy_annual_return": 0.209446928264289,
+      "annual_return": 0.209446928264289,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": 0.0389191278832437,
+      "active_annual_return": 0.006896227281165235,
+      "active_sharpe": 0.2541348265050137,
+      "max_drawdown": -0.26514215599746915,
+      "active_max_drawdown": -0.06431857966169896,
+      "sharpe": 0.8484194251593411,
+      "daily_win_rate": 0.5285714285714286,
+      "period_mean_return": 0.01753178749660307,
+      "active_period_mean_return": 0.0005748183601374486,
+      "avg_turnover": 0.6035097001763668,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.018732475357824754,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_trend_growth_top80_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.093185233436067,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.020266342945741478,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4615196262458232,
+          "benchmark_return": 0.456625576380258,
+          "active_return": 0.006182152588183554,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.07147271755905071,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.024779062970213483,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.04207515053176081,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": -0.0017617645009408989,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.17552998005795373,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.031096316812639024,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.6818636964234668,
+          "benchmark_return": 0.616230633165687,
+          "active_return": 0.0479533435833428,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.023685663063240714,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.02383931149726015,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_trend_growth_v1",
+      "strategy_name": "中证500指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.9696063723082569,
+      "strategy_annual_return": 0.21642629505799804,
+      "annual_return": 0.21642629505799804,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": 0.0759376370775442,
+      "active_annual_return": 0.013261818439974427,
+      "active_sharpe": 0.3147603013651238,
+      "max_drawdown": -0.2713821805467995,
+      "active_max_drawdown": -0.0932066391737787,
+      "sharpe": 0.8639446515633817,
+      "daily_win_rate": 0.5142857142857142,
+      "period_mean_return": 0.018073613544883203,
+      "active_period_mean_return": 0.001116644408417585,
+      "avg_turnover": 0.5567977369165489,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.031273351135839234,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_trend_growth_top100_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.10749168388904629,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.03386287011266065,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.47047196843330763,
+          "benchmark_return": 0.456625576380258,
+          "active_return": 0.014382424259304472,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.08297174873565583,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.03749737547434362,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.03942126936398804,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.0012467615214517558,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.15840902664628675,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.04817473769183234,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.7155189651209055,
+          "benchmark_return": 0.616230633165687,
+          "active_return": 0.07261963354889,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.04166608533923544,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.04274095014360668,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_trend_growth_v1",
+      "strategy_name": "中证500指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.8963154286758885,
+      "strategy_annual_return": 0.21096684950936995,
+      "annual_return": 0.21096684950936995,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": 0.04614159083695912,
+      "active_annual_return": 0.008152622807238608,
+      "active_sharpe": 0.3224949910825294,
+      "max_drawdown": -0.263809024425229,
+      "active_max_drawdown": -0.056587415441051614,
+      "sharpe": 0.8556903095030323,
+      "daily_win_rate": 0.5142857142857142,
+      "period_mean_return": 0.01762695578151617,
+      "active_period_mean_return": 0.0006699866450505521,
+      "avg_turnover": 0.5567977369165489,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.018764010681503546,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_trend_growth_top100_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.09315531685707534,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.020221198995301393,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4653515994277071,
+          "benchmark_return": 0.456625576380258,
+          "active_return": 0.008912064490237404,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06965781317254915,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.02259418783449041,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.03949072081975524,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.0008306648136549022,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.17798904510690705,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.028949163050465132,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.6755799648631857,
+          "benchmark_return": 0.616230633165687,
+          "active_return": 0.043272637329678565,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.02511232157107468,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.02557518767392275,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_stable_growth_v1",
+      "strategy_name": "中证500指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.432338993435923,
+      "strategy_annual_return": 0.17350336261742805,
+      "annual_return": 0.17350336261742805,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.15819633502614217,
+      "active_annual_return": -0.030522026892783827,
+      "active_sharpe": -0.7780499521567827,
+      "max_drawdown": -0.24329643786887856,
+      "active_max_drawdown": -0.1525187701267432,
+      "sharpe": 0.8016717410574857,
+      "daily_win_rate": 0.4142857142857143,
+      "period_mean_return": 0.014561203850119142,
+      "active_period_mean_return": -0.0023957652863464754,
+      "avg_turnover": 0.5943650793650793,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.03247073670753142,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_stable_growth_top80_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.04498364730419713,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": -0.025832592638147966,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.395442678563267,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.04575376676987808,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.062295764739234705,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.01576180576971553,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.010718561482244593,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.028800590444849172,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.20229169800084534,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.020668406771725434,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5275160588368912,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.06374525225026328,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.02091311036280563,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": -0.024647625806818785,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_stable_growth_v1",
+      "strategy_name": "中证500指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.569084464128946,
+      "strategy_annual_return": 0.18511394637650547,
+      "annual_return": 0.18511394637650547,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.09718678876109721,
+      "active_annual_return": -0.018234824550105833,
+      "active_sharpe": -0.7747194301476459,
+      "max_drawdown": -0.24792607800391353,
+      "active_max_drawdown": -0.09354319134923261,
+      "sharpe": 0.8173544175862181,
+      "daily_win_rate": 0.4142857142857143,
+      "period_mean_return": 0.015519509964657735,
+      "active_period_mean_return": -0.001437459171807884,
+      "avg_turnover": 0.5943650793650793,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.019482442024518848,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_stable_growth_top80_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.055692062315528146,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": -0.015556059213793438,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4197892904471243,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.027569720262447417,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.05712686616718288,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.009409668078121602,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.02232560904449854,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.017311118416099225,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2046816104420024,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.012095471944592151,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.562776804810347,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.038505628476913634,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.012355856972571244,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": -0.014767241312911628,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_stable_growth_v1",
+      "strategy_name": "中证500指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.4431057185169114,
+      "strategy_annual_return": 0.17443668048223948,
+      "annual_return": 0.17443668048223948,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.15311321463996863,
+      "active_annual_return": -0.029470894459055708,
+      "active_sharpe": -0.7930520978924639,
+      "max_drawdown": -0.24440815368511049,
+      "active_max_drawdown": -0.14765252324699363,
+      "sharpe": 0.802543292668978,
+      "daily_win_rate": 0.4142857142857143,
+      "period_mean_return": 0.014640721039860456,
+      "active_period_mean_return": -0.00231624809660516,
+      "avg_turnover": 0.5528684582743989,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.0313635323480127,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_stable_growth_top100_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.04709348953324932,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": -0.02379440907761443,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.40119108849139895,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.04171015559908642,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.060619093567319426,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.013836423935576936,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.015160302510059953,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.024257695786831457,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.20115974916827484,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.020847541102500533,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5281601413381303,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.06317742167980889,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.01942115115522991,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": -0.022939810010806472,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_stable_growth_v1",
+      "strategy_name": "中证500指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.575639738556685,
+      "strategy_annual_return": 0.18565768631532809,
+      "annual_return": 0.18565768631532809,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.09401883776498376,
+      "active_annual_return": -0.01761561628410724,
+      "active_sharpe": -0.7900507549456258,
+      "max_drawdown": -0.24859245387509366,
+      "active_max_drawdown": -0.09052281693230346,
+      "sharpe": 0.8175315731090909,
+      "daily_win_rate": 0.4142857142857143,
+      "period_mean_return": 0.015567220278502521,
+      "active_period_mean_return": -0.001389748857963096,
+      "avg_turnover": 0.5528684582743989,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.01881811940880762,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_stable_growth_top100_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.05696795013753797,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": -0.014323392614815189,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.42327943966498616,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.02511111098741159,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.05612280119485202,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.008255308400854422,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.024981881683368123,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.014592859303670158,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2039598353597072,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.012242521987805066,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5631482889018726,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.038170632018128314,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.011463377817618081,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": -0.013744242626557268,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_combined_growth_v1",
+      "strategy_name": "中证500指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi500",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5472082564567238,
+      "strategy_annual_return": 0.18329110994814135,
+      "annual_return": 0.18329110994814135,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.10178076756163568,
+      "active_annual_return": -0.0191359372934361,
+      "active_sharpe": -0.5849928205493893,
+      "max_drawdown": -0.2540220761642774,
+      "active_max_drawdown": -0.14188985988722946,
+      "sharpe": 0.7973082799539989,
+      "daily_win_rate": 0.4,
+      "period_mean_return": 0.015467342039374303,
+      "active_period_mean_return": -0.0014896270970913182,
+      "avg_turnover": 0.6893386243386243,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.035751205686321536,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_combined_growth_top80_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.09335938441369818,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.020465591904481828,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.3652244661880113,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.06328520849021158,
+          "active_win_rate": 0.16666666666666666
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.0808357513798531,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.036298874809527204,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.021147782215570343,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.01835361161001048,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.18922662341534258,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.02801391711160539,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5677731612518433,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.02983764650802989,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.017277297364899802,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.015385990732199595,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_combined_growth_v1",
+      "strategy_name": "中证500指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi500",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.640427852956802,
+      "strategy_annual_return": 0.1909715165563599,
+      "annual_return": 0.1909715165563599,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.06168164551973587,
+      "active_annual_return": -0.011394463995613613,
+      "active_sharpe": -0.5805551033141616,
+      "max_drawdown": -0.2533207016608571,
+      "active_max_drawdown": -0.08710803678848256,
+      "sharpe": 0.8142312412603487,
+      "daily_win_rate": 0.4,
+      "period_mean_return": 0.01606319287821083,
+      "active_period_mean_return": -0.0008937762582547922,
+      "avg_turnover": 0.6893386243386243,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.021450723411792938,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_combined_growth_top80_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.084748529351524,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.012252822583546097,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4013226218710133,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.03829621036310882,
+          "active_win_rate": 0.16666666666666666
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06832101506413468,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.021822186362475793,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.028608750897081925,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.01101173345360773,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.19672710491192835,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.016630015072357507,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5870579333806938,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.017959870945145284,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.010552098001166188,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.00925219045443093,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_combined_growth_v1",
+      "strategy_name": "中证500指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi500",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5682566578613981,
+      "strategy_annual_return": 0.18504520150203474,
+      "annual_return": 0.18504520150203474,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.09321482175490936,
+      "active_annual_return": -0.017458745697658484,
+      "active_sharpe": -0.5658285780721616,
+      "max_drawdown": -0.25430664007340453,
+      "active_max_drawdown": -0.1296844521200432,
+      "sharpe": 0.8024612007779743,
+      "daily_win_rate": 0.4,
+      "period_mean_return": 0.01559802919395182,
+      "active_period_mean_return": -0.0013589399425138016,
+      "avg_turnover": 0.6423111739745403,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.034485548775639835,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_combined_growth_top100_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.09115571319040461,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.01828055377095339,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.37230308884895336,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.05845947356759196,
+          "active_win_rate": 0.16666666666666666
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.08164558400634758,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.03686724219368265,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.021346967902416525,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.01830268774767152,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.1912134863934567,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.025919169241285345,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5764709789157627,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.024227397638796,
+          "active_win_rate": 0.38461538461538464
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.01621828322851293,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.014591650042419024,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_combined_growth_v1",
+      "strategy_name": "中证500指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi500",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.653291792480927,
+      "strategy_annual_return": 0.19201385261123916,
+      "annual_return": 0.19201385261123916,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.056400926907855475,
+      "active_annual_return": -0.010395295997268406,
+      "active_sharpe": -0.5615099403124633,
+      "max_drawdown": -0.2535069758044689,
+      "active_max_drawdown": -0.07940691635398422,
+      "sharpe": 0.8170106727451477,
+      "daily_win_rate": 0.4,
+      "period_mean_return": 0.01614160517095734,
+      "active_period_mean_return": -0.0008153639655082807,
+      "avg_turnover": 0.6423111739745403,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.020691329265383918,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_combined_growth_top100_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.08343385708532303,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.010949423446285467,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4056441957383319,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.03534911227044957,
+          "active_win_rate": 0.16666666666666666
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06882632771392594,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.022182205681198885,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.028732536401672726,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.010976101611825273,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.19790535668126297,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.015381067390307868,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.592323129095401,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.014564419947279195,
+          "active_win_rate": 0.38461538461538464
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.009913011394185212,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.008771169138416246,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    }
+  ],
+  "top_strategies": [
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_trend_growth_v1",
+      "strategy_name": "沪深300指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 2.081463163082084,
+      "strategy_annual_return": 0.2245492494910597,
+      "annual_return": 0.2245492494910597,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": 0.15769610442263238,
+      "active_annual_return": 0.026708181877224346,
+      "active_sharpe": 0.4478002421940692,
+      "max_drawdown": -0.19417739316067273,
+      "active_max_drawdown": -0.15029831583009423,
+      "sharpe": 0.9767318329113927,
+      "daily_win_rate": 0.4857142857142857,
+      "period_mean_return": 0.01822335764696768,
+      "active_period_mean_return": 0.0022342741286045663,
+      "avg_turnover": 0.6867434715821812,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.03914989800854449,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_trend_growth_top30_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.3138688234025182,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.07862723841680452,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.2133469886070074,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": 0.011015861795296233,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.08556126548900089,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.035645609466806505,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.03211868273653118,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": -0.006294009689660429,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.21654821493826204,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.07690972672393037,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.6044055575855369,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": 0.12611268402141307,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.04928199189980398,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.06572370135593153,
+          "active_win_rate": 0.8
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_trend_growth_v1",
+      "strategy_name": "沪深300指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.936667812799267,
+      "strategy_annual_return": 0.21398653055547157,
+      "annual_return": 0.21398653055547157,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": 0.09808300044116014,
+      "active_annual_return": 0.016984491686669267,
+      "active_sharpe": 0.34434912738263024,
+      "max_drawdown": -0.18656113711622702,
+      "active_max_drawdown": -0.1319997219886443,
+      "sharpe": 0.9554317315486108,
+      "daily_win_rate": 0.5142857142857142,
+      "period_mean_return": 0.017422844493258826,
+      "active_period_mean_return": 0.001433760974895717,
+      "avg_turnover": 0.602750700280112,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.035453473581655265,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_trend_growth_top50_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2986885240349073,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.06555904589895878,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.19543901976883848,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.005962704604752345,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.07935983472559172,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.029161279934796003,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.02632472121540763,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": -0.01191655623779686,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.23164540614036921,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.06554100971133692,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.575971317691351,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": 0.10421034339807744,
+          "active_win_rate": 0.6923076923076923
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.031368075613519064,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.047374991428705604,
+          "active_win_rate": 0.8
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_trend_growth_v1",
+      "strategy_name": "沪深300指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.9342639270277866,
+      "strategy_annual_return": 0.21380759725150145,
+      "annual_return": 0.21380759725150145,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": 0.09443587309139012,
+      "active_annual_return": 0.016375663445552302,
+      "active_sharpe": 0.4576017248644564,
+      "max_drawdown": -0.18717819017804393,
+      "active_max_drawdown": -0.09237669233607426,
+      "sharpe": 0.9743663904359912,
+      "daily_win_rate": 0.4857142857142857,
+      "period_mean_return": 0.017329647995525842,
+      "active_period_mean_return": 0.0013405644771627386,
+      "avg_turnover": 0.6867434715821812,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.023489938805126703,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_trend_growth_top30_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2779934593502549,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.04683643443913588,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.21375465967454077,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": 0.007180257334710172,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.07281281106870074,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.02139505981663714,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.03501283362986718,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": -0.0035952797931673164,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2532165125165253,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.0465413810375811,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5374274223058513,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": 0.07448213112035118,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.023070929578721255,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.03910649528079113,
+          "active_win_rate": 0.8
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_trend_growth_v1",
+      "strategy_name": "中证500指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.9696063723082569,
+      "strategy_annual_return": 0.21642629505799804,
+      "annual_return": 0.21642629505799804,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": 0.0759376370775442,
+      "active_annual_return": 0.013261818439974427,
+      "active_sharpe": 0.3147603013651238,
+      "max_drawdown": -0.2713821805467995,
+      "active_max_drawdown": -0.0932066391737787,
+      "sharpe": 0.8639446515633817,
+      "daily_win_rate": 0.5142857142857142,
+      "period_mean_return": 0.018073613544883203,
+      "active_period_mean_return": 0.001116644408417585,
+      "avg_turnover": 0.5567977369165489,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.031273351135839234,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_trend_growth_top100_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.10749168388904629,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.03386287011266065,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.47047196843330763,
+          "benchmark_return": 0.456625576380258,
+          "active_return": 0.014382424259304472,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.08297174873565583,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.03749737547434362,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.03942126936398804,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.0012467615214517558,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.15840902664628675,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.04817473769183234,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.7155189651209055,
+          "benchmark_return": 0.616230633165687,
+          "active_return": 0.07261963354889,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.04166608533923544,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.04274095014360668,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_trend_growth_v1",
+      "strategy_name": "中证500指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.934398052966201,
+      "strategy_annual_return": 0.21381758408516327,
+      "annual_return": 0.21381758408516327,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": 0.06327142570911382,
+      "active_annual_return": 0.01110427289976923,
+      "active_sharpe": 0.2455240251046676,
+      "max_drawdown": -0.2736282426906119,
+      "active_max_drawdown": -0.10551992115754472,
+      "sharpe": 0.8510096310632058,
+      "daily_win_rate": 0.5285714285714286,
+      "period_mean_return": 0.017914999736694696,
+      "active_period_mean_return": 0.0009580306002290789,
+      "avg_turnover": 0.6035097001763668,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.03122079226304126,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_trend_growth_top80_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.10754397414821226,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.03394056701650894,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.46393022700573505,
+          "benchmark_return": 0.456625576380258,
+          "active_return": 0.009716465878726543,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.08597810146271856,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.041109043656232025,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.04375021732830686,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": -0.003097917224579416,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.15435813135014032,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.0517008280542971,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.7260521955368457,
+          "benchmark_return": 0.616230633165687,
+          "active_return": 0.08052330276394604,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.03923850089033798,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.03979540573384166,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_trend_growth_v1",
+      "strategy_name": "沪深300指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.8487982074090814,
+      "strategy_annual_return": 0.20736645031250034,
+      "annual_return": 0.20736645031250034,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": 0.059467569297817935,
+      "active_annual_return": 0.010452214711776486,
+      "active_sharpe": 0.35318602028392954,
+      "max_drawdown": -0.1841904083981012,
+      "active_max_drawdown": -0.0808348713169974,
+      "sharpe": 0.9584946707156091,
+      "daily_win_rate": 0.5142857142857142,
+      "period_mean_return": 0.016849340103300536,
+      "active_period_mean_return": 0.0008602565849374287,
+      "avg_turnover": 0.602750700280112,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.021272084148993176,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_trend_growth_top50_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2689615192645358,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.039055756037347455,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.20273908216399805,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.0032014961250436125,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06908335728809956,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.01749265795155963,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.031462555716897045,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": -0.0070398078329289016,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.26245164444746627,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.03958535885998726,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5207921596577698,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": 0.06170937618100347,
+          "active_win_rate": 0.6923076923076923
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.012495106663522604,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.028275220175944416,
+          "active_win_rate": 0.8
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_trend_growth_v1",
+      "strategy_name": "中证500指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.8963154286758885,
+      "strategy_annual_return": 0.21096684950936995,
+      "annual_return": 0.21096684950936995,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": 0.04614159083695912,
+      "active_annual_return": 0.008152622807238608,
+      "active_sharpe": 0.3224949910825294,
+      "max_drawdown": -0.263809024425229,
+      "active_max_drawdown": -0.056587415441051614,
+      "sharpe": 0.8556903095030323,
+      "daily_win_rate": 0.5142857142857142,
+      "period_mean_return": 0.01762695578151617,
+      "active_period_mean_return": 0.0006699866450505521,
+      "avg_turnover": 0.5567977369165489,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.018764010681503546,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_trend_growth_top100_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.09315531685707534,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.020221198995301393,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4653515994277071,
+          "benchmark_return": 0.456625576380258,
+          "active_return": 0.008912064490237404,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06965781317254915,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.02259418783449041,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.03949072081975524,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.0008306648136549022,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.17798904510690705,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.028949163050465132,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.6755799648631857,
+          "benchmark_return": 0.616230633165687,
+          "active_return": 0.043272637329678565,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.02511232157107468,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.02557518767392275,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_trend_growth_v1",
+      "strategy_name": "中证500指数增长趋势策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_trend_score",
+      "score_name": "指数增长趋势",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用中期趋势、长期趋势、量价确认和收盘强度寻找增长更强的指数成分股。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.8761772287378253,
+      "strategy_annual_return": 0.209446928264289,
+      "annual_return": 0.209446928264289,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": 0.0389191278832437,
+      "active_annual_return": 0.006896227281165235,
+      "active_sharpe": 0.2541348265050137,
+      "max_drawdown": -0.26514215599746915,
+      "active_max_drawdown": -0.06431857966169896,
+      "sharpe": 0.8484194251593411,
+      "daily_win_rate": 0.5285714285714286,
+      "period_mean_return": 0.01753178749660307,
+      "active_period_mean_return": 0.0005748183601374486,
+      "avg_turnover": 0.6035097001763668,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.018732475357824754,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_trend_growth_top80_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.093185233436067,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.020266342945741478,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4615196262458232,
+          "benchmark_return": 0.456625576380258,
+          "active_return": 0.006182152588183554,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.07147271755905071,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.024779062970213483,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.04207515053176081,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": -0.0017617645009408989,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.17552998005795373,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.031096316812639024,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.6818636964234668,
+          "benchmark_return": 0.616230633165687,
+          "active_return": 0.0479533435833428,
+          "active_win_rate": 0.7692307692307693
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.023685663063240714,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.02383931149726015,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_watch",
+      "decision_name": "诊断可观察"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_combined_growth_v1",
+      "strategy_name": "沪深300指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi300",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.6081838499952603,
+      "strategy_annual_return": 0.18834043877939788,
+      "annual_return": 0.18834043877939788,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.04735051211798935,
+      "active_annual_return": -0.008693474797239809,
+      "active_sharpe": -0.38584688835190284,
+      "max_drawdown": -0.16145373056925783,
+      "active_max_drawdown": -0.07642579131990679,
+      "sharpe": 0.9404515505998464,
+      "daily_win_rate": 0.4714285714285714,
+      "period_mean_return": 0.01531657111389646,
+      "active_period_mean_return": -0.0006725124044666454,
+      "avg_turnover": 0.6451820728291315,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.023601063616441792,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_combined_growth_top50_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.25308720425025943,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.024409073883310706,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.1735090791834326,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.029682633265012748,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06019194725620691,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.008646939876839066,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.05319330266840416,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.012207449828896877,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2861984642643016,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.025828378176842248,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.408636321372301,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.023587251987845725,
+          "active_win_rate": 0.23076923076923078
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.010954360917280526,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.00410498048664687,
+          "active_win_rate": 0.4
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_combined_growth_v1",
+      "strategy_name": "沪深300指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi300",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.6041128867513885,
+      "strategy_annual_return": 0.1880063587922598,
+      "annual_return": 0.1880063587922598,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.050263106897207255,
+      "active_annual_return": -0.009239700917866522,
+      "active_sharpe": -0.34876494710949796,
+      "max_drawdown": -0.16002247777452583,
+      "active_max_drawdown": -0.08834540956039028,
+      "sharpe": 0.9428394651950627,
+      "daily_win_rate": 0.4714285714285714,
+      "period_mean_return": 0.0152805772779395,
+      "active_period_mean_return": -0.000708506240423609,
+      "avg_turnover": 0.7318433179723502,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.024952954123016624,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_combined_growth_top30_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2668750995584457,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.036385280746038084,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.1635159957473824,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.03770188721251544,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.05334140089207029,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.0019385500663730015,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.05896326756725134,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.017625611218925696,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.28712802620346345,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.02582091486611604,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.3879451136018133,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.03884678626895677,
+          "active_win_rate": 0.23076923076923078
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.013526713653410849,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.0013726019366795406,
+          "active_win_rate": 0.4
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_combined_growth_v1",
+      "strategy_name": "中证500指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi500",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.653291792480927,
+      "strategy_annual_return": 0.19201385261123916,
+      "annual_return": 0.19201385261123916,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.056400926907855475,
+      "active_annual_return": -0.010395295997268406,
+      "active_sharpe": -0.5615099403124633,
+      "max_drawdown": -0.2535069758044689,
+      "active_max_drawdown": -0.07940691635398422,
+      "sharpe": 0.8170106727451477,
+      "daily_win_rate": 0.4,
+      "period_mean_return": 0.01614160517095734,
+      "active_period_mean_return": -0.0008153639655082807,
+      "avg_turnover": 0.6423111739745403,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.020691329265383918,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_combined_growth_top100_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.08343385708532303,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.010949423446285467,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4056441957383319,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.03534911227044957,
+          "active_win_rate": 0.16666666666666666
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06882632771392594,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.022182205681198885,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.028732536401672726,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.010976101611825273,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.19790535668126297,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.015381067390307868,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.592323129095401,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.014564419947279195,
+          "active_win_rate": 0.38461538461538464
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.009913011394185212,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.008771169138416246,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_combined_growth_v1",
+      "strategy_name": "中证500指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi500",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.640427852956802,
+      "strategy_annual_return": 0.1909715165563599,
+      "annual_return": 0.1909715165563599,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.06168164551973587,
+      "active_annual_return": -0.011394463995613613,
+      "active_sharpe": -0.5805551033141616,
+      "max_drawdown": -0.2533207016608571,
+      "active_max_drawdown": -0.08710803678848256,
+      "sharpe": 0.8142312412603487,
+      "daily_win_rate": 0.4,
+      "period_mean_return": 0.01606319287821083,
+      "active_period_mean_return": -0.0008937762582547922,
+      "avg_turnover": 0.6893386243386243,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.021450723411792938,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_combined_growth_top80_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.084748529351524,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.012252822583546097,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4013226218710133,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.03829621036310882,
+          "active_win_rate": 0.16666666666666666
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06832101506413468,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.021822186362475793,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.028608750897081925,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.01101173345360773,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.19672710491192835,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.016630015072357507,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5870579333806938,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.017959870945145284,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.010552098001166188,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.00925219045443093,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_combined_growth_v1",
+      "strategy_name": "沪深300指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi300",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5376163414233437,
+      "strategy_annual_return": 0.18248781227619393,
+      "annual_return": 0.18248781227619393,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.07914339736102771,
+      "active_annual_return": -0.014731584036043688,
+      "active_sharpe": -0.3923036065583404,
+      "max_drawdown": -0.1595332854186119,
+      "active_max_drawdown": -0.12540140363073282,
+      "sharpe": 0.928987983719963,
+      "daily_win_rate": 0.4714285714285714,
+      "period_mean_return": 0.0148682295109187,
+      "active_period_mean_return": -0.0011208540074444091,
+      "avg_turnover": 0.6451820728291315,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.039335106027403005,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_combined_growth_top50_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2719896136262774,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.040920040824054205,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.14776044872297334,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.049291759212071296,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06464916139502896,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.014541555614708712,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.06271362029748517,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.020307732065057094,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.27028902856325954,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.04332864380132273,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.38776464748665873,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.03909105611091035,
+          "active_win_rate": 0.23076923076923078
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.008067800184633933,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.006729693098398215,
+          "active_win_rate": 0.4
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_combined_growth_v1",
+      "strategy_name": "沪深300指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi300",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5295994852549715,
+      "strategy_annual_return": 0.18181450926954312,
+      "annual_return": 0.18181450926954312,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.08438528824545344,
+      "active_annual_return": -0.015743487204573192,
+      "active_sharpe": -0.3565554684743973,
+      "max_drawdown": -0.15613366540879503,
+      "active_max_drawdown": -0.1445414804360956,
+      "sharpe": 0.929885118055974,
+      "daily_win_rate": 0.4714285714285714,
+      "period_mean_return": 0.014808239784323765,
+      "active_period_mean_return": -0.0011808437340393451,
+      "avg_turnover": 0.7318433179723502,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.04158825687169437,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_combined_growth_top30_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.2952754238078632,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": 0.06116284987672649,
+          "active_win_rate": 1.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.13135805498360464,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.06248220134784932,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.053326277806815536,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.003473652659891857,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.0723847707535834,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.029377275049265794,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2717010102836066,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.0434247130744575,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.353817771338901,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.06409541500356453,
+          "active_win_rate": 0.23076923076923078
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.012372035105060797,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": 0.002160104481535363,
+          "active_win_rate": 0.4
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_combined_growth_v1",
+      "strategy_name": "中证500指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi500",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5682566578613981,
+      "strategy_annual_return": 0.18504520150203474,
+      "annual_return": 0.18504520150203474,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.09321482175490936,
+      "active_annual_return": -0.017458745697658484,
+      "active_sharpe": -0.5658285780721616,
+      "max_drawdown": -0.25430664007340453,
+      "active_max_drawdown": -0.1296844521200432,
+      "sharpe": 0.8024612007779743,
+      "daily_win_rate": 0.4,
+      "period_mean_return": 0.01559802919395182,
+      "active_period_mean_return": -0.0013589399425138016,
+      "avg_turnover": 0.6423111739745403,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.034485548775639835,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_combined_growth_top100_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.09115571319040461,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.01828055377095339,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.37230308884895336,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.05845947356759196,
+          "active_win_rate": 0.16666666666666666
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.08164558400634758,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.03686724219368265,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.021346967902416525,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.01830268774767152,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.1912134863934567,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.025919169241285345,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5764709789157627,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.024227397638796,
+          "active_win_rate": 0.38461538461538464
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.01621828322851293,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.014591650042419024,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_stable_growth_v1",
+      "strategy_name": "中证500指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 100,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.575639738556685,
+      "strategy_annual_return": 0.18565768631532809,
+      "annual_return": 0.18565768631532809,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.09401883776498376,
+      "active_annual_return": -0.01761561628410724,
+      "active_sharpe": -0.7900507549456258,
+      "max_drawdown": -0.24859245387509366,
+      "active_max_drawdown": -0.09052281693230346,
+      "sharpe": 0.8175315731090909,
+      "daily_win_rate": 0.4142857142857143,
+      "period_mean_return": 0.015567220278502521,
+      "active_period_mean_return": -0.001389748857963096,
+      "avg_turnover": 0.5528684582743989,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.01881811940880762,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_stable_growth_top100_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.05696795013753797,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": -0.014323392614815189,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.42327943966498616,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.02511111098741159,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.05612280119485202,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.008255308400854422,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.024981881683368123,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.014592859303670158,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2039598353597072,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.012242521987805066,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5631482889018726,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.038170632018128314,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.011463377817618081,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": -0.013744242626557268,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_stable_growth_v1",
+      "strategy_name": "沪深300指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 30,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5080571462641745,
+      "strategy_annual_return": 0.17999654848255942,
+      "annual_return": 0.17999654848255942,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.0967850409272285,
+      "active_annual_return": -0.018156200294947134,
+      "active_sharpe": -0.716119402437661,
+      "max_drawdown": -0.16142795305018176,
+      "active_max_drawdown": -0.0951623919122968,
+      "sharpe": 0.9575156403031158,
+      "daily_win_rate": 0.44285714285714284,
+      "period_mean_return": 0.014561498672260462,
+      "active_period_mean_return": -0.0014275848461026519,
+      "avg_turnover": 0.6449923195084484,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.018848542799727197,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_stable_growth_top30_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.20303901352825116,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": -0.01968804994386364,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.19022702410666636,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.0214313142322623,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.05912202381011511,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.00727850775733474,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.052794150696982456,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.011030483306491812,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.3115739603669003,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.006906778521381107,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.37581242767350953,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.04944258879280017,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.020060802721426296,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": -0.00625383297532367,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_stable_growth_v1",
+      "strategy_name": "中证500指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi500",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.569084464128946,
+      "strategy_annual_return": 0.18511394637650547,
+      "annual_return": 0.18511394637650547,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.09718678876109721,
+      "active_annual_return": -0.018234824550105833,
+      "active_sharpe": -0.7747194301476459,
+      "max_drawdown": -0.24792607800391353,
+      "active_max_drawdown": -0.09354319134923261,
+      "sharpe": 0.8173544175862181,
+      "daily_win_rate": 0.4142857142857143,
+      "period_mean_return": 0.015519509964657735,
+      "active_period_mean_return": -0.001437459171807884,
+      "avg_turnover": 0.5943650793650793,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.019482442024518848,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_stable_growth_top80_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.055692062315528146,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": -0.015556059213793438,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.4197892904471243,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.027569720262447417,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.05712686616718288,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.009409668078121602,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.02232560904449854,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.017311118416099225,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.2046816104420024,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.012095471944592151,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.562776804810347,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.038505628476913634,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.012355856972571244,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": -0.014767241312911628,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi500_combined_growth_v1",
+      "strategy_name": "中证500指数增长综合策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "combination_check",
+      "dataset": "csi500",
+      "score_col": "index_growth_composite_score",
+      "score_name": "指数增长综合",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "把趋势增长和稳健增长合成一个综合评分，用来判断两条策略是否适合合并。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 80,
+      "core_weight": 0.75,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.5472082564567238,
+      "strategy_annual_return": 0.18329110994814135,
+      "annual_return": 0.18329110994814135,
+      "benchmark_return": 1.781970154770804,
+      "benchmark_annual_return": 0.20221860318060636,
+      "excess_return": -0.10178076756163568,
+      "active_annual_return": -0.0191359372934361,
+      "active_sharpe": -0.5849928205493893,
+      "max_drawdown": -0.2540220761642774,
+      "active_max_drawdown": -0.14188985988722946,
+      "sharpe": 0.7973082799539989,
+      "daily_win_rate": 0.4,
+      "period_mean_return": 0.015467342039374303,
+      "active_period_mean_return": -0.0014896270970913182,
+      "avg_turnover": 0.6893386243386243,
+      "avg_eligible_count": 470.64285714285717,
+      "worst_period_active": -0.035751205686321536,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi500_diagnostic_combined_growth_top80_core75_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.09335938441369818,
+          "benchmark_return": 0.07189916563505694,
+          "active_return": 0.020465591904481828,
+          "active_win_rate": 0.75
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.3652244661880113,
+          "benchmark_return": 0.456625576380258,
+          "active_return": -0.06328520849021158,
+          "active_win_rate": 0.16666666666666666
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.0808357513798531,
+          "benchmark_return": -0.049501649965120076,
+          "active_return": -0.036298874809527204,
+          "active_win_rate": 0.4166666666666667
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": -0.021147782215570343,
+          "benchmark_return": -0.039790578128041765,
+          "active_return": 0.01835361161001048,
+          "active_win_rate": 0.5833333333333334
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.18922662341534258,
+          "benchmark_return": 0.20739197884388716,
+          "active_return": -0.02801391711160539,
+          "active_win_rate": 0.3333333333333333
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.5677731612518433,
+          "benchmark_return": 0.616230633165687,
+          "active_return": -0.02983764650802989,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": 0.017277297364899802,
+          "benchmark_return": 0.00041835601775730424,
+          "active_return": 0.015385990732199595,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    },
+    {
+      "source": "akshare_index_growth_strategy_diagnostic_20260715",
+      "result_type": "local_strategy_backtest",
+      "strategy_id": "index_growth_csi300_stable_growth_v1",
+      "strategy_name": "沪深300指数增长稳健策略 v1",
+      "strategy_family": "index_growth_diagnostic",
+      "strategy_role": "primary",
+      "dataset": "csi300",
+      "score_col": "index_growth_stable_score",
+      "score_name": "指数增长稳健",
+      "factor_inputs": {
+        "trend_growth": [
+          "中期趋势",
+          "长期趋势",
+          "量价确认",
+          "收盘强度",
+          "反拥挤"
+        ],
+        "stable_growth": [
+          "低波动",
+          "量能稳定",
+          "回撤控制",
+          "跳空风险控制",
+          "反拥挤",
+          "短期反转"
+        ]
+      },
+      "description": "用低波动、量能稳定、回撤控制、跳空风险和反拥挤过滤增长中的脆弱样本。",
+      "horizon": "20日调仓",
+      "rebalance_days": 20,
+      "top_n": 50,
+      "core_weight": 0.85,
+      "buffer_multiple": 1.5,
+      "risk_penalty": 0.0,
+      "cost_rate": 0.0015,
+      "sample_dates": 70,
+      "trade_count": 70,
+      "strategy_return": 1.4804659001452212,
+      "strategy_annual_return": 0.17764932362727714,
+      "annual_return": 0.17764932362727714,
+      "benchmark_return": 1.7117955918837082,
+      "benchmark_annual_return": 0.19670264542202442,
+      "excess_return": -0.10567432654903208,
+      "active_annual_return": -0.019902625766122783,
+      "active_sharpe": -0.8312762568817208,
+      "max_drawdown": -0.1643256371872207,
+      "active_max_drawdown": -0.10465353843940173,
+      "sharpe": 0.9393654538083789,
+      "daily_win_rate": 0.45714285714285713,
+      "period_mean_return": 0.014417661657674273,
+      "active_period_mean_return": -0.0015714218606888398,
+      "avg_turnover": 0.5615406162464988,
+      "avg_eligible_count": 290.04285714285714,
+      "worst_period_active": -0.018563668627817803,
+      "date_range": "2020-01-02 至 2026-07-13",
+      "trade_path": "outputs/sources/akshare/index_enhancement/results/csi300_diagnostic_stable_growth_top50_core85_trades.csv",
+      "yearly": [
+        {
+          "year": 2020,
+          "periods": 4,
+          "strategy_return": 0.20561632584503653,
+          "benchmark_return": 0.22511987554286939,
+          "active_return": -0.017478316461633336,
+          "active_win_rate": 0.0
+        },
+        {
+          "year": 2021,
+          "periods": 12,
+          "strategy_return": 0.1849367271796034,
+          "benchmark_return": 0.21259043791168653,
+          "active_return": -0.025711982034528735,
+          "active_win_rate": 0.25
+        },
+        {
+          "year": 2022,
+          "periods": 12,
+          "strategy_return": -0.06261712877691972,
+          "benchmark_return": -0.05370474033658823,
+          "active_return": -0.01074652858558467,
+          "active_win_rate": 0.5
+        },
+        {
+          "year": 2023,
+          "periods": 12,
+          "strategy_return": 0.051366091067593045,
+          "benchmark_return": 0.03889409764444851,
+          "active_return": 0.01012515943592196,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2024,
+          "periods": 12,
+          "strategy_return": 0.30874403176052123,
+          "benchmark_return": 0.3093732368771285,
+          "active_return": -0.008783178629178878,
+          "active_win_rate": 0.6666666666666666
+        },
+        {
+          "year": 2025,
+          "periods": 13,
+          "strategy_return": 0.3755128684452411,
+          "benchmark_return": 0.4403381846135166,
+          "active_return": -0.049699994032242234,
+          "active_win_rate": 0.3076923076923077
+        },
+        {
+          "year": 2026,
+          "periods": 5,
+          "strategy_return": -0.02132469751909083,
+          "benchmark_return": -0.015448704573942429,
+          "active_return": -0.007446269105572667,
+          "active_win_rate": 0.6
+        }
+      ],
+      "data_policy": "本地 AkShare 真实 OHLCV 指数增长诊断策略回测；静态指数成分、等权基准、未处理真实指数权重/行业市值/停牌涨跌停/冲击成本；仅用于诊断，不作为正式准入。",
+      "note": "由中文指数增长因子合成策略并回测；仍需 JoinQuant 交易约束复核后才能进入准入判断。",
+      "decision": "diagnostic_not_passed",
+      "decision_name": "诊断未通过"
+    }
+  ],
+  "combination_assessment": [
+    {
+      "dataset": "csi300",
+      "trend_strategy": "沪深300指数增长趋势策略 v1",
+      "stable_strategy": "沪深300指数增长稳健策略 v1",
+      "combined_strategy": "沪深300指数增长综合策略 v1",
+      "trend_excess_return": 0.15769610442263238,
+      "stable_excess_return": -0.0967850409272285,
+      "combined_excess_return": -0.04735051211798935,
+      "combined_active_sharpe": -0.38584688835190284,
+      "active_return_correlation": -0.3424820175921624,
+      "avg_selected_overlap": 0.0166987844004758,
+      "can_combine": false,
+      "decision": "do_not_combine_yet",
+      "decision_name": "暂不建议综合"
+    },
+    {
+      "dataset": "csi500",
+      "trend_strategy": "中证500指数增长趋势策略 v1",
+      "stable_strategy": "中证500指数增长稳健策略 v1",
+      "combined_strategy": "中证500指数增长综合策略 v1",
+      "trend_excess_return": 0.0759376370775442,
+      "stable_excess_return": -0.09401883776498376,
+      "combined_excess_return": -0.056400926907855475,
+      "combined_active_sharpe": -0.5615099403124633,
+      "active_return_correlation": -0.2948146060429125,
+      "avg_selected_overlap": 0.056458062365973276,
+      "can_combine": false,
+      "decision": "do_not_combine_yet",
+      "decision_name": "暂不建议综合"
+    }
+  ]
+}
