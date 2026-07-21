@@ -1,0 +1,6 @@
+﻿date,code,open,close,high,low,volume,amount,amplitude,change_pct,change_amount,turnover,security,source,adjust,name
+2026-07-09,920136,34.0,34.0,39.66,34.0,177630,635654318.23,29.36,76.35,14.72,84.59,920136.XBSE,eastmoney.push2his.kline,qfq,永励精密
+2026-07-10,920136,26.0,25.53,29.2,25.5,121899,325073717.54,10.88,-24.91,-8.47,58.05,920136.XBSE,eastmoney.push2his.kline,qfq,永励精密
+2026-07-13,920136,24.48,21.78,24.48,21.0,79801,181698804.83,13.63,-14.69,-3.75,38.0,920136.XBSE,eastmoney.push2his.kline,qfq,永励精密
+2026-07-14,920136,21.69,22.21,22.45,21.01,48855,106871370.3,6.61,1.97,0.43,23.26,920136.XBSE,eastmoney.push2his.kline,qfq,永励精密
+2026-07-15,920136,21.99,20.88,21.99,20.66,48587,103449186.93,5.99,-5.99,-1.33,23.14,920136.XBSE,eastmoney.push2his.kline,qfq,永励精密

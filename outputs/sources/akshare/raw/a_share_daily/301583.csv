@@ -1,0 +1,5 @@
+﻿date,code,open,close,high,low,volume,amount,security,source,adjust,name,turnover,change_pct,amplitude,change_amount
+2026-07-10,301583,203.4,216.7,264.42,203.4,250812.0,5943898886.0,301583.XSHE,eastmoney.push2his.kline,qfq,托伦斯,81.35,858.85,270.00,194.10
+2026-07-13,301583,220.0,221.8,235.99,206.98,168754.0,3782615928.0,301583.XSHE,eastmoney.push2his.kline,qfq,托伦斯,54.73,2.35,13.39,5.10
+2026-07-14,301583,210.0,179.03,213.0,163.13,180088.0,3288638561.0,301583.XSHE,eastmoney.push2his.kline,qfq,托伦斯,58.41,-19.28,22.48,-42.77
+2026-07-15,301583,176.99,139.66,176.99,138.02,164750.0,2520033961.0,301583.XSHE,eastmoney.push2his.kline,qfq,托伦斯,53.44,-21.99,21.77,-39.37

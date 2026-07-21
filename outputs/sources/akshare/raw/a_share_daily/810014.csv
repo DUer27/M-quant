@@ -1,0 +1,6 @@
+﻿date,code,open,close,high,low,volume,amount,amplitude,change_pct,change_amount,turnover,security,source,adjust,name
+2026-03-09,810014,100.841,100.841,100.841,100.841,19770,19936240.0,0.0,0.84,0.841,9.89,810014.XBSE,eastmoney.push2his.kline,qfq,莱特定转
+2026-03-10,810014,101.862,101.862,101.862,101.862,28920,29458600.0,0.0,1.01,1.021,14.46,810014.XBSE,eastmoney.push2his.kline,qfq,莱特定转
+2026-03-11,810014,100.0,100.0,100.0,100.0,1000,1000000.0,0.0,-1.83,-1.862,0.5,810014.XBSE,eastmoney.push2his.kline,qfq,莱特定转
+2026-03-12,810014,100.06,100.06,100.06,100.06,19568,19579648.0,0.0,0.06,0.06,9.78,810014.XBSE,eastmoney.push2his.kline,qfq,莱特定转
+2026-03-13,810014,100.0,100.0,100.0,100.0,5000,5000000.0,0.0,-0.06,-0.06,2.5,810014.XBSE,eastmoney.push2his.kline,qfq,莱特定转
