@@ -71,6 +71,8 @@ const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'res
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
 const akshareRegimeSwitchPaperWatchPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_paper_watch_strategy_20260709.json');
 const akshareRegimeSwitchRobustnessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_robustness_audit_20260709.json');
+const csi500IndexEnhancementPrimaryTradePath = outputPath('sources', 'akshare', 'index_enhancement', 'results', 'csi500_z_f_volume_confirmation_top80_core75_buf200_risk0_trades.csv');
+const csi500IndexEnhancementConservativeTradePath = outputPath('sources', 'akshare', 'index_enhancement', 'results', 'csi500_z_f_volume_confirmation_top100_core85_buf200_risk0_trades.csv');
 const akshareFetchHistoryScriptPath = outputPath('sources', 'akshare', 'scripts', 'fetch_a_share_history.py');
 const akshareGeneratePaperWatchSignalScriptPath = outputPath('sources', 'akshare', 'scripts', 'generate_akshare_paper_watch_signal.py');
 const akshareLatestSignalTradeabilityReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_latest_signal_tradeability_review_20260709.py');
@@ -637,6 +639,42 @@ function sendError(res, message, status = 400) {
   sendJson(res, { error: message }, status);
 }
 
+function sendDownloadRemoved(res) {
+  sendError(res, 'Only the BigQuant .py template download is available.', 404);
+}
+
+const removedDownloadPaths = new Set([
+  '/paper-watch-api/bigquant-test-pack.json',
+  '/paper-watch-api/bigquant-test-targets.csv',
+  '/paper-watch-api/bigquant-test-guide.md',
+  '/paper-watch-api/bigquant-template-input.csv',
+  '/paper-watch-api/bigquant-template-notebook.ipynb',
+  '/paper-watch-api/bigquant-template-strategy.ipynb',
+  '/paper-watch-api/bigquant-template-guide.md',
+  '/paper-watch-api/ledger-template.csv',
+  '/paper-watch-api/ledger-template.json',
+  '/strategy-api/joinquant-strategy-export.json',
+  '/strategy-api/joinquant-strategy-export.csv',
+  '/strategy-api/bigquant-strategy-export.json',
+  '/strategy-api/bigquant-strategy-input.csv',
+  '/strategy-api/bigquant-strategy-script.py',
+  '/strategy-api/bigquant-strategy-notebook.ipynb',
+  '/strategy-api/bigquant-strategy-script.ipynb',
+  '/strategy-api/joinquant-strategy-script.py',
+  '/strategy-api/joinquant-strategy-historical-script.py',
+  '/strategy-api/joinquant-volatility-regime-script.py',
+  '/strategy-api/joinquant-market-cap-script.py',
+  '/strategy-api/joinquant-volatility-size-script.py',
+  '/strategy-api/joinquant-trading-backtest-script.py',
+  '/strategy-api/joinquant-jq-quality-profit-liquidity-backtest-script.py',
+  '/strategy-api/joinquant-akshare-candidate-review-script.py',
+  '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py',
+  '/strategy-api/joinquant-core-medium-small-latest-signal-review.py',
+  '/backtest-api/joinquant-factor-export',
+  '/backtest-api/joinquant-factor-export.csv',
+  '/backtest-api/joinquant-factor-test-script.py',
+]);
+
 async function readJsonBody(req) {
   const text = await readTextBody(req);
   if (!text) {
@@ -1151,6 +1189,22 @@ function selectedCodesList(value) {
   if (Array.isArray(value)) return value.map(String).filter(Boolean);
   if (value === undefined || value === null || value === '') return [];
   return String(value).split(/[|,，\s]+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function bigQuantInstrument(code) {
+  const raw = String(code || '').trim().toUpperCase();
+  if (!raw) return '';
+  if (raw.endsWith('.SZ') || raw.endsWith('.SH')) return raw;
+  if (raw.endsWith('.XSHE')) return raw.replace('.XSHE', '.SZ');
+  if (raw.endsWith('.XSHG')) return raw.replace('.XSHG', '.SH');
+  const localCode = raw.replace(/\D/g, '').padStart(6, '0').slice(-6);
+  if (!localCode) return raw;
+  return `${localCode}.${localCode.startsWith('6') ? 'SH' : 'SZ'}`;
+}
+
+function localStockCode(code) {
+  const match = String(code || '').match(/\d{6}/);
+  return match ? match[0] : String(code || '').trim();
 }
 
 function paperWatchActivityStatus(metrics) {
@@ -3163,6 +3217,22 @@ function parseCsvLine(line) {
   return cells;
 }
 
+function parseCsvRows(text) {
+  const lines = String(text || '')
+    .replace(/^\ufeff/, '')
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== '');
+  if (lines.length < 2) return [];
+  const headers = parseCsvLine(lines[0]).map((header) => header.trim());
+  return lines.slice(1).map((line) => {
+    const cells = parseCsvLine(line);
+    return headers.reduce((row, header, index) => {
+      row[header] = cells[index] ?? '';
+      return row;
+    }, {});
+  });
+}
+
 function parsePaperWatchLedgerCsv(text) {
   const lines = text
     .replace(/^\ufeff/, '')
@@ -4490,6 +4560,778 @@ function buildBigQuantPaperWatchGuide(pack = buildBigQuantPaperWatchPack()) {
     '',
   ];
   return `${lines.join('\n')}\n`;
+}
+
+function bigQuantExportRows(pack = buildBigQuantPaperWatchPack()) {
+  const targets = Array.isArray(pack.targets) ? pack.targets : [];
+  const rows = [];
+  targets
+    .filter((target) => target.bigquant_test_status === 'ready_for_bigquant_real_test')
+    .forEach((target) => {
+      const selectedCodes = selectedCodesList(target.selected_codes);
+      if (!selectedCodes.length) return;
+      const targetWeight = selectedCodes.length ? 1 / selectedCodes.length : 0;
+      selectedCodes.forEach((code, index) => {
+        const instrument = bigQuantInstrument(code);
+        rows.push({
+          date: dateOnly(target.signal_date || todayYmd()),
+          instrument,
+          local_code: localStockCode(code),
+          score: Number((selectedCodes.length - index) / selectedCodes.length).toFixed(8),
+          position: Number(targetWeight).toFixed(8),
+          rank: index + 1,
+          sleeve_id: target.sleeve_id || '',
+          strategy_id: target.strategy_id || '',
+          strategy_name: target.strategy_name || '',
+        });
+      });
+    });
+  return rows;
+}
+
+function buildBigQuantPositionInputCsv(rows) {
+  const headers = [
+    'date',
+    'instrument',
+    'local_code',
+    'score',
+    'position',
+    'rank',
+    'sleeve_id',
+    'strategy_id',
+    'strategy_name',
+  ];
+  return [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
+  ].join('\n');
+}
+
+function buildBigQuantTemplateInputCsv(pack = buildBigQuantPaperWatchPack()) {
+  return buildBigQuantPositionInputCsv(bigQuantExportRows(pack));
+}
+
+function buildBigQuantTemplateScript(packOrOptions = buildBigQuantPaperWatchPack()) {
+  const options = Array.isArray(packOrOptions?.rows)
+    ? packOrOptions
+    : { rows: bigQuantExportRows(packOrOptions) };
+  const rows = options.rows || [];
+  const firstDate = rows[0]?.date || todayYmd();
+  const lastDate = rows[rows.length - 1]?.date || firstDate;
+  const signalCsv = buildBigQuantPositionInputCsv(rows).replace(/"""/g, '"" "');
+  const title = options.title || 'M-quant BigQuant template strategy export';
+  const benchmark = options.benchmark || '沪深300指数';
+  const maxDailyCount = Math.max(1, ...rows.reduce((map, row) => {
+    const date = row.date || firstDate;
+    map.set(date, (map.get(date) || 0) + 1);
+    return map;
+  }, new Map()).values());
+  const stockCount = Math.max(1, Number(options.stockCount || maxDailyCount || rows.length || 5));
+  const changeNum = Math.max(1, Number(options.changeNum || Math.min(stockCount, 5)));
+  const dataTableName = options.dataTableName || 'data_xs1sxs123gh';
+  return `from bigmodule import M
+
+# <aistudiograph>
+
+# @param(id="m1", name="initialize")
+# 交易引擎：初始化函数，只执行一次
+def m1_initialize_bigquant_run(context):
+    from bigtrader.finance.commission import PerOrder
+
+    # 系统已经设置了默认的交易手续费和滑点，要修改手续费可使用如下函数
+    context.set_commission(PerOrder(buy_cost=0.0003, sell_cost=0.0013, min_cost=5))
+
+# @param(id="m1", name="before_trading_start")
+# 交易引擎：每个单位时间开盘前调用一次。
+def m1_before_trading_start_bigquant_run(context, data):
+    # 盘前处理，订阅行情等
+    pass
+
+# @param(id="m1", name="handle_tick")
+# 交易引擎：tick数据处理函数，每个tick执行一次
+def m1_handle_tick_bigquant_run(context, tick):
+    pass
+
+# @param(id="m1", name="handle_data")
+def m1_handle_data_bigquant_run(context, data):
+    import pandas as pd
+
+    # 下一个交易日不是调仓日，则不生成信号
+    if not context.rebalance_period.is_signal_date(data.current_dt.date()):
+        return
+
+    # 从传入的数据 context.data 中读取今天的信号数据
+    today_df = context.data[context.data["date"] == data.current_dt.strftime("%Y-%m-%d")]
+    print(f"handel_data({data.current_dt}), today_df=\n", today_df)
+    target_instruments = set(today_df["instrument"])
+
+    # 获取当前已持有股票
+    holding_instruments = set(context.get_account_positions().keys())
+    print(f"handel_data({data.current_dt}), target_instruments={target_instruments}, holding_instruments={holding_instruments}")
+
+    # 卖出不在目标持有列表中的股票
+    for instrument in holding_instruments - target_instruments:
+        context.order_target_percent(instrument, 0)
+
+    # 买入目标持有列表中的股票
+    for i, x in today_df.iterrows():
+        # 处理 null 或者 decimal.Decimal 类型等
+        position = 0.0 if pd.isnull(x.position) else float(x.position)
+        rv = context.order_target_percent(x.instrument, position)
+        print(f"handel_data({data.current_dt}), order_target_percent({x.instrument},{position}), rv={rv}")
+
+# @param(id="m1", name="handle_trade")
+# 交易引擎：成交回报处理函数，每个成交发生时执行一次
+def m1_handle_trade_bigquant_run(context, trade):
+    pass
+
+# @param(id="m1", name="handle_order")
+# 交易引擎：委托回报处理函数，每个委托变化时执行一次
+def m1_handle_order_bigquant_run(context, order):
+    pass
+
+# @param(id="m1", name="after_trading")
+# 交易引擎：盘后处理函数，每日盘后执行一次
+def m1_after_trading_bigquant_run(context, data):
+    pass
+
+# @module(position="-642,-1705", comment="""""", comment_collapsed=True)
+m6 = M.input_features_dai.v30(
+    mode="""表达式""",
+    expr="""position""",
+    expr_tables="""${dataTableName}""",
+    extra_fields="""date, instrument""",
+    order_by="""date, instrument""",
+    expr_drop_na=True,
+    extract_data=False,
+    m_name="""m6"""
+)
+
+# @module(position="-653,-1606", comment="""抽取预测数据""", comment_collapsed=False)
+m3 = M.extract_data_dai.v17(
+    sql=m6.data,
+    start_date="""${firstDate}""",
+    start_date_bound_to_trading_date=False,
+    end_date="""${lastDate}""",
+    end_date_bound_to_trading_date=True,
+    before_start_days=0,
+    debug=False,
+    m_name="""m3"""
+)
+
+# @module(position="-666,-1487", comment="""交易，日线，设置初始化函数和K线处理函数，以及初始资金、基准等""", comment_collapsed=True)
+m1 = M.bigtrader.v34(
+    data=m3.data,
+    start_date="""""",
+    end_date="""""",
+    initialize=m1_initialize_bigquant_run,
+    before_trading_start=m1_before_trading_start_bigquant_run,
+    handle_tick=m1_handle_tick_bigquant_run,
+    handle_data=m1_handle_data_bigquant_run,
+    handle_trade=m1_handle_trade_bigquant_run,
+    handle_order=m1_handle_order_bigquant_run,
+    after_trading=m1_after_trading_bigquant_run,
+    capital_base=150000,
+    frequency="""daily""",
+    product_type="""基金""",
+    rebalance_period_type="""周度交易日""",
+    rebalance_period_days="""1""",
+    rebalance_period_roll_forward=True,
+    backtest_engine_mode="""标准模式""",
+    before_start_days=0,
+    volume_limit=1,
+    order_price_field_buy="""open""",
+    order_price_field_sell="""open""",
+    benchmark=${JSON.stringify(benchmark)},
+    plot_charts=True,
+    debug=True,
+    backtest_only=False,
+    m_name="""m1"""
+)
+# </aistudiograph>
+`;
+  return `from bigmodule import M
+import io
+import re
+import pandas as pd
+
+
+"""
+${title}.
+
+Compatibility notes copied from the working BigQuant notebook pattern:
+- The graph shape is input_features_dai -> extract_data_dai -> bigtrader when
+  USE_DAI_TABLE is True.
+- start_date/end_date are always plain YYYY-MM-DD strings.
+- Callback dates and uploaded date columns are normalized before comparison.
+
+This file contains only M-quant audited test inputs. It does not contain or
+infer any BigQuant result.
+"""
+
+
+USE_DAI_TABLE = False
+USER_SIGNAL_TABLE = ""  # Optional: publish the CSV as a BigQuant DAI table and put the table name here.
+START_DATE_TEXT = "${firstDate}"
+END_DATE_TEXT = "${lastDate}"
+CAPITAL_BASE = 1000000
+STOCK_COUNT = ${stockCount}
+CHANGE_NUM = ${changeNum}
+
+SIGNAL_CSV = """${signalCsv}"""
+
+
+def bq_date_text(value):
+    """Return a plain YYYY-MM-DD string; avoids BigQuantDate module-cache errors."""
+    if value is None:
+        return ""
+    if hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
+        try:
+            return "%04d-%02d-%02d" % (int(value.year), int(value.month), int(value.day))
+        except Exception:
+            pass
+    if hasattr(value, "strftime"):
+        try:
+            return value.strftime("%Y-%m-%d")
+        except Exception:
+            pass
+    text = str(value).strip()
+    match = re.search(r"(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})", text)
+    if match:
+        year, month, day = match.groups()
+        return "%04d-%02d-%02d" % (int(year), int(month), int(day))
+    return text[:10]
+
+
+def build_signal_data():
+    frame = pd.read_csv(io.StringIO(SIGNAL_CSV), dtype={"date": str, "instrument": str})
+    if frame.empty:
+        raise ValueError("No BigQuant-ready selected-code rows were exported. Generate the M-quant BigQuant pack first.")
+    frame["date"] = frame["date"].map(bq_date_text).astype(str)
+    frame["instrument"] = frame["instrument"].astype(str)
+    frame["score"] = pd.to_numeric(frame.get("score", 0), errors="coerce").fillna(0.0)
+    frame["position"] = pd.to_numeric(frame.get("position", 0), errors="coerce").fillna(0.0)
+    frame = frame.sort_values(["date", "score", "rank"], ascending=[True, False, True])
+    return frame
+
+
+signal_data = build_signal_data()
+bigtrader_data = signal_data[["date", "instrument", "position", "score", "rank"]].copy()
+bigtrader_data["date"] = bigtrader_data["date"].map(bq_date_text).astype(str)
+
+START_DATE_TEXT = bq_date_text(START_DATE_TEXT)
+END_DATE_TEXT = bq_date_text(END_DATE_TEXT)
+if not isinstance(START_DATE_TEXT, str) or not isinstance(END_DATE_TEXT, str):
+    raise TypeError("BigQuant module dates must be plain YYYY-MM-DD strings")
+if not bigtrader_data["date"].map(lambda item: isinstance(item, str)).all():
+    raise TypeError("bigtrader_data.date must contain plain YYYY-MM-DD strings")
+
+print("M-quant BigQuant export ready", START_DATE_TEXT, END_DATE_TEXT, len(bigtrader_data))
+print("date_types", type(START_DATE_TEXT).__name__, bigtrader_data["date"].map(type).map(lambda item: item.__name__).unique().tolist())
+
+
+def m3_initialize_bigquant_run(context):
+    from bigtrader.finance.commission import PerOrder
+    context.set_commission(PerOrder(buy_cost=0.0003, sell_cost=0.0013, min_cost=5))
+    context.stock_count = int(STOCK_COUNT)
+    context.change_num = int(CHANGE_NUM)
+    context.stock_weights = 1.0 / max(context.stock_count, 1)
+    context.my_data = context.data.copy()
+    context.my_data["date_text"] = context.my_data["date"].map(bq_date_text).astype(str)
+    context.my_data = context.my_data.sort_values(["date_text", "score", "rank"], ascending=[True, False, True])
+
+
+def m3_before_trading_start_bigquant_run(context, data):
+    pass
+
+
+def m3_handle_tick_bigquant_run(context, tick):
+    pass
+
+
+def _order_target_weight(context, instrument, weight):
+    if hasattr(context, "order_target_percent"):
+        rv = context.order_target_percent(instrument, float(weight))
+        return 0 if rv is None else rv
+    cash_for_buy = context.portfolio.portfolio_value * float(weight)
+    rv = context.order_value(instrument, cash_for_buy)
+    return 0 if rv is None else rv
+
+
+def m3_handle_data_bigquant_run(context, data):
+    today = bq_date_text(data.current_dt)
+    ranker_prediction = context.my_data[context.my_data.date_text == today]
+    if ranker_prediction.empty:
+        return
+
+    target_codes = list(ranker_prediction.instrument.unique())[:context.stock_count]
+    current_positions = {code: pos for code, pos in context.portfolio.positions.items() if pos.amount > 0}
+
+    for instrument in list(current_positions):
+        if instrument not in target_codes:
+            rv = context.order_target(instrument, 0)
+            if rv != 0:
+                print("sell failed", instrument, context.get_error_msg(rv))
+
+    held_count = len([code for code in current_positions if code in target_codes])
+    for row in ranker_prediction.itertuples(index=False):
+        if row.instrument in current_positions:
+            continue
+        if held_count >= context.stock_count:
+            break
+        rv = _order_target_weight(context, row.instrument, float(row.position))
+        if rv != 0:
+            print("buy failed", row.instrument, context.get_error_msg(rv))
+            continue
+        held_count += 1
+
+
+def m3_handle_trade_bigquant_run(context, trade):
+    pass
+
+
+def m3_handle_order_bigquant_run(context, order):
+    pass
+
+
+def m3_after_trading_bigquant_run(context, data):
+    pass
+
+
+if USE_DAI_TABLE:
+    if not USER_SIGNAL_TABLE:
+        raise ValueError("Set USER_SIGNAL_TABLE before using the DAI workflow")
+
+    # Same module chain as the successful notebook: input_features_dai -> extract_data_dai -> bigtrader.
+    m4 = M.input_features_dai.v27(
+        mode="\u8868\u8fbe\u5f0f",
+        expr="position, score, rank",
+        expr_filters="",
+        expr_tables=USER_SIGNAL_TABLE,
+        extra_fields="date, instrument",
+        order_by="date, instrument",
+        expr_drop_na=True,
+        expr_add_sql=False,
+        sql="",
+        extract_data=False,
+        m_cached=False,
+        m_name="m4",
+    )
+
+    m7 = M.extract_data_dai.v17(
+        sql=m4.data,
+        start_date=START_DATE_TEXT,
+        start_date_bound_to_trading_date=True,
+        end_date=END_DATE_TEXT,
+        end_date_bound_to_trading_date=True,
+        before_start_days=10,
+        debug=False,
+        m_name="m7",
+    )
+    BIGTRADER_INPUT = m7.data
+else:
+    BIGTRADER_INPUT = bigtrader_data
+
+
+m3 = M.bigtrader.v19(
+    data=BIGTRADER_INPUT,
+    start_date=START_DATE_TEXT,
+    end_date=END_DATE_TEXT,
+    initialize=m3_initialize_bigquant_run,
+    before_trading_start=m3_before_trading_start_bigquant_run,
+    handle_tick=m3_handle_tick_bigquant_run,
+    handle_data=m3_handle_data_bigquant_run,
+    handle_trade=m3_handle_trade_bigquant_run,
+    handle_order=m3_handle_order_bigquant_run,
+    after_trading=m3_after_trading_bigquant_run,
+    capital_base=CAPITAL_BASE,
+    frequency="daily",
+    product_type="\u80a1\u7968",
+    rebalance_period_type="\u4ea4\u6613\u65e5",
+    rebalance_period_days="1",
+    rebalance_period_roll_forward=True,
+    backtest_engine_mode="\u6807\u51c6\u6a21\u5f0f",
+    before_start_days=0,
+    volume_limit=1,
+    order_price_field_buy="open",
+    order_price_field_sell="close",
+    benchmark=${JSON.stringify(benchmark)},
+    plot_charts=True,
+    debug=False,
+    backtest_only=False,
+    m_name="m3",
+)
+`;
+}
+
+function buildBigQuantTemplateGuide(pack = buildBigQuantPaperWatchPack()) {
+  const rows = bigQuantExportRows(pack);
+  const readyTargets = (Array.isArray(pack.targets) ? pack.targets : [])
+    .filter((target) => target.bigquant_test_status === 'ready_for_bigquant_real_test');
+  const controllerTargets = readyTargets.filter((target) => !selectedCodesList(target.selected_codes).length);
+  return `${[
+    '# M-quant BigQuant template export',
+    '',
+    `Generated at: ${new Date().toISOString()}`,
+    '',
+    '## What to download',
+    '',
+    '1. Download `bigquant-template-strategy.py` and upload it to a BigQuant strategy/notebook task.',
+    '2. Download `bigquant-template-input.csv` if you prefer to publish the input as a BigQuant DAI table.',
+    '3. Keep `START_DATE_TEXT` and `END_DATE_TEXT` as plain quoted strings. Do not pass visual-parameter BigQuantDate objects into module parameters.',
+    '',
+    '## BigQuantDate compatibility',
+    '',
+    'The generated script normalizes all callback dates with `bq_date_text()` and passes only Python strings into `M.extract_data_dai` and `M.bigtrader`. This is intended to avoid `TypeError: Expected unicode, got BigQuantDate`.',
+    '',
+    '## Export scope',
+    '',
+    `Selected-code rows: ${rows.length}`,
+    `Ready targets: ${readyTargets.length}`,
+    `Ready controller-only targets: ${controllerTargets.length}`,
+    '',
+    ...readyTargets.map((target) => `- ${target.sleeve_id || '-'} / ${target.strategy_id || '-'} / selected_codes=${selectedCodesList(target.selected_codes).length}`),
+    '',
+    'Controller-only targets do not have a single selected-code CSV payload. Recreate their controller logic in BigQuant, then backfill real BigQuant results into M-quant.',
+    '',
+  ].join('\n')}\n`;
+}
+
+const csi500IndexEnhancementExportStrategy = {
+  id: 'csi500_z_f_volume_confirmation_top80_core75_buf200_risk0',
+  name: '中证500量价确认指数增强首选组合',
+  benchmark: '中证500指数',
+  sourcePath: csi500IndexEnhancementPrimaryTradePath,
+  stockCount: 80,
+  changeNum: 80,
+  dataPolicy: '使用 AkShare 中证500静态成分池真实 OHLCV 研究生成的历史调仓清单；不包含 BigQuant 回测结论。',
+};
+
+function normalizeBigQuantPositionRows(rows, options = {}) {
+  const strategyId = options.strategyId || '';
+  const strategyName = options.strategyName || '';
+  return rows
+    .filter((row) => row && row.date && row.instrument)
+    .map((row, index) => ({
+      date: dateOnly(row.date),
+      instrument: bigQuantInstrument(row.instrument),
+      local_code: row.local_code || localStockCode(row.instrument),
+      score: Number(row.score ?? 0).toFixed(8),
+      position: Number(row.position ?? 0).toFixed(8),
+      rank: Number(row.rank || index + 1),
+      sleeve_id: row.sleeve_id || options.sleeveId || '',
+      strategy_id: row.strategy_id || strategyId,
+      strategy_name: row.strategy_name || strategyName,
+    }))
+    .sort((left, right) => String(left.date).localeCompare(String(right.date)) || Number(left.rank) - Number(right.rank));
+}
+
+function buildBigQuantRowsFromTradeCsv(strategy) {
+  if (!existsSync(strategy.sourcePath)) return [];
+  const tradeRows = parseCsvRows(readFileSync(strategy.sourcePath, 'utf8'));
+  return tradeRows.flatMap((row) => {
+    const selectedCodes = selectedCodesList(row.selected_codes);
+    const selectedCount = selectedCodes.length || Number(row.selected_count || strategy.stockCount || 0);
+    if (!selectedCodes.length || !selectedCount) return [];
+    const targetWeight = 1 / selectedCount;
+    return selectedCodes.map((code, index) => ({
+      date: dateOnly(row.date),
+      instrument: bigQuantInstrument(code),
+      local_code: localStockCode(code),
+      score: Number((selectedCount - index) / selectedCount).toFixed(8),
+      position: Number(targetWeight).toFixed(8),
+      rank: index + 1,
+      sleeve_id: strategy.id,
+      strategy_id: strategy.id,
+      strategy_name: strategy.name,
+    }));
+  });
+}
+
+function factorDirectionForWeight(weight) {
+  return Number(weight) < 0 ? -1 : 1;
+}
+
+function buildStrategyPoolBigQuantRows(strategyId) {
+  const { strategy } = findLiveStrategy(strategyId);
+  if (!strategy) {
+    return { exportable: false, reason: `Unknown strategy: ${strategyId}`, rows: [] };
+  }
+  if (strategy.exportable === false) {
+    return { exportable: false, reason: strategy.exportStatus || 'Strategy is marked non-exportable in the strategy pool.', rows: [] };
+  }
+  const factors = (Array.isArray(strategy.factorState) ? strategy.factorState : [])
+    .map((factor) => (typeof factor === 'string' ? { factorId: factor, weight: 1 } : factor))
+    .filter((factor) => factor.factorId && Number.isFinite(Number(factor.weight)));
+  if (!factors.length) {
+    return { exportable: false, reason: 'No weighted factorState is available, so position rows cannot be rebuilt.', rows: [] };
+  }
+  const sourceRows = readBacktestFactorRows();
+  const grouped = sourceRows.reduce((map, row) => {
+    const date = dateOnly(row.date || row.stock_date);
+    if (!date) return map;
+    if (!map.has(date)) map.set(date, []);
+    map.get(date).push(row);
+    return map;
+  }, new Map());
+  const outputRows = [];
+  const topN = Number(strategy.bigquantTopN || 30);
+
+  grouped.forEach((rows, date) => {
+    const scored = rows.map((row) => {
+      let score = 0;
+      let usableFactors = 0;
+      factors.forEach((factor) => {
+        const value = Number(row[factor.factorId]);
+        if (!Number.isFinite(value)) return;
+        score += Math.abs(Number(factor.weight)) * value * factorDirectionForWeight(factor.weight);
+        usableFactors += 1;
+      });
+      return { row, score, usableFactors };
+    }).filter((item) => item.usableFactors > 0);
+
+    let filtered = scored;
+    if (strategyId === 'core_volume_price_trend_v1') {
+      filtered = filtered.filter(({ row }) => {
+        const action = actionForCoreStrategy(row).action;
+        return action === '核心入池' || action === '二线观察' || action === '鏍稿績鍏ユ睜' || action === '浜岀嚎瑙傚療';
+      });
+    }
+    if (strategyId === 'capital_follow_v0') {
+      filtered = filtered.filter(({ row }) => {
+        const action = actionForCapitalStrategy(row).action;
+        return action === '资金跟随候选' || action === '资金观察' || action === '璧勯噾璺熼殢鍊欓€?' || action === '璧勯噾瑙傚療';
+      });
+    }
+
+    const selected = filtered.sort((left, right) => right.score - left.score).slice(0, topN);
+    const position = selected.length ? 1 / selected.length : 0;
+    selected.forEach((item, index) => {
+      const code = item.row.stock_code || item.row.code || item.row.security;
+      outputRows.push({
+        date,
+        instrument: bigQuantInstrument(code),
+        local_code: localStockCode(code),
+        score: Number(item.score).toFixed(8),
+        position: Number(position).toFixed(8),
+        rank: index + 1,
+        sleeve_id: strategy.id,
+        strategy_id: strategy.id,
+        strategy_name: strategy.name,
+      });
+    });
+  });
+
+  if (!outputRows.length) {
+    return { exportable: false, reason: 'No date/instrument/position rows could be generated from current real factor rows.', rows: [] };
+  }
+  return {
+    exportable: true,
+    reason: '',
+    rows: normalizeBigQuantPositionRows(outputRows, { strategyId: strategy.id, strategyName: strategy.name }),
+    strategy,
+    benchmark: '沪深300指数',
+    stockCount: topN,
+    changeNum: topN,
+  };
+}
+
+function buildBigQuantStrategyExport(strategyId) {
+  if (strategyId === csi500IndexEnhancementExportStrategy.id || strategyId === 'csi500_index_enhancement') {
+    const rows = normalizeBigQuantPositionRows(buildBigQuantRowsFromTradeCsv(csi500IndexEnhancementExportStrategy), {
+      strategyId: csi500IndexEnhancementExportStrategy.id,
+      strategyName: csi500IndexEnhancementExportStrategy.name,
+      sleeveId: csi500IndexEnhancementExportStrategy.id,
+    });
+    return {
+      exportable: rows.length > 0,
+      reason: rows.length ? '' : '中证500交易清单不存在或没有 selected_codes。',
+      strategy: csi500IndexEnhancementExportStrategy,
+      rows,
+      benchmark: csi500IndexEnhancementExportStrategy.benchmark,
+      stockCount: csi500IndexEnhancementExportStrategy.stockCount,
+      changeNum: csi500IndexEnhancementExportStrategy.changeNum,
+      dataPolicy: csi500IndexEnhancementExportStrategy.dataPolicy,
+      sourcePath: relativeProjectPath(csi500IndexEnhancementExportStrategy.sourcePath),
+    };
+  }
+  const built = buildStrategyPoolBigQuantRows(strategyId);
+  return {
+    exportable: built.exportable,
+    reason: built.reason,
+    strategy: built.strategy ? { id: built.strategy.id, name: built.strategy.name } : { id: strategyId, name: strategyId },
+    rows: built.rows,
+    benchmark: built.benchmark || '沪深300指数',
+    stockCount: built.stockCount || 30,
+    changeNum: built.changeNum || 30,
+    dataPolicy: '由策略池因子路线和当前已落地真实因子行生成 BigQuant date/instrument/position 输入；不包含 BigQuant 回测结论。',
+    sourcePath: relativeProjectPath(researchFactorResultsPath),
+  };
+}
+
+function buildBigQuantStrategyExportStatus(strategyId) {
+  const built = buildBigQuantStrategyExport(strategyId);
+  return {
+    generatedAt: new Date().toISOString(),
+    exportable: built.exportable,
+    reason: built.reason,
+    dataPolicy: built.dataPolicy,
+    strategy: built.strategy,
+    sourcePath: built.sourcePath,
+    metrics: {
+      rows: built.rows.length,
+      uniqueDates: new Set(built.rows.map((row) => row.date)).size,
+      uniqueStocks: new Set(built.rows.map((row) => row.instrument)).size,
+      firstDate: built.rows[0]?.date || '',
+      lastDate: built.rows[built.rows.length - 1]?.date || '',
+      stockCount: built.stockCount,
+    },
+    endpoints: {},
+  };
+}
+
+function buildBigQuantStrategyInputCsv(strategyId) {
+  const built = buildBigQuantStrategyExport(strategyId);
+  if (!built.exportable) return null;
+  return buildBigQuantPositionInputCsv(built.rows);
+}
+
+function buildBigQuantStrategyScript(strategyId) {
+  const built = buildBigQuantStrategyExport(strategyId);
+  if (!built.exportable) return null;
+  return buildBigQuantTemplateScript({
+    rows: built.rows,
+    title: `M-quant BigQuant strategy export: ${built.strategy.name}`,
+    benchmark: built.benchmark,
+    stockCount: built.stockCount,
+    changeNum: built.changeNum,
+  });
+}
+
+function notebookSourceLines(code) {
+  return String(code || '').split('\n').map((line, index, lines) => (
+    index === lines.length - 1 ? line : `${line}\n`
+  ));
+}
+
+function buildBigQuantNotebook(script, title = 'M-quant BigQuant strategy export') {
+  return `${JSON.stringify({
+    cells: [
+      {
+        cell_type: 'code',
+        execution_count: null,
+        metadata: {},
+        outputs: [],
+        source: notebookSourceLines(script),
+      },
+    ],
+    metadata: {
+      kernelspec: {
+        display_name: 'Python 3',
+        language: 'python',
+        name: 'python3',
+      },
+      language_info: {
+        codemirror_mode: {
+          name: 'ipython',
+          version: 3,
+        },
+        file_extension: '.py',
+        mimetype: 'text/x-python',
+        name: 'python',
+        nbconvert_exporter: 'python',
+        pygments_lexer: 'ipython3',
+        version: '3.11.8',
+      },
+      m_quant: {
+        title,
+        generated_at: new Date().toISOString(),
+        template_reference: '因子筛选大盘股策略-20260714142052.ipynb',
+        compatibility: 'date parameters are plain strings and callback dates are normalized with bq_date_text',
+      },
+    },
+    nbformat: 4,
+    nbformat_minor: 2,
+  }, null, 2)}\n`;
+}
+
+function buildBigQuantTemplateNotebook(pack = buildBigQuantPaperWatchPack()) {
+  return buildBigQuantNotebook(
+    buildBigQuantTemplateScript(pack),
+    'M-quant BigQuant paper-watch template export',
+  );
+}
+
+function buildBigQuantStrategyNotebook(strategyId) {
+  const script = buildBigQuantStrategyScript(strategyId);
+  if (script === null) return null;
+  return buildBigQuantNotebook(script, `M-quant BigQuant strategy export: ${strategyId}`);
+}
+
+function buildBigQuantExportStatus(pack = null) {
+  pack = pack || readJsonFile(bigQuantPaperWatchPackPath, { targets: [] });
+  const targets = Array.isArray(pack.targets) ? pack.targets : [];
+  const rows = bigQuantExportRows(pack);
+  const readyTargets = targets.filter((target) => target.bigquant_test_status === 'ready_for_bigquant_real_test');
+  const selectedCodeTargets = readyTargets.filter((target) => selectedCodesList(target.selected_codes).length > 0);
+  const strategyPool = buildLiveStrategySignals();
+  const strategyTargets = [
+    csi500IndexEnhancementExportStrategy.id,
+    ...(strategyPool.formalStrategies || []).map((strategy) => strategy.id),
+    ...(strategyPool.strategies || []).map((strategy) => strategy.id),
+  ];
+  const uniqueStrategyTargets = Array.from(new Set(strategyTargets.filter(Boolean)));
+  const strategyExportStatuses = uniqueStrategyTargets.map((strategyId) => buildBigQuantStrategyExportStatus(strategyId));
+  const exportableStrategyStatuses = strategyExportStatuses.filter((item) => item.exportable);
+  const allInputRows = rows.length + exportableStrategyStatuses.reduce((sum, item) => sum + Number(item.metrics?.rows || 0), 0);
+  const allTargets = [
+    ...targets.map((target) => ({
+      sleeve_id: target.sleeve_id || '',
+      strategy_id: target.strategy_id || '',
+      strategy_name: target.strategy_name || '',
+      source_type: 'paper_watch',
+      status: target.bigquant_test_status || '',
+      priority: target.bigquant_test_priority || '',
+      signal_date: target.signal_date || '',
+      selected_count: selectedCodesList(target.selected_codes).length,
+      payload_type: target.bigquant_payload_type || '',
+      blocked_reasons: Array.isArray(target.blocked_reasons) ? target.blocked_reasons : [],
+      endpoints: {},
+    })),
+    ...strategyExportStatuses.map((item) => ({
+      sleeve_id: item.strategy?.id || '',
+      strategy_id: item.strategy?.id || '',
+      strategy_name: item.strategy?.name || item.strategy?.id || '',
+      source_type: item.strategy?.id === csi500IndexEnhancementExportStrategy.id ? 'index_enhancement' : 'strategy_pool',
+      status: item.exportable ? 'ready_for_bigquant_real_test' : 'blocked_before_bigquant_test',
+      priority: item.exportable ? 'template_export_ready' : 'cannot_build_position_rows',
+      signal_date: item.metrics?.lastDate || item.metrics?.firstDate || '',
+      selected_count: item.metrics?.rows || 0,
+      payload_type: item.exportable ? 'historical_position_rows' : 'not_exportable',
+      blocked_reasons: item.exportable ? [] : [item.reason || 'Cannot export this strategy as BigQuant position rows.'],
+      endpoints: item.endpoints || {},
+    })),
+  ];
+  return {
+    generatedAt: new Date().toISOString(),
+    dataPolicy: 'BigQuant export contains only audited M-quant test inputs and template code. It does not contain BigQuant performance conclusions.',
+    compatibility: {
+      templateReference: '因子筛选大盘股策略-20260714142052.ipynb',
+      dateRule: 'All module dates are plain YYYY-MM-DD strings; callback/date-column values are normalized with bq_date_text().',
+      avoidedError: 'TypeError: Expected unicode, got BigQuantDate',
+    },
+    metrics: {
+      targetCount: allTargets.length,
+      readyTargetCount: readyTargets.length + exportableStrategyStatuses.length,
+      selectedCodeTargetCount: selectedCodeTargets.length + exportableStrategyStatuses.length,
+      inputRowCount: allInputRows,
+      firstDate: rows[0]?.date || '',
+    },
+    endpoints: {
+      script: '/paper-watch-api/bigquant-template-strategy.py',
+    },
+    targets: allTargets,
+  };
 }
 
 function readAkshareLocalBacktestRecords() {
@@ -6393,6 +7235,11 @@ async function handleApi(req, res, pathname) {
   const state = readState();
   const url = new URL(req.url || '/', `http://localhost:${port}`);
 
+  if (req.method === 'GET' && removedDownloadPaths.has(pathname)) {
+    sendDownloadRemoved(res);
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/api/health') {
     sendJson(res, { ok: true, service: 'quant-factor-platform', timestamp: new Date().toISOString() });
     return true;
@@ -6602,6 +7449,53 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-template-export') {
+    sendJson(res, buildBigQuantExportStatus());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-template-input.csv') {
+    const pack = buildBigQuantPaperWatchPack();
+    sendCsv(res, `m-quant-bigquant-template-input-${todayYmd()}.csv`, buildBigQuantTemplateInputCsv(pack));
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-template-strategy.py') {
+    const pack = buildBigQuantPaperWatchPack();
+    sendText(
+      res,
+      `m-quant-bigquant-template-strategy-${todayYmd()}.py`,
+      buildBigQuantTemplateScript(pack),
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && (
+    pathname === '/paper-watch-api/bigquant-template-notebook.ipynb'
+    || pathname === '/paper-watch-api/bigquant-template-strategy.ipynb'
+  )) {
+    const pack = readJsonFile(bigQuantPaperWatchPackPath, { targets: [] });
+    sendText(
+      res,
+      `m-quant-bigquant-template-strategy-${todayYmd()}.ipynb`,
+      buildBigQuantTemplateNotebook(pack),
+      'application/x-ipynb+json; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-template-guide.md') {
+    const pack = buildBigQuantPaperWatchPack();
+    sendText(
+      res,
+      `m-quant-bigquant-template-guide-${todayYmd()}.md`,
+      buildBigQuantTemplateGuide(pack),
+      'text/markdown; charset=utf-8',
+    );
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/paper-watch-api/ledger') {
     sendJson(res, {
       dataPolicy: '只展示用户导入的模拟观察账本记录；不生成收益、净值、成交或持仓。',
@@ -6755,6 +7649,66 @@ async function handleApi(req, res, pathname) {
       return true;
     }
     sendCsv(res, `m-quant-strategy-${safeFilename(strategyId)}-joinquant.csv`, csv);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/bigquant-strategy-export.json') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const status = buildBigQuantStrategyExportStatus(strategyId);
+    if (!status.strategy?.id && !status.exportable) {
+      sendError(res, `未知策略：${strategyId}`, 404);
+      return true;
+    }
+    sendJson(res, status, status.exportable ? 200 : 422);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/bigquant-strategy-input.csv') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const csv = buildBigQuantStrategyInputCsv(strategyId);
+    if (csv === null) {
+      const status = buildBigQuantStrategyExportStatus(strategyId);
+      sendError(res, status.reason || `无法导出策略：${strategyId}`, 422);
+      return true;
+    }
+    sendCsv(res, `m-quant-bigquant-${safeFilename(strategyId)}-input.csv`, csv);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/bigquant-strategy-script.py') {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const script = buildBigQuantStrategyScript(strategyId);
+    if (script === null) {
+      const status = buildBigQuantStrategyExportStatus(strategyId);
+      sendError(res, status.reason || `无法导出策略：${strategyId}`, 422);
+      return true;
+    }
+    sendText(
+      res,
+      `m-quant-bigquant-${safeFilename(strategyId)}-strategy.py`,
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
+  if (req.method === 'GET' && (
+    pathname === '/strategy-api/bigquant-strategy-notebook.ipynb'
+    || pathname === '/strategy-api/bigquant-strategy-script.ipynb'
+  )) {
+    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
+    const notebook = buildBigQuantStrategyNotebook(strategyId);
+    if (notebook === null) {
+      const status = buildBigQuantStrategyExportStatus(strategyId);
+      sendError(res, status.reason || `无法导出策略：${strategyId}`, 422);
+      return true;
+    }
+    sendText(
+      res,
+      `m-quant-bigquant-${safeFilename(strategyId)}-strategy.ipynb`,
+      notebook,
+      'application/x-ipynb+json; charset=utf-8',
+    );
     return true;
   }
 

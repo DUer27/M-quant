@@ -46,11 +46,18 @@ const elements = {
   backtestRowCount: document.querySelector('#backtest-row-count'),
   backtestSourceFile: document.querySelector('#backtest-source-file'),
   backtestStatusList: document.querySelector('#backtest-status-list'),
+  bigquantCodeTargetCount: document.querySelector('#bigquant-code-target-count'),
+  bigquantCompatibilityList: document.querySelector('#bigquant-compatibility-list'),
+  bigquantDateRule: document.querySelector('#bigquant-date-rule'),
+  bigquantExportSummary: document.querySelector('#bigquant-export-summary'),
+  bigquantFirstDate: document.querySelector('#bigquant-first-date'),
+  bigquantInputRowCount: document.querySelector('#bigquant-input-row-count'),
+  bigquantReadyCount: document.querySelector('#bigquant-ready-count'),
+  bigquantTargetTable: document.querySelector('#bigquant-target-table'),
   buildBigquantPaperWatchPack: document.querySelector('#build-bigquant-paper-watch-pack'),
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
   demoFactorCount: document.querySelector('#demo-factor-count'),
-  downloadJoinquantCsv: document.querySelector('#download-joinquant-csv'),
-  downloadJoinquantFactorScript: document.querySelector('#download-joinquant-factor-script'),
+  downloadBigquantTemplateScript: document.querySelector('#download-bigquant-template-script'),
   draftStrategyJump: document.querySelector('#draft-strategy-jump'),
   draftStrategyPagination: document.querySelector('#draft-strategy-pagination'),
   draftStrategySearch: document.querySelector('#draft-strategy-search'),
@@ -123,10 +130,9 @@ const elements = {
   positionStressTrades: document.querySelector('#position-stress-trades'),
   positionStressWarnings: document.querySelector('#position-stress-warnings'),
   refreshPositionStress: document.querySelector('#refresh-position-stress'),
+  refreshBigquantExport: document.querySelector('#refresh-bigquant-export'),
   importPositionStressOhlcv: document.querySelector('#import-position-stress-ohlcv'),
   runPositionStress: document.querySelector('#run-position-stress'),
-  downloadPaperWatchLedgerCsv: document.querySelector('#download-paper-watch-ledger-csv'),
-  downloadPaperWatchLedgerJson: document.querySelector('#download-paper-watch-ledger-json'),
   importPaperWatchLedger: document.querySelector('#import-paper-watch-ledger'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
@@ -528,7 +534,6 @@ function renderTradeabilityReviewTaskPack(pack) {
         要通过，至少要有 ${escapeHtml(passGate.min_tradable_count ?? 10)} 只股票确认可以买卖。
       </p>
       <div class="inline-actions">
-        ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载交易复核脚本</a>` : ''}
         <button type="button" data-paper-watch-rebuild="true">刷新派生包</button>
       </div>
       <details class="compact-details">
@@ -585,7 +590,6 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
         ${review.decision_reason ? `<p>${escapeHtml(review.decision_reason)}</p>` : ''}
       ` : ''}
       <div class="inline-actions">
-        ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载核心量价复核脚本</a>` : ''}
       </div>
       <details class="compact-details">
         <summary>查看晋级步骤</summary>
@@ -707,6 +711,73 @@ function renderBigQuantPaperWatchPack(pack) {
       </details>
     </div>
   `;
+}
+
+function renderBigQuantExport(status) {
+  if (!elements.bigquantExportSummary) return;
+  const metrics = status?.metrics || {};
+  const compatibility = status?.compatibility || {};
+  const targets = Array.isArray(status?.targets) ? status.targets : [];
+
+  elements.bigquantReadyCount.textContent = metrics.readyTargetCount ?? '-';
+  elements.bigquantCodeTargetCount.textContent = metrics.selectedCodeTargetCount ?? '-';
+  elements.bigquantInputRowCount.textContent = metrics.inputRowCount ?? '-';
+  elements.bigquantFirstDate.textContent = metrics.firstDate ? `首个信号日 ${metrics.firstDate}` : '等待输入行';
+  elements.bigquantDateRule.textContent = 'String';
+
+  elements.bigquantExportSummary.innerHTML = `
+    <div class="status-item">
+      <div>
+        <strong>模板来源</strong>
+        <span>参考成功运行的 ${escapeHtml(compatibility.templateReference || 'BigQuant notebook')}，保留 input_features_dai / extract_data_dai / bigtrader 结构。</span>
+      </div>
+      <span class="tag good">可下载</span>
+    </div>
+    <div class="status-item">
+      <div>
+        <strong>数据边界</strong>
+        <span>${escapeHtml(status?.dataPolicy || '只导出待测输入，不生成 BigQuant 结果。')}</span>
+      </div>
+      <span class="tag pending">无绩效</span>
+    </div>
+  `;
+
+  elements.bigquantCompatibilityList.innerHTML = `
+    <div class="status-item">
+      <div>
+        <strong>日期参数</strong>
+        <span>${escapeHtml(compatibility.dateRule || '模块日期保持字符串。')}</span>
+      </div>
+      <span class="tag good">BigQuantDate safe</span>
+    </div>
+    <div class="status-item">
+      <div>
+        <strong>已规避错误</strong>
+        <span>${escapeHtml(compatibility.avoidedError || 'TypeError: Expected unicode, got BigQuantDate')}</span>
+      </div>
+      <span class="tag good">显式转换</span>
+    </div>
+  `;
+
+  elements.bigquantTargetTable.innerHTML = targets.map((target) => {
+    const ready = target.status === 'ready_for_bigquant_real_test';
+    return `
+      <tr>
+        <td><strong>${escapeHtml(target.sleeve_id || '-')}</strong><br><small>${escapeHtml(target.strategy_id || target.strategy_name || '-')} / ${escapeHtml(target.source_type || '-')}</small></td>
+        <td><span class="tag ${ready ? 'good' : 'watch'}">${escapeHtml(target.priority || target.status || '-')}</span></td>
+        <td>${escapeHtml(target.signal_date || '-')}</td>
+        <td>${escapeHtml(target.selected_count || 0)} 行 / ${escapeHtml(target.payload_type || '-')}</td>
+        <td>${escapeHtml((target.blocked_reasons || []).join('；') || '-')}</td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="5">暂无 BigQuant 待测目标。</td></tr>';
+}
+
+async function refreshBigQuantExport() {
+  const status = await request('/paper-watch-api/bigquant-template-export');
+  renderBigQuantExport(status);
+  bindCollapsibleData();
+  requestAnimationFrame(syncCollapsibleData);
 }
 
 function renderJoinQuantPaperWatchReport(report) {
@@ -939,7 +1010,6 @@ function renderPaperWatchRoutes(pack) {
           <strong>AkShare 最新信号还要做交易检查</strong>
           <span>${pack.localBacktest.latestTradeabilityReview ? '已有导入复核' : '等待真实复核 JSON'}</span>
           <p>本地历史表现不错还不够。开始观察前，还要确认这些股票当天没有停牌、涨跌停等买不了卖不了的问题。</p>
-          <a class="inline-link" href="${escapeHtml(pack.localBacktest.tradeabilityReviewScriptEndpoint)}">下载复核脚本</a>
         </div>
       ` : ''}
       ${pack.localBacktest?.regimeSwitch ? `
@@ -2706,14 +2776,6 @@ function toneForAction(actionTone) {
 function renderStrategyCard(strategy, options = {}) {
   const [label, tone] = labelForStatus(strategy.status);
   const compactClass = options.compact ? ' compact-strategy-item' : '';
-  const exportBase = `/strategy-api/joinquant-strategy-export.json?strategy=${encodeURIComponent(strategy.id)}`;
-  const exportCsv = `/strategy-api/joinquant-strategy-export.csv?strategy=${encodeURIComponent(strategy.id)}`;
-  const exportScript = `/strategy-api/joinquant-strategy-script.py?strategy=${encodeURIComponent(strategy.id)}`;
-  const historicalScript = `/strategy-api/joinquant-strategy-historical-script.py?strategy=${encodeURIComponent(strategy.id)}`;
-  const volatilityRegimeScript = `/strategy-api/joinquant-volatility-regime-script.py?strategy=${encodeURIComponent(strategy.id)}`;
-  const marketCapScript = `/strategy-api/joinquant-market-cap-script.py?strategy=${encodeURIComponent(strategy.id)}`;
-  const volatilitySizeScript = `/strategy-api/joinquant-volatility-size-script.py?strategy=${encodeURIComponent(strategy.id)}`;
-  const tradingBacktestScript = `/strategy-api/joinquant-trading-backtest-script.py?strategy=${encodeURIComponent(strategy.id)}`;
   const canSendToStress = strategy.canSendToPositionStress || strategy.positionStressReady;
   return `
     <article class="strategy-item${compactClass}">
@@ -2773,22 +2835,9 @@ function renderStrategyCard(strategy, options = {}) {
         ? `<div class="strategy-export-note">
           <strong>导出状态</strong>
           <span>${escapeHtml(strategy.exportStatus || '该策略路线等待专用 JoinQuant 重建脚本，不提供通用导出。')}</span>
-          ${strategy.specialBacktestScriptEndpoint ? `
-            <div class="strategy-export-actions inline-actions">
-              <button type="button" data-strategy-download="${escapeHtml(strategy.specialBacktestScriptEndpoint)}">聚宽实测脚本</button>
-            </div>
-          ` : ''}
         </div>`
         : `<div class="strategy-export-actions">
           ${canSendToStress ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">送入建仓压测</button>` : ''}
-          <button type="button" data-strategy-download="${escapeHtml(exportBase)}">路线JSON</button>
-          <button type="button" data-strategy-download="${escapeHtml(exportCsv)}">策略CSV</button>
-          <button type="button" data-strategy-download="${escapeHtml(exportScript)}">聚宽脚本</button>
-          <button type="button" data-strategy-download="${escapeHtml(historicalScript)}">历史脚本</button>
-          <button type="button" data-strategy-download="${escapeHtml(volatilityRegimeScript)}">波动率脚本</button>
-          <button type="button" data-strategy-download="${escapeHtml(marketCapScript)}">市值脚本</button>
-          <button type="button" data-strategy-download="${escapeHtml(volatilitySizeScript)}">交叉脚本</button>
-          <button type="button" data-strategy-download="${escapeHtml(tradingBacktestScript)}">回测脚本</button>
         </div>`}
       ${strategy.exportable === false && canSendToStress ? `
         <div class="strategy-export-actions inline-actions">
@@ -3124,7 +3173,7 @@ function renderBacktestCenter(status) {
     <div class="status-item">
       <div>
         <strong>导出格式</strong>
-        <span>每个因子都可单独下载；全部导出仅作为批量研究备用。</span>
+        <span>当前仅展示可用因子和样本行数；下载入口已收口到 PY 模板。</span>
       </div>
       <span class="tag good">${escapeHtml(metrics.exportableRows ?? 0)} 行</span>
     </div>
@@ -3147,25 +3196,11 @@ function renderBacktestCenter(status) {
           <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
           <td>${escapeHtml(factor.usage)}</td>
           <td>${escapeHtml(factor.blocker)}</td>
-          <td>
-            <button
-              class="table-action"
-              data-factor-export="${escapeHtml(factor.id)}"
-              type="button"
-            >下载该因子</button>
-            <br><small>${escapeHtml(factor.exportRows ?? 0)} 行</small>
-          </td>
+          <td><small>${escapeHtml(factor.exportRows ?? 0)} 行</small></td>
         </tr>
       `;
     })
     .join('');
-
-  elements.backtestFactorTable.querySelectorAll('[data-factor-export]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const factor = button.dataset.factorExport;
-      window.location.href = `/backtest-api/joinquant-factor-export.csv?factor=${encodeURIComponent(factor)}`;
-    });
-  });
 
   elements.joinquantStepList.innerHTML = (status.joinquant?.steps || [])
     .map((step) => `<li>${escapeHtml(step)}</li>`)
@@ -3650,7 +3685,7 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
-  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog] = await Promise.all([
+  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog, bigQuantExport] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
@@ -3664,6 +3699,7 @@ async function refreshDashboard() {
     request('/research-api/pipeline'),
     request('/position-stress-api/report'),
     request('/position-stress-api/strategies'),
+    request('/paper-watch-api/bigquant-template-export'),
   ]);
 
   currentPositionStressCatalog = positionStressCatalog;
@@ -3679,6 +3715,7 @@ async function refreshDashboard() {
   renderResearchPipeline(researchPipeline);
   renderPositionStress(positionStress);
   renderPositionStressCatalog(positionStressCatalog);
+  renderBigQuantExport(bigQuantExport);
   bindCollapsibleData();
   requestAnimationFrame(syncCollapsibleData);
 }
@@ -3830,12 +3867,6 @@ function handleStrategyCardClick(event) {
     return;
   }
 
-  const downloadButton = event.target.closest('[data-strategy-download]');
-  if (downloadButton) {
-    window.location.href = downloadButton.dataset.strategyDownload;
-    return;
-  }
-
   const button = event.target.closest('.strategy-factor-button');
   if (!button) return;
   const article = button.closest('.strategy-item');
@@ -3944,12 +3975,37 @@ elements.buildBigquantPaperWatchPack?.addEventListener('click', async () => {
   }
 });
 
-elements.downloadJoinquantCsv?.addEventListener('click', () => {
-  window.location.href = '/backtest-api/joinquant-factor-export.csv';
+elements.refreshBigquantExport?.addEventListener('click', async () => {
+  const button = elements.refreshBigquantExport;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = '刷新中';
+  try {
+    await refreshBigQuantExport();
+    button.textContent = '已刷新';
+  } catch (error) {
+    if (elements.bigquantExportSummary) {
+      elements.bigquantExportSummary.innerHTML = `
+        <div class="status-item">
+          <div>
+            <strong>BigQuant导出刷新失败</strong>
+            <span>${escapeHtml(error.message)}</span>
+          </div>
+          <span class="tag watch">失败</span>
+        </div>
+      `;
+    }
+    button.textContent = '刷新失败';
+  } finally {
+    window.setTimeout(() => {
+      button.disabled = false;
+      button.textContent = originalText || '刷新状态';
+    }, 900);
+  }
 });
 
-elements.downloadJoinquantFactorScript?.addEventListener('click', () => {
-  window.location.href = '/backtest-api/joinquant-factor-test-script.py';
+elements.downloadBigquantTemplateScript?.addEventListener('click', () => {
+  window.location.href = '/paper-watch-api/bigquant-template-strategy.py';
 });
 
 elements.positionStressKlineSelect?.addEventListener('change', async () => {
@@ -4115,14 +4171,6 @@ elements.importPaperWatchLedger?.addEventListener('click', async () => {
     elements.paperWatchLedgerMessage.textContent = `导入失败：${error.message}`;
     elements.paperWatchLedgerMessage.dataset.tone = 'error';
   }
-});
-
-elements.downloadPaperWatchLedgerCsv?.addEventListener('click', () => {
-  window.location.href = '/paper-watch-api/ledger-template.csv';
-});
-
-elements.downloadPaperWatchLedgerJson?.addEventListener('click', () => {
-  window.location.href = '/paper-watch-api/ledger-template.json';
 });
 
 elements.askResearchAssistant?.addEventListener('click', async () => {

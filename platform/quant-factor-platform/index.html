@@ -22,6 +22,7 @@
           <button data-view-target="factor-library">因子库</button>
           <button data-view-target="strategy-library">策略池</button>
           <button data-view-target="paper-watch">准模拟盘</button>
+          <button data-view-target="bigquant-export">BigQuant导出</button>
           <button data-view-target="position-stress">建仓压力测试</button>
           <button data-view-target="research-pipeline">研究流水线</button>
           <button data-view-target="backtest-center">回测中心</button>
@@ -254,9 +255,6 @@
                 </div>
                 <div class="backtest-actions">
                   <button id="build-bigquant-paper-watch-pack" type="button">生成BigQuant包</button>
-                  <a class="inline-link" href="/paper-watch-api/bigquant-test-pack.json">下载JSON包</a>
-                  <a class="inline-link" href="/paper-watch-api/bigquant-test-targets.csv">下载CSV清单</a>
-                  <a class="inline-link" href="/paper-watch-api/bigquant-test-guide.md">下载操作说明</a>
                 </div>
               </details>
               <div class="paper-watch-console-grid">
@@ -283,8 +281,6 @@
                   <textarea id="paper-watch-ledger-json" rows="5" title="这里是给系统读取的账本格式。sleeve_id 是观察账户编号，strategy_id 是策略编号，planned_weight 是计划观察比例。" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
                 </label>
                 <div class="backtest-actions">
-                  <button id="download-paper-watch-ledger-csv" type="button">下载CSV模板</button>
-                  <button id="download-paper-watch-ledger-json" type="button">下载JSON模板</button>
                   <button id="import-paper-watch-ledger" class="primary" type="button">导入账本</button>
                 </div>
                 <p id="paper-watch-ledger-message" class="form-message">只导入真实观察记录；平台不生成收益或净值。</p>
@@ -294,6 +290,81 @@
               <summary>运行约束</summary>
               <ul id="paper-watch-controls" class="text-list"></ul>
             </details>
+          </section>
+        </div>
+
+        <div id="bigquant-export-view" class="view">
+          <section class="metrics-grid" aria-label="BigQuant导出指标">
+            <article class="metric">
+              <span>可测目标</span>
+              <strong id="bigquant-ready-count">-</strong>
+              <small>准入后才能导出</small>
+            </article>
+            <article class="metric">
+              <span>代码型目标</span>
+              <strong id="bigquant-code-target-count">-</strong>
+              <small>可生成CSV输入</small>
+            </article>
+            <article class="metric">
+              <span>输入行</span>
+              <strong id="bigquant-input-row-count">-</strong>
+              <small id="bigquant-first-date">等待生成</small>
+            </article>
+            <article class="metric">
+              <span>日期兼容</span>
+              <strong id="bigquant-date-rule">String</strong>
+              <small>规避 BigQuantDate</small>
+            </article>
+          </section>
+
+          <section class="content-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">BigQuant Export</p>
+                  <h2>BigQuant模板导出</h2>
+                </div>
+              </div>
+              <div id="bigquant-export-summary" class="status-list"></div>
+              <div class="backtest-actions">
+                <button id="refresh-bigquant-export" type="button">刷新状态</button>
+                <button id="download-bigquant-template-script" class="primary" type="button">下载PY模板</button>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Compatibility</p>
+                  <h2>模板要点</h2>
+                </div>
+              </div>
+              <div id="bigquant-compatibility-list" class="status-list"></div>
+            </section>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Targets</p>
+                <h2>待提交BigQuant目标</h2>
+              </div>
+            </div>
+            <div class="collapsible-data compact-preview" data-collapsible-data>
+              <table>
+                <thead>
+                  <tr>
+                    <th>资金袖/策略</th>
+                    <th>状态</th>
+                    <th>信号日</th>
+                    <th>输入</th>
+                    <th>阻塞项</th>
+                  </tr>
+                </thead>
+                <tbody id="bigquant-target-table"></tbody>
+              </table>
+            </div>
+            <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
           </section>
         </div>
 
@@ -822,7 +893,6 @@
                 </div>
               </div>
               <div class="backtest-actions">
-                <button id="download-joinquant-csv" class="primary" type="button">下载全部因子CSV</button>
                 <button id="refresh-backtest-center" type="button">刷新状态</button>
               </div>
               <div id="joinquant-export-summary" class="status-list"></div>

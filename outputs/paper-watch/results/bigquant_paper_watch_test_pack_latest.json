@@ -1,13 +1,13 @@
 {
   "source": "m_quant_bigquant_paper_watch_test_pack",
-  "generated_at": "2026-07-10T06:41:48.507Z",
+  "generated_at": "2026-07-21T21:58:05.685Z",
   "result_status": "pending_bigquant_real_backtest",
   "data_policy": "本包只从 M-quant 已落地真实证据生成 BigQuant 待测试输入。 不生成 BigQuant 收益、净值、成交、持仓或通过结论。 BigQuant 实测后必须把真实结果回填项目，才能改变策略状态。",
   "source_files": {
-    "operations_pack": "outputs/paper-watch/results/paper_watch_operations_pack_20260709.json",
-    "maturity_matrix": "outputs/paper-watch/results/strategy_maturity_matrix_20260710.json",
-    "daily_refresh_latest": "outputs/paper-watch/results/paper_watch_daily_refresh_latest.json",
-    "latest_saved_pack": "outputs/paper-watch/results/bigquant_paper_watch_test_pack_latest.json"
+    "operations_pack": "outputs\\paper-watch\\results\\paper_watch_operations_pack_20260709.json",
+    "maturity_matrix": "outputs\\paper-watch\\results\\strategy_maturity_matrix_20260710.json",
+    "daily_refresh_latest": "outputs\\paper-watch\\results\\paper_watch_daily_refresh_latest.json",
+    "latest_saved_pack": "outputs\\paper-watch\\results\\bigquant_paper_watch_test_pack_latest.json"
   },
   "readiness_summary": {
     "operations_status": "ready_with_blockers",
@@ -16,8 +16,8 @@
     "maturity_goal_status": "target_met",
     "maturity_ready_strategy_count": 2,
     "daily_refresh_ok": true,
-    "daily_refresh_mode": "local",
-    "daily_refresh_finished_at": "2026-07-10T06:25:46.412Z"
+    "daily_refresh_mode": "joinquant_local",
+    "daily_refresh_finished_at": "2026-07-10T07:37:26.350Z"
   },
   "bigquant_workflow": [
     "先下载 JSON 或 CSV 包，并在 BigQuant 中按 strategy_id/sleeve_id 建立独立测试任务。",
