@@ -213,9 +213,17 @@ h2 {
 }
 
 .kline-toolbar select,
+.kline-toolbar input[type="search"],
 .kline-toolbar button,
 .segmented-control button {
   min-height: 36px;
+}
+
+.kline-toolbar input[type="search"] {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 180px;
+  padding: 0 12px;
 }
 
 .segmented-control {

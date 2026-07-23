@@ -1519,7 +1519,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
 def parse_args() -> RunConfig:
     parser = argparse.ArgumentParser(description="生成 M-Quant 建仓压力测试数据包")
     parser.add_argument("--start", default="2025-01-01")
-    parser.add_argument("--end", default="2026-07-15")
+    parser.add_argument("--end", default="2026-07-22")
     parser.add_argument("--symbols-file", default=str(DEFAULT_SYMBOLS_FILE))
     parser.add_argument("--top-n", type=int, default=10)
     parser.add_argument("--capital", type=float, default=1_000_000)

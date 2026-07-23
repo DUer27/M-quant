@@ -1,0 +1,3 @@
+﻿date,code,open,close,high,low,volume,amount,amplitude,change_pct,change_amount,turnover,security,source,adjust,name
+2026-07-21,688806,50.15,45.1,52.52,34.1,392862,1609505146.0,127.39,211.89,30.64,76.99,688806.XSHG,eastmoney.push2his.kline,qfq,泰诺麦博
+2026-07-22,688806,39.99,33.08,43.47,32.57,314747,1212506589.0,24.17,-26.65,-12.02,61.68,688806.XSHG,eastmoney.push2his.kline,qfq,泰诺麦博

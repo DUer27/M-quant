@@ -1,0 +1,6 @@
+﻿date,code,open,close,high,low,volume,amount,amplitude,change_pct,change_amount,turnover,security,source,adjust,name
+2026-07-16,920117,36.5,35.34,40.6,35.2,188353,709339711.56,30.29,98.21,17.51,93.18,920117.XBSE,eastmoney.push2his.kline,qfq,龙鑫智能
+2026-07-17,920117,30.01,27.48,32.6,27.13,116481,346945594.57,15.48,-22.24,-7.86,57.62,920117.XBSE,eastmoney.push2his.kline,qfq,龙鑫智能
+2026-07-20,920117,28.0,25.03,28.5,24.13,81390,212030936.45,15.9,-8.92,-2.45,40.26,920117.XBSE,eastmoney.push2his.kline,qfq,龙鑫智能
+2026-07-21,920117,25.33,28.52,28.52,25.19,84167,226353271.04,13.3,13.94,3.49,41.64,920117.XBSE,eastmoney.push2his.kline,qfq,龙鑫智能
+2026-07-22,920117,26.51,24.9,27.17,24.77,76459,199455670.43,8.42,-12.69,-3.62,37.82,920117.XBSE,eastmoney.push2his.kline,qfq,龙鑫智能

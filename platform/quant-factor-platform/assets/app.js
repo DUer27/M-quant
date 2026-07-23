@@ -110,6 +110,7 @@ const elements = {
   positionStressKlineMonthly: document.querySelector('#position-stress-kline-monthly'),
   positionStressKlineNote: document.querySelector('#position-stress-kline-note'),
   positionStressKlineReset: document.querySelector('#position-stress-kline-reset'),
+  positionStressKlineSearch: document.querySelector('#position-stress-kline-search'),
   positionStressKlineSelect: document.querySelector('#position-stress-kline-select'),
   positionStressKlineTooltip: document.querySelector('#position-stress-kline-tooltip'),
   positionStressKlineYearly: document.querySelector('#position-stress-kline-yearly'),
@@ -3358,6 +3359,39 @@ function activePositionStressKlineItem() {
   return klineItems.find((item) => item.code === elements.positionStressKlineSelect?.value) || klineItems[0];
 }
 
+function positionStressKlineSearchText(item, index) {
+  return [
+    String(index + 1),
+    item?.code,
+    item?.security,
+    item?.name,
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
+function findPositionStressKlineItem(query) {
+  const term = String(query || '').trim().toLowerCase();
+  if (!term) return null;
+  const klineItems = currentPositionStressReport?.kline || [];
+  const numericIndex = /^\d+$/.test(term) ? Number(term) - 1 : -1;
+  if (numericIndex >= 0 && numericIndex < klineItems.length) {
+    return klineItems[numericIndex];
+  }
+  return klineItems.find((item, index) => positionStressKlineSearchText(item, index).includes(term)) || null;
+}
+
+function selectPositionStressKlineItem(item, options = {}) {
+  if (!item || !elements.positionStressKlineSelect) return;
+  elements.positionStressKlineSelect.value = item.code;
+  if (options.syncSearch && elements.positionStressKlineSearch) {
+    const klineItems = currentPositionStressReport?.kline || [];
+    const index = klineItems.findIndex((candidate) => candidate.code === item.code);
+    elements.positionStressKlineSearch.value = index >= 0 ? `${index + 1}. ${item.name || item.code}` : (item.name || item.code || '');
+  }
+  positionStressKlineView.hoverIndex = null;
+  elements.positionStressKlineTooltip.hidden = true;
+  refreshPositionStressKline({ resetView: options.resetView });
+}
+
 function drawPositionStressKline(item, options = {}) {
   const canvas = elements.positionStressKlineCanvas;
   if (!canvas) return;
@@ -3836,7 +3870,7 @@ function renderPositionStress(report) {
   const klineItems = report.kline || [];
   const selectedCode = elements.positionStressKlineSelect.value;
   elements.positionStressKlineSelect.innerHTML = klineItems
-    .map((item) => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.name)} ${escapeHtml(item.code)}</option>`)
+    .map((item, index) => `<option value="${escapeHtml(item.code)}">${index + 1}. ${escapeHtml(item.name)} ${escapeHtml(item.code)}</option>`)
     .join('');
   if (selectedCode && klineItems.some((item) => item.code === selectedCode)) {
     elements.positionStressKlineSelect.value = selectedCode;
@@ -4322,12 +4356,13 @@ elements.downloadJoinquantFactorScript?.addEventListener('click', () => {
 });
 
 elements.positionStressKlineSelect?.addEventListener('change', async () => {
-  try {
-    const report = await request(positionStressReportEndpoint());
-    positionStressKlineView.hoverIndex = null;
-    renderPositionStress(report);
-  } catch (error) {
-    elements.positionStressKlineNote.textContent = `K线刷新失败：${error.message}`;
+  selectPositionStressKlineItem(activePositionStressKlineItem(), { resetView: true, syncSearch: true });
+});
+
+elements.positionStressKlineSearch?.addEventListener('input', () => {
+  const item = findPositionStressKlineItem(elements.positionStressKlineSearch.value);
+  if (item) {
+    selectPositionStressKlineItem(item, { resetView: true });
   }
 });
 
@@ -4476,7 +4511,7 @@ elements.runPositionStress?.addEventListener('click', async () => {
     const response = await request('/position-stress-api/run', {
       body: JSON.stringify({
         capital: Number(elements.positionStressCapital?.value || 1000000),
-        end: elements.positionStressEnd?.value || '2026-07-15',
+        end: elements.positionStressEnd?.value || '2026-07-22',
         source: elements.positionStressSource?.value || 'auto',
         start: elements.positionStressStart?.value || '2025-01-01',
         strategyId,

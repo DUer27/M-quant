@@ -3670,8 +3670,8 @@ function emptyPositionStressReport(options = {}) {
     status: 'missing',
     sourceMode: '',
     sourceMessage: options.sourceMessage || '尚未生成建仓压力测试报告。',
-    dataPolicy: '先选择压测策略，再点击运行，生成 2025-01-01 至 2026-07-15 的3000只股票真实行情、策略选股、K线、建仓模拟和压力测试报告。',
-    requestedDateRange: { start: options.start || '2025-01-01', end: options.end || '2026-07-15' },
+    dataPolicy: '先选择压测策略，再点击运行，生成 2025-01-01 至 2026-07-22 的3000只股票真实行情、策略选股、K线、建仓模拟和压力测试报告。',
+    requestedDateRange: { start: options.start || '2025-01-01', end: options.end || '2026-07-22' },
     actualDates: [],
     missingDates: [],
     stockCount: 0,
@@ -3885,7 +3885,7 @@ function requirePositionStressStrategyId(value) {
 
 function runPositionStressLab(options = {}) {
   const start = String(options.start || '2025-01-01');
-  const end = String(options.end || '2026-07-15');
+  const end = String(options.end || '2026-07-22');
   const topN = String(Number(options.topN || 10));
   const capital = String(Number(options.capital || 1_000_000));
   const source = ['auto', 'joinquant', 'akshare', 'akshare_cache'].includes(options.source) ? options.source : 'auto';
