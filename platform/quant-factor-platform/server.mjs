@@ -41,6 +41,9 @@ const importedPaperWatchLedgerPath = join(dataDir, 'imported-paper-watch-ledger.
 const positionStressSelectionPath = join(dataDir, 'position-stress-selection.json');
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
+const akshareDailyCacheDir = outputPath('sources', 'akshare', 'raw', 'a_share_daily');
+const akshareCompletionAuditPath = outputPath('sources', 'akshare', 'results', 'a_share_all_completion_audit_20260723.csv');
+const akshareCompletionAuditFallbackPath = outputPath('sources', 'akshare', 'results', 'a_share_all_completion_audit_20260720.csv');
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
 const akshareStrategyValidationPath = outputPath('sources', 'akshare', 'results', 'akshare_strategy_candidate_validation.json');
 const akshareFactorQualityAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_factor_quality_audit.json');
@@ -586,6 +589,122 @@ function parseCsvRecords(path, limit = 80) {
       return record;
     }, {});
   });
+}
+
+function parseDelimitedCsv(text) {
+  const lines = String(text || '').replace(/^\ufeff/, '').trim().split(/\r?\n/).filter(Boolean);
+  if (!lines.length) return [];
+  const headers = parseCsvLine(lines[0]).map((header) => header.trim());
+  return lines.slice(1).map((line) => {
+    const cells = parseCsvLine(line);
+    return headers.reduce((record, header, index) => {
+      record[header] = cells[index] ?? '';
+      return record;
+    }, {});
+  });
+}
+
+function normalizeStockCode(value) {
+  const match = String(value || '').match(/\d{6}/);
+  return match ? match[0] : '';
+}
+
+function akshareDailyCachePathForCode(code) {
+  const normalizedCode = normalizeStockCode(code);
+  if (!normalizedCode) return null;
+  return join(akshareDailyCacheDir, `${normalizedCode}.csv`);
+}
+
+let akshareDailyCacheIndex = null;
+
+function readAkshareDailyRows(code) {
+  const path = akshareDailyCachePathForCode(code);
+  if (!path || !existsSync(path)) return [];
+  return parseDelimitedCsv(readFileSync(path, 'utf8'))
+    .map((row) => ({
+      amount: toNumber(row.amount, null),
+      close: toNumber(row.close, null),
+      code: normalizeStockCode(row.code || code),
+      date: row.date,
+      high: toNumber(row.high, null),
+      low: toNumber(row.low, null),
+      name: row.name || '',
+      open: toNumber(row.open, null),
+      security: row.security || jqSecurityCode(row.code || code),
+      source: row.source || '',
+      volume: toNumber(row.volume, null),
+    }))
+    .filter((row) => row.date && Number.isFinite(row.open) && Number.isFinite(row.close) && Number.isFinite(row.high) && Number.isFinite(row.low))
+    .sort((left, right) => String(left.date).localeCompare(String(right.date)));
+}
+
+function buildAkshareDailyCacheIndex() {
+  if (akshareDailyCacheIndex) return akshareDailyCacheIndex;
+  const byCode = new Map();
+  const auditPath = existsSync(akshareCompletionAuditPath) ? akshareCompletionAuditPath : akshareCompletionAuditFallbackPath;
+  if (existsSync(auditPath)) {
+    parseDelimitedCsv(readFileSync(auditPath, 'utf8')).forEach((row) => {
+      const code = normalizeStockCode(row.code);
+      if (!code) return;
+      byCode.set(code, {
+        code,
+        firstDate: row.first_date || '',
+        lastDate: row.last_date || '',
+        name: row.name || '',
+        rowCount: toNumber(row.rows, 0),
+        status: row.status || '',
+      });
+    });
+  }
+  if (existsSync(akshareDailyCacheDir)) {
+    readdirSync(akshareDailyCacheDir)
+      .filter((name) => /^\d{6}\.csv$/.test(name))
+      .forEach((file) => {
+        const code = file.slice(0, 6);
+        const current = byCode.get(code) || { code, firstDate: '', lastDate: '', name: '', rowCount: 0, status: '' };
+        if (!current.name || !current.rowCount || !current.lastDate) {
+          const rows = readAkshareDailyRows(code);
+          const first = rows[0] || {};
+          const last = rows.at(-1) || {};
+          byCode.set(code, {
+            ...current,
+            firstDate: current.firstDate || first.date || '',
+            lastDate: current.lastDate || last.date || '',
+            name: current.name || last.name || first.name || '',
+            rowCount: current.rowCount || rows.length,
+          });
+        }
+      });
+  }
+  akshareDailyCacheIndex = [...byCode.values()].sort((left, right) => left.code.localeCompare(right.code));
+  return akshareDailyCacheIndex;
+}
+
+function readAkshareDailyKlineItem(query) {
+  const term = String(query || '').trim().toLowerCase();
+  if (!term) return null;
+  const normalizedCode = normalizeStockCode(term);
+  const index = buildAkshareDailyCacheIndex();
+  const match = normalizedCode
+    ? index.find((item) => item.code === normalizedCode)
+    : index.find((item) => [item.code, item.name].filter(Boolean).join(' ').toLowerCase().includes(term));
+  if (!match) return null;
+  const rows = readAkshareDailyRows(match.code);
+  if (!rows.length) return null;
+  const first = rows[0] || {};
+  const last = rows.at(-1) || {};
+  return {
+    code: match.code,
+    dataSource: 'akshare_local_cache',
+    firstDate: first.date || match.firstDate || '',
+    latestClose: last.close,
+    latestDate: last.date || match.lastDate || '',
+    latestScore: null,
+    name: match.name || last.name || first.name || match.code,
+    rowCount: rows.length,
+    rows,
+    security: last.security || first.security || jqSecurityCode(match.code),
+  };
 }
 
 function relativeOutputPath(path) {
@@ -7075,6 +7194,16 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'GET' && pathname === '/position-stress-api/strategies') {
     sendJson(res, buildPositionStressStrategyCatalog());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/position-stress-api/kline-search') {
+    const item = readAkshareDailyKlineItem(url.searchParams.get('q'));
+    if (!item) {
+      sendJson(res, { error: '本地行情缓存中没有找到该股票。' }, 404);
+      return true;
+    }
+    sendJson(res, { item, message: `已从本地行情缓存加载 ${item.name} ${item.code}。` });
     return true;
   }
 

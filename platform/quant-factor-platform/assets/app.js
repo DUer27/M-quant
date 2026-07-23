@@ -199,6 +199,8 @@ let currentPositionStressCatalog = null;
 let currentPositionStressReport = null;
 let currentPositionStressExplicitStrategyId = '';
 let positionStressKlinePeriod = 'daily';
+let positionStressKlineSearchTimer = 0;
+let positionStressKlineSearchRequestId = 0;
 const positionStressKlineView = { start: 0, count: 70, dragging: false, dragX: 0, dragStart: 0, hoverIndex: null };
 let draftStrategyExpanded = false;
 let draftStrategyGrade = 'all';
@@ -3359,6 +3361,40 @@ function activePositionStressKlineItem() {
   return klineItems.find((item) => item.code === elements.positionStressKlineSelect?.value) || klineItems[0];
 }
 
+function setPositionStressKlineNote(message, tone = 'success') {
+  if (!elements.positionStressKlineNote || !message) return;
+  elements.positionStressKlineNote.textContent = message;
+  elements.positionStressKlineNote.dataset.tone = tone;
+}
+
+function positionStressKlineDefaultNote(report = currentPositionStressReport) {
+  const klineItems = report?.kline || [];
+  const complete = Boolean(report?.complete || report?.runGate?.formalRunAllowed);
+  const latestSelection = (report?.strategy?.dailySelections || []).at(-1);
+  const selectedCount = latestSelection?.selectedCount ?? report?.strategy?.parameters?.topN ?? klineItems.length;
+  return complete
+    ? `展示最新调仓日入选股票 K 线：${klineItems.length}/${selectedCount} 只；也可搜索本地缓存中的任意股票。`
+    : `展示当前已落地的最新入选股票 K 线：${klineItems.length}/${selectedCount} 只；也可搜索本地缓存中的任意股票。`;
+}
+
+function ensurePositionStressKlineItem(item) {
+  if (!item?.code || !currentPositionStressReport) return;
+  const klineItems = currentPositionStressReport.kline || [];
+  const index = klineItems.findIndex((candidate) => candidate.code === item.code);
+  if (index >= 0) {
+    klineItems[index] = { ...klineItems[index], ...item };
+  } else {
+    klineItems.push({ ...item, fromLocalCache: true });
+  }
+  currentPositionStressReport.kline = klineItems;
+  if (elements.positionStressKlineSelect && ![...elements.positionStressKlineSelect.options].some((option) => option.value === item.code)) {
+    const option = document.createElement('option');
+    option.value = item.code;
+    option.textContent = `${klineItems.length}. ${item.name || item.code} ${item.code} 本地缓存`;
+    elements.positionStressKlineSelect.append(option);
+  }
+}
+
 function positionStressKlineSearchText(item, index) {
   return [
     String(index + 1),
@@ -3381,6 +3417,7 @@ function findPositionStressKlineItem(query) {
 
 function selectPositionStressKlineItem(item, options = {}) {
   if (!item || !elements.positionStressKlineSelect) return;
+  ensurePositionStressKlineItem(item);
   elements.positionStressKlineSelect.value = item.code;
   if (options.syncSearch && elements.positionStressKlineSearch) {
     const klineItems = currentPositionStressReport?.kline || [];
@@ -3390,6 +3427,45 @@ function selectPositionStressKlineItem(item, options = {}) {
   positionStressKlineView.hoverIndex = null;
   elements.positionStressKlineTooltip.hidden = true;
   refreshPositionStressKline({ resetView: options.resetView });
+  if (options.note) setPositionStressKlineNote(options.note, options.noteTone || 'success');
+}
+
+async function searchPositionStressKlineCache(query) {
+  const term = String(query || '').trim();
+  if (!term) return null;
+  const params = new URLSearchParams({ q: term });
+  try {
+    return await request(`/position-stress-api/kline-search?${params.toString()}`);
+  } catch (error) {
+    return null;
+  }
+}
+
+async function handlePositionStressKlineSearch(query) {
+  const requestId = ++positionStressKlineSearchRequestId;
+  const item = findPositionStressKlineItem(query);
+  if (item) {
+    selectPositionStressKlineItem(item, { resetView: true });
+    setPositionStressKlineNote(positionStressKlineDefaultNote(), 'success');
+    return;
+  }
+  const term = String(query || '').trim();
+  if (term.length < 2) {
+    setPositionStressKlineNote(positionStressKlineDefaultNote(), 'success');
+    return;
+  }
+  setPositionStressKlineNote('当前策略名单未命中，正在查找本地全市场行情缓存...', 'success');
+  const response = await searchPositionStressKlineCache(term);
+  if (requestId !== positionStressKlineSearchRequestId) return;
+  if (response?.item) {
+    selectPositionStressKlineItem(response.item, {
+      note: response.message || `已从本地行情缓存加载 ${response.item.name || response.item.code}。`,
+      resetView: true,
+      syncSearch: true,
+    });
+    return;
+  }
+  setPositionStressKlineNote(`当前策略名单和本地行情缓存都没有命中：${term}`, 'error');
 }
 
 function drawPositionStressKline(item, options = {}) {
@@ -3879,12 +3955,7 @@ function renderPositionStress(report) {
   if (activeItem) {
     elements.positionStressKlineSelect.value = activeItem.code;
   }
-  const latestSelection = (report.strategy?.dailySelections || []).at(-1);
-  const klineCount = klineItems.length;
-  const selectedCount = latestSelection?.selectedCount ?? report.strategy?.parameters?.topN ?? klineCount;
-  elements.positionStressKlineNote.textContent = complete
-    ? `展示最新调仓日入选股票 K 线：${klineCount}/${selectedCount} 只。`
-    : `展示当前已落地的最新入选股票 K 线：${klineCount}/${selectedCount} 只，缺失日期不会补画。`;
+  setPositionStressKlineNote(positionStressKlineDefaultNote(report), 'success');
   drawPositionStressKline(activeItem);
 }
 
@@ -4360,10 +4431,10 @@ elements.positionStressKlineSelect?.addEventListener('change', async () => {
 });
 
 elements.positionStressKlineSearch?.addEventListener('input', () => {
-  const item = findPositionStressKlineItem(elements.positionStressKlineSearch.value);
-  if (item) {
-    selectPositionStressKlineItem(item, { resetView: true });
-  }
+  window.clearTimeout(positionStressKlineSearchTimer);
+  positionStressKlineSearchTimer = window.setTimeout(() => {
+    handlePositionStressKlineSearch(elements.positionStressKlineSearch.value);
+  }, 220);
 });
 
 elements.positionStressKlineDaily?.addEventListener('click', () => setPositionStressKlinePeriod('daily'));
