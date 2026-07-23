@@ -3756,6 +3756,23 @@ function drawPositionStressEquity(curve = []) {
   ctx.fillText(`起点 1.0000 / 终点 ${formatNumber(values.at(-1), 4)}`, padding + 76, 24);
 }
 
+function positionStressControlMismatches(report) {
+  const mismatches = [];
+  const dateRange = report?.requestedDateRange || {};
+  const parameters = report?.strategy?.parameters || {};
+  const start = elements.positionStressStart?.value || '';
+  const end = elements.positionStressEnd?.value || '';
+  const topN = Number(elements.positionStressTopN?.value || 0);
+  const capital = Number(elements.positionStressCapital?.value || 0);
+  const strategyId = currentPositionStressExplicitStrategyId || elements.positionStressStrategySelect?.value || '';
+  if (start && dateRange.start && start !== dateRange.start) mismatches.push('开始日期');
+  if (end && dateRange.end && end !== dateRange.end) mismatches.push('结束日期');
+  if (Number.isFinite(topN) && topN > 0 && parameters.topN !== undefined && topN !== Number(parameters.topN)) mismatches.push('持仓数量');
+  if (Number.isFinite(capital) && capital > 0 && parameters.capital !== undefined && capital !== Number(parameters.capital)) mismatches.push('初始资金');
+  if (strategyId && report?.strategy?.id && strategyId !== report.strategy.id) mismatches.push('压测策略');
+  return mismatches;
+}
+
 function renderPositionStress(report) {
   if (!elements.positionStressComplete) return;
   currentPositionStressReport = report;
@@ -3763,19 +3780,23 @@ function renderPositionStress(report) {
   const gate = report.runGate || {};
   const complete = Boolean(report.complete || gate.formalRunAllowed);
   const dateRange = report.requestedDateRange || {};
+  const staleControls = positionStressControlMismatches(report);
+  const controlsStale = staleControls.length > 0;
   const missingText = (report.missingDates || []).length ? `缺 ${report.missingDates.join(', ')}` : '日期完整';
-  const statusTone = complete ? 'good' : 'watch';
+  const statusTone = controlsStale ? 'pending' : complete ? 'good' : 'watch';
 
-  elements.positionStressComplete.innerHTML = `<span class="tag ${statusTone}">${complete ? '完整' : '缺数据'}</span>`;
+  elements.positionStressComplete.innerHTML = `<span class="tag ${statusTone}">${controlsStale ? '待重算' : complete ? '完整' : '缺数据'}</span>`;
   elements.positionStressDateRange.textContent = `${dateRange.start || '-'} 至 ${dateRange.end || '-'} / ${missingText}`;
   elements.positionStressStockCount.textContent = report.stockCount ?? '-';
   elements.positionStressRowCount.textContent = `${report.rowCount ?? 0} 行 / ${report.actualDates?.length ?? 0} 天`;
   elements.positionStressReturn.textContent = formatPercent(metrics.totalReturn, 2);
-  elements.positionStressRunStatus.textContent = report.strategy?.runStatus === 'complete_short_window' ? '短窗压测' : '仅链路预览';
+  elements.positionStressRunStatus.textContent = controlsStale ? '参数待重算' : report.strategy?.runStatus === 'complete_short_window' ? '短窗压测' : '仅链路预览';
   elements.positionStressDrawdown.textContent = formatPercent(metrics.maxDrawdown, 2);
   elements.positionStressTrades.textContent = `${metrics.tradeCount ?? 0} 笔 / ${metrics.simulatedReturnDays ?? 0} 天`;
-  elements.positionStressMessage.textContent = gate.reason || report.sourceMessage || '等待报告';
-  elements.positionStressMessage.dataset.tone = complete ? 'success' : 'error';
+  elements.positionStressMessage.textContent = controlsStale
+    ? `参数已变更（${staleControls.join('、')}），点击运行重新计算。`
+    : gate.reason || report.sourceMessage || '等待报告';
+  elements.positionStressMessage.dataset.tone = controlsStale ? 'error' : complete ? 'success' : 'error';
   const reportFileText = report.reportPath ? `报告：${report.reportPath}` : '';
   elements.positionStressArtifacts.textContent = report.artifacts?.dailyCsv
     ? `行情文件：${report.artifacts.dailyCsv}${reportFileText ? ` / ${reportFileText}` : ''}`
@@ -4568,6 +4589,17 @@ elements.positionStressStrategySelect?.addEventListener('change', async () => {
   elements.positionStressMessage.textContent = strategyId ? '已选择策略，点击运行生成选股和压测结果。' : '请先选择压测策略。';
   elements.positionStressMessage.dataset.tone = strategyId ? 'success' : 'error';
 });
+
+[elements.positionStressStart, elements.positionStressEnd, elements.positionStressTopN, elements.positionStressCapital]
+  .filter(Boolean)
+  .forEach((control) => {
+    control.addEventListener('input', () => {
+      if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
+    });
+    control.addEventListener('change', () => {
+      if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
+    });
+  });
 
 elements.runPositionStress?.addEventListener('click', async () => {
   const strategyId = requireSelectedPositionStressStrategy();

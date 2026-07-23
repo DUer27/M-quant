@@ -1465,6 +1465,11 @@ function selectedCodesList(value) {
   return String(value).split(/[|,，\s]+/).map((item) => item.trim()).filter(Boolean);
 }
 
+function csi500LcrV1LatestSelectedCodes() {
+  const candidate = readLatestCsi500LcrV1Candidate() || {};
+  return selectedCodesList(candidate.latest_selection?.codes || candidate.latest_selection?.selected_codes);
+}
+
 function paperWatchActivityStatus(metrics) {
   if (!metrics.ledgerCount) {
     return {
@@ -3769,6 +3774,8 @@ function runPythonRefreshStep(name, scriptPath, args = [], timeout = 180_000) {
     status: result.status,
     stderr: String(result.stderr || '').trim(),
     stdout: String(result.stdout || '').trim(),
+    timedOut: Boolean(result.error && result.error.code === 'ETIMEDOUT'),
+    timeoutMs: timeout,
   };
 }
 
@@ -3939,17 +3946,17 @@ function buildPositionStressStrategyCatalog() {
     }));
   }
 
-  const v1ForV2 = byId.get('csi500_low_crowding_reversal_index_enhancement_v1') || readPositionStressSelection();
+  const v1SelectedCodesForV2 = csi500LcrV1LatestSelectedCodes();
   if (!byId.has('csi500_low_crowding_reversal_index_enhancement_v2')) {
     byId.set('csi500_low_crowding_reversal_index_enhancement_v2', normalizePositionStressStrategy({
-      adapter: positionStressAdapterFor('csi500_low_crowding_reversal_index_enhancement_v2', v1ForV2?.selectedCodes || []),
+      adapter: positionStressAdapterFor('csi500_low_crowding_reversal_index_enhancement_v2', v1SelectedCodesForV2),
       evidence: 'v1_candidate_plus_dynamic_signal_holding',
       gateStatus: 'candidate_for_pressure_test',
       layer: '中证500指数增强',
       name: '中证500低拥挤反转指数增强候选策略 v2',
       runnable: true,
       runnableReason: '基于 v1 最新名单，压测账本改为信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。',
-      selectedCodes: v1ForV2?.selectedCodes || [],
+      selectedCodes: v1SelectedCodesForV2,
       source: 'csi500_lcr_v1_dynamic_signal_holding_upgrade',
       strategyId: 'csi500_low_crowding_reversal_index_enhancement_v2',
       execution: positionStressExecutionParamsFor('csi500_low_crowding_reversal_index_enhancement_v2'),
@@ -4043,16 +4050,20 @@ function runPositionStressLab(options = {}) {
   if (options.importFile) {
     args.push('--import-file', String(options.importFile));
   }
-  const step = runPythonRefreshStep('position_stress_lab', positionStressScriptPath, args, 240_000);
+  const step = runPythonRefreshStep('position_stress_lab', positionStressScriptPath, args, 900_000);
   const report = readPositionStressReport({ start, end });
   const reportComplete = Boolean(report?.complete || report?.runGate?.formalRunAllowed);
+  const timedOut = Boolean(step.timedOut || step.signal === 'SIGTERM');
   return {
     ok: step.ok || reportComplete,
     step,
     report,
+    errorKind: !step.ok && timedOut ? 'timeout' : !step.ok ? 'script_failed' : '',
     stepWarning: !step.ok && reportComplete
       ? '压测报告已完整生成，但脚本收尾触达接口超时边界；请以已落盘报告为准。'
-      : '',
+      : timedOut
+        ? `压测计算超过 ${Math.round((step.timeoutMs || 0) / 1000)} 秒被终止；请缩短窗口或稍后重跑。`
+        : '',
   };
 }
 
@@ -7244,9 +7255,13 @@ async function handleApi(req, res, pathname) {
     const body = await readJsonBody(req);
     const result = runPositionStressLab(body);
     sendJson(res, {
-      message: result.report?.runGate?.formalRunAllowed
-        ? '建仓压力测试数据完整，短窗口结果已生成。'
-        : '建仓压力测试已生成预览，但数据不完整，正式运行已阻断。',
+      message: result.errorKind === 'timeout'
+        ? result.stepWarning || '建仓压力测试计算超时，请缩短窗口或稍后重跑。'
+        : result.report?.runGate?.formalRunAllowed
+          ? '建仓压力测试数据完整，结果已生成。'
+          : result.step?.ok === false
+            ? '建仓压力测试脚本运行失败，请查看错误详情。'
+            : '建仓压力测试已生成预览，但数据不完整，正式运行已阻断。',
       ...result,
     }, result.ok ? 200 : 500);
     return true;

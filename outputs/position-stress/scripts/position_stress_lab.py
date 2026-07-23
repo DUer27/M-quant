@@ -95,6 +95,15 @@ def read_symbol_pool(path: Path) -> pd.DataFrame:
     return pool.drop_duplicates("code").sort_values("code")
 
 
+def narrow_pool_to_selected_codes(pool: pd.DataFrame, selected_codes: tuple[str, ...]) -> pd.DataFrame:
+    selected = [normalize_code(code) for code in selected_codes if str(code).strip()]
+    if not selected:
+        return pool
+    names = dict(zip(pool["code"], pool["name"])) if "name" in pool.columns else {}
+    rows = [{"code": code, "name": names.get(code, code), "security": jq_security(code)} for code in selected]
+    return pd.DataFrame(rows).drop_duplicates("code").sort_values("code")
+
+
 def read_cache_symbol_pool() -> pd.DataFrame:
     rows = []
     for path in sorted(AKSHARE_RAW_DIR.glob("*.csv")):
@@ -1325,7 +1334,7 @@ def format_percent_label(value: float) -> str:
 def build_report(config: RunConfig) -> dict[str, object]:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    pool = read_symbol_pool(config.symbols_file)
+    pool = narrow_pool_to_selected_codes(read_symbol_pool(config.symbols_file), config.selected_codes)
     manual_data, manual_message = read_manual_import(config.import_file, pool) if config.import_file else (pd.DataFrame(), "")
 
     jq_data, jq_message = try_fetch_joinquant(pool, config)
@@ -1358,6 +1367,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
     actual_dates = sorted(scored["date"].dropna().unique().tolist())
     expected_codes = set(pool["code"].tolist())
     is_auto_cache_pool = str(config.symbols_file) == "auto_cache_all"
+    is_selected_code_pool = bool(config.selected_codes)
     missing_coverage = []
     coverage_rows = []
     for day in requested_dates:
@@ -1379,10 +1389,12 @@ def build_report(config: RunConfig) -> dict[str, object]:
                 "missingCodes": missing_codes[:30],
             })
     strict_missing_dates = [item["date"] for item in missing_coverage]
-    min_tradable = max(int(config.top_n) * 20, int(config.top_n))
-    weak_coverage_dates = [row["date"] for row in coverage_rows if row["tradableCount"] < min_tradable or row["selectedAvailableCount"] < min(int(config.top_n), len(config.selected_codes) or int(config.top_n))]
-    missing_dates = weak_coverage_dates if is_auto_cache_pool else strict_missing_dates
-    is_complete = len(weak_coverage_dates) == 0 if is_auto_cache_pool else len(missing_coverage) == 0
+    selected_min_available = min(int(config.top_n), len(config.selected_codes) or int(config.top_n))
+    min_tradable = selected_min_available if is_selected_code_pool else max(int(config.top_n) * 20, int(config.top_n))
+    weak_coverage_dates = [row["date"] for row in coverage_rows if row["tradableCount"] < min_tradable or row["selectedAvailableCount"] < selected_min_available]
+    relaxed_coverage = is_auto_cache_pool or is_selected_code_pool
+    missing_dates = weak_coverage_dates if relaxed_coverage else strict_missing_dates
+    is_complete = len(weak_coverage_dates) == 0 if relaxed_coverage else len(missing_coverage) == 0
     latest_date = actual_dates[-1] if actual_dates else ""
 
     data_csv = DATA_DIR / f"position_stress_{config.start.replace('-', '')}_{config.end.replace('-', '')}_daily.csv"
@@ -1423,6 +1435,8 @@ def build_report(config: RunConfig) -> dict[str, object]:
         "runGate": {
             "formalRunAllowed": bool(is_complete and len(actual_dates) >= 2),
             "reason": (
+                "名单股票池采用覆盖检查：每日可交易样本和目标名单覆盖足够，可以运行动态持仓压力测试；不作为正式策略收益结论。"
+                if is_complete and is_selected_code_pool else
                 "全缓存股票池采用宽松覆盖检查：每日可交易样本和目标名单覆盖足够，可以运行动态持仓压力测试；不作为正式策略收益结论。"
                 if is_complete and is_auto_cache_pool else
                 "短窗口数据完整，可以运行建仓链路压力测试；不作为策略有效性结论。"
@@ -1438,7 +1452,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
         "missingDates": missing_dates,
         "missingCoverage": missing_coverage,
         "coverage": {
-            "mode": "auto_cache_all_relaxed" if is_auto_cache_pool else "strict_pool_full_coverage",
+            "mode": "selected_codes_relaxed" if is_selected_code_pool else "auto_cache_all_relaxed" if is_auto_cache_pool else "strict_pool_full_coverage",
             "minTradablePerDate": min_tradable,
             "weakCoverageDates": weak_coverage_dates,
             "daily": coverage_rows[:500],

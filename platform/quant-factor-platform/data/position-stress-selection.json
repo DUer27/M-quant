@@ -8,26 +8,21 @@
   "runnable": true,
   "runnableReason": "基于 v1 最新名单，压测账本改为信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。",
   "selectedCodes": [
-    "688568",
     "300857",
     "688200",
     "002340",
     "300395",
     "300136",
     "300037",
-    "002517",
-    "002271",
-    "002266",
-    "300679",
-    "600483",
     "003031",
-    "688599",
+    "688777",
+    "300757",
     "002281",
-    "689009",
-    "300207",
     "300751",
     "002008",
-    "000729"
+    "002738",
+    "301611",
+    "300054"
   ],
   "source": "csi500_lcr_v1_dynamic_signal_holding_upgrade",
   "strategyId": "csi500_low_crowding_reversal_index_enhancement_v2",
@@ -46,5 +41,5 @@
     "scoreDropPct": 0.3,
     "symbolsFile": "auto_cache_all"
   },
-  "selectedAt": "2026-07-23T05:59:41.670Z"
+  "selectedAt": "2026-07-23T07:48:19.052Z"
 }
