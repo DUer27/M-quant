@@ -517,6 +517,7 @@
                   <h2>入选股票K线</h2>
                 </div>
                 <div class="kline-toolbar">
+                  <input id="position-stress-kline-search" type="search" inputmode="search" autocomplete="off" aria-label="搜索股票序号、名称或代码" placeholder="序号 / 名称 / 代码">
                   <select id="position-stress-kline-select" aria-label="选择股票K线"></select>
                   <div class="segmented-control" aria-label="K线周期">
                     <button id="position-stress-kline-daily" class="active" type="button" data-kline-period="daily">日K</button>
@@ -549,7 +550,7 @@
                 </label>
                 <label>
                   结束日期
-                  <input id="position-stress-end" type="date" value="2026-07-15" />
+                  <input id="position-stress-end" type="date" value="2026-07-22" />
                 </label>
                 <label>
                   持仓数量
@@ -581,7 +582,7 @@
               </div>
               <label class="stress-import-box">
                 粘贴真实行情CSV/JSON
-                <textarea id="position-stress-import-ohlcv" rows="5" placeholder="date,code,open,high,low,close,volume,amount&#10;2026-07-15,000001,10.5,10.8,10.4,10.7,123456,123456789"></textarea>
+                <textarea id="position-stress-import-ohlcv" rows="5" placeholder="date,code,open,high,low,close,volume,amount&#10;2026-07-22,000001,10.5,10.8,10.4,10.7,123456,123456789"></textarea>
               </label>
               <div class="backtest-actions stress-actions">
                 <button id="import-position-stress-ohlcv" type="button">导入真实行情</button>
@@ -610,6 +611,7 @@
                 <p class="eyebrow">Trade Detail</p>
                 <h2>成交明细</h2>
               </div>
+              <button id="export-position-stress-trades" type="button">导出Excel</button>
             </div>
             <div class="table-scroll stress-trade-table">
               <table>

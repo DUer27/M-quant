@@ -15,6 +15,44 @@ ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_REPORT = ROOT / "outputs" / "position-stress" / "results" / "position_stress_latest.json"
 EXPORT_DIR = ROOT / "outputs" / "position-stress" / "exports"
 
+TRADE_HEADERS = [
+    ("signalDate", "信号日"),
+    ("entryDate", "建仓日"),
+    ("exitDate", "退出日"),
+    ("holdingDays", "持仓交易日"),
+    ("exitReason", "退出原因"),
+    ("code", "代码"),
+    ("security", "证券代码"),
+    ("name", "名称"),
+    ("entryClose", "建仓收盘"),
+    ("exitClose", "退出收盘"),
+    ("entryPrice", "成交买价"),
+    ("exitPrice", "成交卖价"),
+    ("targetWeight", "目标权重"),
+    ("actualWeight", "实际权重"),
+    ("shares", "股数"),
+    ("orderNotional", "目标金额"),
+    ("filledNotional", "成交金额"),
+    ("unfilledNotional", "未成交金额"),
+    ("fillRatio", "成交率"),
+    ("notional", "兼容名义金额"),
+    ("pnl", "盈亏"),
+    ("buyCost", "买入成本"),
+    ("sellCost", "卖出成本"),
+    ("costAmount", "总成本"),
+    ("return", "收益"),
+    ("contribution", "组合贡献"),
+    ("portfolioValueBefore", "交易前资产"),
+    ("portfolioValueAfter", "交易后资产"),
+    ("cashAfterTrade", "买入后现金"),
+    ("strategyScore", "策略分"),
+    ("exitScore", "退出分"),
+    ("entryRank", "建仓排名"),
+    ("exitRank", "退出排名"),
+    ("maxReturnDuringHold", "持仓最高收益"),
+    ("scoreDropPct", "分数衰减"),
+]
+
 
 def clean(value):
     if isinstance(value, (str, int, float, bool)) or value is None:
@@ -179,16 +217,27 @@ def diagnostic_rows(report: dict[str, object]) -> list[dict[str, object]]:
     return rows
 
 
-def export(report_path: Path, output_path: Path | None = None) -> Path:
+def default_export_path(report: dict[str, object], sheet: str) -> Path:
+    strategy = str((report.get("strategy") or {}).get("id") or "position_stress")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    suffix = "trades" if sheet == "trades" else "equity"
+    return EXPORT_DIR / f"position_stress_{suffix}_{strategy}_{stamp}.xlsx"
+
+
+def export(report_path: Path, output_path: Path | None = None, sheet: str = "all") -> Path:
     report = json.loads(report_path.read_text(encoding="utf-8"))
     EXPORT_DIR.mkdir(parents=True, exist_ok=True)
     if output_path is None:
-        strategy = str((report.get("strategy") or {}).get("id") or "position_stress")
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = EXPORT_DIR / f"position_stress_equity_{strategy}_{stamp}.xlsx"
+        output_path = default_export_path(report, sheet)
 
     wb = Workbook()
     wb.remove(wb.active)
+    if sheet == "trades":
+        write_sheet(wb, "成交明细", (report.get("strategy") or {}).get("trades") or [], TRADE_HEADERS)
+        write_sheet(wb, "导出口径", metric_rows(report), [("name", "指标"), ("value", "值")])
+        wb.save(output_path)
+        return output_path
+
     write_sheet(wb, "核心指标", metric_rows(report), [("name", "指标"), ("value", "值")])
     write_sheet(wb, "净值曲线", (report.get("strategy") or {}).get("equityCurve") or [], [
         ("date", "日期"),
@@ -225,36 +274,7 @@ def export(report_path: Path, output_path: Path | None = None) -> Path:
         ("dailyReturn", "日收益"),
         ("value", "数值"),
     ])
-    write_sheet(wb, "成交明细", (report.get("strategy") or {}).get("trades") or [], [
-        ("signalDate", "信号日"),
-        ("entryDate", "建仓日"),
-        ("exitDate", "退出日"),
-        ("code", "代码"),
-        ("security", "证券代码"),
-        ("name", "名称"),
-        ("entryClose", "建仓收盘"),
-        ("exitClose", "退出收盘"),
-        ("entryPrice", "成交买价"),
-        ("exitPrice", "成交卖价"),
-        ("targetWeight", "目标权重"),
-        ("actualWeight", "实际权重"),
-        ("shares", "股数"),
-        ("orderNotional", "目标金额"),
-        ("filledNotional", "成交金额"),
-        ("unfilledNotional", "未成交金额"),
-        ("fillRatio", "成交率"),
-        ("notional", "兼容名义金额"),
-        ("pnl", "盈亏"),
-        ("buyCost", "买入成本"),
-        ("sellCost", "卖出成本"),
-        ("costAmount", "总成本"),
-        ("return", "收益"),
-        ("contribution", "组合贡献"),
-        ("portfolioValueBefore", "交易前资产"),
-        ("portfolioValueAfter", "交易后资产"),
-        ("cashAfterTrade", "买入后现金"),
-        ("strategyScore", "策略分"),
-    ])
+    write_sheet(wb, "成交明细", (report.get("strategy") or {}).get("trades") or [], TRADE_HEADERS)
     write_sheet(wb, "压力场景", report.get("stress") or [], [
         ("category", "类别"),
         ("name", "场景"),
@@ -287,8 +307,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="导出建仓压力测试组合净值结果 Excel")
     parser.add_argument("--report", default=str(DEFAULT_REPORT))
     parser.add_argument("--output", default="")
+    parser.add_argument("--sheet", choices=["all", "trades"], default="all")
     args = parser.parse_args()
-    output = export(Path(args.report), Path(args.output) if args.output else None)
+    output = export(Path(args.report), Path(args.output) if args.output else None, args.sheet)
     print(output)
 
 

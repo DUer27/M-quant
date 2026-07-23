@@ -4,9 +4,9 @@
 
 ## 固定口径
 
-- 请求日期窗口：`2025-01-01` 到 `2026-07-15`
+- 请求日期窗口：`2025-01-01` 到 `2026-07-22`
 - 实际首个交易日：`2025-01-02`
-- 目标交易日数：`370`
+- 目标交易日数：`375`
 - 复权口径：前复权 `qfq`
 - 数据原则：只保存真实行情接口返回的 OHLCV，不生成、不插值、不前向填充缺失交易日。
 - 主要数据源：东方财富 K 线直连接口 `eastmoney.push2his.kline`
@@ -85,41 +85,41 @@ outputs/sources/akshare/scripts/complete_a_share_all_history.py
 
 核心输出：
 
-- 全 A 真实行情合并文件：`outputs/sources/akshare/processed/a_share_all_real_20250101_20260715_qfq.csv`
-- 全 A 有真实窗口行情股票池：`outputs/sources/akshare/processed/a_share_all_available_pool_20250101_20260715.csv`
-- 全 A 满 370 天股票池：`outputs/sources/akshare/processed/a_share_all_full_370_pool_20250101_20260715.csv`
-- 当前压力测试支持范围的非 ST 满覆盖池：`outputs/sources/akshare/processed/a_share_pressure_supported_non_st_full_370_pool_20250101_20260715.csv`
+- 全 A 真实行情合并文件：`outputs/sources/akshare/processed/a_share_all_real_20250101_20260722_qfq.csv`
+- 全 A 有真实窗口行情股票池：`outputs/sources/akshare/processed/a_share_all_available_pool_20250101_20260722.csv`
+- 全 A 满 375 天股票池：`outputs/sources/akshare/processed/a_share_all_full_375_pool_20250101_20260722.csv`
+- 当前压力测试支持范围的非 ST 满覆盖池：`outputs/sources/akshare/processed/a_share_pressure_supported_non_st_full_375_pool_20250101_20260722.csv`
 
 审计输出：
 
-- 全量审计表：`outputs/sources/akshare/results/a_share_all_completion_audit_20260720.csv`
-- 缺失或不满覆盖清单：`outputs/sources/akshare/results/a_share_all_completion_missing_or_partial_20260720.csv`
-- 本轮联网失败清单：`outputs/sources/akshare/results/a_share_all_completion_fetch_failures_20260720.csv`
-- 汇总 JSON：`outputs/sources/akshare/results/a_share_all_completion_summary_20260720.json`
+- 全量审计表：`outputs/sources/akshare/results/a_share_all_completion_audit_20260723.csv`
+- 缺失或不满覆盖清单：`outputs/sources/akshare/results/a_share_all_completion_missing_or_partial_20260723.csv`
+- 本轮联网失败清单：`outputs/sources/akshare/results/a_share_all_completion_fetch_failures_20260723.csv`
+- 汇总 JSON：`outputs/sources/akshare/results/a_share_all_completion_summary_20260723.json`
 
 ## 当前完成状态
 
-截至 `2026-07-20 04:23:55` 的最新审计：
+截至 `2026-07-23 12:01:52` 的最新审计：
 
 ```text
 全 A 代码池：5879
 唯一代码：5879
 ST/退市名称：483
-有真实窗口行情：5578
-满 370 天：4672
-真实但不满 370 天：906
-真实接口无返回：301
-合并行情行数：2,010,890
-合并文件覆盖交易日：370
+有真实窗口行情：5581
+满 375 天：4670
+真实但不满 375 天：911
+真实接口无返回：298
+合并行情行数：2,038,511
+合并文件覆盖交易日：375
 ```
 
 当前压力测试模型可直接识别的非 ST 范围：
 
 ```text
 总数：5061
-满 370 天：4407
-真实但不满 370 天：589
-接口无返回：65
+满 375 天：4406
+真实但不满 375 天：591
+接口无返回：64
 ```
 
 `65` 个接口无返回代码已重试过，多数是已合并、退市或历史占位代码。按数据诚实原则，不补造这些代码在窗口内的行情。

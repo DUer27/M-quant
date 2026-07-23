@@ -53,6 +53,18 @@ class RunConfig:
     stamp_duty_bps: float = 5.0
     slippage_bps: float = 5.0
     cash_buffer_pct: float = 0.01
+    holding_policy: str = "next_day"
+    min_holding_days: int = 1
+    base_holding_days: int = 5
+    max_holding_days: int = 20
+    hard_max_holding_days: int = 60
+    signal_buffer_n: int = 80
+    trend_extend_buffer_n: int = 40
+    trend_extend_min_return: float = 0.03
+    stop_loss_pct: float = 0.08
+    take_profit_pct: float = 0.12
+    trailing_stop_pct: float = 0.06
+    score_drop_pct: float = 0.30
 
 
 def normalize_code(value: str) -> str:
@@ -68,6 +80,8 @@ def jq_security(code: str) -> str:
 
 
 def read_symbol_pool(path: Path) -> pd.DataFrame:
+    if str(path) == "auto_cache_all":
+        return read_cache_symbol_pool()
     if not path.exists():
         raise SystemExit(f"股票池文件不存在：{path}")
     pool = pd.read_csv(path, dtype={"code": str})
@@ -79,6 +93,25 @@ def read_symbol_pool(path: Path) -> pd.DataFrame:
     pool["code"] = pool["code"].map(normalize_code)
     pool["security"] = pool["code"].map(jq_security)
     return pool.drop_duplicates("code").sort_values("code")
+
+
+def read_cache_symbol_pool() -> pd.DataFrame:
+    rows = []
+    for path in sorted(AKSHARE_RAW_DIR.glob("*.csv")):
+        code = normalize_code(path.stem)
+        name = code
+        try:
+            sample = pd.read_csv(path, dtype={"code": str}, encoding="utf-8-sig", nrows=1)
+            if not sample.empty and "name" in sample.columns and pd.notna(sample.iloc[0].get("name")):
+                name = str(sample.iloc[0].get("name"))
+        except Exception:
+            pass
+        rows.append({"code": code, "name": name, "pool_source": "akshare_raw_cache_all"})
+    if not rows:
+        raise SystemExit(f"全缓存股票池为空：{AKSHARE_RAW_DIR}")
+    pool = pd.DataFrame(rows)
+    pool["security"] = pool["code"].map(jq_security)
+    return pool[["code", "name", "security"]].drop_duplicates("code").sort_values("code")
 
 
 def try_fetch_joinquant(pool: pd.DataFrame, config: RunConfig) -> tuple[pd.DataFrame, str]:
@@ -642,13 +675,8 @@ def lot_shares(target_notional: float, price: float, lot_size: int) -> int:
     return int(math.floor(target_notional / price / lot) * lot)
 
 
-def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConfig, delay_days: int = 0) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
-    price = scored[["date", "code", "security", "name", "close"]].dropna().copy()
-    dates = sorted(price["date"].unique())
-    close_map = {(row.date, row.code): row.close for row in price.itertuples()}
-    initial_capital = max(float(config.capital or 0), 0.0)
-    cash = initial_capital
-    curve = [{
+def initial_curve(dates: list[str], initial_capital: float) -> list[dict[str, object]]:
+    return [{
         "date": dates[0],
         "equity": 1.0,
         "nav": 1.0,
@@ -661,6 +689,137 @@ def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConf
         "drawdown": 0.0,
         "costAmount": 0.0,
     }] if dates else []
+
+
+def summarize_equity(
+    curve: list[dict[str, object]],
+    trades: list[dict[str, object]],
+    returns: list[float],
+    daily_costs: list[float],
+    dates: list[str],
+    initial_capital: float,
+    ending_value: float,
+    total_buy_notional: float,
+    total_sell_notional: float,
+    total_cost_amount: float,
+    total_order_notional: float,
+    total_filled_notional: float,
+    avg_holding_count: float | None = None,
+    holding_days: list[int] | None = None,
+    exit_reasons: dict[str, int] | None = None,
+) -> dict[str, object]:
+    max_drawdown = 0.0
+    peak = 1.0
+    for point in curve:
+        value = float(point["equity"] or 0)
+        peak = max(peak, value)
+        max_drawdown = min(max_drawdown, value / peak - 1)
+    trade_return_values = [float(trade["return"]) for trade in trades if trade.get("return") is not None]
+    positive_trades = [value for value in trade_return_values if value > 0]
+    negative_trades = [value for value in trade_return_values if value < 0]
+    trade_contributions = [float(trade.get("contribution") or 0) for trade in trades if trade.get("return") is not None]
+    positive_contributions = [value for value in trade_contributions if value > 0]
+    negative_contributions = [value for value in trade_contributions if value < 0]
+    profit_contribution = float(np.sum(positive_contributions)) if positive_contributions else 0.0
+    loss_contribution = float(np.sum(negative_contributions)) if negative_contributions else 0.0
+    return_concentration = (
+        float(np.sum(np.square(positive_contributions)) / (profit_contribution ** 2))
+        if profit_contribution > 0
+        else None
+    )
+    filled_trades = [trade for trade in trades if float(trade.get("filledNotional") or 0) > 0]
+    unique_signal_dates = len(set(trade.get("signalDate") for trade in filled_trades))
+    unique_codes = len(set(trade.get("code") for trade in filled_trades))
+    if avg_holding_count is None:
+        avg_holding_count = (len(filled_trades) / unique_signal_dates) if unique_signal_dates else 0
+    best_trade = max(filled_trades, key=lambda item: item.get("return") if item.get("return") is not None else -999) if filled_trades else None
+    worst_trade = min(filled_trades, key=lambda item: item.get("return") if item.get("return") is not None else 999) if filled_trades else None
+    best_day = max(curve[1:], key=lambda item: item.get("dailyReturn") if item.get("dailyReturn") is not None else -999) if len(curve) > 1 else None
+    worst_day = min(curve[1:], key=lambda item: item.get("dailyReturn") if item.get("dailyReturn") is not None else 999) if len(curve) > 1 else None
+    daily_volatility = float(np.std(returns, ddof=0)) if returns else None
+    average_daily_return = float(np.mean(returns)) if returns else None
+    total_return = ending_value / initial_capital - 1 if initial_capital > 0 else 0.0
+    drawdown_abs = abs(max_drawdown) if max_drawdown else None
+    ending_nav = ending_value / initial_capital if initial_capital > 0 else None
+    annualized_return = (ending_nav ** (252 / len(returns)) - 1) if returns and ending_nav and ending_nav > 0 else None
+    single_stock_contribution = None
+    if filled_trades:
+        best_contribution_trade = max(
+            filled_trades,
+            key=lambda item: float(item.get("contribution") or 0),
+        )
+        single_stock_contribution = float(best_contribution_trade.get("contribution") or 0)
+    else:
+        best_contribution_trade = None
+    avg_fill_ratio = float(np.mean([float(trade.get("fillRatio") or 0) for trade in trades])) if trades else None
+    turnover = (total_buy_notional + total_sell_notional) / initial_capital if initial_capital > 0 else None
+    cash_ratio = ending_value / ending_value if ending_value > 0 else None
+    avg_holding_days = float(np.mean(holding_days)) if holding_days else None
+    median_holding_days = float(np.median(holding_days)) if holding_days else None
+    metrics = {
+        "totalReturn": finite_float(total_return, 6),
+        "maxDrawdown": finite_float(max_drawdown, 6),
+        "initialCapital": finite_float(initial_capital, 2),
+        "endingValue": finite_float(ending_value, 2),
+        "totalPnl": finite_float(ending_value - initial_capital, 2),
+        "totalCostAmount": finite_float(total_cost_amount, 2),
+        "averageDailyCost": finite_float(np.mean(daily_costs), 2) if daily_costs else None,
+        "totalBuyNotional": finite_float(total_buy_notional, 2),
+        "totalSellNotional": finite_float(total_sell_notional, 2),
+        "totalOrderNotional": finite_float(total_order_notional, 2),
+        "totalFilledNotional": finite_float(total_filled_notional, 2),
+        "averageFillRatio": finite_float(avg_fill_ratio, 4) if avg_fill_ratio is not None else None,
+        "endingCash": finite_float(ending_value, 2),
+        "endingCashRatio": finite_float(cash_ratio, 4) if cash_ratio is not None else None,
+        "turnover": finite_float(turnover, 4) if turnover is not None else None,
+        "dailyWinRate": finite_float(np.mean([ret > 0 for ret in returns]), 4) if returns else None,
+        "averageDailyReturn": finite_float(average_daily_return, 6) if average_daily_return is not None else None,
+        "dailyVolatility": finite_float(daily_volatility, 6) if daily_volatility is not None else None,
+        "returnDrawdownRatio": safe_ratio(total_return, drawdown_abs),
+        "annualizedReturn": finite_float(annualized_return, 6) if annualized_return is not None else None,
+        "calmarLike": safe_ratio(annualized_return, drawdown_abs),
+        "returnVolatilityRatio": safe_ratio(total_return, daily_volatility),
+        "simplifiedSharpe": safe_ratio((average_daily_return or 0) * math.sqrt(252), daily_volatility) if daily_volatility else None,
+        "averageWinReturn": finite_float(np.mean(positive_trades), 6) if positive_trades else None,
+        "averageLossReturn": finite_float(np.mean(negative_trades), 6) if negative_trades else None,
+        "profitLossRatio": finite_float(abs(np.mean(positive_trades) / np.mean(negative_trades)), 4) if positive_trades and negative_trades else None,
+        "profitContribution": finite_float(profit_contribution, 6),
+        "lossContribution": finite_float(loss_contribution, 6),
+        "returnConcentration": finite_float(return_concentration, 4) if return_concentration is not None else None,
+        "maxDailyContribution": finite_float(best_day.get("dailyReturn"), 6) if best_day else None,
+        "maxSingleStockContribution": finite_float(single_stock_contribution, 6) if single_stock_contribution is not None else None,
+        "maxSingleStockContributionTrade": best_contribution_trade,
+        "tradeWinRate": finite_float(np.mean([ret > 0 for ret in trade_return_values]), 4) if trade_return_values else None,
+        "averageTradeReturn": finite_float(np.mean(trade_return_values), 6) if trade_return_values else None,
+        "bestTradeReturn": finite_float(max(trade_return_values), 6) if trade_return_values else None,
+        "worstTradeReturn": finite_float(min(trade_return_values), 6) if trade_return_values else None,
+        "bestTrade": best_trade,
+        "worstTrade": worst_trade,
+        "bestDay": best_day,
+        "worstDay": worst_day,
+        "uniqueHeldStocks": unique_codes,
+        "averageHoldingCount": finite_float(avg_holding_count, 2),
+        "averageHoldingDays": finite_float(avg_holding_days, 2) if avg_holding_days is not None else None,
+        "medianHoldingDays": finite_float(median_holding_days, 2) if median_holding_days is not None else None,
+        "exitReasonCounts": exit_reasons or {},
+        "rebalanceCount": unique_signal_dates,
+        "tradingDays": len(dates),
+        "simulatedReturnDays": len(returns),
+        "tradeCount": len(filled_trades),
+        "orderCount": len(trades),
+    }
+    return metrics
+
+
+def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConfig, delay_days: int = 0) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
+    if config.holding_policy == "dynamic_signal" and delay_days == 0:
+        return simulate_dynamic_signal_equity(scored, signals, config)
+    price = scored[["date", "code", "security", "name", "close"]].dropna().copy()
+    dates = sorted(price["date"].unique())
+    close_map = {(row.date, row.code): row.close for row in price.itertuples()}
+    initial_capital = max(float(config.capital or 0), 0.0)
+    cash = initial_capital
+    curve = initial_curve(dates, initial_capital)
     trades: list[dict[str, object]] = []
     returns: list[float] = []
     daily_costs: list[float] = []
@@ -807,101 +966,299 @@ def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConf
             "costAmount": finite_float(day_cost, 2),
         })
 
-    max_drawdown = 0.0
-    peak = 1.0
-    for point in curve:
-        value = float(point["equity"] or 0)
-        peak = max(peak, value)
-        max_drawdown = min(max_drawdown, value / peak - 1)
-    trade_return_values = [float(trade["return"]) for trade in trades if trade.get("return") is not None]
-    positive_trades = [value for value in trade_return_values if value > 0]
-    negative_trades = [value for value in trade_return_values if value < 0]
-    trade_contributions = [float(trade.get("contribution") or 0) for trade in trades if trade.get("return") is not None]
-    positive_contributions = [value for value in trade_contributions if value > 0]
-    negative_contributions = [value for value in trade_contributions if value < 0]
-    profit_contribution = float(np.sum(positive_contributions)) if positive_contributions else 0.0
-    loss_contribution = float(np.sum(negative_contributions)) if negative_contributions else 0.0
-    return_concentration = (
-        float(np.sum(np.square(positive_contributions)) / (profit_contribution ** 2))
-        if profit_contribution > 0
-        else None
+    metrics = summarize_equity(
+        curve,
+        trades,
+        returns,
+        daily_costs,
+        dates,
+        initial_capital,
+        cash,
+        total_buy_notional,
+        total_sell_notional,
+        total_cost_amount,
+        total_order_notional,
+        total_filled_notional,
+        holding_days=[1 for trade in trades if float(trade.get("filledNotional") or 0) > 0],
+        exit_reasons={"next_day": len([trade for trade in trades if float(trade.get("filledNotional") or 0) > 0])},
     )
-    filled_trades = [trade for trade in trades if float(trade.get("filledNotional") or 0) > 0]
-    unique_signal_dates = len(set(trade.get("signalDate") for trade in filled_trades))
-    unique_codes = len(set(trade.get("code") for trade in filled_trades))
-    avg_holding_count = (len(filled_trades) / unique_signal_dates) if unique_signal_dates else 0
-    best_trade = max(filled_trades, key=lambda item: item.get("return") if item.get("return") is not None else -999) if filled_trades else None
-    worst_trade = min(filled_trades, key=lambda item: item.get("return") if item.get("return") is not None else 999) if filled_trades else None
-    best_day = max(curve[1:], key=lambda item: item.get("dailyReturn") if item.get("dailyReturn") is not None else -999) if len(curve) > 1 else None
-    worst_day = min(curve[1:], key=lambda item: item.get("dailyReturn") if item.get("dailyReturn") is not None else 999) if len(curve) > 1 else None
-    daily_volatility = float(np.std(returns, ddof=0)) if returns else None
-    average_daily_return = float(np.mean(returns)) if returns else None
-    ending_value = cash
-    total_return = ending_value / initial_capital - 1 if initial_capital > 0 else 0.0
-    drawdown_abs = abs(max_drawdown) if max_drawdown else None
-    ending_nav = ending_value / initial_capital if initial_capital > 0 else None
-    annualized_return = (ending_nav ** (252 / len(returns)) - 1) if returns and ending_nav and ending_nav > 0 else None
-    single_stock_contribution = None
-    if filled_trades:
-        best_contribution_trade = max(
-            filled_trades,
-            key=lambda item: float(item.get("contribution") or 0),
-        )
-        single_stock_contribution = float(best_contribution_trade.get("contribution") or 0)
-    else:
-        best_contribution_trade = None
-    avg_fill_ratio = float(np.mean([float(trade.get("fillRatio") or 0) for trade in trades])) if trades else None
-    turnover = (total_buy_notional + total_sell_notional) / initial_capital if initial_capital > 0 else None
-    cash_ratio = ending_value / ending_value if ending_value > 0 else None
-    metrics = {
-        "totalReturn": finite_float(total_return, 6),
-        "maxDrawdown": finite_float(max_drawdown, 6),
-        "initialCapital": finite_float(initial_capital, 2),
-        "endingValue": finite_float(ending_value, 2),
-        "totalPnl": finite_float(ending_value - initial_capital, 2),
-        "totalCostAmount": finite_float(total_cost_amount, 2),
-        "averageDailyCost": finite_float(np.mean(daily_costs), 2) if daily_costs else None,
-        "totalBuyNotional": finite_float(total_buy_notional, 2),
-        "totalSellNotional": finite_float(total_sell_notional, 2),
-        "totalOrderNotional": finite_float(total_order_notional, 2),
-        "totalFilledNotional": finite_float(total_filled_notional, 2),
-        "averageFillRatio": finite_float(avg_fill_ratio, 4) if avg_fill_ratio is not None else None,
-        "endingCash": finite_float(cash, 2),
-        "endingCashRatio": finite_float(cash_ratio, 4) if cash_ratio is not None else None,
-        "turnover": finite_float(turnover, 4) if turnover is not None else None,
-        "dailyWinRate": finite_float(np.mean([ret > 0 for ret in returns]), 4) if returns else None,
-        "averageDailyReturn": finite_float(average_daily_return, 6) if average_daily_return is not None else None,
-        "dailyVolatility": finite_float(daily_volatility, 6) if daily_volatility is not None else None,
-        "returnDrawdownRatio": safe_ratio(total_return, drawdown_abs),
-        "annualizedReturn": finite_float(annualized_return, 6) if annualized_return is not None else None,
-        "calmarLike": safe_ratio(annualized_return, drawdown_abs),
-        "returnVolatilityRatio": safe_ratio(total_return, daily_volatility),
-        "simplifiedSharpe": safe_ratio((average_daily_return or 0) * math.sqrt(252), daily_volatility) if daily_volatility else None,
-        "averageWinReturn": finite_float(np.mean(positive_trades), 6) if positive_trades else None,
-        "averageLossReturn": finite_float(np.mean(negative_trades), 6) if negative_trades else None,
-        "profitLossRatio": finite_float(abs(np.mean(positive_trades) / np.mean(negative_trades)), 4) if positive_trades and negative_trades else None,
-        "profitContribution": finite_float(profit_contribution, 6),
-        "lossContribution": finite_float(loss_contribution, 6),
-        "returnConcentration": finite_float(return_concentration, 4) if return_concentration is not None else None,
-        "maxDailyContribution": finite_float(best_day.get("dailyReturn"), 6) if best_day else None,
-        "maxSingleStockContribution": finite_float(single_stock_contribution, 6) if single_stock_contribution is not None else None,
-        "maxSingleStockContributionTrade": best_contribution_trade,
-        "tradeWinRate": finite_float(np.mean([ret > 0 for ret in trade_return_values]), 4) if trade_return_values else None,
-        "averageTradeReturn": finite_float(np.mean(trade_return_values), 6) if trade_return_values else None,
-        "bestTradeReturn": finite_float(max(trade_return_values), 6) if trade_return_values else None,
-        "worstTradeReturn": finite_float(min(trade_return_values), 6) if trade_return_values else None,
-        "bestTrade": best_trade,
-        "worstTrade": worst_trade,
-        "bestDay": best_day,
-        "worstDay": worst_day,
-        "uniqueHeldStocks": unique_codes,
-        "averageHoldingCount": finite_float(avg_holding_count, 2),
-        "rebalanceCount": unique_signal_dates,
-        "tradingDays": len(dates),
-        "simulatedReturnDays": len(returns),
-        "tradeCount": len(filled_trades),
-        "orderCount": len(trades),
-    }
+    return curve, trades, metrics
+
+
+def signal_maps(scored: pd.DataFrame, buffer_n: int) -> tuple[dict[tuple[str, str], float], dict[tuple[str, str], int], dict[str, pd.DataFrame]]:
+    score_map: dict[tuple[str, str], float] = {}
+    rank_map: dict[tuple[str, str], int] = {}
+    ranked_by_date: dict[str, pd.DataFrame] = {}
+    for date, part in scored.groupby("date", sort=True):
+        eligible = part[part["tradable"]].sort_values("strategy_score", ascending=False).copy()
+        eligible["rank"] = range(1, len(eligible) + 1)
+        ranked_by_date[date] = eligible.head(max(int(buffer_n), 1)).copy()
+        for row in eligible.itertuples():
+            score_map[(date, row.code)] = float(row.strategy_score or 0)
+            rank_map[(date, row.code)] = int(row.rank)
+    return score_map, rank_map, ranked_by_date
+
+
+def dynamic_exit_reason(
+    holding: dict[str, object],
+    date: str,
+    price_now: float,
+    score_now: float | None,
+    rank_now: int | None,
+    holding_days: int,
+    config: RunConfig,
+    force_close: bool = False,
+) -> str | None:
+    if force_close:
+        return "sample_end"
+    entry_price = float(holding.get("entryPriceRaw") or 0)
+    entry_score = float(holding.get("entryScore") or 0)
+    peak_price = max(float(holding.get("peakPrice") or entry_price), price_now)
+    if entry_price <= 0:
+        return None
+    ret_now = price_now / entry_price - 1
+    peak_ret = peak_price / entry_price - 1
+    drawdown_from_peak = price_now / peak_price - 1 if peak_price > 0 else 0.0
+    if holding_days >= max(int(config.hard_max_holding_days), int(config.max_holding_days), 1):
+        return "hard_max_holding_days"
+    if holding_days >= max(int(config.min_holding_days), 1) and ret_now <= -abs(float(config.stop_loss_pct)):
+        return "stop_loss"
+    if (
+        holding_days >= max(int(config.min_holding_days), 1)
+        and peak_ret >= abs(float(config.take_profit_pct))
+        and drawdown_from_peak <= -abs(float(config.trailing_stop_pct))
+    ):
+        return "take_profit_trailing"
+    if holding_days < max(int(config.base_holding_days), int(config.min_holding_days), 1):
+        return None
+    if rank_now is None or rank_now > max(int(config.signal_buffer_n), 1):
+        return "signal_buffer_exit"
+    trend_rank_ok = rank_now <= max(int(config.trend_extend_buffer_n), 1)
+    trend_return_ok = ret_now >= float(config.trend_extend_min_return)
+    trend_drawdown_ok = drawdown_from_peak > -abs(float(config.trailing_stop_pct))
+    trend_extend_ok = trend_rank_ok and trend_return_ok and trend_drawdown_ok
+    if entry_score > 0 and score_now is not None:
+        score_drop = 1 - float(score_now) / entry_score
+        if score_drop >= max(float(config.score_drop_pct), 0.0) and not trend_extend_ok:
+            return "score_decay_exit"
+    if holding_days >= max(int(config.max_holding_days), 1):
+        if trend_extend_ok:
+            return None
+        return "trend_health_timeout"
+    return None
+
+
+def simulate_dynamic_signal_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConfig) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
+    price = scored[["date", "code", "security", "name", "close"]].dropna().copy()
+    dates = sorted(price["date"].unique())
+    close_map = {(row.date, row.code): float(row.close) for row in price.itertuples()}
+    meta_map = {(row.date, row.code): row for row in price.itertuples()}
+    score_map, rank_map, ranked_by_date = signal_maps(scored, config.signal_buffer_n)
+    initial_capital = max(float(config.capital or 0), 0.0)
+    cash = initial_capital
+    holdings: dict[str, dict[str, object]] = {}
+    curve = initial_curve(dates, initial_capital)
+    trades: list[dict[str, object]] = []
+    returns: list[float] = []
+    daily_costs: list[float] = []
+    holding_count_samples: list[int] = []
+    holding_days_done: list[int] = []
+    exit_reasons: dict[str, int] = {}
+    total_buy_notional = 0.0
+    total_sell_notional = 0.0
+    total_cost_amount = 0.0
+    total_order_notional = 0.0
+    total_filled_notional = 0.0
+    peak_value = initial_capital if initial_capital > 0 else 1.0
+
+    for i, date in enumerate(dates):
+        previous_value = curve[-1]["portfolioValue"] if curve else initial_capital
+        portfolio_before = float(previous_value or cash or initial_capital)
+        day_cost = 0.0
+        day_pnl = 0.0
+        traded_notional = 0.0
+
+        for code in list(holdings.keys()):
+            holding = holdings[code]
+            price_now = close_map.get((date, code))
+            if price_now is None:
+                continue
+            holding["peakPrice"] = max(float(holding.get("peakPrice") or price_now), price_now)
+            entry_index_value = holding.get("entryIndex")
+            entry_index = int(entry_index_value) if entry_index_value is not None else i
+            holding_days = max(0, i - entry_index)
+            score_now = score_map.get((date, code))
+            rank_now = rank_map.get((date, code))
+            reason = dynamic_exit_reason(
+                holding,
+                date,
+                price_now,
+                score_now,
+                rank_now,
+                holding_days,
+                config,
+                force_close=(i == len(dates) - 1),
+            )
+            if not reason:
+                continue
+            shares = int(holding.get("shares") or 0)
+            sell_price = price_now * (1 - config.slippage_bps / 10000)
+            sell_notional = shares * sell_price
+            sell_commission = trade_commission(sell_notional, config)
+            stamp_duty = sell_notional * config.stamp_duty_bps / 10000
+            sell_cost = sell_commission + stamp_duty
+            proceeds = sell_notional - sell_cost
+            buy_notional = float(holding.get("buyNotional") or 0)
+            buy_commission = float(holding.get("buyCommission") or 0)
+            pnl = proceeds - buy_notional - buy_commission
+            ret = pnl / (buy_notional + buy_commission) if (buy_notional + buy_commission) > 0 else None
+            contribution = pnl / portfolio_before if portfolio_before > 0 else 0.0
+            cash += proceeds
+            day_pnl += pnl
+            day_cost += sell_cost
+            total_sell_notional += sell_notional
+            total_cost_amount += sell_cost
+            traded_notional += sell_notional
+            holding_days_done.append(holding_days)
+            exit_reasons[reason] = exit_reasons.get(reason, 0) + 1
+            trades.append({
+                "signalDate": holding.get("signalDate"),
+                "entryDate": holding.get("entryDate"),
+                "exitDate": date,
+                "code": code,
+                "security": holding.get("security"),
+                "name": holding.get("name"),
+                "entryClose": finite_float(holding.get("entryClose"), 4),
+                "exitClose": finite_float(price_now, 4),
+                "entryPrice": finite_float(holding.get("entryPriceRaw"), 4),
+                "exitPrice": finite_float(sell_price, 4),
+                "targetWeight": finite_float(holding.get("targetWeight"), 4),
+                "actualWeight": finite_float(buy_notional / portfolio_before, 6) if portfolio_before > 0 else None,
+                "shares": shares,
+                "orderNotional": finite_float(holding.get("orderNotional"), 2),
+                "filledNotional": finite_float(buy_notional, 2),
+                "notional": finite_float(buy_notional, 2),
+                "unfilledNotional": finite_float(max(float(holding.get("orderNotional") or 0) - buy_notional, 0), 2),
+                "fillRatio": finite_float(holding.get("fillRatio"), 4),
+                "return": finite_float(ret, 6) if ret is not None else None,
+                "pnl": finite_float(pnl, 2),
+                "contribution": finite_float(contribution, 6),
+                "buyCost": finite_float(buy_commission, 2),
+                "sellCost": finite_float(sell_cost, 2),
+                "costAmount": finite_float(buy_commission + sell_cost, 2),
+                "strategyScore": finite_float(holding.get("entryScore"), 4),
+                "exitScore": finite_float(score_now, 4) if score_now is not None else None,
+                "entryRank": holding.get("entryRank"),
+                "exitRank": rank_now,
+                "holdingDays": int(holding_days),
+                "exitReason": reason,
+                "maxReturnDuringHold": finite_float(float(holding.get("peakPrice") or price_now) / float(holding.get("entryPriceRaw") or price_now) - 1, 6),
+                "scoreDropPct": finite_float(1 - (float(score_now) / float(holding.get("entryScore") or score_now or 1)), 6) if score_now is not None and float(holding.get("entryScore") or 0) > 0 else None,
+                "portfolioValueBefore": finite_float(portfolio_before, 2),
+                "portfolioValueAfter": None,
+                "cashAfterTrade": finite_float(cash, 2),
+            })
+            del holdings[code]
+
+        if i < len(dates) - 1 and len(holdings) < max(int(config.top_n), 1):
+            current_value = cash + sum(int(item.get("shares") or 0) * close_map.get((date, code), float(item.get("entryPriceRaw") or 0)) for code, item in holdings.items())
+            target_weight = 1 / max(int(config.top_n), 1)
+            slots = max(int(config.top_n) - len(holdings), 0)
+            candidates = ranked_by_date.get(date, pd.DataFrame()).copy()
+            for row in candidates.itertuples():
+                if slots <= 0:
+                    break
+                code = row.code
+                if code in holdings:
+                    continue
+                start_close = close_map.get((date, code))
+                if not start_close or start_close <= 0:
+                    continue
+                buy_price = start_close * (1 + config.slippage_bps / 10000)
+                target_notional = current_value * max(0.0, 1 - config.cash_buffer_pct) * target_weight
+                shares = lot_shares(target_notional, buy_price, config.lot_size)
+                buy_notional = shares * buy_price
+                buy_commission = trade_commission(buy_notional, config)
+                while shares > 0 and buy_notional + buy_commission > cash:
+                    shares -= max(1, int(config.lot_size or 1))
+                    buy_notional = shares * buy_price
+                    buy_commission = trade_commission(buy_notional, config)
+                total_order_notional += target_notional
+                if shares <= 0:
+                    continue
+                cash -= buy_notional + buy_commission
+                day_cost += buy_commission
+                total_buy_notional += buy_notional
+                total_cost_amount += buy_commission
+                total_filled_notional += buy_notional
+                traded_notional += buy_notional
+                fill_ratio = buy_notional / target_notional if target_notional > 0 else None
+                meta = meta_map.get((date, code))
+                holdings[code] = {
+                    "signalDate": date,
+                    "entryDate": date,
+                    "entryIndex": i,
+                    "code": code,
+                    "security": getattr(meta, "security", jq_security(code)),
+                    "name": getattr(meta, "name", code),
+                    "entryClose": start_close,
+                    "entryPriceRaw": buy_price,
+                    "targetWeight": target_weight,
+                    "shares": int(shares),
+                    "orderNotional": target_notional,
+                    "buyNotional": buy_notional,
+                    "buyCommission": buy_commission,
+                    "fillRatio": fill_ratio,
+                    "entryScore": float(row.strategy_score or 0),
+                    "entryRank": int(getattr(row, "rank", rank_map.get((date, code), 0))),
+                    "peakPrice": start_close,
+                }
+                slots -= 1
+
+        market_value = sum(int(item.get("shares") or 0) * close_map.get((date, code), float(item.get("entryPriceRaw") or 0)) for code, item in holdings.items())
+        portfolio_after = cash + market_value
+        daily_return = (portfolio_after / portfolio_before - 1) if portfolio_before > 0 and i > 0 else 0.0
+        returns.append(daily_return)
+        daily_costs.append(day_cost)
+        holding_count_samples.append(len(holdings))
+        peak_value = max(peak_value, portfolio_after)
+        drawdown = portfolio_after / peak_value - 1 if peak_value > 0 else 0.0
+        for trade in reversed(trades):
+            if trade.get("exitDate") != date or trade.get("portfolioValueAfter") is not None:
+                break
+            trade["portfolioValueAfter"] = finite_float(portfolio_after, 2)
+        curve.append({
+            "date": date,
+            "equity": finite_float(portfolio_after / initial_capital, 6) if initial_capital > 0 else None,
+            "nav": finite_float(portfolio_after / initial_capital, 6) if initial_capital > 0 else None,
+            "portfolioValue": finite_float(portfolio_after, 2),
+            "cash": finite_float(cash, 2),
+            "marketValue": finite_float(market_value, 2),
+            "tradedNotional": finite_float(traded_notional, 2),
+            "dailyPnl": finite_float(day_pnl, 2),
+            "dailyReturn": finite_float(daily_return, 6),
+            "drawdown": finite_float(drawdown, 6),
+            "costAmount": finite_float(day_cost, 2),
+        })
+
+    ending_value = float(curve[-1]["portfolioValue"] or cash) if curve else cash
+    metrics = summarize_equity(
+        curve,
+        trades,
+        returns,
+        daily_costs,
+        dates,
+        initial_capital,
+        ending_value,
+        total_buy_notional,
+        total_sell_notional,
+        total_cost_amount,
+        total_order_notional,
+        total_filled_notional,
+        avg_holding_count=float(np.mean(holding_count_samples)) if holding_count_samples else 0.0,
+        holding_days=holding_days_done,
+        exit_reasons=exit_reasons,
+    )
     return curve, trades, metrics
 
 
@@ -926,14 +1283,18 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
     filled_trades = [trade for trade in trades if float(trade.get("filledNotional") or 0) > 0]
     avg_weight = float(np.mean([float(trade.get("actualWeight") or 0) for trade in filled_trades])) if filled_trades else 0.0
     rebalance_count = max(1, len(set(t.get("signalDate") for t in trades)))
-    items = [stress_item("基准", "收盘建仓次日观察", base_return, "按当前缓存数据直接计算。", metrics)]
+    base_name = "信号驱动动态持仓" if config.holding_policy == "dynamic_signal" else "收盘建仓次日观察"
+    base_impact = "按信号缓冲、分数衰减、止盈止损和最长持仓约束逐日重跑资金账本。" if config.holding_policy == "dynamic_signal" else "按当前缓存数据直接计算。"
+    items = [stress_item("基准", base_name, base_return, base_impact, metrics)]
 
-    for bps in [10, 20, 50, 100]:
+    cost_bps_values = [20, 50] if config.holding_policy == "dynamic_signal" else [10, 20, 50, 100]
+    for bps in cost_bps_values:
         cost_config = replace(config, commission_bps=bps / 2, slippage_bps=bps / 2)
         _, _, cost_metrics = simulate_equity(scored, build_signals(scored, config.top_n), cost_config)
         items.append(stress_item("成本阶梯", f"佣金+滑点 {bps}bp", cost_metrics.get("totalReturn"), f"用真实资金账本重跑：佣金 {bps / 2:g}bp、滑点 {bps / 2:g}bp，累计成本 {cost_metrics.get('totalCostAmount')} 元。", cost_metrics))
 
-    for top_n in [5, 10, 20, 30]:
+    top_n_values = [config.top_n, 20] if config.holding_policy == "dynamic_signal" else [5, 10, 20, 30]
+    for top_n in sorted(set(int(value) for value in top_n_values)):
         if top_n > int(scored["code"].nunique()):
             continue
         _, top_trades, top_metrics = simulate_equity(scored, build_signals(scored, top_n), config)
@@ -948,9 +1309,10 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
     for fill_ratio in [0.8, 0.5, 0.2]:
         items.append(stress_item("近似流动性", f"只成交 {int(fill_ratio * 100)}%", base_return * fill_ratio, "近似情景：按基准收益乘成交比例估算，容量模型阶段会改为逐笔重跑。", metrics))
 
-    for delay in [1, 2]:
-        _, delay_trades, delay_metrics = simulate_equity(scored, build_signals(scored, config.top_n), config, delay_days=delay)
-        items.append(stress_item("延迟成交", f"T+{delay} 执行", delay_metrics.get("totalReturn"), f"信号出现后延迟 {delay} 个交易日执行，短窗口样本会减少。", delay_metrics))
+    if config.holding_policy != "dynamic_signal":
+        for delay in [1, 2]:
+            _, delay_trades, delay_metrics = simulate_equity(scored, build_signals(scored, config.top_n), config, delay_days=delay)
+            items.append(stress_item("延迟成交", f"T+{delay} 执行", delay_metrics.get("totalReturn"), f"信号出现后延迟 {delay} 个交易日执行，短窗口样本会减少。", delay_metrics))
 
     items.append(stress_item("近似冲击", "最差成交重复一次", base_return + worst_trade * avg_weight, "近似情景：按实际成交平均权重额外叠加样本内最差单票结果。", metrics))
     return items
@@ -995,18 +1357,32 @@ def build_report(config: RunConfig) -> dict[str, object]:
     requested_dates = sorted(raw_data["date"].dropna().unique().tolist())
     actual_dates = sorted(scored["date"].dropna().unique().tolist())
     expected_codes = set(pool["code"].tolist())
+    is_auto_cache_pool = str(config.symbols_file) == "auto_cache_all"
     missing_coverage = []
+    coverage_rows = []
     for day in requested_dates:
         day_codes = set(scored.loc[scored["date"] == day, "code"].dropna().astype(str).tolist())
         missing_codes = sorted(expected_codes - day_codes)
+        tradable_count = int(scored.loc[(scored["date"] == day) & (scored["tradable"]), "code"].nunique())
+        selected_available = len(set(config.selected_codes) & day_codes) if config.selected_codes else tradable_count
+        coverage_rows.append({
+            "date": day,
+            "coveredCount": len(day_codes),
+            "tradableCount": tradable_count,
+            "selectedAvailableCount": selected_available,
+            "coverageRatio": finite_float(len(day_codes) / len(expected_codes), 4) if expected_codes else None,
+        })
         if missing_codes:
             missing_coverage.append({
                 "date": day,
                 "missingCount": len(missing_codes),
                 "missingCodes": missing_codes[:30],
             })
-    missing_dates = [item["date"] for item in missing_coverage]
-    is_complete = len(missing_coverage) == 0
+    strict_missing_dates = [item["date"] for item in missing_coverage]
+    min_tradable = max(int(config.top_n) * 20, int(config.top_n))
+    weak_coverage_dates = [row["date"] for row in coverage_rows if row["tradableCount"] < min_tradable or row["selectedAvailableCount"] < min(int(config.top_n), len(config.selected_codes) or int(config.top_n))]
+    missing_dates = weak_coverage_dates if is_auto_cache_pool else strict_missing_dates
+    is_complete = len(weak_coverage_dates) == 0 if is_auto_cache_pool else len(missing_coverage) == 0
     latest_date = actual_dates[-1] if actual_dates else ""
 
     data_csv = DATA_DIR / f"position_stress_{config.start.replace('-', '')}_{config.end.replace('-', '')}_daily.csv"
@@ -1046,7 +1422,13 @@ def build_report(config: RunConfig) -> dict[str, object]:
         "complete": is_complete,
         "runGate": {
             "formalRunAllowed": bool(is_complete and len(actual_dates) >= 2),
-            "reason": "短窗口数据完整，可以运行建仓链路压力测试；不作为策略有效性结论。" if is_complete else f"缺少真实行情覆盖：{', '.join(missing_dates)}。正式运行已阻断。",
+            "reason": (
+                "全缓存股票池采用宽松覆盖检查：每日可交易样本和目标名单覆盖足够，可以运行动态持仓压力测试；不作为正式策略收益结论。"
+                if is_complete and is_auto_cache_pool else
+                "短窗口数据完整，可以运行建仓链路压力测试；不作为策略有效性结论。"
+                if is_complete else
+                f"缺少真实行情覆盖：{', '.join(weak_coverage_dates or missing_dates)}。正式运行已阻断。"
+            ),
         },
         "sourceMode": source_mode,
         "sourceMessage": "；".join([item for item in [manual_message, jq_message] if item]),
@@ -1055,6 +1437,12 @@ def build_report(config: RunConfig) -> dict[str, object]:
         "actualDates": actual_dates,
         "missingDates": missing_dates,
         "missingCoverage": missing_coverage,
+        "coverage": {
+            "mode": "auto_cache_all_relaxed" if is_auto_cache_pool else "strict_pool_full_coverage",
+            "minTradablePerDate": min_tradable,
+            "weakCoverageDates": weak_coverage_dates,
+            "daily": coverage_rows[:500],
+        },
         "stockCount": int(scored["code"].nunique()),
         "rowCount": int(len(scored)),
         "universe": {
@@ -1077,7 +1465,19 @@ def build_report(config: RunConfig) -> dict[str, object]:
             "parameters": {
                 "topN": config.top_n,
                 "capital": config.capital,
-                "rebalance": "daily_close",
+                "rebalance": "signal_driven_dynamic" if config.holding_policy == "dynamic_signal" else "daily_close",
+                "holdingPolicy": config.holding_policy,
+                "minHoldingDays": config.min_holding_days,
+                "baseHoldingDays": config.base_holding_days,
+                "maxHoldingDays": config.max_holding_days,
+                "hardMaxHoldingDays": config.hard_max_holding_days,
+                "signalBufferN": config.signal_buffer_n,
+                "trendExtendBufferN": config.trend_extend_buffer_n,
+                "trendExtendMinReturn": config.trend_extend_min_return,
+                "stopLossPct": config.stop_loss_pct,
+                "takeProfitPct": config.take_profit_pct,
+                "trailingStopPct": config.trailing_stop_pct,
+                "scoreDropPct": config.score_drop_pct,
                 "lotSize": config.lot_size,
                 "commissionBps": config.commission_bps,
                 "minCommission": config.min_commission,
@@ -1087,7 +1487,9 @@ def build_report(config: RunConfig) -> dict[str, object]:
             },
             "dailySelections": daily_selections,
             "equityCurve": curve,
-            "trades": trades[:500],
+            "trades": trades,
+            "tradePreviewLimit": 80,
+            "tradeStoredCount": len(trades),
             "metrics": metrics,
         },
         "stress": stress,
@@ -1103,7 +1505,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
         "nextActions": [
             f"配置 JoinQuant/jqdatasdk 授权后重新点击一键导入运行，补齐 {config.end} 数据。",
             "把 strategy_score 替换为你的正式策略信号，保留同一份行情缓存和压力测试口径。",
-            "短窗口只适合验证数据链路、建仓约束和页面展示，不作为策略有效性结论。",
+            "动态持仓口径需要继续用真实 JoinQuant 组合账本复核，不把本地 OHLCV 代理收益直接写成正式策略收益。" if config.holding_policy == "dynamic_signal" else "短窗口只适合验证数据链路、建仓约束和页面展示，不作为策略有效性结论。",
         ],
     }
 
@@ -1117,7 +1519,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
 def parse_args() -> RunConfig:
     parser = argparse.ArgumentParser(description="生成 M-Quant 建仓压力测试数据包")
     parser.add_argument("--start", default="2025-01-01")
-    parser.add_argument("--end", default="2026-07-15")
+    parser.add_argument("--end", default="2026-07-22")
     parser.add_argument("--symbols-file", default=str(DEFAULT_SYMBOLS_FILE))
     parser.add_argument("--top-n", type=int, default=10)
     parser.add_argument("--capital", type=float, default=1_000_000)
@@ -1133,10 +1535,25 @@ def parse_args() -> RunConfig:
     parser.add_argument("--stamp-duty-bps", type=float, default=5.0)
     parser.add_argument("--slippage-bps", type=float, default=5.0)
     parser.add_argument("--cash-buffer-pct", type=float, default=0.01)
+    parser.add_argument("--holding-policy", choices=["next_day", "dynamic_signal"], default="next_day")
+    parser.add_argument("--min-holding-days", type=int, default=1)
+    parser.add_argument("--base-holding-days", type=int, default=5)
+    parser.add_argument("--max-holding-days", type=int, default=20)
+    parser.add_argument("--hard-max-holding-days", type=int, default=60)
+    parser.add_argument("--signal-buffer-n", type=int, default=80)
+    parser.add_argument("--trend-extend-buffer-n", type=int, default=40)
+    parser.add_argument("--trend-extend-min-return", type=float, default=0.03)
+    parser.add_argument("--stop-loss-pct", type=float, default=0.08)
+    parser.add_argument("--take-profit-pct", type=float, default=0.12)
+    parser.add_argument("--trailing-stop-pct", type=float, default=0.06)
+    parser.add_argument("--score-drop-pct", type=float, default=0.30)
     args = parser.parse_args()
-    path = Path(args.symbols_file).expanduser()
-    if not path.is_absolute():
-        path = ROOT / path
+    if args.symbols_file == "auto_cache_all":
+        path = Path("auto_cache_all")
+    else:
+        path = Path(args.symbols_file).expanduser()
+        if not path.is_absolute():
+            path = ROOT / path
     return RunConfig(
         start=args.start,
         end=args.end,
@@ -1155,6 +1572,18 @@ def parse_args() -> RunConfig:
         stamp_duty_bps=args.stamp_duty_bps,
         slippage_bps=args.slippage_bps,
         cash_buffer_pct=args.cash_buffer_pct,
+        holding_policy=args.holding_policy,
+        min_holding_days=args.min_holding_days,
+        base_holding_days=args.base_holding_days,
+        max_holding_days=args.max_holding_days,
+        hard_max_holding_days=args.hard_max_holding_days,
+        signal_buffer_n=args.signal_buffer_n,
+        trend_extend_buffer_n=args.trend_extend_buffer_n,
+        trend_extend_min_return=args.trend_extend_min_return,
+        stop_loss_pct=args.stop_loss_pct,
+        take_profit_pct=args.take_profit_pct,
+        trailing_stop_pct=args.trailing_stop_pct,
+        score_drop_pct=args.score_drop_pct,
     )
 
 

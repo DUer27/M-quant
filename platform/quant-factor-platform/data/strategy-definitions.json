@@ -1,5 +1,58 @@
 [
   {
+    "id": "csi500_low_crowding_reversal_index_enhancement_v2",
+    "name": "中证500低拥挤反转指数增强候选策略 v2",
+    "source": {
+      "baseStrategy": "csi500_low_crowding_reversal_index_enhancement_v1",
+      "evidence": "joinquant_csi500_lcr_v1_true_rebalance_candidate",
+      "note": "v2 不改 v1 因子门禁，主要优化执行层：买入卖出由每日信号、趋势延续保护、止盈止损和持仓上限共同决定。"
+    },
+    "status": "candidate_for_pressure_test",
+    "dataPolicy": "压测默认使用本地 AkShare 全缓存股票池 auto_cache_all；缺失个股行情按真实覆盖率披露，不用核心3000只替代全A；本地 OHLCV 代理收益不直接写成正式策略收益，后续仍需 JoinQuant 原生账本复核。",
+    "universe": {
+      "current": "outputs/sources/akshare/raw/a_share_daily 全缓存可用股票",
+      "fallback": "outputs/sources/akshare/symbols/position_stress_core_3000.csv 仅作为 v1/旧压测对照",
+      "filters": [
+        "只使用有真实 OHLCV 缓存的股票",
+        "每日可交易样本数不足时标记 weakCoverageDates",
+        "目标候选名单缺行情时阻断正式压测"
+      ]
+    },
+    "executionRules": {
+      "holdingPolicy": "dynamic_signal",
+      "minHoldingDays": 1,
+      "baseHoldingDays": 5,
+      "trendReviewDays": 20,
+      "hardMaxHoldingDays": 60,
+      "signalBufferN": 80,
+      "trendExtendBufferN": 40,
+      "trendExtendMinReturn": 0.03,
+      "stopLossPct": 0.08,
+      "takeProfitPct": 0.12,
+      "trailingStopPct": 0.06,
+      "scoreDropPct": 0.3
+    },
+    "portfolioRules": {
+      "ranking": "沿用 v1 候选名单；压测阶段使用 selected_codes_mean_reversion + OHLCV 代理分数进行每日排序复核。",
+      "selection": "空仓槽位按当天信号补入，不再每日全卖全买。",
+      "exit": "T+1 后每日复核；跌出Buffer80、分数衰减且没有趋势保护、止损、止盈回撤、趋势健康超时或60日硬上限时退出。",
+      "trendProtection": "20日后若仍在前40、持仓收益大于3%、且未触发峰值回撤，则允许继续持有。",
+      "riskControls": [
+        "单票亏损达到8%止损",
+        "浮盈达到12%后从峰值回撤6%止盈",
+        "趋势保护不能覆盖止损和止盈回撤",
+        "60个交易日为硬上限"
+      ]
+    },
+    "auditPlan": [
+      "覆盖审计：确认使用 auto_cache_all 且 stockCount 大于3000",
+      "持仓审计：确认成交明细存在多日持仓，不再一日卖出",
+      "退出审计：统计 stop_loss、take_profit_trailing、trend_health_timeout、hard_max_holding_days、sample_end 等退出原因",
+      "趋势审计：抽查盈利且仍在前40的股票是否被趋势保护延续",
+      "回归审计：v1 next_day 口径仍可运行，v2 不覆盖 v1"
+    ]
+  },
+  {
     "id": "huafu_emotion_weighted_kline",
     "name": "华福情绪系数加权K线评分策略",
     "source": {
