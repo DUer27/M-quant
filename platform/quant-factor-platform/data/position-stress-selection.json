@@ -1,12 +1,12 @@
 {
   "adapter": "selected_codes_mean_reversion",
   "baseline": null,
-  "evidence": "joinquant_csi500_lcr_v1_true_rebalance_candidate",
+  "evidence": "v1_candidate_plus_dynamic_signal_holding",
   "gateStatus": "candidate_for_pressure_test",
   "layer": "中证500指数增强",
-  "name": "中证500低拥挤反转指数增强候选策略 v1",
+  "name": "中证500低拥挤反转指数增强候选策略 v2",
   "runnable": true,
-  "runnableReason": "已生成 v1 真实调仓候选包；建仓压测使用 v1 最新 Top20 选股名单和 OHLCV 均值回归代理检查执行链路。",
+  "runnableReason": "基于 v1 最新名单，压测账本改为信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。",
   "selectedCodes": [
     "688568",
     "300857",
@@ -29,7 +29,22 @@
     "002008",
     "000729"
   ],
-  "source": "joinquant_csi500_lcr_v1_true_rebalance_candidate",
-  "strategyId": "csi500_low_crowding_reversal_index_enhancement_v1",
-  "selectedAt": "2026-07-20T07:14:00+08:00"
+  "source": "csi500_lcr_v1_dynamic_signal_holding_upgrade",
+  "strategyId": "csi500_low_crowding_reversal_index_enhancement_v2",
+  "execution": {
+    "holdingPolicy": "dynamic_signal",
+    "minHoldingDays": 1,
+    "baseHoldingDays": 5,
+    "maxHoldingDays": 20,
+    "hardMaxHoldingDays": 60,
+    "signalBufferN": 80,
+    "trendExtendBufferN": 40,
+    "trendExtendMinReturn": 0.03,
+    "stopLossPct": 0.08,
+    "takeProfitPct": 0.12,
+    "trailingStopPct": 0.06,
+    "scoreDropPct": 0.3,
+    "symbolsFile": "auto_cache_all"
+  },
+  "selectedAt": "2026-07-23T02:29:16.065Z"
 }

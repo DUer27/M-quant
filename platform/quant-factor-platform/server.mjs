@@ -58,7 +58,9 @@ const bigQuantPaperWatchPackPath = outputPath('paper-watch', 'results', 'bigquan
 const joinQuantPaperWatchReportPath = outputPath('paper-watch', 'results', 'joinquant_paper_watch_report_latest.json');
 const paperWatchPerformanceReportPath = outputPath('paper-watch', 'results', 'paper_watch_performance_report_latest.json');
 const joinQuantResultsDir = outputPath('sources', 'joinquant', 'results');
+const csi500LcrV1CandidateFallbackPath = outputPath('sources', 'joinquant', 'results', 'csi500_low_crowding_reversal_index_enhancement_v1_candidate_20260723-001813.json');
 const positionStressLatestPath = outputPath('position-stress', 'results', 'position_stress_latest.json');
+const positionStressResultsDir = outputPath('position-stress', 'results');
 const positionStressScriptPath = outputPath('position-stress', 'scripts', 'position_stress_lab.py');
 const positionStressExcelExportScriptPath = outputPath('position-stress', 'scripts', 'export_position_stress_excel.py');
 const paperWatchDerivedScriptPaths = [
@@ -548,6 +550,17 @@ function readJsonFile(path, fallback) {
   }
 
   return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+function readLatestCsi500LcrV1Candidate() {
+  const prefix = 'csi500_low_crowding_reversal_index_enhancement_v1_candidate_';
+  const candidates = existsSync(joinQuantResultsDir)
+    ? readdirSync(joinQuantResultsDir)
+      .filter((file) => file.startsWith(prefix) && file.endsWith('.json'))
+      .sort((left, right) => right.localeCompare(left))
+      .map((file) => join(joinQuantResultsDir, file))
+    : [];
+  return readFirstJsonFile([...candidates, csi500LcrV1CandidateFallbackPath], null);
 }
 
 function readFirstJsonFile(paths, fallback) {
@@ -3640,13 +3653,25 @@ function runPythonRefreshStep(name, scriptPath, args = [], timeout = 180_000) {
   };
 }
 
-function readPositionStressReport() {
-  const report = readJsonFile(positionStressLatestPath, {
+function compactDate(value) {
+  return String(value || '').replace(/[^0-9]/g, '');
+}
+
+function positionStressReportPathForRange(start, end) {
+  const startKey = compactDate(start);
+  const endKey = compactDate(end);
+  if (!startKey || !endKey) return positionStressLatestPath;
+  const datedPath = join(positionStressResultsDir, `position_stress_${startKey}_${endKey}.json`);
+  return existsSync(datedPath) ? datedPath : null;
+}
+
+function emptyPositionStressReport(options = {}) {
+  return {
     status: 'missing',
     sourceMode: '',
-    sourceMessage: '尚未生成建仓压力测试报告。',
+    sourceMessage: options.sourceMessage || '尚未生成建仓压力测试报告。',
     dataPolicy: '先选择压测策略，再点击运行，生成 2025-01-01 至 2026-07-15 的3000只股票真实行情、策略选股、K线、建仓模拟和压力测试报告。',
-    requestedDateRange: { start: '2025-01-01', end: '2026-07-15' },
+    requestedDateRange: { start: options.start || '2025-01-01', end: options.end || '2026-07-15' },
     actualDates: [],
     missingDates: [],
     stockCount: 0,
@@ -3656,11 +3681,24 @@ function readPositionStressReport() {
     kline: [],
     strategy: { dailySelections: [], equityCurve: [], trades: [], metrics: {} },
     stress: [],
-    warnings: ['还没有运行导入。'],
+    warnings: options.warnings || ['还没有运行导入。'],
     nextActions: ['先选择压测策略，再点击运行生成第一版报告。'],
-  });
+  };
+}
+
+function readPositionStressReport(options = {}) {
+  const reportPath = positionStressReportPathForRange(options.start, options.end);
+  const explicitRange = Boolean(compactDate(options.start) && compactDate(options.end));
+  const report = reportPath
+    ? readJsonFile(reportPath, emptyPositionStressReport(options))
+    : emptyPositionStressReport({
+      ...options,
+      sourceMessage: explicitRange ? '当前日期区间还没有生成建仓压力测试报告。' : undefined,
+      warnings: explicitRange ? ['当前日期区间尚未生成报告，请点击运行生成。'] : undefined,
+    });
   return {
     ...report,
+    reportPath: reportPath ? relativeProjectPath(reportPath) : '',
     selectedStrategy: report.selectedStrategy || readPositionStressSelection(),
   };
 }
@@ -3677,7 +3715,34 @@ function positionStressAdapterFor(strategyId, selectedCodes = []) {
   if (strategyId === 'core_volume_price_trend_v1') return 'ohlcv_core_volume_price';
   if (strategyId === 'jq_quality_profit_liquidity_v1') return 'ohlcv_liquidity_quality_proxy';
   if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v0') return 'ohlcv_low_crowding_reversal_proxy';
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v1') {
+    return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_low_crowding_reversal_proxy';
+  }
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2') {
+    return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_low_crowding_reversal_proxy';
+  }
   return 'ohlcv_core_volume_price';
+}
+
+function positionStressExecutionParamsFor(strategyId) {
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2') {
+    return {
+      holdingPolicy: 'dynamic_signal',
+      minHoldingDays: 1,
+      baseHoldingDays: 5,
+      maxHoldingDays: 20,
+      hardMaxHoldingDays: 60,
+      signalBufferN: 80,
+      trendExtendBufferN: 40,
+      trendExtendMinReturn: 0.03,
+      stopLossPct: 0.08,
+      takeProfitPct: 0.12,
+      trailingStopPct: 0.06,
+      scoreDropPct: 0.30,
+      symbolsFile: 'auto_cache_all',
+    };
+  }
+  return { holdingPolicy: 'next_day' };
 }
 
 function normalizePositionStressStrategy(item) {
@@ -3697,6 +3762,7 @@ function normalizePositionStressStrategy(item) {
     selectedCodes,
     source: item.source || item.evidence_system || '',
     strategyId,
+    execution: item.execution || positionStressExecutionParamsFor(strategyId),
   };
 }
 
@@ -3754,11 +3820,36 @@ function buildPositionStressStrategyCatalog() {
     }));
   }
 
+  const v1ForV2 = byId.get('csi500_low_crowding_reversal_index_enhancement_v1') || readPositionStressSelection();
+  if (!byId.has('csi500_low_crowding_reversal_index_enhancement_v2')) {
+    byId.set('csi500_low_crowding_reversal_index_enhancement_v2', normalizePositionStressStrategy({
+      adapter: positionStressAdapterFor('csi500_low_crowding_reversal_index_enhancement_v2', v1ForV2?.selectedCodes || []),
+      evidence: 'v1_candidate_plus_dynamic_signal_holding',
+      gateStatus: 'candidate_for_pressure_test',
+      layer: '中证500指数增强',
+      name: '中证500低拥挤反转指数增强候选策略 v2',
+      runnable: true,
+      runnableReason: '基于 v1 最新名单，压测账本改为信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。',
+      selectedCodes: v1ForV2?.selectedCodes || [],
+      source: 'csi500_lcr_v1_dynamic_signal_holding_upgrade',
+      strategyId: 'csi500_low_crowding_reversal_index_enhancement_v2',
+      execution: positionStressExecutionParamsFor('csi500_low_crowding_reversal_index_enhancement_v2'),
+    }));
+  }
+
+  const current = readPositionStressSelection();
+  if (current?.strategyId && !byId.has(current.strategyId)) {
+    byId.set(current.strategyId, normalizePositionStressStrategy({
+      ...current,
+      runnable: current.runnable !== false,
+      runnableReason: current.runnableReason || '当前已保存为建仓压力测试策略，可继续运行或刷新报告。',
+    }));
+  }
+
   const strategies = [...byId.values()].sort((left, right) => {
     if (left.runnable !== right.runnable) return left.runnable ? -1 : 1;
     return String(left.name).localeCompare(String(right.name), 'zh-CN');
   });
-  const current = readPositionStressSelection();
   return {
     current,
     dataPolicy: '只允许准模拟盘运行包或准入审计中已达标的策略进入建仓压力测试；控制器类策略没有明确选股名单时不能直接运行。',
@@ -3810,29 +3901,66 @@ function runPositionStressLab(options = {}) {
     args.push('--strategy-id', selectedStrategy.strategyId);
     args.push('--strategy-name', selectedStrategy.name || selectedStrategy.strategyId);
     args.push('--strategy-adapter', selectedStrategy.adapter || 'ohlcv_core_volume_price');
+    const execution = selectedStrategy.execution || positionStressExecutionParamsFor(selectedStrategy.strategyId);
+    args.push('--holding-policy', execution.holdingPolicy || 'next_day');
+    if (execution.minHoldingDays !== undefined) args.push('--min-holding-days', String(execution.minHoldingDays));
+    if (execution.baseHoldingDays !== undefined) args.push('--base-holding-days', String(execution.baseHoldingDays));
+    if (execution.maxHoldingDays !== undefined) args.push('--max-holding-days', String(execution.maxHoldingDays));
+    if (execution.hardMaxHoldingDays !== undefined) args.push('--hard-max-holding-days', String(execution.hardMaxHoldingDays));
+    if (execution.signalBufferN !== undefined) args.push('--signal-buffer-n', String(execution.signalBufferN));
+    if (execution.trendExtendBufferN !== undefined) args.push('--trend-extend-buffer-n', String(execution.trendExtendBufferN));
+    if (execution.trendExtendMinReturn !== undefined) args.push('--trend-extend-min-return', String(execution.trendExtendMinReturn));
+    if (execution.stopLossPct !== undefined) args.push('--stop-loss-pct', String(execution.stopLossPct));
+    if (execution.takeProfitPct !== undefined) args.push('--take-profit-pct', String(execution.takeProfitPct));
+    if (execution.trailingStopPct !== undefined) args.push('--trailing-stop-pct', String(execution.trailingStopPct));
+    if (execution.scoreDropPct !== undefined) args.push('--score-drop-pct', String(execution.scoreDropPct));
     if (Array.isArray(selectedStrategy.selectedCodes) && selectedStrategy.selectedCodes.length) {
       args.push('--selected-codes', selectedStrategy.selectedCodes.join(','));
+    }
+    if (execution.symbolsFile) {
+      args.push('--symbols-file', String(execution.symbolsFile));
     }
   }
   if (options.importFile) {
     args.push('--import-file', String(options.importFile));
   }
   const step = runPythonRefreshStep('position_stress_lab', positionStressScriptPath, args, 240_000);
+  const report = readPositionStressReport({ start, end });
+  const reportComplete = Boolean(report?.complete || report?.runGate?.formalRunAllowed);
   return {
-    ok: step.ok,
+    ok: step.ok || reportComplete,
     step,
-    report: readPositionStressReport(),
+    report,
+    stepWarning: !step.ok && reportComplete
+      ? '压测报告已完整生成，但脚本收尾触达接口超时边界；请以已落盘报告为准。'
+      : '',
   };
 }
 
-function exportPositionStressEquityExcel() {
-  const step = runPythonRefreshStep('position_stress_excel_export', positionStressExcelExportScriptPath, [], 120_000);
+function exportPositionStressEquityExcel(options = {}) {
+  const reportPath = positionStressReportPathForRange(options.start, options.end);
+  if (!reportPath) throw new Error('当前日期区间还没有生成组合净值报告，请先运行建仓压力测试。');
+  const step = runPythonRefreshStep('position_stress_excel_export', positionStressExcelExportScriptPath, ['--report', reportPath], 120_000);
   if (!step.ok) {
     throw new Error(step.stderr || step.stdout || '组合净值结果 Excel 导出失败。');
   }
   const outputPath = String(step.stdout || '').trim().split(/\r?\n/).filter(Boolean).at(-1);
   if (!outputPath || !existsSync(outputPath)) {
     throw new Error('组合净值结果 Excel 已执行，但没有找到导出文件。');
+  }
+  return outputPath;
+}
+
+function exportPositionStressTradesExcel(options = {}) {
+  const reportPath = positionStressReportPathForRange(options.start, options.end);
+  if (!reportPath) throw new Error('当前日期区间还没有生成成交明细报告，请先运行建仓压力测试。');
+  const step = runPythonRefreshStep('position_stress_trades_excel_export', positionStressExcelExportScriptPath, ['--report', reportPath, '--sheet', 'trades'], 120_000);
+  if (!step.ok) {
+    throw new Error(step.stderr || step.stdout || '成交明细 Excel 导出失败。');
+  }
+  const outputPath = String(step.stdout || '').trim().split(/\r?\n/).filter(Boolean).at(-1);
+  if (!outputPath || !existsSync(outputPath)) {
+    throw new Error('成交明细 Excel 已执行，但没有找到导出文件。');
   }
   return outputPath;
 }
@@ -6068,7 +6196,90 @@ function buildLiveStrategySignals() {
     strategyFactor('jq_lcr_gap_risk_control', '跳空风险控制', 0.10),
     strategyFactor('jq_lcr_short_reversal', '短期反转', 0.05),
   ];
+  const csi500LcrV1 = readLatestCsi500LcrV1Candidate();
+  const csi500LcrV1Primary = csi500LcrV1?.primary_trading || null;
+  const csi500LcrV1LatestSelection = csi500LcrV1?.latest_selection || {};
+  const csi500LcrV1SelectedCodes = Array.isArray(csi500LcrV1LatestSelection.selected_codes)
+    ? csi500LcrV1LatestSelection.selected_codes
+    : [];
+  const csi500LcrV1Checks = csi500LcrV1?.strategy_checks || {};
+  const csi500LcrV1Ready = Boolean(
+    csi500LcrV1Primary
+    && csi500LcrV1?.strategy_status === 'candidate_for_pressure_test'
+    && csi500LcrV1Checks.primary_exists
+    && csi500LcrV1Checks.primary_positive_return
+    && csi500LcrV1Checks.primary_positive_excess
+    && csi500LcrV1Checks.primary_active_sharpe_positive
+    && csi500LcrV1Checks.primary_drawdown_within_floor
+  );
+  const csi500LcrV1Factors = Object.entries(csi500LcrV1?.v1_config?.weights || {}).map(([factor, weight]) => strategyFactor(factor, factor, weight));
+  const csi500LcrV1KeptFactorCount = Array.isArray(csi500LcrV1?.kept_factors) ? csi500LcrV1.kept_factors.length : csi500LcrV1Factors.length;
+  const csi500LcrV1AllowedLayerNames = Array.isArray(csi500LcrV1?.allowed_layer_names) ? csi500LcrV1.allowed_layer_names : [];
   const formalStrategiesUnsorted = [
+    ...(csi500LcrV1Ready
+      ? [
+        {
+          id: 'csi500_low_crowding_reversal_index_enhancement_v2',
+          name: '中证500低拥挤反转指数增强候选策略 v2',
+          pool: 'formal_candidate',
+          status: 'candidate_for_pressure_test',
+          validationState: 'v2 继承 v1 因子门禁与最新候选名单，执行层改为信号驱动动态持仓：默认5日锚定，20日后只做趋势健康检查，强趋势可延续到60日硬上限；跌出Buffer80、分数衰减、止损或止盈回撤时退出。',
+          role: '压力测试候选：中证500指数增强袖 v2 执行优化',
+          objective: '在 v1 选股基础上修正“次日固定卖出”的压测偏差，让买入卖出由每日信号和风险约束共同决定。',
+          dataBasis: `${csi500LcrV1.data_policy || '真实 JoinQuant factor slice 合并复算；v2 当前使用本地 OHLCV 执行压测复核。'} 最新信号 ${csi500LcrV1LatestSelection.date || '-'}，入选 ${csi500LcrV1SelectedCodes.length || csi500LcrV1LatestSelection.selected_count || 0} 只。`,
+          factorState: csi500LcrV1Factors,
+          rankingFormula: '沿用 v1 排序：0.25*量能稳定 + 0.25*市值中性量稳 + 0.35*量能流动性均衡 + 0.15*残差量稳；执行层用 Top15/Buffer80 的信号复核决定续持或退出。',
+          entryRules: [
+            '沿用 v1 通过门禁的候选名单和 OHLCV 代理分数执行压测',
+            '空仓槽位按当天信号补入，不再每日全卖全买',
+            '默认持仓锚定5个交易日；T+1 后每日复核信号',
+            `最新名单：${csi500LcrV1SelectedCodes.slice(0, 8).join(', ')}${csi500LcrV1SelectedCodes.length > 8 ? '...' : ''}`,
+          ],
+          riskFilters: [
+            '止损：单票从成交价回撤8%退出',
+            '止盈：单票浮盈达到12%后，从峰值回撤6%退出',
+            '信号退出：持满5日后跌出Buffer80或分数衰减30%退出',
+            '趋势延续保护：20日后仍在前40且收益超过3%，不因到期机械卖出',
+            '硬上限60个交易日，样本结束强制平仓',
+          ],
+          portfolioRules: ['Top15/TopN 等权槽位', '动态补仓', '信号退出', '止损8%', '止盈回撤6%', '20日趋势复核', '60日硬上限'],
+          nextAction: '运行 v2 建仓压力测试，检查成交明细中的持仓交易日和退出原因分布，再决定是否回写 JoinQuant 原生账本。',
+          candidateCount: csi500LcrV1SelectedCodes.length || csi500LcrV1Primary.sample_trades || 0,
+          computedSignalCount: csi500LcrV1Primary.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
+          exportable: false,
+          exportStatus: 'v2 已登记为执行层优化候选；需要动态持仓压测和 JoinQuant 复核。',
+        },
+        {
+          id: csi500LcrV1.strategy_id || 'csi500_low_crowding_reversal_index_enhancement_v1',
+          name: csi500LcrV1.strategy_name || '中证500低拥挤反转指数增强候选策略 v1',
+          pool: 'formal_candidate',
+          status: 'candidate_for_pressure_test',
+          validationState: `已生成 v1 真实调仓候选包：${csi500LcrV1Primary.horizon_label || '5日真实调仓'}，主动收益 ${(Number(csi500LcrV1Primary.excess_return || 0) * 100).toFixed(2)}%，主动Sharpe ${Number(csi500LcrV1Primary.active_sharpe || 0).toFixed(2)}，最大回撤 ${(Number(csi500LcrV1Primary.max_drawdown || 0) * 100).toFixed(2)}%，平均换手 ${Number(csi500LcrV1Primary.avg_turnover || 0).toFixed(3)}；保留因子 ${csi500LcrV1KeptFactorCount} 个。`,
+          role: '压力测试候选：中证500指数增强袖 v1',
+          objective: '在 v0 基础上先做因子门禁，保留量能稳定、流动性均衡、市值中性量稳和残差量稳，过滤拖累分层后用真实调仓步长做中证500增强。',
+          dataBasis: `${csi500LcrV1.data_policy || '真实 JoinQuant factor slice 合并复算；交易回测使用非重叠真实调仓步长。'} 样本 ${csi500LcrV1Primary.sample_dates || 0} 个调仓日，最新信号 ${csi500LcrV1LatestSelection.date || '-'}，入选 ${csi500LcrV1SelectedCodes.length || csi500LcrV1LatestSelection.selected_count || 0} 只。`,
+          factorState: csi500LcrV1Factors,
+          rankingFormula: '0.25*量能稳定 + 0.25*市值中性量稳 + 0.35*量能流动性均衡 + 0.15*残差量稳；Top15 / Buffer80 / 分层过滤 / 市值中性 / 流动性25%过滤。',
+          entryRules: [
+            '只使用通过 20日门禁且 5日同向为正的因子',
+            `开放分层：${csi500LcrV1AllowedLayerNames.join('、') || '等待候选包回填'}`,
+            '5日真实调仓作为主压力测试口径，同时保留10日和20日成本压力结果',
+            `最新压力测试名单：${csi500LcrV1SelectedCodes.slice(0, 8).join(', ')}${csi500LcrV1SelectedCodes.length > 8 ? '...' : ''}`,
+          ],
+          riskFilters: [
+            '当前状态是可进入压力测试候选，不等于正式实盘批准',
+            '已剔除 20日门禁未通过或 5日多空不为正的低拥挤/反转类旧因子',
+            '继续补真实指数权重、行业暴露、停牌涨跌停、容量和样本外模拟观察账本',
+          ],
+          portfolioRules: ['中证500历史成分内选股', 'Top15 等权增强候选', 'Buffer80 换手缓冲', '5/10/20日非重叠真实调仓', '成本1.0x/1.5x/2.0x压力测试'],
+          nextAction: '已进入策略池；下一步用最新 Top15 名单跑建仓压力测试、交易可行性和受控模拟观察审计。',
+          candidateCount: csi500LcrV1Primary.sample_trades || csi500LcrV1SelectedCodes.length || 0,
+          computedSignalCount: csi500LcrV1Primary.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
+          exportable: false,
+          exportStatus: `v1 已达压力测试候选标准；${csi500LcrV1.strategy_status_name || '可进入压力测试候选'}`,
+        },
+      ]
+      : []),
     ...(csi500LcrPaperWatchCandidate
       ? [
         {
@@ -6284,11 +6495,13 @@ function buildLiveStrategySignals() {
   ];
   const formalStrategyPriority = {
     csi500_low_crowding_reversal_index_enhancement_v0: 0,
-    jq_quality_profit_liquidity_v1: 1,
-    kline_assisted_confirmation: 2,
-    core_volume_price_trend_v1: 3,
-    capital_follow_v0: 4,
-    akshare_regime_switch_contraction_mean_reversion_v1: 5,
+    csi500_low_crowding_reversal_index_enhancement_v1: 1,
+    csi500_low_crowding_reversal_index_enhancement_v2: 2,
+    jq_quality_profit_liquidity_v1: 3,
+    kline_assisted_confirmation: 4,
+    core_volume_price_trend_v1: 5,
+    capital_follow_v0: 6,
+    akshare_regime_switch_contraction_mean_reversion_v1: 7,
   };
   const formalStrategies = [...formalStrategiesUnsorted].sort((left, right) => (
     (formalStrategyPriority[left.id] ?? 99) - (formalStrategyPriority[right.id] ?? 99)
@@ -6310,6 +6523,7 @@ function buildLiveStrategySignals() {
     metrics: {
       draftStrategies: 8,
       executableStrategies: [
+        csi500LcrV1Ready,
         csi500LcrPaperWatchCandidate,
         coreStrategyValidated,
         capitalStrategyValidated,
@@ -6328,6 +6542,43 @@ function buildLiveStrategySignals() {
       riskWatchRows: labelCounts['风险观察'] || 0,
     },
     strategies: [
+      ...(csi500LcrV1
+        ? [
+          {
+            id: csi500LcrV1.strategy_id || 'csi500_low_crowding_reversal_index_enhancement_v1',
+            name: csi500LcrV1.strategy_name || '中证500低拥挤反转指数增强候选策略 v1',
+            pool: 'draft',
+            status: csi500LcrV1Ready ? 'candidate_for_pressure_test' : csi500LcrV1.strategy_status || 'candidate_pending_review',
+            validationState: csi500LcrV1Primary
+              ? `v1 已生成真实调仓候选包：${csi500LcrV1Primary.horizon_label || '5日真实调仓'}，策略收益 ${(Number(csi500LcrV1Primary.strategy_return || 0) * 100).toFixed(2)}%，主动收益 ${(Number(csi500LcrV1Primary.excess_return || 0) * 100).toFixed(2)}%，主动Sharpe ${Number(csi500LcrV1Primary.active_sharpe || 0).toFixed(2)}，最大回撤 ${(Number(csi500LcrV1Primary.max_drawdown || 0) * 100).toFixed(2)}%。`
+              : 'v1 候选包已登记，但未找到主交易回测结果。',
+            role: '中证500指数增强压力测试候选',
+            objective: '用通过门禁的量能稳定/流动性质量因子替代 v0 中未通过门禁的低拥挤反转因子，形成可压测的中证500增强候选。',
+            dataBasis: csi500LcrV1.data_policy || '真实 JoinQuant factor slice 合并复算；5/10/20日交易回测使用非重叠真实调仓步长。',
+            factorState: csi500LcrV1Factors,
+            rankingFormula: '0.25*量能稳定 + 0.25*市值中性量稳 + 0.35*量能流动性均衡 + 0.15*残差量稳；Top15 / Buffer80 / 分层过滤。',
+            entryRules: [
+              '保留 20日门禁通过且 5日同向为正的因子',
+              `Top${csi500LcrV1?.v1_config?.top_n || 15} / Buffer${csi500LcrV1?.v1_config?.buffer_n || 80}`,
+              `流动性过滤分位 ${Math.round(Number(csi500LcrV1?.v1_config?.liquidity_quantile || 0) * 100)}%`,
+              `开放分层：${csi500LcrV1AllowedLayerNames.join('、') || '-'}`,
+            ],
+            riskFilters: [
+              '仍是压力测试候选，进入实盘前必须补交易可行性、行业暴露和容量审计',
+              '分层过滤以候选包中的开放分层为准，未开放分层不得单独放行',
+              '成本1.5x和2.0x压力结果应继续跟踪，避免高换手侵蚀主动收益',
+            ],
+            portfolioRules: ['中证500历史成分内选股', 'Top15 等权候选', '5/10/20日真实调仓', '成本1.0x/1.5x/2.0x压力测试', '最新名单可进入建仓压测'],
+            nextAction: csi500LcrV1Ready
+              ? '从策略池选择 v1，运行建仓压力测试并补最新交易可行性审计。'
+              : '先检查 v1 候选包缺失的主交易回测或策略检查项。',
+            candidateCount: csi500LcrV1Primary?.sample_trades || csi500LcrV1SelectedCodes.length || 0,
+            computedSignalCount: csi500LcrV1Primary?.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
+            exportable: false,
+            exportStatus: csi500LcrV1Ready ? '已补入策略池；可进入建仓压力测试候选' : '候选包已登记，等待检查项通过',
+          },
+        ]
+        : []),
       {
         id: csi500LcrStrategyId,
         name: '中证500低拥挤反转指数增强候选策略 v0',
@@ -6815,7 +7066,10 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'GET' && pathname === '/position-stress-api/report') {
-    sendJson(res, readPositionStressReport());
+    sendJson(res, readPositionStressReport({
+      start: url.searchParams.get('start'),
+      end: url.searchParams.get('end'),
+    }));
     return true;
   }
 
@@ -6825,8 +7079,20 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'GET' && pathname === '/position-stress-api/equity-export.xlsx') {
-    const exportPath = exportPositionStressEquityExcel();
+    const exportPath = exportPositionStressEquityExcel({
+      start: url.searchParams.get('start'),
+      end: url.searchParams.get('end'),
+    });
     sendFileDownload(res, `m-quant-position-stress-equity-${todayYmd()}.xlsx`, exportPath, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/position-stress-api/trades-export.xlsx') {
+    const exportPath = exportPositionStressTradesExcel({
+      start: url.searchParams.get('start'),
+      end: url.searchParams.get('end'),
+    });
+    sendFileDownload(res, `m-quant-position-stress-trades-${todayYmd()}.xlsx`, exportPath, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     return true;
   }
 
@@ -6837,7 +7103,10 @@ async function handleApi(req, res, pathname) {
       message: `${selected.name} 已送入建仓压力测试。`,
       selected,
       catalog: buildPositionStressStrategyCatalog(),
-      report: readPositionStressReport(),
+      report: readPositionStressReport({
+        start: body.start,
+        end: body.end,
+      }),
     });
     return true;
   }
@@ -6858,7 +7127,13 @@ async function handleApi(req, res, pathname) {
     const strategyId = requirePositionStressStrategyId(url.searchParams.get('strategyId'));
     const bodyText = await readTextBody(req);
     const importFile = writePositionStressImportFile(bodyText);
-    const result = runPositionStressLab({ importFile, source: 'akshare_cache', strategyId });
+    const result = runPositionStressLab({
+      end: url.searchParams.get('end'),
+      importFile,
+      source: 'akshare_cache',
+      start: url.searchParams.get('start'),
+      strategyId,
+    });
     sendJson(res, {
       message: result.report?.runGate?.formalRunAllowed
         ? '真实行情已导入，数据完整，正式建仓压力测试已放行。'

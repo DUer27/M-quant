@@ -43,13 +43,12 @@ DATASET = "csi500"
 EVENT_HORIZONS = [1, 5, 10, 20]
 TRADING_HORIZONS = [5, 10, 20]
 FACTOR_DAY_STEP = 5
-TOP_N = 20
+TOP_N = 15
 BUFFER_N = 80
-LIQUIDITY_QUANTILE = 0.20
+LIQUIDITY_QUANTILE = 0.25
 COST_MULTIPLIERS = [1.0, 1.5, 2.0]
 ALLOWED_LAYER_SET = {
     ("high_volatility", "large_cap"),
-    ("high_volatility", "mid_cap"),
     ("medium_volatility", "mid_cap"),
     ("low_volatility", "large_cap"),
     ("low_volatility", "mid_cap"),
@@ -72,9 +71,9 @@ V1_WEIGHTS = {
 }
 
 V1_VARIANT = optimizer.CandidateVariant(
-    variant_id="v1_top20_buffer80_layer_filtered_volume_quality",
-    name="v1 Top20 Buffer80 分层量稳质量",
-    description="只保留通过门禁的量能稳定、流动性均衡、市值中性量稳和残差量稳因子；过滤拖累分层，Top20/Buffer80 降低换手。",
+    variant_id="v1_top15_buffer80_liq25_no_high_mid_volume_quality",
+    name="v1 Top15 Buffer80 流动性25%去高波动中市值",
+    description="只保留通过门禁的量能稳定、流动性均衡、市值中性量稳和残差量稳因子；过滤拖累分层，Top15/Buffer80 与25%流动性过滤控制组合质量。",
     weights=V1_WEIGHTS,
     top_n=TOP_N,
     buffer_n=BUFFER_N,
@@ -313,7 +312,7 @@ def simulate_true_rebalance(
         "effective_cost_rate": clean_float(base_cost * float(cost_multiplier)),
         "date_range": "%s 至 %s" % (curve[0]["date"], curve[-1]["date"]),
         "score_col": "lcr_enhancement_score",
-        "selection_policy": "Top20 / Buffer80 / allowed regime-cap layers / cap-neutral / liquidity quantile 20% / true rebalance stride",
+        "selection_policy": f"Top{variant.top_n} / Buffer{variant.buffer_n} / allowed regime-cap layers / cap-neutral / liquidity quantile {variant.liquidity_quantile:.0%} / true rebalance stride",
         "benchmark_scope": "full_csi500_pool" if benchmark_work is not None else "current_layer_or_filtered_pool",
         "net_value_curve": curve[-100:],
     }
@@ -488,7 +487,7 @@ def status_label(records: list[dict[str, Any]], kept_factors: list[str]) -> tupl
         "primary_active_sharpe_positive": primary is not None and (primary.get("active_sharpe") or -999) > 0,
         "primary_drawdown_within_floor": primary is not None and (primary.get("max_drawdown") or -999) >= -0.25,
         "stress_1_5x_excess_nonnegative": stress is not None and (stress.get("excess_return") or -999) >= 0,
-        "layer_count_nonempty": len(layer_keys) >= 6,
+        "layer_count_nonempty": len(layer_keys) >= len(ALLOWED_LAYER_SET),
     }
     if all(checks.values()):
         return "candidate_for_pressure_test", "可进入压力测试候选", checks
@@ -538,7 +537,7 @@ def build_report(package: dict[str, Any], output_path: Path, csv_path: Path) -> 
         "",
         "## 分层过滤",
         "",
-        "v1 只开放以下市场状态/市值层，剔除高波动小市值、中波动大市值、中波动小市值三个拖累层。整体交易回测选股只来自开放分层，benchmark 仍使用完整中证500池。",
+        "v1 只开放以下市场状态/市值层。整体交易回测选股只来自开放分层，benchmark 仍使用完整中证500池。",
         "",
     ])
     for key in package.get("allowed_layer_names") or []:
@@ -687,7 +686,7 @@ def main() -> int:
         "variant_name": variant.name,
         "variant_description": variant.description,
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "data_policy": "真实 JoinQuant factor slice 合并复算；v1 先做因子门禁，剔除未通过因子，再用 Top20/Buffer80/分层过滤/市值中性/20%流动性过滤构造策略；5/10/20日交易回测使用非重叠真实调仓步长。",
+        "data_policy": f"真实 JoinQuant factor slice 合并复算；v1 先做因子门禁，剔除未通过因子，再用 Top{TOP_N}/Buffer{BUFFER_N}/分层过滤/市值中性/{LIQUIDITY_QUANTILE:.0%}流动性过滤构造策略；5/10/20日交易回测使用非重叠真实调仓步长。",
         "slice_audit": audit,
         "factor_gate": optimizer.FACTOR_GATE,
         "factor_gate_summary": factor_gate_summary,

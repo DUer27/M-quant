@@ -103,6 +103,7 @@ const elements = {
   positionStressEnd: document.querySelector('#position-stress-end'),
   positionStressEquityCanvas: document.querySelector('#position-stress-equity-canvas'),
   exportPositionStressEquity: document.querySelector('#export-position-stress-equity'),
+  exportPositionStressTrades: document.querySelector('#export-position-stress-trades'),
   positionStressImportOhlcv: document.querySelector('#position-stress-import-ohlcv'),
   positionStressKlineCanvas: document.querySelector('#position-stress-kline-canvas'),
   positionStressKlineDaily: document.querySelector('#position-stress-kline-daily'),
@@ -3665,7 +3666,10 @@ function renderPositionStress(report) {
   elements.positionStressTrades.textContent = `${metrics.tradeCount ?? 0} 笔 / ${metrics.simulatedReturnDays ?? 0} 天`;
   elements.positionStressMessage.textContent = gate.reason || report.sourceMessage || '等待报告';
   elements.positionStressMessage.dataset.tone = complete ? 'success' : 'error';
-  elements.positionStressArtifacts.textContent = report.artifacts?.dailyCsv ? `行情文件：${report.artifacts.dailyCsv}` : '等待产物';
+  const reportFileText = report.reportPath ? `报告：${report.reportPath}` : '';
+  elements.positionStressArtifacts.textContent = report.artifacts?.dailyCsv
+    ? `行情文件：${report.artifacts.dailyCsv}${reportFileText ? ` / ${reportFileText}` : ''}`
+    : reportFileText || '等待产物';
   elements.positionStressArtifacts.title = report.artifacts?.dailyCsv ? fieldHint('source_file', report.artifacts.dailyCsv) : '';
   if (elements.positionStressSelectedStrategy) {
     const runnable = currentPositionStressCatalog?.strategies || [];
@@ -3801,7 +3805,7 @@ function renderPositionStress(report) {
     `).join('') || '<tr><td colspan="9">暂无压力场景。</td></tr>';
 
   if (elements.positionStressTradeTable) {
-    elements.positionStressTradeTable.innerHTML = (report.strategy?.trades || []).slice(0, 80)
+    elements.positionStressTradeTable.innerHTML = (report.strategy?.trades || [])
       .map((trade) => `
         <tr>
           <td>${escapeHtml(trade.signalDate)}<br><small>${escapeHtml(trade.exitDate || '')}</small></td>
@@ -3860,6 +3864,8 @@ function renderPositionStressCatalog(catalog) {
     ].join('');
     if (currentPositionStressExplicitStrategyId && runnable.some((item) => item.strategyId === currentPositionStressExplicitStrategyId)) {
       elements.positionStressStrategySelect.value = currentPositionStressExplicitStrategyId;
+    } else if (catalog?.current?.strategyId && runnable.some((item) => item.strategyId === catalog.current.strategyId)) {
+      elements.positionStressStrategySelect.value = catalog.current.strategyId;
     }
   }
   if (currentPositionStressReport) {
@@ -4007,6 +4013,7 @@ function drawChart(equity) {
 }
 
 async function refreshDashboard() {
+  const positionStressReportUrl = positionStressReportEndpoint();
   const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
@@ -4019,7 +4026,7 @@ async function refreshDashboard() {
     request('/strategy-api/live-signals'),
     request('/backtest-api/research-status'),
     request('/research-api/pipeline'),
-    request('/position-stress-api/report'),
+    request(positionStressReportUrl),
     request('/position-stress-api/strategies'),
   ]);
 
@@ -4038,6 +4045,25 @@ async function refreshDashboard() {
   renderPositionStressCatalog(positionStressCatalog);
   bindCollapsibleData();
   requestAnimationFrame(syncCollapsibleData);
+}
+
+function positionStressDateParams() {
+  const params = new URLSearchParams();
+  const start = elements.positionStressStart?.value || '';
+  const end = elements.positionStressEnd?.value || '';
+  if (start) params.set('start', start);
+  if (end) params.set('end', end);
+  return params;
+}
+
+function positionStressEndpoint(path) {
+  const params = positionStressDateParams();
+  const suffix = params.toString();
+  return suffix ? `${path}?${suffix}` : path;
+}
+
+function positionStressReportEndpoint() {
+  return positionStressEndpoint('/position-stress-api/report');
 }
 
 async function boot() {
@@ -4297,7 +4323,7 @@ elements.downloadJoinquantFactorScript?.addEventListener('click', () => {
 
 elements.positionStressKlineSelect?.addEventListener('change', async () => {
   try {
-    const report = await request('/position-stress-api/report');
+    const report = await request(positionStressReportEndpoint());
     positionStressKlineView.hoverIndex = null;
     renderPositionStress(report);
   } catch (error) {
@@ -4366,7 +4392,7 @@ elements.positionStressKlineCanvas?.addEventListener('pointermove', (event) => {
 elements.refreshPositionStress?.addEventListener('click', async () => {
   try {
     const [report, catalog] = await Promise.all([
-      request('/position-stress-api/report'),
+      request(positionStressReportEndpoint()),
       request('/position-stress-api/strategies'),
     ]);
     renderPositionStress(report);
@@ -4379,13 +4405,12 @@ elements.refreshPositionStress?.addEventListener('click', async () => {
   }
 });
 
-elements.exportPositionStressEquity?.addEventListener('click', async () => {
-  const button = elements.exportPositionStressEquity;
+async function downloadPositionStressExcel(button, endpoint, filenamePrefix, successMessage, fallbackText) {
   const originalText = button.textContent;
   button.disabled = true;
   button.textContent = '导出中';
   try {
-    const response = await fetch(new URL('/position-stress-api/equity-export.xlsx', window.location.origin));
+    const response = await fetch(new URL(endpoint, window.location.origin));
     if (!response.ok) {
       const text = await response.text();
       throw new Error(text || `导出接口返回 ${response.status}`);
@@ -4394,20 +4419,40 @@ elements.exportPositionStressEquity?.addEventListener('click', async () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `m-quant-position-stress-equity-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.xlsx`;
+    link.download = `${filenamePrefix}-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.xlsx`;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    elements.positionStressMessage.textContent = 'Excel 已导出。';
+    elements.positionStressMessage.textContent = successMessage;
     elements.positionStressMessage.dataset.tone = 'success';
   } catch (error) {
     elements.positionStressMessage.textContent = `导出失败：${error.message}`;
     elements.positionStressMessage.dataset.tone = 'error';
   } finally {
     button.disabled = false;
-    button.textContent = originalText || '导出Excel';
+    button.textContent = originalText || fallbackText;
   }
+}
+
+elements.exportPositionStressEquity?.addEventListener('click', async () => {
+  await downloadPositionStressExcel(
+    elements.exportPositionStressEquity,
+    positionStressEndpoint('/position-stress-api/equity-export.xlsx'),
+    'm-quant-position-stress-equity',
+    '组合净值 Excel 已导出。',
+    '导出Excel',
+  );
+});
+
+elements.exportPositionStressTrades?.addEventListener('click', async () => {
+  await downloadPositionStressExcel(
+    elements.exportPositionStressTrades,
+    positionStressEndpoint('/position-stress-api/trades-export.xlsx'),
+    'm-quant-position-stress-trades',
+    '成交明细 Excel 已导出。',
+    '导出Excel',
+  );
 });
 
 elements.positionStressStrategySelect?.addEventListener('change', async () => {
@@ -4465,7 +4510,9 @@ elements.importPositionStressOhlcv?.addEventListener('click', async () => {
   button.disabled = true;
   button.textContent = '导入中';
   try {
-    const response = await request(`/position-stress-api/import-ohlcv?strategyId=${encodeURIComponent(strategyId)}`, {
+    const params = positionStressDateParams();
+    params.set('strategyId', strategyId);
+    const response = await request(`/position-stress-api/import-ohlcv?${params.toString()}`, {
       body: text,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       method: 'POST',
