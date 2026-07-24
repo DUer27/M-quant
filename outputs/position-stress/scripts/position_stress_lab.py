@@ -1958,7 +1958,11 @@ def format_percent_label(value: float) -> str:
 def build_report(config: RunConfig) -> dict[str, object]:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    pool = narrow_pool_to_selected_codes(read_symbol_pool(config.symbols_file), config.selected_codes)
+    selected_code_adapters = {"selected_codes_mean_reversion"}
+    is_fixed_selected_code_run = config.strategy_adapter in selected_code_adapters and bool(config.selected_codes)
+    pool = read_symbol_pool(config.symbols_file)
+    if is_fixed_selected_code_run:
+        pool = narrow_pool_to_selected_codes(pool, config.selected_codes)
     manual_data, manual_message = read_manual_import(config.import_file, pool) if config.import_file else (pd.DataFrame(), "")
 
     jq_data, jq_message = try_fetch_joinquant(pool, config)
@@ -1994,6 +1998,8 @@ def build_report(config: RunConfig) -> dict[str, object]:
     expected_codes = set(pool["code"].tolist())
     is_auto_cache_pool = str(config.symbols_file) == "auto_cache_all"
     is_selected_code_pool = bool(config.selected_codes)
+    min_broad_pool_size = max(int(config.top_n) * 20, int(config.top_n))
+    is_broad_pool = not is_selected_code_pool and len(expected_codes) >= min_broad_pool_size
     missing_coverage = []
     coverage_rows = []
     for day in requested_dates:
@@ -2016,11 +2022,13 @@ def build_report(config: RunConfig) -> dict[str, object]:
             })
     strict_missing_dates = [item["date"] for item in missing_coverage]
     selected_min_available = min(int(config.top_n), len(config.selected_codes) or int(config.top_n))
-    min_tradable = selected_min_available if is_selected_code_pool else max(int(config.top_n) * 20, int(config.top_n))
+    min_tradable = selected_min_available if is_selected_code_pool else min_broad_pool_size
     weak_coverage_dates = [row["date"] for row in coverage_rows if row["tradableCount"] < min_tradable or row["selectedAvailableCount"] < selected_min_available]
-    relaxed_coverage = is_auto_cache_pool or is_selected_code_pool
+    relaxed_coverage = is_auto_cache_pool or is_selected_code_pool or is_broad_pool
     missing_dates = weak_coverage_dates if relaxed_coverage else strict_missing_dates
-    is_complete = len(weak_coverage_dates) == 0 if relaxed_coverage else len(missing_coverage) == 0
+    data_complete = len(weak_coverage_dates) == 0 if relaxed_coverage else len(missing_coverage) == 0
+    is_complete = data_complete and not is_fixed_selected_code_run
+    has_nonblocking_missing_coverage = bool(missing_coverage) and is_complete and is_broad_pool
     latest_date = actual_dates[-1] if actual_dates else ""
 
     model_suffix = "_constrained_liquidity" if config.execution_model == "constrained_liquidity" else ""
@@ -2066,10 +2074,14 @@ def build_report(config: RunConfig) -> dict[str, object]:
         "runGate": {
             "formalRunAllowed": bool(is_complete and len(actual_dates) >= 2),
             "reason": (
+                "固定最新名单只能用于篮子容量预览，不能作为历史动态选股策略回测。"
+                if is_fixed_selected_code_run else
                 "名单股票池采用覆盖检查：每日可交易样本和目标名单覆盖足够，可以运行动态持仓压力测试；不作为正式策略收益结论。"
                 if is_complete and is_selected_code_pool else
                 "全缓存股票池采用宽松覆盖检查：每日可交易样本和目标名单覆盖足够，可以运行动态持仓压力测试；不作为正式策略收益结论。"
                 if is_complete and is_auto_cache_pool else
+                "宽股票池采用最小可交易样本检查：每日可交易样本足够，可以运行动态持仓压力测试；缺失成分继续披露，不作为 JoinQuant 原生策略收益结论。"
+                if is_complete and is_broad_pool else
                 "短窗口数据完整，可以运行建仓链路压力测试；不作为策略有效性结论。"
                 if is_complete else
                 f"缺少真实行情覆盖：{', '.join(weak_coverage_dates or missing_dates)}。正式运行已阻断。"
@@ -2083,7 +2095,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
         "missingDates": missing_dates,
         "missingCoverage": missing_coverage,
         "coverage": {
-            "mode": "selected_codes_relaxed" if is_selected_code_pool else "auto_cache_all_relaxed" if is_auto_cache_pool else "strict_pool_full_coverage",
+            "mode": "fixed_selected_codes_preview" if is_fixed_selected_code_run else "selected_codes_relaxed" if is_selected_code_pool else "auto_cache_all_relaxed" if is_auto_cache_pool else "broad_pool_min_tradable" if is_broad_pool else "strict_pool_full_coverage",
             "minTradablePerDate": min_tradable,
             "weakCoverageDates": weak_coverage_dates,
             "daily": coverage_rows[:500],
@@ -2146,9 +2158,11 @@ def build_report(config: RunConfig) -> dict[str, object]:
         "capacityRecommendation": capacity_advice,
         "warnings": [
             *( ["数据不完整：正式建仓运行已阻断，当前收益、成交和压力测试只作为链路预览。"] if not is_complete else [] ),
+            *( ["当前使用固定 selected_codes 缩窄股票池，只能解释为固定篮子容量预览，不能作为历史动态选股策略回测。"] if is_fixed_selected_code_run else [] ),
             *( ["请求窗口末日行情当前没有覆盖完整股票池，页面会标为缺失。"] if config.end in missing_dates else [] ),
             *( ["当前报告使用 AkShare 联网真实行情补齐，不等同于已成功拉取 JoinQuant 数据。"] if source_mode == "akshare_network_fallback" else [] ),
             *( ["当前报告使用 AkShare 本地缓存回退，不等同于已成功拉取 JoinQuant 数据。"] if source_mode == "akshare_cache_fallback" else [] ),
+            *( [f"宽股票池存在部分成分行情缺口，但每日可交易样本均不少于 {min_tradable} 只；缺失明细已写入 missingCoverage。"] if has_nonblocking_missing_coverage else [] ),
             *( ["已合并手动导入真实行情文件。"] if not manual_data.empty else [] ),
             f"资金账本口径：{config.lot_size} 股一手，佣金 {config.commission_bps}bp，最低佣金 {config.min_commission} 元，卖出印花税 {config.stamp_duty_bps}bp，滑点 {config.slippage_bps}bp，现金缓冲 {config.cash_buffer_pct:.2%}。",
             *( [f"真实成交约束口径：单票单日成交上限为当日成交额的 {config.max_participation_pct:.2%}；先卖后买，买卖共享同一股票当日容量，买入不足保留现金，卖出不足继续滞留。"] if config.execution_model == "constrained_liquidity" else [] ),

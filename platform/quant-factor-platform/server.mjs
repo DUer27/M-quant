@@ -3848,7 +3848,7 @@ function positionStressAdapterFor(strategyId, selectedCodes = []) {
     return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_low_crowding_reversal_proxy';
   }
   if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2') {
-    return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_low_crowding_reversal_proxy';
+    return 'ohlcv_low_crowding_reversal_proxy';
   }
   return 'ohlcv_core_volume_price';
 }
@@ -3871,7 +3871,7 @@ function positionStressExecutionParamsFor(strategyId) {
       executionModel: 'constrained_liquidity',
       maxParticipationPct: 0.05,
       capitalSweep: [1_000_000, 10_000_000, 20_000_000, 30_000_000, 40_000_000, 50_000_000, 80_000_000, 100_000_000],
-      symbolsFile: 'auto_cache_all',
+      symbolsFile: 'outputs/sources/akshare/index_enhancement/processed/csi500_pool.csv',
     };
   }
   return {
@@ -3884,7 +3884,10 @@ function positionStressExecutionParamsFor(strategyId) {
 function normalizePositionStressStrategy(item) {
   const selectedCodes = selectedCodesList(item.selected_codes || item.selectedCodes || item.latestSignal?.selected_codes);
   const strategyId = item.strategy_id || item.strategyId || item.id || '';
-  const adapter = item.adapter || positionStressAdapterFor(strategyId, selectedCodes);
+  const adapter = strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2'
+    ? positionStressAdapterFor(strategyId, selectedCodes)
+    : item.adapter || positionStressAdapterFor(strategyId, selectedCodes);
+  const pressureSelectedCodes = strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2' ? [] : selectedCodes;
   const runnable = item.runnable !== false && adapter !== 'controller_not_directly_executable';
   return {
     adapter,
@@ -3895,7 +3898,7 @@ function normalizePositionStressStrategy(item) {
     name: item.strategy_name || item.strategyName || item.name || strategyId,
     runnable,
     runnableReason: item.runnableReason || (runnable ? '可进入建仓压力测试。' : '该策略是控制器或缺少可复现选股名单，不能直接压测。'),
-    selectedCodes,
+    selectedCodes: pressureSelectedCodes,
     source: item.source || item.evidence_system || '',
     strategyId,
     execution: item.execution || positionStressExecutionParamsFor(strategyId),
@@ -3956,17 +3959,15 @@ function buildPositionStressStrategyCatalog() {
     }));
   }
 
-  const v1SelectedCodesForV2 = csi500LcrV1LatestSelectedCodes();
   if (!byId.has('csi500_low_crowding_reversal_index_enhancement_v2')) {
     byId.set('csi500_low_crowding_reversal_index_enhancement_v2', normalizePositionStressStrategy({
-      adapter: positionStressAdapterFor('csi500_low_crowding_reversal_index_enhancement_v2', v1SelectedCodesForV2),
+      adapter: 'ohlcv_low_crowding_reversal_proxy',
       evidence: 'v1_candidate_plus_dynamic_signal_holding',
       gateStatus: 'candidate_for_pressure_test',
       layer: '中证500指数增强',
       name: '中证500低拥挤反转指数增强候选策略 v2',
       runnable: true,
-      runnableReason: '基于 v1 最新名单，压测账本改为信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。',
-      selectedCodes: v1SelectedCodesForV2,
+      runnableReason: '使用完整可用股票池逐日动态选股，压测账本采用信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。',
       source: 'csi500_lcr_v1_dynamic_signal_holding_upgrade',
       strategyId: 'csi500_low_crowding_reversal_index_enhancement_v2',
       execution: positionStressExecutionParamsFor('csi500_low_crowding_reversal_index_enhancement_v2'),

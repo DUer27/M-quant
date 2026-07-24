@@ -1,29 +1,13 @@
 {
-  "adapter": "selected_codes_mean_reversion",
+  "adapter": "ohlcv_low_crowding_reversal_proxy",
   "baseline": null,
   "evidence": "v1_candidate_plus_dynamic_signal_holding",
   "gateStatus": "candidate_for_pressure_test",
   "layer": "中证500指数增强",
   "name": "中证500低拥挤反转指数增强候选策略 v2",
   "runnable": true,
-  "runnableReason": "基于 v1 最新名单，压测账本改为信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。",
-  "selectedCodes": [
-    "300857",
-    "688200",
-    "002340",
-    "300395",
-    "300136",
-    "300037",
-    "003031",
-    "688777",
-    "300757",
-    "002281",
-    "300751",
-    "002008",
-    "002738",
-    "301611",
-    "300054"
-  ],
+  "runnableReason": "使用完整可用股票池逐日动态选股，压测账本采用信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。",
+  "selectedCodes": [],
   "source": "csi500_lcr_v1_dynamic_signal_holding_upgrade",
   "strategyId": "csi500_low_crowding_reversal_index_enhancement_v2",
   "execution": {
@@ -39,7 +23,7 @@
     "takeProfitPct": 0.12,
     "trailingStopPct": 0.06,
     "scoreDropPct": 0.3,
-    "symbolsFile": "auto_cache_all"
+    "symbolsFile": "outputs/sources/akshare/index_enhancement/processed/csi500_pool.csv"
   },
   "selectedAt": "2026-07-24T04:31:51.278Z"
 }
