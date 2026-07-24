@@ -65,6 +65,9 @@ class RunConfig:
     take_profit_pct: float = 0.12
     trailing_stop_pct: float = 0.06
     score_drop_pct: float = 0.30
+    execution_model: str = "constrained_liquidity"
+    max_participation_pct: float = 0.05
+    capital_sweep: tuple[float, ...] = ()
 
 
 def normalize_code(value: str) -> str:
@@ -512,6 +515,11 @@ def add_strategy_scores(data: pd.DataFrame, history: pd.DataFrame) -> pd.DataFra
     history["prev_close"] = grouped["close"].shift(1)
     history["change_pct_calc"] = (history["close"] / history["prev_close"] - 1) * 100
     history["change_pct"] = history["change_pct"].fillna(history["change_pct_calc"])
+    raw_amount = history["amount"].where(history["amount"].notna() & (history["amount"] > 0))
+    estimated_amount = history["close"] * history["volume"] * 100
+    history["capacity_amount"] = raw_amount.fillna(estimated_amount)
+    history["capacity_amount_source"] = np.where(raw_amount.notna(), "amount", "close_volume_100_estimate")
+    history.loc[history["capacity_amount"].isna() | (history["capacity_amount"] <= 0), "capacity_amount_source"] = "missing"
     history["amount"] = history["amount"].fillna(history["close"] * history["volume"])
     history["ma5"] = grouped["close"].rolling(5, min_periods=3).mean().reset_index(level=0, drop=True)
     history["ma20"] = grouped["close"].rolling(20, min_periods=8).mean().reset_index(level=0, drop=True)
@@ -610,6 +618,8 @@ def apply_strategy_adapter(scored: pd.DataFrame, config: RunConfig) -> pd.DataFr
         out["strategy_score"] = out["kline_confirmation_score"]
     elif adapter == "ohlcv_liquidity_quality_proxy":
         out["strategy_score"] = out["liquidity_quality_proxy"]
+    elif adapter == "ohlcv_structured_reversal_proxy":
+        out["strategy_score"] = 0.65 * out["low_crowding_reversal_score"] + 0.35 * out["liquidity_quality_proxy"]
     elif adapter == "ohlcv_low_crowding_reversal_proxy":
         out["strategy_score"] = out["low_crowding_reversal_score"]
     else:
@@ -666,6 +676,7 @@ def strategy_adapter_note(config: RunConfig) -> str:
         "ohlcv_mean_reversion": "使用 OHLCV 可复现的高波动均值回归代理分数。",
         "selected_codes_mean_reversion": "优先使用准模拟盘最新选股名单，并在名单内按均值回归代理分数排序。",
         "ohlcv_liquidity_quality_proxy": "使用 OHLCV 成交额、趋势和量价确认构造 JQ质量流动性代理；不等价于 JoinQuant 基本面原策略。",
+        "ohlcv_structured_reversal_proxy": "使用 OHLCV 低拥挤反转与流动性质量代理构造长江结构化反转执行链路压测分数；不等价于 JoinQuant 10m 高频结构化反转正式回测。",
         "ohlcv_low_crowding_reversal_proxy": "使用 OHLCV 低拥挤、反转修复、成交活跃和收盘强度构造中证500低拥挤反转代理；用于建仓链路压测，不等价于 JoinQuant 原生指数增强回测。",
     }
     return notes.get(config.strategy_adapter, notes["ohlcv_core_volume_price"])
@@ -682,6 +693,51 @@ def lot_shares(target_notional: float, price: float, lot_size: int) -> int:
         return 0
     lot = max(1, int(lot_size or 1))
     return int(math.floor(target_notional / price / lot) * lot)
+
+
+def available_trade_amount(row: object) -> tuple[float | None, str]:
+    capacity_amount = finite_float(getattr(row, "capacity_amount", None))
+    capacity_source = str(getattr(row, "capacity_amount_source", "") or "")
+    if capacity_amount is not None and capacity_amount > 0:
+        return capacity_amount, capacity_source or "capacity_amount"
+    amount = finite_float(getattr(row, "amount", None))
+    if amount is not None and amount > 0:
+        return amount, "amount"
+    close = finite_float(getattr(row, "close", None))
+    volume = finite_float(getattr(row, "volume", None))
+    if close is not None and volume is not None and close > 0 and volume > 0:
+        return close * volume * 100, "close_volume_100_estimate"
+    return None, "missing"
+
+
+def clip_order_by_liquidity(
+    order_notional: float,
+    price: float,
+    cash_or_shares: float,
+    capacity_left: float | None,
+    side: str,
+    config: RunConfig,
+) -> dict[str, object]:
+    target = max(float(order_notional or 0), 0.0)
+    if target <= 0 or price <= 0:
+        return {"shares": 0, "notional": 0.0, "unfilledNotional": target, "fillRatio": 0.0, "liquidityLimited": False}
+    if capacity_left is None or capacity_left <= 0:
+        return {"shares": 0, "notional": 0.0, "unfilledNotional": target, "fillRatio": 0.0, "liquidityLimited": True}
+
+    if side == "buy":
+        max_notional = min(target, float(cash_or_shares or 0), capacity_left)
+    else:
+        max_notional = min(target, max(float(cash_or_shares or 0), 0.0) * price, capacity_left)
+    shares = lot_shares(max_notional, price, config.lot_size)
+    notional = shares * price
+    unfilled = max(target - notional, 0.0)
+    return {
+        "shares": int(shares),
+        "notional": float(notional),
+        "unfilledNotional": float(unfilled),
+        "fillRatio": float(notional / target) if target > 0 else 0.0,
+        "liquidityLimited": bool(capacity_left < target and unfilled > 0),
+    }
 
 
 def initial_curve(dates: list[str], initial_capital: float) -> list[dict[str, object]]:
@@ -821,6 +877,8 @@ def summarize_equity(
 
 
 def simulate_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConfig, delay_days: int = 0) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
+    if config.execution_model == "constrained_liquidity" and delay_days == 0:
+        return simulate_constrained_liquidity_equity(scored, signals, config)
     if config.holding_policy == "dynamic_signal" and delay_days == 0:
         return simulate_dynamic_signal_equity(scored, signals, config)
     price = scored[["date", "code", "security", "name", "close"]].dropna().copy()
@@ -1271,6 +1329,412 @@ def simulate_dynamic_signal_equity(scored: pd.DataFrame, signals: pd.DataFrame, 
     return curve, trades, metrics
 
 
+def simulate_constrained_liquidity_equity(scored: pd.DataFrame, signals: pd.DataFrame, config: RunConfig) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
+    price_fields = ["date", "code", "security", "name", "close", "volume", "amount", "capacity_amount", "capacity_amount_source"]
+    price = scored[[field for field in price_fields if field in scored.columns]].dropna(subset=["date", "code", "close"]).copy()
+    dates = sorted(price["date"].unique())
+    close_map = {(row.date, row.code): float(row.close) for row in price.itertuples()}
+    meta_map = {(row.date, row.code): row for row in price.itertuples()}
+    score_map, rank_map, ranked_by_date = signal_maps(scored, config.signal_buffer_n)
+    initial_capital = max(float(config.capital or 0), 0.0)
+    cash = initial_capital
+    holdings: dict[str, dict[str, object]] = {}
+    curve = initial_curve(dates, initial_capital)
+    trades: list[dict[str, object]] = []
+    returns: list[float] = []
+    daily_costs: list[float] = []
+    holding_count_samples: list[int] = []
+    holding_days_done: list[int] = []
+    exit_reasons: dict[str, int] = {}
+    liquidity_events: list[dict[str, object]] = []
+    missing_capacity_events: list[dict[str, object]] = []
+    participation_values: list[float] = []
+    linger_days_values: list[int] = []
+    total_buy_notional = 0.0
+    total_sell_notional = 0.0
+    total_cost_amount = 0.0
+    total_order_notional = 0.0
+    total_filled_notional = 0.0
+    total_target_buy_notional = 0.0
+    total_actual_buy_notional = 0.0
+    total_unfilled_buy_notional = 0.0
+    total_target_sell_notional = 0.0
+    total_actual_sell_notional = 0.0
+    total_unfilled_sell_notional = 0.0
+    max_linger_notional = 0.0
+    max_linger_days = 0
+    peak_value = initial_capital if initial_capital > 0 else 1.0
+
+    for i, date in enumerate(dates):
+        previous_value = curve[-1]["portfolioValue"] if curve else initial_capital
+        portfolio_before = float(previous_value or cash or initial_capital)
+        day_cost = 0.0
+        day_pnl = 0.0
+        traded_notional = 0.0
+        daily_capacity_used: dict[str, float] = {}
+        daily_capacity_limit: dict[str, float | None] = {}
+        daily_capacity_source: dict[str, str] = {}
+
+        def capacity_left(code: str) -> float | None:
+            if code not in daily_capacity_limit:
+                meta = meta_map.get((date, code))
+                raw_amount, source = available_trade_amount(meta) if meta is not None else (None, "missing")
+                daily_capacity_source[code] = source
+                daily_capacity_limit[code] = raw_amount * max(float(config.max_participation_pct), 0.0) if raw_amount is not None else None
+            limit = daily_capacity_limit.get(code)
+            if limit is None:
+                return None
+            return max(float(limit) - daily_capacity_used.get(code, 0.0), 0.0)
+
+        for code in list(holdings.keys()):
+            holding = holdings[code]
+            price_now = close_map.get((date, code))
+            if price_now is None:
+                continue
+            holding["peakPrice"] = max(float(holding.get("peakPrice") or price_now), price_now)
+            if holding.get("exitPending"):
+                first_exit_index = int(holding.get("firstExitIndex") or i)
+                holding["lingerDays"] = max(1, i - first_exit_index + 1)
+                entry_price = float(holding.get("entryPriceRaw") or price_now)
+                linger_drawdown = price_now / entry_price - 1 if entry_price > 0 else 0.0
+                holding["lingerMaxLoss"] = min(float(holding.get("lingerMaxLoss") or 0.0), linger_drawdown)
+            entry_index_value = holding.get("entryIndex")
+            entry_index = int(entry_index_value) if entry_index_value is not None else i
+            holding_days = max(0, i - entry_index)
+            score_now = score_map.get((date, code))
+            rank_now = rank_map.get((date, code))
+            reason = str(holding.get("pendingExitReason") or "") if holding.get("exitPending") else ""
+            if not reason:
+                maybe_reason = dynamic_exit_reason(
+                    holding,
+                    date,
+                    price_now,
+                    score_now,
+                    rank_now,
+                    holding_days,
+                    config,
+                    force_close=(i == len(dates) - 1),
+                )
+                if maybe_reason:
+                    reason = maybe_reason
+            if not reason:
+                continue
+
+            shares_before = int(holding.get("shares") or 0)
+            sell_price = price_now * (1 - config.slippage_bps / 10000)
+            target_sell_notional = shares_before * sell_price
+            left = capacity_left(code)
+            clipped = clip_order_by_liquidity(target_sell_notional, sell_price, shares_before, left, "sell", config)
+            shares_sold = int(clipped["shares"] or 0)
+            sell_notional = float(clipped["notional"] or 0.0)
+            total_target_sell_notional += target_sell_notional
+            total_unfilled_sell_notional += float(clipped["unfilledNotional"] or 0.0)
+
+            if shares_sold <= 0:
+                holding["exitPending"] = True
+                holding["pendingExitReason"] = reason
+                holding.setdefault("firstExitDate", date)
+                holding.setdefault("firstExitIndex", i)
+                linger_days = int(holding.get("lingerDays") or 1)
+                linger_notional = shares_before * price_now
+                max_linger_days = max(max_linger_days, linger_days)
+                max_linger_notional = max(max_linger_notional, linger_notional)
+                event = {
+                    "date": date,
+                    "code": code,
+                    "name": holding.get("name"),
+                    "side": "sell",
+                    "targetNotional": finite_float(target_sell_notional, 2),
+                    "filledNotional": 0.0,
+                    "unfilledNotional": finite_float(target_sell_notional, 2),
+                    "capacityLimit": finite_float(daily_capacity_limit.get(code), 2),
+                    "capacityLeft": finite_float(left, 2) if left is not None else None,
+                    "capacitySource": daily_capacity_source.get(code),
+                    "lingerDays": linger_days,
+                    "reason": reason,
+                }
+                liquidity_events.append(event)
+                if left is None:
+                    missing_capacity_events.append(event)
+                continue
+
+            daily_capacity_used[code] = daily_capacity_used.get(code, 0.0) + sell_notional
+            if daily_capacity_limit.get(code):
+                participation_values.append(sell_notional / float(daily_capacity_limit[code]) * max(float(config.max_participation_pct), 0.0))
+            sell_commission = trade_commission(sell_notional, config)
+            stamp_duty = sell_notional * config.stamp_duty_bps / 10000
+            sell_cost = sell_commission + stamp_duty
+            proceeds = sell_notional - sell_cost
+            fraction = shares_sold / shares_before if shares_before > 0 else 0.0
+            buy_notional_part = float(holding.get("buyNotional") or 0) * fraction
+            buy_commission_part = float(holding.get("buyCommission") or 0) * fraction
+            pnl = proceeds - buy_notional_part - buy_commission_part
+            ret = pnl / (buy_notional_part + buy_commission_part) if (buy_notional_part + buy_commission_part) > 0 else None
+            contribution = pnl / portfolio_before if portfolio_before > 0 else 0.0
+            remaining_shares = shares_before - shares_sold
+            cash += proceeds
+            day_pnl += pnl
+            day_cost += sell_cost
+            total_sell_notional += sell_notional
+            total_actual_sell_notional += sell_notional
+            total_cost_amount += sell_cost
+            traded_notional += sell_notional
+            exit_reasons[reason] = exit_reasons.get(reason, 0) + 1
+            if remaining_shares <= 0:
+                holding_days_done.append(holding_days)
+                if holding.get("exitPending"):
+                    linger_days_values.append(int(holding.get("lingerDays") or 0))
+            else:
+                holding["shares"] = int(remaining_shares)
+                holding["buyNotional"] = float(holding.get("buyNotional") or 0) - buy_notional_part
+                holding["buyCommission"] = float(holding.get("buyCommission") or 0) - buy_commission_part
+                holding["exitPending"] = True
+                holding["pendingExitReason"] = reason
+                holding.setdefault("firstExitDate", date)
+                holding.setdefault("firstExitIndex", i)
+                linger_days = int(holding.get("lingerDays") or 1)
+                linger_days_values.append(linger_days)
+                max_linger_days = max(max_linger_days, linger_days)
+                max_linger_notional = max(max_linger_notional, remaining_shares * price_now)
+
+            fill_ratio = float(clipped["fillRatio"] or 0.0)
+            trade_record = {
+                "side": "sell",
+                "liquidityConstrained": bool(clipped.get("liquidityLimited")),
+                "exitStatus": "full" if remaining_shares <= 0 else "partial_lingering",
+                "signalDate": holding.get("signalDate"),
+                "entryDate": holding.get("entryDate"),
+                "exitDate": date,
+                "code": code,
+                "security": holding.get("security"),
+                "name": holding.get("name"),
+                "entryClose": finite_float(holding.get("entryClose"), 4),
+                "exitClose": finite_float(price_now, 4),
+                "entryPrice": finite_float(holding.get("entryPriceRaw"), 4),
+                "exitPrice": finite_float(sell_price, 4),
+                "targetWeight": finite_float(holding.get("targetWeight"), 4),
+                "actualWeight": finite_float(buy_notional_part / portfolio_before, 6) if portfolio_before > 0 else None,
+                "shares": shares_sold,
+                "remainingShares": int(max(remaining_shares, 0)),
+                "orderNotional": finite_float(target_sell_notional, 2),
+                "filledNotional": finite_float(sell_notional, 2),
+                "notional": finite_float(sell_notional, 2),
+                "unfilledNotional": finite_float(float(clipped["unfilledNotional"] or 0.0), 2),
+                "fillRatio": finite_float(fill_ratio, 4),
+                "return": finite_float(ret, 6) if ret is not None else None,
+                "pnl": finite_float(pnl, 2),
+                "contribution": finite_float(contribution, 6),
+                "buyCost": finite_float(buy_commission_part, 2),
+                "sellCost": finite_float(sell_cost, 2),
+                "costAmount": finite_float(buy_commission_part + sell_cost, 2),
+                "strategyScore": finite_float(holding.get("entryScore"), 4),
+                "exitScore": finite_float(score_now, 4) if score_now is not None else None,
+                "entryRank": holding.get("entryRank"),
+                "exitRank": rank_now,
+                "holdingDays": int(holding_days),
+                "exitReason": reason,
+                "capacityLimit": finite_float(daily_capacity_limit.get(code), 2),
+                "capacityUsedAfter": finite_float(daily_capacity_used.get(code), 2),
+                "capacitySource": daily_capacity_source.get(code),
+                "lingerDays": int(holding.get("lingerDays") or 0),
+                "lingerMaxLoss": finite_float(holding.get("lingerMaxLoss"), 6),
+                "portfolioValueBefore": finite_float(portfolio_before, 2),
+                "portfolioValueAfter": None,
+                "cashAfterTrade": finite_float(cash, 2),
+            }
+            trades.append(trade_record)
+            if bool(clipped.get("liquidityLimited")) or remaining_shares > 0:
+                liquidity_events.append(trade_record)
+            if remaining_shares <= 0:
+                del holdings[code]
+
+        if i < len(dates) - 1 and len(holdings) < max(int(config.top_n), 1):
+            current_value = cash + sum(int(item.get("shares") or 0) * close_map.get((date, code), float(item.get("entryPriceRaw") or 0)) for code, item in holdings.items())
+            target_weight = 1 / max(int(config.top_n), 1)
+            slots = max(int(config.top_n) - len(holdings), 0)
+            candidates = ranked_by_date.get(date, pd.DataFrame()).copy()
+            for row in candidates.itertuples():
+                if slots <= 0:
+                    break
+                code = row.code
+                if code in holdings:
+                    continue
+                start_close = close_map.get((date, code))
+                if not start_close or start_close <= 0:
+                    continue
+                buy_price = start_close * (1 + config.slippage_bps / 10000)
+                target_notional = current_value * max(0.0, 1 - config.cash_buffer_pct) * target_weight
+                left = capacity_left(code)
+                clipped = clip_order_by_liquidity(target_notional, buy_price, cash, left, "buy", config)
+                shares = int(clipped["shares"] or 0)
+                buy_notional = float(clipped["notional"] or 0.0)
+                buy_commission = trade_commission(buy_notional, config)
+                while shares > 0 and buy_notional + buy_commission > cash:
+                    shares -= max(1, int(config.lot_size or 1))
+                    buy_notional = shares * buy_price
+                    buy_commission = trade_commission(buy_notional, config)
+                unfilled_buy = max(target_notional - buy_notional, 0.0)
+                total_order_notional += target_notional
+                total_target_buy_notional += target_notional
+                total_unfilled_buy_notional += unfilled_buy
+                if shares <= 0:
+                    event = {
+                        "side": "buy",
+                        "liquidityConstrained": True,
+                        "signalDate": date,
+                        "entryDate": date,
+                        "exitDate": None,
+                        "code": code,
+                        "security": row.security,
+                        "name": row.name,
+                        "entryClose": finite_float(start_close, 4),
+                        "entryPrice": finite_float(buy_price, 4),
+                        "targetWeight": finite_float(target_weight, 4),
+                        "actualWeight": 0.0,
+                        "shares": 0,
+                        "orderNotional": finite_float(target_notional, 2),
+                        "filledNotional": 0.0,
+                        "notional": 0.0,
+                        "unfilledNotional": finite_float(target_notional, 2),
+                        "fillRatio": 0.0,
+                        "return": None,
+                        "pnl": 0.0,
+                        "costAmount": 0.0,
+                        "strategyScore": finite_float(row.strategy_score, 4),
+                        "capacityLimit": finite_float(daily_capacity_limit.get(code), 2),
+                        "capacityLeft": finite_float(left, 2) if left is not None else None,
+                        "capacitySource": daily_capacity_source.get(code),
+                        "portfolioValueBefore": finite_float(portfolio_before, 2),
+                        "portfolioValueAfter": None,
+                        "cashAfterTrade": finite_float(cash, 2),
+                    }
+                    trades.append(event)
+                    liquidity_events.append(event)
+                    if left is None:
+                        missing_capacity_events.append(event)
+                    continue
+
+                daily_capacity_used[code] = daily_capacity_used.get(code, 0.0) + buy_notional
+                if daily_capacity_limit.get(code):
+                    participation_values.append(buy_notional / float(daily_capacity_limit[code]) * max(float(config.max_participation_pct), 0.0))
+                cash -= buy_notional + buy_commission
+                day_cost += buy_commission
+                total_buy_notional += buy_notional
+                total_actual_buy_notional += buy_notional
+                total_cost_amount += buy_commission
+                total_filled_notional += buy_notional
+                traded_notional += buy_notional
+                fill_ratio = buy_notional / target_notional if target_notional > 0 else None
+                meta = meta_map.get((date, code))
+                holdings[code] = {
+                    "signalDate": date,
+                    "entryDate": date,
+                    "entryIndex": i,
+                    "code": code,
+                    "security": getattr(meta, "security", jq_security(code)),
+                    "name": getattr(meta, "name", code),
+                    "entryClose": start_close,
+                    "entryPriceRaw": buy_price,
+                    "targetWeight": target_weight,
+                    "shares": int(shares),
+                    "orderNotional": target_notional,
+                    "buyNotional": buy_notional,
+                    "buyCommission": buy_commission,
+                    "fillRatio": fill_ratio,
+                    "entryScore": float(row.strategy_score or 0),
+                    "entryRank": int(getattr(row, "rank", rank_map.get((date, code), 0))),
+                    "peakPrice": start_close,
+                    "exitPending": False,
+                    "lingerDays": 0,
+                    "lingerMaxLoss": 0.0,
+                }
+                if bool(clipped.get("liquidityLimited")) or unfilled_buy > 0:
+                    liquidity_events.append({
+                        "side": "buy",
+                        "liquidityConstrained": bool(clipped.get("liquidityLimited")),
+                        "signalDate": date,
+                        "entryDate": date,
+                        "code": code,
+                        "security": getattr(meta, "security", jq_security(code)),
+                        "name": getattr(meta, "name", code),
+                        "orderNotional": finite_float(target_notional, 2),
+                        "filledNotional": finite_float(buy_notional, 2),
+                        "unfilledNotional": finite_float(unfilled_buy, 2),
+                        "fillRatio": finite_float(fill_ratio, 4) if fill_ratio is not None else None,
+                        "capacityLimit": finite_float(daily_capacity_limit.get(code), 2),
+                        "capacityUsedAfter": finite_float(daily_capacity_used.get(code), 2),
+                        "capacitySource": daily_capacity_source.get(code),
+                    })
+                slots -= 1
+
+        market_value = sum(int(item.get("shares") or 0) * close_map.get((date, code), float(item.get("entryPriceRaw") or 0)) for code, item in holdings.items())
+        portfolio_after = cash + market_value
+        daily_return = (portfolio_after / portfolio_before - 1) if portfolio_before > 0 and i > 0 else 0.0
+        returns.append(daily_return)
+        daily_costs.append(day_cost)
+        holding_count_samples.append(len(holdings))
+        peak_value = max(peak_value, portfolio_after)
+        drawdown = portfolio_after / peak_value - 1 if peak_value > 0 else 0.0
+        for trade in reversed(trades):
+            if trade.get("exitDate") != date or trade.get("portfolioValueAfter") is not None:
+                break
+            trade["portfolioValueAfter"] = finite_float(portfolio_after, 2)
+        curve.append({
+            "date": date,
+            "equity": finite_float(portfolio_after / initial_capital, 6) if initial_capital > 0 else None,
+            "nav": finite_float(portfolio_after / initial_capital, 6) if initial_capital > 0 else None,
+            "portfolioValue": finite_float(portfolio_after, 2),
+            "cash": finite_float(cash, 2),
+            "marketValue": finite_float(market_value, 2),
+            "tradedNotional": finite_float(traded_notional, 2),
+            "dailyPnl": finite_float(day_pnl, 2),
+            "dailyReturn": finite_float(daily_return, 6),
+            "drawdown": finite_float(drawdown, 6),
+            "costAmount": finite_float(day_cost, 2),
+            "liquidityCapacityUsed": finite_float(sum(daily_capacity_used.values()), 2),
+        })
+
+    ending_value = float(curve[-1]["portfolioValue"] or cash) if curve else cash
+    metrics = summarize_equity(
+        curve,
+        trades,
+        returns,
+        daily_costs,
+        dates,
+        initial_capital,
+        ending_value,
+        total_buy_notional,
+        total_sell_notional,
+        total_cost_amount,
+        total_order_notional,
+        total_filled_notional,
+        avg_holding_count=float(np.mean(holding_count_samples)) if holding_count_samples else 0.0,
+        holding_days=holding_days_done,
+        exit_reasons=exit_reasons,
+    )
+    metrics.update({
+        "executionModel": "constrained_liquidity",
+        "maxParticipationPct": finite_float(config.max_participation_pct, 4),
+        "targetBuyNotional": finite_float(total_target_buy_notional, 2),
+        "actualBuyNotional": finite_float(total_actual_buy_notional, 2),
+        "unfilledBuyNotional": finite_float(total_unfilled_buy_notional, 2),
+        "targetSellNotional": finite_float(total_target_sell_notional, 2),
+        "actualSellNotional": finite_float(total_actual_sell_notional, 2),
+        "unfilledSellNotional": finite_float(total_unfilled_sell_notional, 2),
+        "maxSingleStockParticipation": finite_float(max(participation_values), 4) if participation_values else None,
+        "averageParticipation": finite_float(np.mean(participation_values), 4) if participation_values else None,
+        "p95Participation": finite_float(np.percentile(participation_values, 95), 4) if participation_values else None,
+        "maxLingeringNotional": finite_float(max_linger_notional, 2),
+        "maxLingeringDays": int(max_linger_days),
+        "liquidityEventCount": len(liquidity_events),
+        "missingCapacityEventCount": len(missing_capacity_events),
+        "openLingeringPositionCount": len([item for item in holdings.values() if item.get("exitPending")]),
+        "liquidityEvents": liquidity_events[:300],
+        "missingCapacityEvents": missing_capacity_events[:100],
+    })
+    return curve, trades, metrics
+
+
 def stress_item(category: str, name: str, result_return: float | None, impact: str, metrics: dict[str, object] | None = None) -> dict[str, object]:
     return {
         "category": category,
@@ -1281,6 +1745,10 @@ def stress_item(category: str, name: str, result_return: float | None, impact: s
         "endingValue": finite_float(metrics.get("endingValue"), 2) if metrics else None,
         "totalCostAmount": finite_float(metrics.get("totalCostAmount"), 2) if metrics else None,
         "averageFillRatio": finite_float(metrics.get("averageFillRatio"), 4) if metrics else None,
+        "unfilledBuyNotional": finite_float(metrics.get("unfilledBuyNotional"), 2) if metrics else None,
+        "unfilledSellNotional": finite_float(metrics.get("unfilledSellNotional"), 2) if metrics else None,
+        "maxLingeringNotional": finite_float(metrics.get("maxLingeringNotional"), 2) if metrics else None,
+        "maxLingeringDays": metrics.get("maxLingeringDays") if metrics else None,
         "impact": impact,
     }
 
@@ -1292,8 +1760,12 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
     filled_trades = [trade for trade in trades if float(trade.get("filledNotional") or 0) > 0]
     avg_weight = float(np.mean([float(trade.get("actualWeight") or 0) for trade in filled_trades])) if filled_trades else 0.0
     rebalance_count = max(1, len(set(t.get("signalDate") for t in trades)))
-    base_name = "信号驱动动态持仓" if config.holding_policy == "dynamic_signal" else "收盘建仓次日观察"
-    base_impact = "按信号缓冲、分数衰减、止盈止损和最长持仓约束逐日重跑资金账本。" if config.holding_policy == "dynamic_signal" else "按当前缓存数据直接计算。"
+    if config.execution_model == "constrained_liquidity":
+        base_name = "真实成交约束动态持仓"
+        base_impact = f"先卖后买逐日重跑资金账本，单票单日成交不超过真实成交额的 {config.max_participation_pct:.2%}；未买成保留现金，未卖完继续滞留持仓。"
+    else:
+        base_name = "信号驱动动态持仓" if config.holding_policy == "dynamic_signal" else "收盘建仓次日观察"
+        base_impact = "按信号缓冲、分数衰减、止盈止损和最长持仓约束逐日重跑资金账本。" if config.holding_policy == "dynamic_signal" else "按当前缓存数据直接计算。"
     items = [stress_item("基准", base_name, base_return, base_impact, metrics)]
 
     cost_bps_values = [20, 50] if config.holding_policy == "dynamic_signal" else [10, 20, 50, 100]
@@ -1315,8 +1787,9 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
     for shock in [-0.05, -0.10, -0.20]:
         items.append(stress_item("近似冲击", f"单票隔夜 {format_percent_label(shock)}", base_return + shock * avg_weight, "近似情景：按实际成交平均权重估算单票跳空影响，未重跑资金账本。", metrics))
 
-    for fill_ratio in [0.8, 0.5, 0.2]:
-        items.append(stress_item("近似流动性", f"只成交 {int(fill_ratio * 100)}%", base_return * fill_ratio, "近似情景：按基准收益乘成交比例估算，容量模型阶段会改为逐笔重跑。", metrics))
+    if config.execution_model != "constrained_liquidity":
+        for fill_ratio in [0.8, 0.5, 0.2]:
+            items.append(stress_item("近似流动性", f"只成交 {int(fill_ratio * 100)}%", base_return * fill_ratio, "近似情景：按基准收益乘成交比例估算，容量模型阶段会改为逐笔重跑。", metrics))
 
     if config.holding_policy != "dynamic_signal":
         for delay in [1, 2]:
@@ -1325,6 +1798,157 @@ def build_stress(metrics: dict[str, object], trades: list[dict[str, object]], sc
 
     items.append(stress_item("近似冲击", "最差成交重复一次", base_return + worst_trade * avg_weight, "近似情景：按实际成交平均权重额外叠加样本内最差单票结果。", metrics))
     return items
+
+
+def run_capital_sweep(scored: pd.DataFrame, signals: pd.DataFrame, base_config: RunConfig, capital_values: tuple[float, ...]) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for capital in capital_values:
+        constrained_config = replace(base_config, capital=float(capital), execution_model="constrained_liquidity", holding_policy="dynamic_signal")
+        _, constrained_trades, constrained_metrics = simulate_equity(scored, signals, constrained_config)
+        ideal_config = replace(base_config, capital=float(capital), execution_model="idealized", holding_policy="dynamic_signal")
+        _, _, ideal_metrics = simulate_equity(scored, signals, ideal_config)
+        constrained_return = finite_float(constrained_metrics.get("totalReturn"), 6) or 0.0
+        ideal_return = finite_float(ideal_metrics.get("totalReturn"), 6) or 0.0
+        rows.append({
+            "初始资金": finite_float(capital, 2),
+            "执行模型": "真实成交约束",
+            "总收益率": constrained_metrics.get("totalReturn"),
+            "旧模型总收益率": ideal_metrics.get("totalReturn"),
+            "成交约束收益损失": finite_float(constrained_return - ideal_return, 6),
+            "年化收益": constrained_metrics.get("annualizedReturn"),
+            "最大回撤": constrained_metrics.get("maxDrawdown"),
+            "成交笔数": constrained_metrics.get("tradeCount"),
+            "订单数": constrained_metrics.get("orderCount"),
+            "平均持仓天数": constrained_metrics.get("averageHoldingDays"),
+            "平均仓位数": constrained_metrics.get("averageHoldingCount"),
+            "平均成交率": constrained_metrics.get("averageFillRatio"),
+            "目标买入金额": constrained_metrics.get("targetBuyNotional"),
+            "实际买入金额": constrained_metrics.get("actualBuyNotional"),
+            "未成交买入金额": constrained_metrics.get("unfilledBuyNotional"),
+            "目标卖出金额": constrained_metrics.get("targetSellNotional"),
+            "实际卖出金额": constrained_metrics.get("actualSellNotional"),
+            "未卖出金额": constrained_metrics.get("unfilledSellNotional"),
+            "最大单票参与率": constrained_metrics.get("maxSingleStockParticipation"),
+            "平均参与率": constrained_metrics.get("averageParticipation"),
+            "95分位参与率": constrained_metrics.get("p95Participation"),
+            "最大滞留金额": constrained_metrics.get("maxLingeringNotional"),
+            "最大滞留天数": constrained_metrics.get("maxLingeringDays"),
+            "流动性事件数": constrained_metrics.get("liquidityEventCount"),
+            "缺成交额事件数": constrained_metrics.get("missingCapacityEventCount"),
+            "样例瓶颈": (constrained_metrics.get("liquidityEvents") or [])[:10],
+            "成交明细样本数": len(constrained_trades),
+        })
+    return rows
+
+
+def capacity_recommendation(capital_sweep: list[dict[str, object]]) -> dict[str, object]:
+    acceptable = []
+    for row in capital_sweep:
+        unfilled_buy = float(row.get("未成交买入金额") or 0)
+        unfilled_sell = float(row.get("未卖出金额") or 0)
+        max_linger_days = int(row.get("最大滞留天数") or 0)
+        capital = float(row.get("初始资金") or 0)
+        unfilled_ratio = (unfilled_buy + unfilled_sell) / capital if capital > 0 else 0.0
+        if unfilled_ratio <= 0.02 and max_linger_days <= 2:
+            acceptable.append(row)
+    if not capital_sweep:
+        return {"recommendedCapital": None, "reason": "未运行资金阶梯扫描。"}
+    if acceptable:
+        best = acceptable[-1]
+        return {
+            "recommendedCapital": best.get("初始资金"),
+            "reason": "按未成交买卖合计不超过初始资金 2%、最大卖出滞留不超过 2 个交易日的保守规则给出。",
+        }
+    first = capital_sweep[0]
+    return {
+        "recommendedCapital": first.get("初始资金"),
+        "reason": "最低资金阶梯已经触发明显成交约束，只能把最低阶梯作为观察上限，建议降低单票权重或扩大股票池后复测。",
+    }
+
+
+def write_constrained_liquidity_markdown(report: dict[str, object], output_path: Path) -> None:
+    strategy = report.get("strategy") or {}
+    metrics = strategy.get("metrics") or {}
+    params = strategy.get("parameters") or {}
+    sweep = report.get("capitalSweep") or []
+    recommendation = report.get("capacityRecommendation") or {}
+    rows = [
+        "# 中证500低拥挤反转 v2 真实成交压力测试报告",
+        "",
+        f"生成时间：{report.get('generatedAt')}",
+        f"策略：{strategy.get('name')}（{strategy.get('id')}）",
+        f"区间：{(report.get('requestedDateRange') or {}).get('start')} 至 {(report.get('requestedDateRange') or {}).get('end')}",
+        "",
+        "## 核心结论",
+        "",
+        f"- 执行模型：{params.get('executionModel')}。",
+        f"- 单票单日成交参与率上限：{float(params.get('maxParticipationPct') or 0):.2%}。",
+        f"- 基准资金总收益率：{float(metrics.get('totalReturn') or 0):.2%}，最大回撤：{float(metrics.get('maxDrawdown') or 0):.2%}。",
+        f"- 未成交买入金额：{float(metrics.get('unfilledBuyNotional') or 0):,.2f} 元；未卖出金额：{float(metrics.get('unfilledSellNotional') or 0):,.2f} 元。",
+        f"- 最大滞留金额：{float(metrics.get('maxLingeringNotional') or 0):,.2f} 元；最大滞留天数：{int(metrics.get('maxLingeringDays') or 0)} 天。",
+        f"- 建议最大承受资金：{float(recommendation.get('recommendedCapital') or 0):,.0f} 元。{recommendation.get('reason') or ''}",
+        "",
+        "## 模型规则说明",
+        "",
+        "- 每只股票每天最大成交额 = 当日真实成交额 × 单票参与率上限。",
+        "- 成交额优先使用行情字段 amount；缺失时使用 close × volume × 100 估算，因为本项目缓存的成交量按手计。仍不可估算时，新买入为 0，卖出进入无法估算容量的滞留事件。",
+        "- 每天先处理退出卖单，卖出占用当日该股票成交容量；同一股票当天买入只能使用剩余容量。",
+        "- 买入不足时未成交金额留在现金，不补足目标仓位。",
+        "- 卖出不足时剩余股数继续留在持仓中，后续按真实收盘价重估，并继续尝试按原退出原因卖出。",
+        "- 本轮不加入盘口冲击成本、分钟级成交路径或无法解释的黑箱成本。",
+        "",
+        "## 资金阶梯结果",
+        "",
+        "| 初始资金 | 总收益率 | 旧模型总收益率 | 收益差 | 最大回撤 | 未成交买入 | 未卖出 | 最大滞留天数 | 最大参与率 | 事件数 |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in sweep:
+        rows.append(
+            f"| {float(row.get('初始资金') or 0):,.0f} | {float(row.get('总收益率') or 0):.2%} | {float(row.get('旧模型总收益率') or 0):.2%} | {float(row.get('成交约束收益损失') or 0):.2%} | {float(row.get('最大回撤') or 0):.2%} | {float(row.get('未成交买入金额') or 0):,.0f} | {float(row.get('未卖出金额') or 0):,.0f} | {int(row.get('最大滞留天数') or 0)} | {float(row.get('最大单票参与率') or 0):.2%} | {int(row.get('流动性事件数') or 0)} |"
+        )
+    bottlenecks = []
+    for event in metrics.get("liquidityEvents") or []:
+        bottlenecks.append(event)
+        if len(bottlenecks) >= 20:
+            break
+    rows.extend([
+        "",
+        "## 容量瓶颈明细",
+        "",
+        "| 日期 | 方向 | 股票 | 目标金额 | 成交金额 | 未成交金额 | 容量来源 | 滞留天数 |",
+        "| --- | --- | --- | ---: | ---: | ---: | --- | ---: |",
+    ])
+    for event in bottlenecks:
+        rows.append(
+            f"| {event.get('signalDate') or event.get('date') or ''} | {event.get('side') or ''} | {event.get('name') or event.get('code') or ''} | {float(event.get('orderNotional') or event.get('targetNotional') or 0):,.0f} | {float(event.get('filledNotional') or 0):,.0f} | {float(event.get('unfilledNotional') or 0):,.0f} | {event.get('capacitySource') or ''} | {int(event.get('lingerDays') or 0)} |"
+        )
+    rows.extend([
+        "",
+        "## 与旧模型对比",
+        "",
+        "旧模型假设买卖可以按目标金额成交，资金放大主要影响手数取整和成本；真实成交约束模型让成交容量进入每日账本，因此资金变大后买入不足、卖出滞留、现金闲置和持仓路径都会改变。这个结果更适合判断大资金容量边界，但仍是日线级容量模型。",
+        "",
+        "## 后续改进",
+        "",
+        "- 接入分钟级成交分布或盘口深度后，可进一步估计日内冲击和排队成交。",
+        "- 对缺 amount 的数据源继续补齐真实成交额，减少 close × volume × 100 的估算占比。",
+        "- 用正式 JoinQuant 信号替换 OHLCV 代理分数后，保留同一成交约束账本重跑。",
+        "",
+    ])
+    output_path.write_text("\n".join(rows), encoding="utf-8")
+
+
+def write_constrained_liquidity_reports(report: dict[str, object]) -> tuple[Path, Path | None]:
+    docs_path = ROOT / "outputs" / "_docs" / "csi500-lcr-v2-constrained-liquidity-stress-report-20260724.md"
+    docs_path.parent.mkdir(parents=True, exist_ok=True)
+    write_constrained_liquidity_markdown(report, docs_path)
+    desktop_path = Path.home() / "Desktop" / "中证500低拥挤反转v2真实成交压力测试" / "真实成交压力测试报告.md"
+    try:
+        desktop_path.parent.mkdir(parents=True, exist_ok=True)
+        write_constrained_liquidity_markdown(report, desktop_path)
+    except OSError:
+        desktop_path = None
+    return docs_path, desktop_path
 
 
 def format_percent_label(value: float) -> str:
@@ -1362,6 +1986,8 @@ def build_report(config: RunConfig) -> dict[str, object]:
     signals = build_signals(scored, config.top_n)
     curve, trades, metrics = simulate_equity(scored, signals, config)
     stress = build_stress(metrics, trades, scored, config)
+    capital_sweep = run_capital_sweep(scored, signals, config, config.capital_sweep) if config.capital_sweep else []
+    capacity_advice = capacity_recommendation(capital_sweep) if capital_sweep else {}
 
     requested_dates = sorted(raw_data["date"].dropna().unique().tolist())
     actual_dates = sorted(scored["date"].dropna().unique().tolist())
@@ -1397,8 +2023,13 @@ def build_report(config: RunConfig) -> dict[str, object]:
     is_complete = len(weak_coverage_dates) == 0 if relaxed_coverage else len(missing_coverage) == 0
     latest_date = actual_dates[-1] if actual_dates else ""
 
-    data_csv = DATA_DIR / f"position_stress_{config.start.replace('-', '')}_{config.end.replace('-', '')}_daily.csv"
+    model_suffix = "_constrained_liquidity" if config.execution_model == "constrained_liquidity" else ""
+    data_csv = DATA_DIR / f"position_stress{model_suffix}_{config.start.replace('-', '')}_{config.end.replace('-', '')}_daily.csv"
     scored.to_csv(data_csv, index=False, encoding="utf-8-sig")
+    sweep_csv = None
+    if capital_sweep:
+        sweep_csv = DATA_DIR / f"position_stress_{config.strategy_id}_constrained_liquidity_sweep_{config.start.replace('-', '')}_{config.end.replace('-', '')}.csv"
+        pd.DataFrame(capital_sweep).to_csv(sweep_csv, index=False, encoding="utf-8-sig")
 
     display_fields = [
         "date", "code", "security", "name", "open", "high", "low", "close", "volume", "amount",
@@ -1465,6 +2096,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
         },
         "artifacts": {
             "dailyCsv": str(data_csv.relative_to(ROOT)),
+            "capitalSweepCsv": str(sweep_csv.relative_to(ROOT)) if sweep_csv else None,
             "latestReportJson": "outputs/position-stress/results/position_stress_latest.json",
         },
         "dataTable": table_rows,
@@ -1498,6 +2130,9 @@ def build_report(config: RunConfig) -> dict[str, object]:
                 "stampDutyBps": config.stamp_duty_bps,
                 "slippageBps": config.slippage_bps,
                 "cashBufferPct": config.cash_buffer_pct,
+                "executionModel": config.execution_model,
+                "maxParticipationPct": config.max_participation_pct,
+                "capitalSweep": list(config.capital_sweep),
             },
             "dailySelections": daily_selections,
             "equityCurve": curve,
@@ -1507,6 +2142,8 @@ def build_report(config: RunConfig) -> dict[str, object]:
             "metrics": metrics,
         },
         "stress": stress,
+        "capitalSweep": capital_sweep,
+        "capacityRecommendation": capacity_advice,
         "warnings": [
             *( ["数据不完整：正式建仓运行已阻断，当前收益、成交和压力测试只作为链路预览。"] if not is_complete else [] ),
             *( ["请求窗口末日行情当前没有覆盖完整股票池，页面会标为缺失。"] if config.end in missing_dates else [] ),
@@ -1514,6 +2151,7 @@ def build_report(config: RunConfig) -> dict[str, object]:
             *( ["当前报告使用 AkShare 本地缓存回退，不等同于已成功拉取 JoinQuant 数据。"] if source_mode == "akshare_cache_fallback" else [] ),
             *( ["已合并手动导入真实行情文件。"] if not manual_data.empty else [] ),
             f"资金账本口径：{config.lot_size} 股一手，佣金 {config.commission_bps}bp，最低佣金 {config.min_commission} 元，卖出印花税 {config.stamp_duty_bps}bp，滑点 {config.slippage_bps}bp，现金缓冲 {config.cash_buffer_pct:.2%}。",
+            *( [f"真实成交约束口径：单票单日成交上限为当日成交额的 {config.max_participation_pct:.2%}；先卖后买，买卖共享同一股票当日容量，买入不足保留现金，卖出不足继续滞留。"] if config.execution_model == "constrained_liquidity" else [] ),
             *fallback_failures[:10],
         ],
         "nextActions": [
@@ -1523,10 +2161,19 @@ def build_report(config: RunConfig) -> dict[str, object]:
         ],
     }
 
-    dated_json = RESULTS_DIR / f"position_stress_{config.start.replace('-', '')}_{config.end.replace('-', '')}.json"
-    latest_json = RESULTS_DIR / "position_stress_latest.json"
-    for path in [dated_json, latest_json]:
+    dated_json = RESULTS_DIR / f"position_stress{model_suffix}_{config.start.replace('-', '')}_{config.end.replace('-', '')}.json"
+    latest_json = RESULTS_DIR / ("position_stress_constrained_liquidity_latest.json" if config.execution_model == "constrained_liquidity" else "position_stress_latest.json")
+    paths = [dated_json, latest_json]
+    if config.execution_model == "constrained_liquidity":
+        paths.append(RESULTS_DIR / "position_stress_latest.json")
+    for path in paths:
         path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if config.execution_model == "constrained_liquidity":
+        docs_path, desktop_path = write_constrained_liquidity_reports(report)
+        report["artifacts"]["markdownReport"] = str(docs_path.relative_to(ROOT))
+        report["artifacts"]["desktopMarkdownReport"] = str(desktop_path) if desktop_path else None
+        for path in paths:
+            path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return report
 
 
@@ -1549,7 +2196,7 @@ def parse_args() -> RunConfig:
     parser.add_argument("--stamp-duty-bps", type=float, default=5.0)
     parser.add_argument("--slippage-bps", type=float, default=5.0)
     parser.add_argument("--cash-buffer-pct", type=float, default=0.01)
-    parser.add_argument("--holding-policy", choices=["next_day", "dynamic_signal"], default="next_day")
+    parser.add_argument("--holding-policy", choices=["next_day", "dynamic_signal"], default="dynamic_signal")
     parser.add_argument("--min-holding-days", type=int, default=1)
     parser.add_argument("--base-holding-days", type=int, default=5)
     parser.add_argument("--max-holding-days", type=int, default=20)
@@ -1561,6 +2208,9 @@ def parse_args() -> RunConfig:
     parser.add_argument("--take-profit-pct", type=float, default=0.12)
     parser.add_argument("--trailing-stop-pct", type=float, default=0.06)
     parser.add_argument("--score-drop-pct", type=float, default=0.30)
+    parser.add_argument("--execution-model", choices=["idealized", "constrained_liquidity"], default="constrained_liquidity")
+    parser.add_argument("--max-participation-pct", type=float, default=0.05)
+    parser.add_argument("--capital-sweep", default="")
     args = parser.parse_args()
     if args.symbols_file == "auto_cache_all":
         path = Path("auto_cache_all")
@@ -1598,6 +2248,9 @@ def parse_args() -> RunConfig:
         take_profit_pct=args.take_profit_pct,
         trailing_stop_pct=args.trailing_stop_pct,
         score_drop_pct=args.score_drop_pct,
+        execution_model=args.execution_model,
+        max_participation_pct=args.max_participation_pct,
+        capital_sweep=tuple(float(value) for value in args.capital_sweep.replace("，", ",").split(",") if value.strip()),
     )
 
 

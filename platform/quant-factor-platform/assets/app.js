@@ -32,6 +32,14 @@ const categoryNames = {
 };
 
 const elements = {
+  activityActiveCount: document.querySelector('#activity-active-count'),
+  activityBlockedCount: document.querySelector('#activity-blocked-count'),
+  activityDormantCount: document.querySelector('#activity-dormant-count'),
+  activityNotes: document.querySelector('#activity-notes'),
+  activitySourceFile: document.querySelector('#activity-source-file'),
+  activitySummary: document.querySelector('#activity-summary'),
+  activityTable: document.querySelector('#activity-table'),
+  activityWatchCount: document.querySelector('#activity-watch-count'),
   benchmark: document.querySelector('#benchmark'),
   backtestDateCount: document.querySelector('#backtest-date-count'),
   backtestExternalStatus: document.querySelector('#backtest-external-status'),
@@ -2101,6 +2109,75 @@ function renderBacktestResultSummary(results) {
   `;
 }
 
+function renderFactorActivity(report) {
+  if (!elements.activityTable) return;
+  const metrics = report?.metrics || {};
+  const entries = Array.isArray(report?.entries) ? report.entries : [];
+  const source = report?.source || {};
+  const summary = report?.summary || {};
+
+  elements.activityActiveCount.textContent = metrics.activeCount ?? 0;
+  elements.activityWatchCount.textContent = metrics.watchCount ?? 0;
+  elements.activityDormantCount.textContent = metrics.dormantCount ?? 0;
+  elements.activityBlockedCount.textContent = metrics.blockedCount ?? 0;
+  elements.activitySourceFile.textContent = source.file || '未找到数据源';
+  elements.activitySourceFile.title = fieldHint('source_file', source.file || '');
+
+  elements.activitySummary.innerHTML = `
+    <div class="result-card result-card-wide">
+      <span>直接结论</span>
+      <strong>${escapeHtml(summary.headline || '等待因子活性检查')}</strong>
+      <small>${escapeHtml(summary.nextAction || '暂无下一步')}</small>
+    </div>
+    <div class="result-card">
+      <span>覆盖因子</span>
+      <strong>${escapeHtml(metrics.factorCount ?? entries.length)}</strong>
+      <small>${escapeHtml(metrics.testedCount ?? 0)} 个已有真实结果</small>
+    </div>
+    <div class="result-card">
+      <span>历史结果</span>
+      <strong>${escapeHtml(metrics.historicalResultCount ?? 0)}</strong>
+      <small>样本不少于 20 截面</small>
+    </div>
+    <div class="result-card">
+      <span>最佳活性</span>
+      <strong>${escapeHtml(summary.bestFactor?.activityScore ?? '-')}</strong>
+      <small>${escapeHtml(summary.bestFactor?.name || '-')}</small>
+    </div>
+  `;
+
+  elements.activityTable.innerHTML = entries.length
+    ? entries.map((entry) => {
+      const blockers = Array.isArray(entry.blockers) ? entry.blockers.filter(Boolean) : [];
+      const evidence = [entry.evidence, blockers.length ? `缺口：${blockers.slice(0, 2).join('；')}` : '']
+        .filter(Boolean)
+        .join(' ');
+      return `
+        <tr>
+          <td><strong>${escapeHtml(entry.name)}</strong><br><small>${explainable(entry.factorId, 'factor_id')}</small></td>
+          <td><span class="tag ${escapeHtml(entry.activityTone || 'pending')}">${escapeHtml(entry.activityLabel || '-')}</span><br><small>${escapeHtml(entry.decision || '-')}</small></td>
+          <td><strong>${escapeHtml(entry.activityScore ?? '-')}</strong></td>
+          <td>${entry.bestHorizon ? `${escapeHtml(entry.bestHorizon)}日` : '-'}</td>
+          <td>${formatNumber(entry.bestRankIc)}</td>
+          <td>${formatNumber(entry.bestRankIcT, 2)}</td>
+          <td>${formatPercent(entry.bestLongShort)}</td>
+          <td>${escapeHtml(entry.resultCount ?? 0)} 条<br><small>历史 ${escapeHtml(entry.historicalCount ?? 0)} / 可导出 ${escapeHtml(entry.exportRows ?? 0)}</small></td>
+          <td>${escapeHtml(evidence || '-')}</td>
+          <td>${escapeHtml(entry.nextAction || '-')}</td>
+        </tr>
+      `;
+    }).join('')
+    : '<tr><td colspan="10">暂无可检查因子。</td></tr>';
+
+  elements.activityNotes.innerHTML = `
+    <strong>怎么看：</strong>
+    活跃表示已有足够真实历史结果，且排序有效度、稳定性和好坏组差距同步达标；观察表示方向可跟踪但显著性不足；休眠表示有信号但还缺真实回测；阻塞表示字段或样本不足。
+    <br><strong>边界：</strong>
+    ${escapeHtml(report?.dataPolicy || '只使用真实证据，不生成估算收益。')}
+    当前因子截面 ${escapeHtml(source.uniqueDates ?? 0)} 日 / ${escapeHtml(source.uniqueStocks ?? 0)} 股，可导出 ${escapeHtml(source.exportableRows ?? 0)} 行。
+  `;
+}
+
 function renderResearchDetail(entry) {
   if (!entry) {
     elements.researchFactorDetail.innerHTML = '<div class="library-source">暂无因子档案。</div>';
@@ -3777,6 +3854,8 @@ function renderPositionStress(report) {
   if (!elements.positionStressComplete) return;
   currentPositionStressReport = report;
   const metrics = report.strategy?.metrics || {};
+  const parameters = report.strategy?.parameters || {};
+  const isConstrainedLiquidity = parameters.executionModel === 'constrained_liquidity' || metrics.executionModel === 'constrained_liquidity';
   const gate = report.runGate || {};
   const complete = Boolean(report.complete || gate.formalRunAllowed);
   const dateRange = report.requestedDateRange || {};
@@ -3790,7 +3869,7 @@ function renderPositionStress(report) {
   elements.positionStressStockCount.textContent = report.stockCount ?? '-';
   elements.positionStressRowCount.textContent = `${report.rowCount ?? 0} 行 / ${report.actualDates?.length ?? 0} 天`;
   elements.positionStressReturn.textContent = formatPercent(metrics.totalReturn, 2);
-  elements.positionStressRunStatus.textContent = controlsStale ? '参数待重算' : report.strategy?.runStatus === 'complete_short_window' ? '短窗压测' : '仅链路预览';
+  elements.positionStressRunStatus.textContent = controlsStale ? '参数待重算' : isConstrainedLiquidity ? '真实成交约束' : report.strategy?.runStatus === 'complete_short_window' ? '短窗压测' : '仅链路预览';
   elements.positionStressDrawdown.textContent = formatPercent(metrics.maxDrawdown, 2);
   elements.positionStressTrades.textContent = `${metrics.tradeCount ?? 0} 笔 / ${metrics.simulatedReturnDays ?? 0} 天`;
   elements.positionStressMessage.textContent = controlsStale
@@ -3853,6 +3932,14 @@ function renderPositionStress(report) {
       ['最差单笔', formatPercent(metrics.worstTradeReturn, 2)],
       ['成交订单', `${escapeHtml(metrics.tradeCount ?? 0)}/${escapeHtml(metrics.orderCount ?? 0)} 笔`],
       ['持仓覆盖', `${escapeHtml(metrics.uniqueHeldStocks ?? '-')}只`],
+      ...(isConstrainedLiquidity ? [
+        ['未成交买入', formatCurrency(metrics.unfilledBuyNotional, 0)],
+        ['未卖出金额', formatCurrency(metrics.unfilledSellNotional, 0)],
+        ['最大滞留金额', formatCurrency(metrics.maxLingeringNotional, 0)],
+        ['最大滞留天数', `${escapeHtml(metrics.maxLingeringDays ?? 0)} 天`],
+        ['最大参与率', formatPercent(metrics.maxSingleStockParticipation, 2)],
+        ['95分位参与率', formatPercent(metrics.p95Participation, 2)],
+      ] : []),
     ];
     elements.positionStressResultSummary.innerHTML = summaryCards.map(([label, value]) => `
       <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
@@ -3874,6 +3961,10 @@ function renderPositionStress(report) {
       ['累计成本', formatCurrency(metrics.totalCostAmount, 0)],
       ['日波动', formatPercent(metrics.dailyVolatility, 2)],
       ['年化收益', formatPercent(metrics.annualizedReturn, 2)],
+      ...(isConstrainedLiquidity ? [
+        ['成交模型', '真实成交约束'],
+        ['流动性事件', `${metrics.liquidityEventCount ?? 0} 次`],
+      ] : []),
     ];
     elements.positionStressDiagnostics.innerHTML = diagnostics.map(([label, value]) => `
       <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
@@ -4140,13 +4231,14 @@ function drawChart(equity) {
 
 async function refreshDashboard() {
   const positionStressReportUrl = positionStressReportEndpoint();
-  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog] = await Promise.all([
+  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, factorActivity, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
     request('/api/risk'),
     request('/strategy-api/paper-watch-routes'),
     request('/factor-api/real-factor-summary'),
+    request('/factor-api/activity'),
     request('/strategy-api/definitions'),
     request('/factor-api/indicator-factor-definitions'),
     request('/strategy-api/live-signals'),
@@ -4166,6 +4258,7 @@ async function refreshDashboard() {
   renderStrategyLibrary(strategies);
   renderLiveStrategies(liveStrategies);
   renderBacktestCenter(backtestStatus);
+  renderFactorActivity(factorActivity);
   renderResearchPipeline(researchPipeline);
   renderPositionStress(positionStress);
   renderPositionStressCatalog(positionStressCatalog);

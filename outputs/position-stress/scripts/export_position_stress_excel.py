@@ -16,6 +16,9 @@ DEFAULT_REPORT = ROOT / "outputs" / "position-stress" / "results" / "position_st
 EXPORT_DIR = ROOT / "outputs" / "position-stress" / "exports"
 
 TRADE_HEADERS = [
+    ("side", "方向"),
+    ("liquidityConstrained", "流动性受限"),
+    ("exitStatus", "退出状态"),
     ("signalDate", "信号日"),
     ("entryDate", "建仓日"),
     ("exitDate", "退出日"),
@@ -31,6 +34,7 @@ TRADE_HEADERS = [
     ("targetWeight", "目标权重"),
     ("actualWeight", "实际权重"),
     ("shares", "股数"),
+    ("remainingShares", "剩余股数"),
     ("orderNotional", "目标金额"),
     ("filledNotional", "成交金额"),
     ("unfilledNotional", "未成交金额"),
@@ -45,6 +49,12 @@ TRADE_HEADERS = [
     ("portfolioValueBefore", "交易前资产"),
     ("portfolioValueAfter", "交易后资产"),
     ("cashAfterTrade", "买入后现金"),
+    ("capacityLimit", "当日成交上限"),
+    ("capacityUsedAfter", "成交容量已用"),
+    ("capacityLeft", "剩余成交容量"),
+    ("capacitySource", "容量来源"),
+    ("lingerDays", "滞留天数"),
+    ("lingerMaxLoss", "滞留最大亏损"),
     ("strategyScore", "策略分"),
     ("exitScore", "退出分"),
     ("entryRank", "建仓排名"),
@@ -119,6 +129,21 @@ def metric_rows(report: dict[str, object]) -> list[dict[str, object]]:
         "rebalanceCount": "调仓次数",
         "uniqueHeldStocks": "持仓覆盖股票数",
         "averageHoldingCount": "平均持仓数",
+        "executionModel": "执行模型",
+        "maxParticipationPct": "单票参与率上限",
+        "targetBuyNotional": "目标买入金额",
+        "actualBuyNotional": "实际买入金额",
+        "unfilledBuyNotional": "未成交买入金额",
+        "targetSellNotional": "目标卖出金额",
+        "actualSellNotional": "实际卖出金额",
+        "unfilledSellNotional": "未卖出金额",
+        "maxSingleStockParticipation": "最大单票参与率",
+        "averageParticipation": "平均参与率",
+        "p95Participation": "95分位参与率",
+        "maxLingeringNotional": "最大滞留金额",
+        "maxLingeringDays": "最大滞留天数",
+        "liquidityEventCount": "流动性事件数",
+        "missingCapacityEventCount": "缺成交额事件数",
     }
     rows = [{"name": name, "value": clean(value)} for name, value in base]
     rows.extend({"name": label, "value": clean(metrics.get(key))} for key, label in metric_labels.items())
@@ -275,6 +300,31 @@ def export(report_path: Path, output_path: Path | None = None, sheet: str = "all
         ("value", "数值"),
     ])
     write_sheet(wb, "成交明细", (report.get("strategy") or {}).get("trades") or [], TRADE_HEADERS)
+    write_sheet(wb, "流动性事件", (((report.get("strategy") or {}).get("metrics") or {}).get("liquidityEvents") or []), TRADE_HEADERS)
+    write_sheet(wb, "资金阶梯", report.get("capitalSweep") or [], [
+        ("初始资金", "初始资金"),
+        ("总收益率", "总收益率"),
+        ("旧模型总收益率", "旧模型总收益率"),
+        ("成交约束收益损失", "成交约束收益损失"),
+        ("年化收益", "年化收益"),
+        ("最大回撤", "最大回撤"),
+        ("成交笔数", "成交笔数"),
+        ("平均持仓天数", "平均持仓天数"),
+        ("平均仓位数", "平均仓位数"),
+        ("目标买入金额", "目标买入金额"),
+        ("实际买入金额", "实际买入金额"),
+        ("未成交买入金额", "未成交买入金额"),
+        ("目标卖出金额", "目标卖出金额"),
+        ("实际卖出金额", "实际卖出金额"),
+        ("未卖出金额", "未卖出金额"),
+        ("最大单票参与率", "最大单票参与率"),
+        ("平均参与率", "平均参与率"),
+        ("95分位参与率", "95分位参与率"),
+        ("最大滞留金额", "最大滞留金额"),
+        ("最大滞留天数", "最大滞留天数"),
+        ("流动性事件数", "流动性事件数"),
+        ("缺成交额事件数", "缺成交额事件数"),
+    ])
     write_sheet(wb, "压力场景", report.get("stress") or [], [
         ("category", "类别"),
         ("name", "场景"),

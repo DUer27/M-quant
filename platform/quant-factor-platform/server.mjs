@@ -63,6 +63,7 @@ const paperWatchPerformanceReportPath = outputPath('paper-watch', 'results', 'pa
 const joinQuantResultsDir = outputPath('sources', 'joinquant', 'results');
 const csi500LcrV1CandidateFallbackPath = outputPath('sources', 'joinquant', 'results', 'csi500_low_crowding_reversal_index_enhancement_v1_candidate_20260723-001813.json');
 const positionStressLatestPath = outputPath('position-stress', 'results', 'position_stress_latest.json');
+const positionStressConstrainedLatestPath = outputPath('position-stress', 'results', 'position_stress_constrained_liquidity_latest.json');
 const positionStressResultsDir = outputPath('position-stress', 'results');
 const positionStressScriptPath = outputPath('position-stress', 'scripts', 'position_stress_lab.py');
 const positionStressExcelExportScriptPath = outputPath('position-stress', 'scripts', 'export_position_stress_excel.py');
@@ -3786,7 +3787,9 @@ function compactDate(value) {
 function positionStressReportPathForRange(start, end) {
   const startKey = compactDate(start);
   const endKey = compactDate(end);
-  if (!startKey || !endKey) return positionStressLatestPath;
+  if (!startKey || !endKey) return existsSync(positionStressConstrainedLatestPath) ? positionStressConstrainedLatestPath : positionStressLatestPath;
+  const constrainedPath = join(positionStressResultsDir, `position_stress_constrained_liquidity_${startKey}_${endKey}.json`);
+  if (existsSync(constrainedPath)) return constrainedPath;
   const datedPath = join(positionStressResultsDir, `position_stress_${startKey}_${endKey}.json`);
   return existsSync(datedPath) ? datedPath : null;
 }
@@ -3865,10 +3868,17 @@ function positionStressExecutionParamsFor(strategyId) {
       takeProfitPct: 0.12,
       trailingStopPct: 0.06,
       scoreDropPct: 0.30,
+      executionModel: 'constrained_liquidity',
+      maxParticipationPct: 0.05,
+      capitalSweep: [1_000_000, 10_000_000, 20_000_000, 30_000_000, 40_000_000, 50_000_000, 80_000_000, 100_000_000],
       symbolsFile: 'auto_cache_all',
     };
   }
-  return { holdingPolicy: 'next_day' };
+  return {
+    holdingPolicy: 'dynamic_signal',
+    executionModel: 'constrained_liquidity',
+    maxParticipationPct: 0.05,
+  };
 }
 
 function normalizePositionStressStrategy(item) {
@@ -4040,6 +4050,11 @@ function runPositionStressLab(options = {}) {
     if (execution.takeProfitPct !== undefined) args.push('--take-profit-pct', String(execution.takeProfitPct));
     if (execution.trailingStopPct !== undefined) args.push('--trailing-stop-pct', String(execution.trailingStopPct));
     if (execution.scoreDropPct !== undefined) args.push('--score-drop-pct', String(execution.scoreDropPct));
+    if (execution.executionModel !== undefined) args.push('--execution-model', String(execution.executionModel));
+    if (execution.maxParticipationPct !== undefined) args.push('--max-participation-pct', String(execution.maxParticipationPct));
+    if (Array.isArray(execution.capitalSweep) && execution.capitalSweep.length) {
+      args.push('--capital-sweep', execution.capitalSweep.join(','));
+    }
     if (Array.isArray(selectedStrategy.selectedCodes) && selectedStrategy.selectedCodes.length) {
       args.push('--selected-codes', selectedStrategy.selectedCodes.join(','));
     }
@@ -5878,6 +5893,195 @@ function buildResearchPipeline() {
   };
 }
 
+function activityStatusFromEntry(entry) {
+  if (entry.status === 'strategy_candidate') return 'active';
+  if (entry.status === 'watch' || entry.status === 'tracking') return 'watch';
+  if (entry.status === 'waiting_test') return 'dormant';
+  if (entry.status === 'hold') return 'dormant';
+  return 'blocked';
+}
+
+function activityScore(entry) {
+  const activityStatus = activityStatusFromEntry(entry);
+  const rankIc = Number(entry.test?.bestRankIc);
+  const rankIcT = Number(entry.test?.bestRankIcT);
+  const longShort = Number(entry.test?.bestLongShort);
+  const historicalCount = Number(entry.test?.historicalCount || 0);
+  const resultCount = Number(entry.resultCount || 0);
+  const exportRows = Number(entry.exportRows || 0);
+  const computedBonus = entry.realStatus === 'computed' ? 8 : 0;
+  const resultBonus = Math.min(20, resultCount * 2) + Math.min(15, historicalCount * 5);
+  const exportBonus = exportRows > 0 ? 10 : 0;
+  const signalBonus = (Number.isFinite(rankIc) ? Math.max(-15, Math.min(30, rankIc * 900)) : 0)
+    + (Number.isFinite(rankIcT) ? Math.max(-10, Math.min(20, rankIcT * 4)) : 0)
+    + (Number.isFinite(longShort) ? Math.max(-10, Math.min(20, longShort * 500)) : 0);
+  const statusBonus = {
+    strategy_candidate: 25,
+    watch: 10,
+    tracking: 4,
+    waiting_test: 0,
+    hold: -10,
+    requires_more_data: -20,
+    unavailable: -25,
+  }[entry.status] || 0;
+  const cap = {
+    active: 100,
+    blocked: 49,
+    dormant: 64,
+    watch: 84,
+  }[activityStatus] || 84;
+  return Math.round(Math.max(0, Math.min(cap, 35 + computedBonus + resultBonus + exportBonus + signalBonus + statusBonus)));
+}
+
+function activityLabel(status) {
+  return ({
+    active: '活跃',
+    blocked: '阻塞',
+    dormant: '休眠',
+    watch: '观察',
+  })[status] || '观察';
+}
+
+function activityTone(status) {
+  return ({
+    active: 'good',
+    blocked: 'watch',
+    dormant: 'neutral',
+    watch: 'pending',
+  })[status] || 'pending';
+}
+
+function buildFactorActivityReport() {
+  const pipeline = buildResearchPipeline();
+  const backtestStatus = buildBacktestResearchStatus();
+  const pipelineFactorIds = new Set(pipeline.entries.map((entry) => entry.factorId));
+  const akshareAudit = readAkshareFactorQualityAudit();
+  const akshareEntries = (Array.isArray(akshareAudit.factors) ? akshareAudit.factors : [])
+    .filter((factor) => factor?.factor_id && !pipelineFactorIds.has(factor.factor_id))
+    .map((factor) => {
+      const best = factor.best_primary_result || {};
+      const allResults = Array.isArray(factor.all_results) ? factor.all_results : [];
+      const primaryResults = allResults.filter((result) => [5, 10, 20].includes(toNumber(result.horizon, 0)) && resultSampleDates(result) >= 20);
+      return {
+        category: 'akshare_local',
+        decision: factor.decision_name || factor.decision || '本地审计',
+        direction: factor.direction || 'positive',
+        evidence: `${factor.evidence || 'AkShare 本地真实 OHLCV 因子审计。'} 数据源：${akshareAudit.source || 'akshare_factor_quality_audit'}。`,
+        exportRows: 0,
+        factorId: factor.factor_id,
+        name: factor.name || researchFactorDisplayName(factor.factor_id),
+        nextAction: factor.decision === 'alpha_candidate'
+          ? '进入策略候选复核，并等待 JoinQuant 或准模拟盘样本外确认。'
+          : factor.decision === 'reject_standalone'
+            ? '暂不单独使用；如保留，只能作为辅助过滤项重新组合后再测。'
+            : '继续观察可交易性、分层收益和样本外表现，暂不直接升级为成熟策略。',
+        realStatus: 'computed',
+        resultCount: allResults.length || Number(factor.primary_result_count || 0),
+        stage: '本地真实OHLCV审计',
+        status: akshareFactorDecisionStatus(factor.decision),
+        test: {
+          bestHorizon: best.horizon ?? null,
+          bestLongShort: best.long_short_mean ?? null,
+          bestRankIc: best.rank_ic_mean ?? null,
+          bestRankIcT: best.rank_ic_t ?? null,
+          historicalCount: primaryResults.length,
+          singleDayCount: allResults.filter((result) => toNumber(result.horizon, 0) === 1).length,
+        },
+      };
+    });
+  const entries = [...pipeline.entries, ...akshareEntries].map((entry) => {
+    const status = activityStatusFromEntry(entry);
+    const score = activityScore(entry);
+    const dataGaps = Array.isArray(entry.dataGaps) ? entry.dataGaps : [];
+    const relevantGaps = Number(entry.resultCount || 0) > 0
+      ? dataGaps.filter((gap) => !String(gap).includes('当前真实结果中没有该因子值')
+        && !String(gap).includes('历史截面不足')
+        && !String(gap).includes('缺少明确字段定义'))
+      : dataGaps;
+    const blockers = [
+      ...relevantGaps,
+      ...((Number(entry.resultCount || 0) === 0 && (status === 'dormant' || status === 'blocked')) ? ['尚未导入真实因子回测结果。'] : []),
+    ];
+    return {
+      activityLabel: activityLabel(status),
+      activityScore: score,
+      activityStatus: status,
+      activityTone: activityTone(status),
+      bestHorizon: entry.test?.bestHorizon ?? null,
+      bestLongShort: entry.test?.bestLongShort ?? null,
+      bestRankIc: entry.test?.bestRankIc ?? null,
+      bestRankIcT: entry.test?.bestRankIcT ?? null,
+      category: entry.category,
+      decision: entry.decision,
+      direction: entry.direction,
+      evidence: entry.evidence,
+      exportRows: entry.exportRows,
+      factorId: entry.factorId,
+      historicalCount: entry.test?.historicalCount || 0,
+      name: entry.name,
+      nextAction: entry.nextAction,
+      resultCount: entry.resultCount,
+      blockers,
+      stage: entry.stage,
+      status: entry.status,
+    };
+  }).sort((left, right) => {
+    const order = { active: 0, watch: 1, dormant: 2, blocked: 3 };
+    const statusDiff = (order[left.activityStatus] ?? 9) - (order[right.activityStatus] ?? 9);
+    if (statusDiff !== 0) return statusDiff;
+    if (right.activityScore !== left.activityScore) return right.activityScore - left.activityScore;
+    return left.name.localeCompare(right.name, 'zh-CN');
+  });
+
+  const counts = entries.reduce((acc, entry) => {
+    acc[entry.activityStatus] = (acc[entry.activityStatus] || 0) + 1;
+    return acc;
+  }, { active: 0, blocked: 0, dormant: 0, watch: 0 });
+  const activeEntries = entries.filter((entry) => entry.activityStatus === 'active');
+  const watchEntries = entries.filter((entry) => entry.activityStatus === 'watch');
+  const best = [...entries].sort((left, right) => right.activityScore - left.activityScore)[0] || null;
+
+  return {
+    dataPolicy: '因子活性只使用真实因子值、真实回填结果和本地真实 OHLCV 审计；没有未来收益标签时只做覆盖和待测诊断，不生成 IC 或收益。',
+    generatedAt: new Date().toISOString(),
+    metrics: {
+      activeCount: counts.active,
+      blockedCount: counts.blocked,
+      dormantCount: counts.dormant,
+      factorCount: entries.length,
+      historicalResultCount: entries.reduce((sum, entry) => sum + Number(entry.historicalCount || 0), 0),
+      testedCount: entries.filter((entry) => entry.resultCount > 0).length,
+      watchCount: counts.watch,
+    },
+    source: {
+      ...pipeline.source,
+      exportableRows: backtestStatus.metrics.exportableRows,
+      importedFactorResultCount: backtestStatus.metrics.importedFactorResultCount,
+      localAkshareFactorResultCount: backtestStatus.metrics.localAkshareFactorResultCount,
+      requiredTradingDays: backtestStatus.metrics.requiredTradingDays,
+    },
+    summary: {
+      bestFactor: best ? {
+        activityScore: best.activityScore,
+        activityStatus: best.activityStatus,
+        factorId: best.factorId,
+        name: best.name,
+      } : null,
+      headline: activeEntries.length
+        ? `${activeEntries.length} 个因子活性良好，可优先进入策略组合复核。`
+        : watchEntries.length
+          ? `${watchEntries.length} 个因子处于观察状态，还需要显著性或样本深度确认。`
+          : '当前没有足够证据判定因子活跃，先补历史截面或导入真实回测结果。',
+      nextAction: activeEntries.length
+        ? '优先把活跃因子接入组合回测，同时继续记录样本外表现。'
+        : backtestStatus.source.uniqueDates < backtestStatus.metrics.requiredTradingDays
+          ? `先补足历史截面：当前 ${backtestStatus.source.uniqueDates} 日，最低建议 ${backtestStatus.metrics.requiredTradingDays} 日。`
+          : '下载待测因子 CSV 到 JoinQuant，回填 5/10/20 日 RankIC 和分组收益。',
+    },
+    entries,
+  };
+}
+
 function buildAssistantResponse(message, factorId) {
   const pipeline = buildResearchPipeline();
   const text = String(message || '').trim();
@@ -7507,6 +7711,11 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'GET' && pathname === '/factor-api/real-factor-summary') {
     sendJson(res, readCombinedFactorSummary());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/factor-api/activity') {
+    sendJson(res, buildFactorActivityReport());
     return true;
   }
 

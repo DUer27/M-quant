@@ -11,6 +11,10 @@
 
 ## 当前关键脚本
 
+- `scripts/run_structured_reversal_pipeline.py`：长江结构化反转因子一键流水线。先拉取 JoinQuant 10m/1m 高频截面，再复算因子活性、分组收益和 Top100/5日调仓交易净值；只有因子和交易门禁都达到准模拟盘候选标准时，才写入策略集和压力测试选择。
+- `scripts/m_quant_structured_reversal_factor_jq.py`：长江结构化反转因子截面生成脚本。因子显示名使用中文，括号保留英文列名；参考《高频因子（一）：流动性溢价因子》加入“高频流动性溢价代理因子”，但仍要求真实 JoinQuant 高频数据和回测门禁确认。
+- `scripts/analyze_structured_reversal_factor.py`：对结构化反转因子截面复算 RankIC、t 值、Top-Bottom、Top 组超额、十组收益、分年度和波动环境分层。
+- `scripts/m_quant_structured_reversal_index_enhancement.py`：结构化反转 Top100 指数增强回测和准模拟盘准入脚本。默认 Top100 等权、5日调仓、Buffer150、前80新进、单边成本0.15%、滑点0.02%、低波动65%仓位。
 - `scripts/m_quant_csi500_low_crowding_reversal_index_enhancement.py`：复核“中证500低拥挤反转指数增强候选策略 v0”。输出 1/5/10/20 日因子门禁、策略事件收益、5日调仓交易净值、主动收益、成本滑点，以及高/中/低波动 × 大/中/小市值交叉层。
 - `scripts/m_quant_csi500_low_crowding_reversal_index_enhancement_jq_notebook.py`：JoinQuant 研究环境专用版，只依赖 `jqdata`，不包含本地 `jqdatasdk` 认证逻辑。平台下载接口默认发这个版本。
 - `scripts/run_csi500_lcr_pipeline.py`：本地 jqdatasdk 一键执行器。认证成功后会运行策略、保存 JoinQuant 原始 JSON、导入平台并生成 Markdown 实跑报告。
@@ -82,6 +86,45 @@ JoinQuant 复核会替换本地不完整口径：
 - 拥挤风险：JoinQuant `valuation.turnover_ratio` 参与复核。
 
 只有导入 JoinQuant 实跑结果，并通过收益、回撤、Sharpe、分层稳定性、样本外和成本检查后，候选才允许升级为正式策略候选。
+
+## 长江结构化反转因子口径
+
+策略 ID：`structured_reversal_csi500_v1`。
+
+核心流程：
+
+- 使用真实 JoinQuant 10分钟 K 线；若 10m 权限不稳定，可使用 1m 后按上午/下午分别聚合到 10m，不能跨午休。
+- 每个调仓日取过去21个交易日高频 bar，按成交量最低10%划为动量段，其余90%划为反转段。
+- 裸因子：`Rev_struct = Rev_rev - Rev_mom`，方向为越低越好；横截面得分为 `1 - rank_pct(Rev_struct)`。
+- 增强总分中文显示为“结构化反转增强总分（structured_reversal_enhanced_score）”：结构化反转55%、低波动15%、流动性质量10%、高频流动性溢价代理5%、量能稳定10%、跳空风险控制5%。
+- 高频流动性溢价代理参考长江证券《高频因子（一）：流动性溢价因子》21日、10分钟高频流动性思路；由于普通 `get_price` 不含五档盘口，当前只使用10m成交冲击代理，不把盘口原文业绩作为本策略业绩。
+- 准模拟盘准入必须同时通过因子活性和 5日调仓交易门禁；未通过时不会写入策略集和压力测试选择。
+
+本地已配置 jqdatasdk 账号时，一键实跑、回测、达标后写入策略集：
+
+```bash
+JQ_ACCOUNT=你的账号 JQ_PASSWORD=你的密码 python3 outputs/sources/joinquant/scripts/run_structured_reversal_pipeline.py --update-strategy-set
+```
+
+如果先在 JoinQuant 网页研究环境导出因子截面，再本地复算回测和准入：
+
+```bash
+python3 outputs/sources/joinquant/scripts/run_structured_reversal_pipeline.py --factor-input outputs/sources/joinquant/results/structured_reversal_csi500_v1_factor_panel_<stamp>.json --update-strategy-set
+```
+
+如果按旧项目同款走网页研究环境分片，把每个 slice 的 JSON 放入：
+
+```text
+outputs/sources/joinquant/inbox/structured_reversal_slices/
+```
+
+然后本地统一合并、复算和准入：
+
+```bash
+python3 outputs/sources/joinquant/scripts/run_structured_reversal_pipeline.py --merge-existing-slices --update-strategy-set
+```
+
+门禁未达标或缺少真实高频数据时，脚本只输出阻断状态，不生成虚构 IC、收益、准模拟盘状态或压力测试名单。
 
 ## 分片复测工作流
 

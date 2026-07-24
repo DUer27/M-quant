@@ -26,6 +26,7 @@
           <button data-view-target="research-pipeline">研究流水线</button>
           <button data-view-target="backtest-center">回测中心</button>
           <button data-view-target="validated-results">实测结果</button>
+          <button data-view-target="factor-activity">因子活性</button>
           <button data-view-target="strategy-results">策略实测</button>
           <button data-view-target="dashboard">风控监控</button>
           <button data-view-target="dashboard">系统配置</button>
@@ -971,6 +972,62 @@
           </section>
         </div>
 
+        <div id="factor-activity-view" class="view">
+          <section class="metrics-grid" aria-label="因子活性摘要">
+            <article class="metric">
+              <span>活跃因子</span>
+              <strong id="activity-active-count">-</strong>
+              <small>已通过历史活性门槛</small>
+            </article>
+            <article class="metric">
+              <span>观察因子</span>
+              <strong id="activity-watch-count">-</strong>
+              <small>方向可跟踪，强度待确认</small>
+            </article>
+            <article class="metric">
+              <span>待测/休眠</span>
+              <strong id="activity-dormant-count">-</strong>
+              <small>有信号但缺真实回测</small>
+            </article>
+            <article class="metric">
+              <span>阻塞因子</span>
+              <strong id="activity-blocked-count">-</strong>
+              <small>字段或样本不足</small>
+            </article>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Factor Activity</p>
+                <h2>因子活性检查</h2>
+              </div>
+              <div id="activity-source-file" class="library-source">等待加载</div>
+            </div>
+            <div id="activity-summary" class="result-summary-grid"></div>
+            <div class="table-scroll result-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>因子</th>
+                    <th>活性</th>
+                    <th>分数</th>
+                    <th>最佳周期</th>
+                    <th>RankIC</th>
+                    <th>t值</th>
+                    <th>好坏组差距</th>
+                    <th>结果</th>
+                    <th>证据</th>
+                    <th>下一步</th>
+                  </tr>
+                </thead>
+                <tbody id="activity-table"></tbody>
+              </table>
+            </div>
+            <div id="activity-notes" class="result-notes"></div>
+          </section>
+        </div>
+
         <div id="strategy-results-view" class="view">
           <section class="metrics-grid" aria-label="策略实测摘要">
             <article class="metric">
@@ -1033,6 +1090,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260714-position-stress-layout"></script>
+    <script type="module" src="/assets/app.js?v=20260724-factor-activity"></script>
   </body>
 </html>

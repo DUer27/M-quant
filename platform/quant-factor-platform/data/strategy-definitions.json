@@ -1,5 +1,91 @@
 [
   {
+    "id": "structured_reversal_csi500_v1",
+    "name": "长江结构化反转因子指数增强策略 v1",
+    "source": {
+      "evidence": "joinquant_structured_reversal_csi500_v1_pending_high_frequency_gate",
+      "researchPlan": "docs/structured-reversal-factor-implementation-plan.md",
+      "note": "已完成 JoinQuant 高频因子、因子活性、Top100回测和准入脚本；真实10m因子门禁和交易门禁通过前，不进入正式压力测试。"
+    },
+    "status": "candidate_pending_joinquant_gate",
+    "dataPolicy": "当前仅为研究候选；未通过真实 JoinQuant 10m/1m 聚合10m 高频因子 RankIC、分组收益和5日调仓交易门禁前，不进入正式压力测试，不展示代理压测收益为该策略业绩。",
+    "universe": {
+      "current": "中证500；正式回测使用 JoinQuant 历史中证500成分",
+      "filters": [
+        "剔除 ST、停牌、新股、低成交额、连续跌停和极端无流动性下跌样本",
+        "正式因子必须来自 JoinQuant 10分钟K线或1分钟聚合10分钟K线",
+        "真实门禁未通过前不写入压力测试名单"
+      ]
+    },
+    "factors": [
+      {
+        "id": "structured_reversal_score",
+        "name": "结构化反转因子（structured_reversal_score）",
+        "weight": 0.55,
+        "formula": "Rev_struct = Rev_rev - Rev_mom；Rev_struct 越低得分越高"
+      },
+      {
+        "id": "high_volume_reversal_score",
+        "name": "高成交量反转确认因子（high_volume_reversal_score）",
+        "weight": 0.2,
+        "formula": "Rev_rev 越低得分越高，用于检查高成交量下跌后的反转是否才是核心 alpha"
+      },
+      {
+        "id": "low_volatility_score",
+        "name": "低波动控制因子（low_volatility_score）",
+        "weight": 0.15
+      },
+      {
+        "id": "liquidity_quality_score",
+        "name": "流动性质量因子（liquidity_quality_score）",
+        "weight": 0.1,
+        "diagnostic": "当前重点怀疑项：按 money_ma20 加分可能引入成交额体量偏置，稀释结构化反转。"
+      },
+      {
+        "id": "liquidity_premium_proxy_score",
+        "name": "高频流动性溢价代理因子（liquidity_premium_proxy_score）",
+        "weight": 0.05,
+        "diagnostic": "当前重点怀疑项：低成交冲击更像可交易性过滤，不应强行作为正向 alpha。"
+      },
+      {
+        "id": "volume_stability_score",
+        "name": "量能稳定因子（volume_stability_score）",
+        "weight": 0.1
+      },
+      {
+        "id": "gap_risk_control_score",
+        "name": "跳空风险控制因子（gap_risk_control_score）",
+        "weight": 0.05
+      },
+      {
+        "id": "structured_reversal_confirmed_score",
+        "name": "结构化反转确认总分（structured_reversal_confirmed_score）",
+        "weight": 1,
+        "formula": "0.70*结构化反转 + 0.20*高成交量反转确认 + 0.10*量能稳定"
+      },
+      {
+        "id": "structured_reversal_tradeable_score",
+        "name": "结构化反转可交易总分（structured_reversal_tradeable_score）",
+        "weight": 1,
+        "formula": "0.65*结构化反转 + 0.15*高成交量反转确认 + 0.10*量能稳定 + 0.05*跳空风险控制 + 0.05*低波动"
+      }
+    ],
+    "portfolioRules": {
+      "ranking": "正式回测使用结构化反转增强总分（structured_reversal_enhanced_score）；未通过真实 JoinQuant 高频门禁前不进入正式压力测试",
+      "selection": "Top100 等权；持仓排名150以内保留，新进优先前80名",
+      "rebalance": "每5个交易日调仓",
+      "positionSizing": "高波动100%，中波动90%，低波动65%",
+      "cost": "正式 JoinQuant 回测扣单边成本0.15%和滑点0.02%"
+    },
+    "pressureTest": {
+      "ready": false,
+      "adapter": null,
+      "gateStatus": "candidate_pending_joinquant_gate",
+      "symbolsFile": "auto_cache_all",
+      "warning": "真实 JoinQuant 10m 高频因子门禁和5日调仓交易门禁未通过前，不放入正式压力测试。"
+    }
+  },
+  {
     "id": "csi500_low_crowding_reversal_index_enhancement_v2",
     "name": "中证500低拥挤反转指数增强候选策略 v2",
     "source": {
