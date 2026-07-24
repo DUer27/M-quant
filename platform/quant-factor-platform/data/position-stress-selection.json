@@ -1,15 +1,15 @@
 {
   "adapter": "ohlcv_low_crowding_reversal_proxy",
   "baseline": null,
-  "evidence": "v1_candidate_plus_dynamic_signal_holding",
+  "evidence": "v2_fixed_basket_bugfix_dynamic_csi500_pool",
   "gateStatus": "candidate_for_pressure_test",
   "layer": "中证500指数增强",
-  "name": "中证500低拥挤反转指数增强候选策略 v2",
+  "name": "中证500低拥挤反转指数增强候选策略 v2.1（动态池修正版）",
   "runnable": true,
-  "runnableReason": "使用完整可用股票池逐日动态选股，压测账本采用信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。",
+  "runnableReason": "修复旧 v2 固定最新名单回灌问题：使用中证500池逐日动态选股，压测账本采用信号驱动持仓和真实成交约束。",
   "selectedCodes": [],
-  "source": "csi500_lcr_v1_dynamic_signal_holding_upgrade",
-  "strategyId": "csi500_low_crowding_reversal_index_enhancement_v2",
+  "source": "csi500_lcr_v2_dynamic_pool_bugfix",
+  "strategyId": "csi500_low_crowding_reversal_index_enhancement_v2_1",
   "execution": {
     "holdingPolicy": "dynamic_signal",
     "minHoldingDays": 1,
@@ -23,6 +23,18 @@
     "takeProfitPct": 0.12,
     "trailingStopPct": 0.06,
     "scoreDropPct": 0.3,
+    "executionModel": "constrained_liquidity",
+    "maxParticipationPct": 0.05,
+    "capitalSweep": [
+      1000000,
+      10000000,
+      20000000,
+      30000000,
+      40000000,
+      50000000,
+      80000000,
+      100000000
+    ],
     "symbolsFile": "outputs/sources/akshare/index_enhancement/processed/csi500_pool.csv"
   },
   "selectedAt": "2026-07-24T04:31:51.278Z"

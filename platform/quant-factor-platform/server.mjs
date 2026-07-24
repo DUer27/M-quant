@@ -3848,6 +3848,9 @@ function positionStressAdapterFor(strategyId, selectedCodes = []) {
     return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_low_crowding_reversal_proxy';
   }
   if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2') {
+    return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_low_crowding_reversal_proxy';
+  }
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2_1') {
     return 'ohlcv_low_crowding_reversal_proxy';
   }
   return 'ohlcv_core_volume_price';
@@ -3855,6 +3858,26 @@ function positionStressAdapterFor(strategyId, selectedCodes = []) {
 
 function positionStressExecutionParamsFor(strategyId) {
   if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2') {
+    return {
+      holdingPolicy: 'dynamic_signal',
+      minHoldingDays: 1,
+      baseHoldingDays: 5,
+      maxHoldingDays: 20,
+      hardMaxHoldingDays: 60,
+      signalBufferN: 80,
+      trendExtendBufferN: 40,
+      trendExtendMinReturn: 0.03,
+      stopLossPct: 0.08,
+      takeProfitPct: 0.12,
+      trailingStopPct: 0.06,
+      scoreDropPct: 0.30,
+      executionModel: 'constrained_liquidity',
+      maxParticipationPct: 0.05,
+      capitalSweep: [500_000, 1_000_000, 2_000_000, 3_000_000, 5_000_000, 8_000_000, 10_000_000, 15_000_000, 20_000_000, 30_000_000, 50_000_000, 80_000_000, 100_000_000],
+      symbolsFile: 'auto_cache_all',
+    };
+  }
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2_1') {
     return {
       holdingPolicy: 'dynamic_signal',
       minHoldingDays: 1,
@@ -3884,10 +3907,10 @@ function positionStressExecutionParamsFor(strategyId) {
 function normalizePositionStressStrategy(item) {
   const selectedCodes = selectedCodesList(item.selected_codes || item.selectedCodes || item.latestSignal?.selected_codes);
   const strategyId = item.strategy_id || item.strategyId || item.id || '';
-  const adapter = strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2'
+  const adapter = strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2_1'
     ? positionStressAdapterFor(strategyId, selectedCodes)
     : item.adapter || positionStressAdapterFor(strategyId, selectedCodes);
-  const pressureSelectedCodes = strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2' ? [] : selectedCodes;
+  const pressureSelectedCodes = strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2_1' ? [] : selectedCodes;
   const runnable = item.runnable !== false && adapter !== 'controller_not_directly_executable';
   return {
     adapter,
@@ -3959,18 +3982,35 @@ function buildPositionStressStrategyCatalog() {
     }));
   }
 
+  const v1SelectedCodesForV2 = csi500LcrV1LatestSelectedCodes();
   if (!byId.has('csi500_low_crowding_reversal_index_enhancement_v2')) {
     byId.set('csi500_low_crowding_reversal_index_enhancement_v2', normalizePositionStressStrategy({
-      adapter: 'ohlcv_low_crowding_reversal_proxy',
+      adapter: positionStressAdapterFor('csi500_low_crowding_reversal_index_enhancement_v2', v1SelectedCodesForV2),
       evidence: 'v1_candidate_plus_dynamic_signal_holding',
       gateStatus: 'candidate_for_pressure_test',
       layer: '中证500指数增强',
-      name: '中证500低拥挤反转指数增强候选策略 v2',
+      name: '中证500低拥挤反转指数增强候选策略 v2（固定名单版）',
       runnable: true,
-      runnableReason: '使用完整可用股票池逐日动态选股，压测账本采用信号驱动持仓，并加入止盈止损、分数衰减和最长持仓约束。',
+      runnableReason: '保留旧 v2 高收益固定最新名单口径；仅用于固定篮子容量预览，不作为历史动态选股回测。',
+      selectedCodes: v1SelectedCodesForV2,
       source: 'csi500_lcr_v1_dynamic_signal_holding_upgrade',
       strategyId: 'csi500_low_crowding_reversal_index_enhancement_v2',
       execution: positionStressExecutionParamsFor('csi500_low_crowding_reversal_index_enhancement_v2'),
+    }));
+  }
+
+  if (!byId.has('csi500_low_crowding_reversal_index_enhancement_v2_1')) {
+    byId.set('csi500_low_crowding_reversal_index_enhancement_v2_1', normalizePositionStressStrategy({
+      adapter: 'ohlcv_low_crowding_reversal_proxy',
+      evidence: 'v2_fixed_basket_bugfix_dynamic_csi500_pool',
+      gateStatus: 'candidate_for_pressure_test',
+      layer: '中证500指数增强',
+      name: '中证500低拥挤反转指数增强候选策略 v2.1（动态池修正版）',
+      runnable: true,
+      runnableReason: '修复旧 v2 固定最新名单回灌问题：使用中证500池逐日动态选股，压测账本采用信号驱动持仓和真实成交约束。',
+      source: 'csi500_lcr_v2_dynamic_pool_bugfix',
+      strategyId: 'csi500_low_crowding_reversal_index_enhancement_v2_1',
+      execution: positionStressExecutionParamsFor('csi500_low_crowding_reversal_index_enhancement_v2_1'),
     }));
   }
 
@@ -6555,17 +6595,17 @@ function buildLiveStrategySignals() {
       ? [
         {
           id: 'csi500_low_crowding_reversal_index_enhancement_v2',
-          name: '中证500低拥挤反转指数增强候选策略 v2',
-          pool: 'formal_candidate',
+          name: '中证500低拥挤反转指数增强候选策略 v2（固定名单版）',
+          pool: 'fixed_basket_candidate',
           status: 'candidate_for_pressure_test',
-          validationState: 'v2 继承 v1 因子门禁与最新候选名单，执行层改为信号驱动动态持仓：默认5日锚定，20日后只做趋势健康检查，强趋势可延续到60日硬上限；跌出Buffer80、分数衰减、止损或止盈回撤时退出。',
-          role: '压力测试候选：中证500指数增强袖 v2 执行优化',
-          objective: '在 v1 选股基础上修正“次日固定卖出”的压测偏差，让买入卖出由每日信号和风险约束共同决定。',
+          validationState: '旧 v2 保留 v1 最新候选名单固定篮子口径，执行层为信号驱动动态持仓；该版本用于复查旧高收益固定名单压测，不作为历史动态选股回测。',
+          role: '压力测试候选：中证500指数增强袖 v2 固定名单复查',
+          objective: '保留旧 v2 固定最新名单收益路径，便于和 v2.1 动态池修正版做口径对照。',
           dataBasis: `${csi500LcrV1.data_policy || '真实 JoinQuant factor slice 合并复算；v2 当前使用本地 OHLCV 执行压测复核。'} 最新信号 ${csi500LcrV1LatestSelection.date || '-'}，入选 ${csi500LcrV1SelectedCodes.length || csi500LcrV1LatestSelection.selected_count || 0} 只。`,
           factorState: csi500LcrV1Factors,
-          rankingFormula: '沿用 v1 排序：0.25*量能稳定 + 0.25*市值中性量稳 + 0.35*量能流动性均衡 + 0.15*残差量稳；执行层用 Top15/Buffer80 的信号复核决定续持或退出。',
+          rankingFormula: '固定使用 v1 最新候选名单，并在固定篮子内用 OHLCV 代理分数排序；不是逐日中证500全池排序。',
           entryRules: [
-            '沿用 v1 通过门禁的候选名单和 OHLCV 代理分数执行压测',
+            '沿用 v1 通过门禁的最新候选名单执行固定篮子压测',
             '空仓槽位按当天信号补入，不再每日全卖全买',
             '默认持仓锚定5个交易日；T+1 后每日复核信号',
             `最新名单：${csi500LcrV1SelectedCodes.slice(0, 8).join(', ')}${csi500LcrV1SelectedCodes.length > 8 ? '...' : ''}`,
@@ -6578,11 +6618,41 @@ function buildLiveStrategySignals() {
             '硬上限60个交易日，样本结束强制平仓',
           ],
           portfolioRules: ['Top15/TopN 等权槽位', '动态补仓', '信号退出', '止损8%', '止盈回撤6%', '20日趋势复核', '60日硬上限'],
-          nextAction: '运行 v2 建仓压力测试，检查成交明细中的持仓交易日和退出原因分布，再决定是否回写 JoinQuant 原生账本。',
+          nextAction: '作为旧口径留档和容量对照；正式动态池口径请使用 v2.1。',
           candidateCount: csi500LcrV1SelectedCodes.length || csi500LcrV1Primary.sample_trades || 0,
           computedSignalCount: csi500LcrV1Primary.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
           exportable: false,
-          exportStatus: 'v2 已登记为执行层优化候选；需要动态持仓压测和 JoinQuant 复核。',
+          exportStatus: 'v2 固定名单版已保留；系统会将固定 selected_codes 运行标记为固定篮子预览。',
+        },
+        {
+          id: 'csi500_low_crowding_reversal_index_enhancement_v2_1',
+          name: '中证500低拥挤反转指数增强候选策略 v2.1（动态池修正版）',
+          pool: 'formal_candidate',
+          status: 'candidate_for_pressure_test',
+          validationState: 'v2.1 修复旧 v2 固定最新名单回灌问题：使用中证500池逐日动态排序，执行层沿用信号驱动持仓、止盈止损、分数衰减和真实成交约束。',
+          role: '压力测试候选：中证500指数增强袖 v2.1 动态池修正版',
+          objective: '用可审计的中证500宽股票池逐日选股替代固定最新名单，避免未来名单回灌历史。',
+          dataBasis: '本地 AkShare 中证500池与 OHLCV 代理因子；用于真实成交压力测试，不等价于 JoinQuant 原生因子回测。',
+          factorState: csi500LcrV1Factors,
+          rankingFormula: 'OHLCV 低拥挤、反转修复、成交活跃和收盘强度代理分数；每日在中证500池内动态取 TopN/Buffer。',
+          entryRules: [
+            '每日在中证500池内重算代理分数并动态选股',
+            '空仓槽位按当天信号补入，不再每日全卖全买',
+            '默认持仓锚定5个交易日；T+1 后每日复核信号',
+            '真实成交约束使用单票单日成交额参与率上限',
+          ],
+          riskFilters: [
+            '固定名单运行会被系统降级为篮子预览，v2.1 不传 selectedCodes',
+            '止损：单票从成交价回撤8%退出',
+            '止盈：单票浮盈达到12%后，从峰值回撤6%退出',
+            '宽股票池按最小可交易样本检查，并披露缺失成分',
+          ],
+          portfolioRules: ['中证500池逐日动态选股', 'TopN 等权槽位', '动态补仓', '信号退出', '止损8%', '止盈回撤6%', '20日趋势复核', '60日硬上限'],
+          nextAction: '作为修复后的动态选股压力测试口径，继续补 JoinQuant 原生逐日信号复核。',
+          candidateCount: 500,
+          computedSignalCount: csi500LcrV1Primary.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
+          exportable: false,
+          exportStatus: 'v2.1 已登记为动态池修正版；用于替代旧 v2 的正式动态选股压测口径。',
         },
         {
           id: csi500LcrV1.strategy_id || 'csi500_low_crowding_reversal_index_enhancement_v1',
@@ -6832,11 +6902,12 @@ function buildLiveStrategySignals() {
     csi500_low_crowding_reversal_index_enhancement_v0: 0,
     csi500_low_crowding_reversal_index_enhancement_v1: 1,
     csi500_low_crowding_reversal_index_enhancement_v2: 2,
-    jq_quality_profit_liquidity_v1: 3,
-    kline_assisted_confirmation: 4,
-    core_volume_price_trend_v1: 5,
-    capital_follow_v0: 6,
-    akshare_regime_switch_contraction_mean_reversion_v1: 7,
+    csi500_low_crowding_reversal_index_enhancement_v2_1: 3,
+    jq_quality_profit_liquidity_v1: 4,
+    kline_assisted_confirmation: 5,
+    core_volume_price_trend_v1: 6,
+    capital_follow_v0: 7,
+    akshare_regime_switch_contraction_mean_reversion_v1: 8,
   };
   const formalStrategies = [...formalStrategiesUnsorted].sort((left, right) => (
     (formalStrategyPriority[left.id] ?? 99) - (formalStrategyPriority[right.id] ?? 99)
