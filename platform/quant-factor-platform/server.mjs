@@ -42,8 +42,17 @@ const positionStressSelectionPath = join(dataDir, 'position-stress-selection.jso
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
 const akshareDailyCacheDir = outputPath('sources', 'akshare', 'raw', 'a_share_daily');
-const akshareCompletionAuditPath = outputPath('sources', 'akshare', 'results', 'a_share_all_completion_audit_20260723.csv');
-const akshareCompletionAuditFallbackPath = outputPath('sources', 'akshare', 'results', 'a_share_all_completion_audit_20260720.csv');
+// 数据更新脚本每次会生成带日期标签的新审计文件，这里自动选用最新一份
+const akshareCompletionAuditCandidates = readdirSync(outputPath('sources', 'akshare', 'results'))
+  .filter((name) => /^a_share_all_completion_audit_\d{8}\.csv$/.test(name))
+  .sort()
+  .reverse();
+const akshareCompletionAuditPath = akshareCompletionAuditCandidates.length
+  ? join(outputPath('sources', 'akshare', 'results'), akshareCompletionAuditCandidates[0])
+  : outputPath('sources', 'akshare', 'results', 'a_share_all_completion_audit_20260723.csv');
+const akshareCompletionAuditFallbackPath = akshareCompletionAuditCandidates[1]
+  ? join(outputPath('sources', 'akshare', 'results'), akshareCompletionAuditCandidates[1])
+  : outputPath('sources', 'akshare', 'results', 'a_share_all_completion_audit_20260720.csv');
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
 const akshareStrategyValidationPath = outputPath('sources', 'akshare', 'results', 'akshare_strategy_candidate_validation.json');
 const akshareFactorQualityAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_factor_quality_audit.json');
