@@ -124,6 +124,8 @@ const elements = {
   positionStressKlineYearly: document.querySelector('#position-stress-kline-yearly'),
   positionStressMessage: document.querySelector('#position-stress-message'),
   positionStressSelectedStrategy: document.querySelector('#position-stress-selected-strategy'),
+  positionStressHistorySelect: document.querySelector('#position-stress-history-select'),
+  positionStressUniverseContext: document.querySelector('#position-stress-universe-context'),
   positionStressReturn: document.querySelector('#position-stress-return'),
   positionStressResultSummary: document.querySelector('#position-stress-result-summary'),
   positionStressRowCount: document.querySelector('#position-stress-row-count'),
@@ -134,7 +136,9 @@ const elements = {
   positionStressStart: document.querySelector('#position-stress-start'),
   positionStressStrategySelect: document.querySelector('#position-stress-strategy-select'),
   positionStressStockCount: document.querySelector('#position-stress-stock-count'),
+  positionStressHistoryMaxCount: document.querySelector('#position-stress-history-max-count'),
   positionStressTopN: document.querySelector('#position-stress-top-n'),
+  positionStressMaxHoldings: document.querySelector('#position-stress-max-holdings'),
   positionStressTradeTable: document.querySelector('#position-stress-trade-table'),
   positionStressTrades: document.querySelector('#position-stress-trades'),
   positionStressWarnings: document.querySelector('#position-stress-warnings'),
@@ -204,6 +208,7 @@ let activeResearchFactor = null;
 let currentResearchPipeline = null;
 let currentStrategySignalPack = null;
 let currentPositionStressCatalog = null;
+let currentPositionStressHistory = [];
 let currentPositionStressReport = null;
 let currentPositionStressExplicitStrategyId = '';
 let positionStressKlinePeriod = 'daily';
@@ -1147,6 +1152,7 @@ function labelForStatus(status) {
   if (status === 'factor_tested_strategy_unvalidated') return ['因子已测策略待测', 'pending'];
   if (status === 'real_strategy_backtested') return ['策略已实测', 'good'];
   if (status === 'has_formal_candidates') return ['有正式候选', 'good'];
+  if (status === 'experimental_candidate') return ['试验版', 'pending'];
   if (status === 'exportable') return ['可导出', 'good'];
   if (status === 'partial_real_data') return ['部分可用', 'pending'];
   if (status === 'joinquant_ready') return ['聚宽可测', 'good'];
@@ -3849,12 +3855,90 @@ function positionStressControlMismatches(report) {
   if (strategyId && report?.strategy?.id && strategyId !== report.strategy.id) mismatches.push('压测策略');
   return mismatches;
 }
+function positionStressCoverageLabel(mode) {
+  const labels = {
+    broad_pool_min_tradable: '宽股票池，按每日最低可交易样本覆盖',
+    selected_codes_relaxed: '指定股票名单，放宽覆盖检查',
+    auto_cache_all_relaxed: '全缓存全A，放宽覆盖检查',
+    strict_pool_full_coverage: '核心股票池，要求严格全覆盖',
+  };
+  return labels[mode] || String(mode || '未标注').replaceAll('_', ' ');
+}
+
+function positionStressHistoryPoolLabel(item) {
+  const size = Number(item?.universe?.size ?? item?.stockCount ?? 0);
+  const source = String(item?.universe?.sourceFile || '').toLowerCase();
+  if (size === 500 && source.includes('csi500_pool')) return '当前中证500专项';
+  if (size === 3000 || source.includes('core_3000')) return '历史3000只核心池';
+  if (size === 5578 || source.includes('auto_cache_all')) return '历史5578只全缓存全A';
+  if (size) return `${size}只股票池`;
+  return '股票池未标注';
+}
+
+function positionStressHistoryOptionLabel(item) {
+  const range = item?.requestedDateRange || {};
+  const dates = [range.start, range.end].filter(Boolean).join(' 至 ');
+  const pool = positionStressHistoryPoolLabel(item);
+  const status = item?.complete ? '完整' : (item?.status || '未完成');
+  return `${pool} / ${dates || '日期未标注'} / ${item?.stockCount ?? '-'}只 / ${status}`;
+}
+
+function renderPositionStressHistory(history = []) {
+  currentPositionStressHistory = Array.isArray(history) ? history : [];
+  const historyMaxCount = Math.max(0, ...currentPositionStressHistory.map((item) => Number(item.stockCount || item.universe?.size || 0)));
+  if (elements.positionStressHistoryMaxCount) elements.positionStressHistoryMaxCount.textContent = `历史最大覆盖：${historyMaxCount || '-'} 只`;
+  const select = elements.positionStressHistorySelect;
+  if (!select) return;
+  const current = currentPositionStressReport || {};
+  const currentPath = current.reportPath || '';
+  const entries = [...currentPositionStressHistory];
+  if (currentPath && !entries.some((item) => item.reportPath === currentPath)) {
+    entries.unshift({
+      complete: current.complete,
+      coverage: { mode: current.coverage?.mode || '' },
+      generatedAt: current.generatedAt || '',
+      reportPath: currentPath,
+      requestedDateRange: current.requestedDateRange || {},
+      rowCount: current.rowCount,
+      status: current.status,
+      stockCount: current.stockCount,
+      strategy: current.strategy || {},
+      universe: current.universe || {},
+    });
+  }
+  select.innerHTML = entries.length
+    ? entries.map((item) => `<option value="${escapeHtml(item.reportPath || '')}">${escapeHtml(positionStressHistoryOptionLabel(item))}</option>`).join('')
+    : '<option value="">暂无历史报告</option>';
+  if (currentPath && entries.some((item) => item.reportPath === currentPath)) {
+    select.value = currentPath;
+  }
+}
+
+
+function renderPositionStressUniverseContext(report = {}) {
+  if (!elements.positionStressUniverseContext) return;
+  const universe = report.universe || {};
+  const sourceFile = universe.sourceFile || report.artifacts?.universeFile || '未标注';
+  const size = universe.size ?? report.stockCount ?? '-';
+  const mode = report.coverage?.mode || '';
+  const poolLabel = positionStressHistoryPoolLabel({ stockCount: report.stockCount, universe });
+  const warning = Number(size) === 500 || String(sourceFile).toLowerCase().includes('csi500_pool')
+    ? '当前最新报告是中证500专项池，股票数不代表全部历史压测。'
+    : '历史压测应按报告标注的股票池口径比较，不能只看单个报告的股票数。';
+  elements.positionStressUniverseContext.innerHTML = `
+    <strong>当前口径：${escapeHtml(poolLabel)}</strong>
+    <span>${escapeHtml(warning)}</span>
+    <span>覆盖股票 ${escapeHtml(report.stockCount ?? '-')} 只 / 股票池规模 ${escapeHtml(size)} 只；股票池文件：${escapeHtml(sourceFile)}；覆盖模式：${escapeHtml(positionStressCoverageLabel(mode))}。</span>
+    <span>历史版本包括3000只核心池和5578只全缓存全A（若存在），请通过上方选择器切换查看。</span>
+  `;
+}
 
 function renderPositionStress(report) {
   if (!elements.positionStressComplete) return;
-  currentPositionStressReport = report;
-  const metrics = report.strategy?.metrics || {};
-  const parameters = report.strategy?.parameters || {};
+  currentPositionStressReport = report || {};
+  renderPositionStressUniverseContext(currentPositionStressReport);
+  const metrics = report?.strategy?.metrics || {};
+  const parameters = report?.strategy?.parameters || {};
   const isConstrainedLiquidity = parameters.executionModel === 'constrained_liquidity' || metrics.executionModel === 'constrained_liquidity';
   const gate = report.runGate || {};
   const complete = Boolean(report.complete || gate.formalRunAllowed);
@@ -3867,6 +3951,12 @@ function renderPositionStress(report) {
   elements.positionStressComplete.innerHTML = `<span class="tag ${statusTone}">${controlsStale ? '待重算' : complete ? '完整' : '缺数据'}</span>`;
   elements.positionStressDateRange.textContent = `${dateRange.start || '-'} 至 ${dateRange.end || '-'} / ${missingText}`;
   elements.positionStressStockCount.textContent = report.stockCount ?? '-';
+  const reportTopN = Number(parameters.dailyTopN ?? parameters.topN ?? report.strategy?.dailyTopN ?? 0);
+  const reportMaxHoldings = Number(parameters.maxHoldings ?? report.strategy?.maxHoldings ?? reportTopN);
+  if (elements.positionStressTopN && reportTopN > 0) elements.positionStressTopN.value = reportTopN;
+  if (elements.positionStressMaxHoldings && reportMaxHoldings > 0) elements.positionStressMaxHoldings.value = reportMaxHoldings;
+  if (elements.positionStressTopN) elements.positionStressTopN.readOnly = true;
+  if (elements.positionStressMaxHoldings) elements.positionStressMaxHoldings.readOnly = true;
   elements.positionStressRowCount.textContent = `${report.rowCount ?? 0} 行 / ${report.actualDates?.length ?? 0} 天`;
   elements.positionStressReturn.textContent = formatPercent(metrics.totalReturn, 2);
   elements.positionStressRunStatus.textContent = controlsStale ? '参数待重算' : isConstrainedLiquidity ? '真实成交约束' : report.strategy?.runStatus === 'complete_short_window' ? '短窗压测' : '仅链路预览';
@@ -3894,10 +3984,13 @@ function renderPositionStress(report) {
       ? '已选择，点击运行后将保存策略、执行策略选股并生成建仓压力测试结果。'
       : report.strategy?.adapterNote || selected?.runnableReason || '从策略池选择达标策略后，点击运行生成结果。';
     const gateStatus = pendingStrategy ? '待运行' : selected?.gateStatus || report.strategy?.adapter || '未运行';
+    const selectedTopN = Number(pendingStrategy?.dailyTopN ?? selected?.dailyTopN ?? parameters.dailyTopN ?? parameters.topN ?? reportTopN);
+    const selectedMaxHoldings = Number(pendingStrategy?.maxHoldings ?? selected?.maxHoldings ?? parameters.maxHoldings ?? reportMaxHoldings);
     elements.positionStressSelectedStrategy.innerHTML = `
       <div>
         <strong>${escapeHtml(strategyName)}</strong>
         <span>${escapeHtml(adapterNote)}</span>
+        <span>每日选股：前${escapeHtml(selectedTopN)}只；最大持仓：${escapeHtml(selectedMaxHoldings)}只；两项由策略配置锁定。</span>
       </div>
       <span class="tag ${pendingStrategy ? 'pending' : selected ? 'good' : 'pending'}">${escapeHtml(selected ? gateStatus || '已选择' : '未选择')}</span>
     `;
@@ -4077,7 +4170,11 @@ function renderPositionStressCatalog(catalog) {
     const runnable = (catalog?.strategies || []).filter((item) => item.runnable);
     elements.positionStressStrategySelect.innerHTML = [
       '<option value="">从策略池选择</option>',
-      ...runnable.map((item) => `<option value="${escapeHtml(item.strategyId)}">${escapeHtml(item.name)}</option>`),
+      ...runnable.map((item) => {
+        const topN = Number(item.dailyTopN ?? item.execution?.dailyTopN ?? 10);
+        const maxHoldings = Number(item.maxHoldings ?? item.execution?.maxHoldings ?? topN);
+        return `<option value="${escapeHtml(item.strategyId)}">${escapeHtml(item.name)} · 选${topN}/持${maxHoldings}</option>`;
+      }),
     ].join('');
     if (currentPositionStressExplicitStrategyId && runnable.some((item) => item.strategyId === currentPositionStressExplicitStrategyId)) {
       elements.positionStressStrategySelect.value = currentPositionStressExplicitStrategyId;
@@ -4231,7 +4328,7 @@ function drawChart(equity) {
 
 async function refreshDashboard() {
   const positionStressReportUrl = positionStressReportEndpoint();
-  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, factorActivity, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog] = await Promise.all([
+  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, factorActivity, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog, positionStressHistory] = await Promise.all([
     request('/api/summary'),
     request('/factor-api/real-factor-results?limit=100'),
     request('/backtest-api/equity'),
@@ -4246,6 +4343,7 @@ async function refreshDashboard() {
     request('/research-api/pipeline'),
     request(positionStressReportUrl),
     request('/position-stress-api/strategies'),
+    request('/position-stress-api/history'),
   ]);
 
   currentPositionStressCatalog = positionStressCatalog;
@@ -4261,6 +4359,7 @@ async function refreshDashboard() {
   renderFactorActivity(factorActivity);
   renderResearchPipeline(researchPipeline);
   renderPositionStress(positionStress);
+  renderPositionStressHistory(positionStressHistory);
   renderPositionStressCatalog(positionStressCatalog);
   bindCollapsibleData();
   requestAnimationFrame(syncCollapsibleData);
@@ -4443,12 +4542,10 @@ function handleStrategyCardClick(event) {
 
 elements.strategyLiveList?.addEventListener('click', handleStrategyCardClick);
 elements.formalStrategyList?.addEventListener('click', handleStrategyCardClick);
-
 elements.paperWatchList?.addEventListener('click', async (event) => {
   const rebuildButton = event.target.closest('[data-paper-watch-rebuild]');
   if (!rebuildButton) return;
   rebuildButton.disabled = true;
-  rebuildButton.textContent = '刷新中';
   try {
     await request('/paper-watch-api/rebuild-derived-packs', { method: 'POST' });
     await refreshDashboard();
@@ -4538,6 +4635,29 @@ elements.downloadJoinquantCsv?.addEventListener('click', () => {
 
 elements.downloadJoinquantFactorScript?.addEventListener('click', () => {
   window.location.href = '/backtest-api/joinquant-factor-test-script.py';
+});
+
+elements.positionStressHistorySelect?.addEventListener('change', async () => {
+  const selectedPath = elements.positionStressHistorySelect.value;
+  const selected = currentPositionStressHistory.find((item) => item.reportPath === selectedPath);
+  if (!selectedPath || !selected) return;
+  const range = selected.requestedDateRange || {};
+  if (range.start && elements.positionStressStart) elements.positionStressStart.value = range.start;
+  if (range.end && elements.positionStressEnd) elements.positionStressEnd.value = range.end;
+  try {
+    const params = new URLSearchParams();
+    params.set('reportPath', selectedPath);
+    if (range.start) params.set('start', range.start);
+    if (range.end) params.set('end', range.end);
+    const report = await request(`/position-stress-api/report?${params.toString()}`);
+    renderPositionStress(report);
+    renderPositionStressHistory(currentPositionStressHistory);
+    elements.positionStressMessage.textContent = '已切换历史压力测试报告；未重新计算。';
+    elements.positionStressMessage.dataset.tone = 'success';
+  } catch (error) {
+    elements.positionStressMessage.textContent = `历史报告加载失败：${error.message}`;
+    elements.positionStressMessage.dataset.tone = 'error';
+  }
 });
 
 elements.positionStressKlineSelect?.addEventListener('change', async () => {
@@ -4678,12 +4798,25 @@ elements.exportPositionStressTrades?.addEventListener('click', async () => {
 elements.positionStressStrategySelect?.addEventListener('change', async () => {
   const strategyId = elements.positionStressStrategySelect.value;
   currentPositionStressExplicitStrategyId = strategyId;
+  const strategy = (currentPositionStressCatalog?.strategies || []).find((item) => item.strategyId === strategyId);
+  const dailyTopN = Number(strategy?.dailyTopN ?? strategy?.execution?.dailyTopN ?? 10);
+  const maxHoldings = Number(strategy?.maxHoldings ?? strategy?.execution?.maxHoldings ?? dailyTopN);
+  if (elements.positionStressTopN) {
+    elements.positionStressTopN.value = dailyTopN;
+    elements.positionStressTopN.readOnly = true;
+  }
+  if (elements.positionStressMaxHoldings) {
+    elements.positionStressMaxHoldings.value = maxHoldings;
+    elements.positionStressMaxHoldings.readOnly = true;
+  }
   if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
-  elements.positionStressMessage.textContent = strategyId ? '已选择策略，点击运行生成选股和压测结果。' : '请先选择压测策略。';
+  elements.positionStressMessage.textContent = strategyId
+    ? `已锁定策略口径：每日选前${dailyTopN}只，最大持仓${maxHoldings}只；点击运行生成选股和压测结果。`
+    : '请先选择压测策略。';
   elements.positionStressMessage.dataset.tone = strategyId ? 'success' : 'error';
 });
 
-[elements.positionStressStart, elements.positionStressEnd, elements.positionStressTopN, elements.positionStressCapital]
+[elements.positionStressStart, elements.positionStressEnd, elements.positionStressCapital]
   .filter(Boolean)
   .forEach((control) => {
     control.addEventListener('input', () => {
@@ -4704,14 +4837,17 @@ elements.runPositionStress?.addEventListener('click', async () => {
   elements.positionStressMessage.textContent = '正在保存策略、执行策略选股并生成建仓压力测试结果。';
   elements.positionStressMessage.dataset.tone = 'success';
   try {
+    const dailyTopN = Number(elements.positionStressTopN?.value || 10);
+    const maxHoldings = Number(elements.positionStressMaxHoldings?.value || dailyTopN);
     const response = await request('/position-stress-api/run', {
       body: JSON.stringify({
         capital: Number(elements.positionStressCapital?.value || 1000000),
         end: elements.positionStressEnd?.value || '2026-07-22',
+        maxHoldings,
         source: elements.positionStressSource?.value || 'auto',
         start: elements.positionStressStart?.value || '2025-01-01',
         strategyId,
-        topN: Number(elements.positionStressTopN?.value || 10),
+        topN: dailyTopN,
       }),
       method: 'POST',
     });

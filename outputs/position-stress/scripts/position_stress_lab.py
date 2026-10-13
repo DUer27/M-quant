@@ -40,6 +40,7 @@ class RunConfig:
     end: str
     symbols_file: Path
     top_n: int
+    max_holdings: int
     capital: float
     source: str
     import_file: Path | None = None
@@ -1227,11 +1228,11 @@ def simulate_dynamic_signal_equity(scored: pd.DataFrame, signals: pd.DataFrame, 
             })
             del holdings[code]
 
-        if i < len(dates) - 1 and len(holdings) < max(int(config.top_n), 1):
+        if i < len(dates) - 1 and len(holdings) < max(int(config.max_holdings), 1):
             current_value = cash + sum(int(item.get("shares") or 0) * close_map.get((date, code), float(item.get("entryPriceRaw") or 0)) for code, item in holdings.items())
-            target_weight = 1 / max(int(config.top_n), 1)
-            slots = max(int(config.top_n) - len(holdings), 0)
-            candidates = ranked_by_date.get(date, pd.DataFrame()).copy()
+            target_weight = 1 / max(int(config.max_holdings), 1)
+            slots = max(int(config.max_holdings) - len(holdings), 0)
+            candidates = ranked_by_date.get(date, pd.DataFrame()).head(max(int(config.top_n), 1)).copy()
             for row in candidates.itertuples():
                 if slots <= 0:
                     break
@@ -1548,11 +1549,11 @@ def simulate_constrained_liquidity_equity(scored: pd.DataFrame, signals: pd.Data
             if remaining_shares <= 0:
                 del holdings[code]
 
-        if i < len(dates) - 1 and len(holdings) < max(int(config.top_n), 1):
+        if i < len(dates) - 1 and len(holdings) < max(int(config.max_holdings), 1):
             current_value = cash + sum(int(item.get("shares") or 0) * close_map.get((date, code), float(item.get("entryPriceRaw") or 0)) for code, item in holdings.items())
-            target_weight = 1 / max(int(config.top_n), 1)
-            slots = max(int(config.top_n) - len(holdings), 0)
-            candidates = ranked_by_date.get(date, pd.DataFrame()).copy()
+            target_weight = 1 / max(int(config.max_holdings), 1)
+            slots = max(int(config.max_holdings) - len(holdings), 0)
+            candidates = ranked_by_date.get(date, pd.DataFrame()).head(max(int(config.top_n), 1)).copy()
             for row in candidates.itertuples():
                 if slots <= 0:
                     break
@@ -1881,9 +1882,8 @@ def write_constrained_liquidity_markdown(report: dict[str, object], output_path:
         "",
         "## 核心结论",
         "",
-        f"- 执行模型：{params.get('executionModel')}。",
-        f"- 单票单日成交参与率上限：{float(params.get('maxParticipationPct') or 0):.2%}。",
-        f"- 基准资金总收益率：{float(metrics.get('totalReturn') or 0):.2%}，最大回撤：{float(metrics.get('maxDrawdown') or 0):.2%}。",
+        f"- 每日选股数量：前 {int(params.get('dailyTopN') or params.get('topN') or 0)} 只；最大持仓数量：{int(params.get('maxHoldings') or params.get('dailyTopN') or params.get('topN') or 0)} 只。",
+        f"- 选股/持仓规则：{(report.get('selection') or {}).get('selectionRule') or ''}；{(report.get('selection') or {}).get('holdingRule') or ''}。",
         f"- 未成交买入金额：{float(metrics.get('unfilledBuyNotional') or 0):,.2f} 元；未卖出金额：{float(metrics.get('unfilledSellNotional') or 0):,.2f} 元。",
         f"- 最大滞留金额：{float(metrics.get('maxLingeringNotional') or 0):,.2f} 元；最大滞留天数：{int(metrics.get('maxLingeringDays') or 0)} 天。",
         f"- 建议最大承受资金：{float(recommendation.get('recommendedCapital') or 0):,.0f} 元。{recommendation.get('reason') or ''}",
@@ -2106,6 +2106,12 @@ def build_report(config: RunConfig) -> dict[str, object]:
             "sourceFile": str(config.symbols_file.relative_to(ROOT)) if config.symbols_file.is_relative_to(ROOT) else str(config.symbols_file),
             "size": int(len(pool)),
         },
+        "selection": {
+            "dailyTopN": int(config.top_n),
+            "maxHoldings": int(config.max_holdings),
+            "selectionRule": f"每日按 strategy_score 排名前 {int(config.top_n)} 只生成候选信号",
+            "holdingRule": f"动态持仓最多 {int(config.max_holdings)} 只；空仓槽位按当日信号补入",
+        },
         "artifacts": {
             "dailyCsv": str(data_csv.relative_to(ROOT)),
             "capitalSweepCsv": str(sweep_csv.relative_to(ROOT)) if sweep_csv else None,
@@ -2121,6 +2127,8 @@ def build_report(config: RunConfig) -> dict[str, object]:
             "selectedCodes": list(config.selected_codes),
             "runStatus": "complete_short_window" if is_complete else "preview_only_incomplete_data",
             "parameters": {
+                "dailyTopN": config.top_n,
+                "maxHoldings": config.max_holdings,
                 "topN": config.top_n,
                 "capital": config.capital,
                 "rebalance": "signal_driven_dynamic" if config.holding_policy == "dynamic_signal" else "daily_close",
@@ -2196,9 +2204,10 @@ def parse_args() -> RunConfig:
     parser.add_argument("--start", default="2025-01-01")
     parser.add_argument("--end", default="2026-07-22")
     parser.add_argument("--symbols-file", default=str(DEFAULT_SYMBOLS_FILE))
-    parser.add_argument("--top-n", type=int, default=10)
+    parser.add_argument("--max-holdings", type=int, default=10)
     parser.add_argument("--capital", type=float, default=1_000_000)
     parser.add_argument("--source", choices=["auto", "joinquant", "akshare", "akshare_cache"], default="auto")
+    parser.add_argument("--top-n", type=int, default=10)
     parser.add_argument("--import-file", default="")
     parser.add_argument("--selected-codes", default="")
     parser.add_argument("--strategy-adapter", default="ohlcv_core_volume_price")
@@ -2237,6 +2246,7 @@ def parse_args() -> RunConfig:
         end=args.end,
         symbols_file=path,
         top_n=args.top_n,
+        max_holdings=args.max_holdings,
         capital=args.capital,
         source=args.source,
         import_file=Path(args.import_file).expanduser().resolve() if args.import_file else None,
