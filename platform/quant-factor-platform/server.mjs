@@ -8,6 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { basename, extname, join, normalize } from 'node:path';
@@ -937,6 +938,86 @@ function sendText(res, filename, text, contentType = 'text/plain; charset=utf-8'
   });
   res.end(text);
 }
+
+ function sendZip(res, filename, buffer) {
+   res.writeHead(200, {
+     'Cache-Control': 'no-store',
+     'Content-Disposition': `attachment; filename="${filename}"`,
+     'Content-Type': 'application/zip',
+   });
+   res.end(buffer);
+ }
+
+ function crc32(buffer) {
+   let crc = 0xffffffff;
+   for (const byte of buffer) {
+     crc ^= byte;
+     for (let bit = 0; bit < 8; bit += 1) {
+       crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+     }
+   }
+   return (crc ^ 0xffffffff) >>> 0;
+ }
+
+ function buildStoredZip(entries) {
+   const localParts = [];
+   const centralParts = [];
+   let offset = 0;
+   const dosTime = 0;
+   const dosDate = 0x5b7c;
+   entries.forEach(({ name, content }) => {
+     const nameBuffer = Buffer.from(name, 'utf8');
+     const data = Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf8');
+     const checksum = crc32(data);
+     const local = Buffer.alloc(30 + nameBuffer.length);
+     local.writeUInt32LE(0x04034b50, 0);
+     local.writeUInt16LE(20, 4);
+     local.writeUInt16LE(0x800, 6);
+     local.writeUInt16LE(0, 8);
+     local.writeUInt16LE(dosTime, 10);
+     local.writeUInt16LE(dosDate, 12);
+     local.writeUInt32LE(checksum, 14);
+     local.writeUInt32LE(data.length, 18);
+     local.writeUInt32LE(data.length, 22);
+     local.writeUInt16LE(nameBuffer.length, 26);
+     local.writeUInt16LE(0, 28);
+     nameBuffer.copy(local, 30);
+     localParts.push(local, data);
+
+     const central = Buffer.alloc(46 + nameBuffer.length);
+     central.writeUInt32LE(0x02014b50, 0);
+     central.writeUInt16LE(20, 4);
+     central.writeUInt16LE(20, 6);
+     central.writeUInt16LE(0x800, 8);
+     central.writeUInt16LE(0, 10);
+     central.writeUInt16LE(dosTime, 12);
+     central.writeUInt16LE(dosDate, 14);
+     central.writeUInt32LE(checksum, 16);
+     central.writeUInt32LE(data.length, 20);
+     central.writeUInt32LE(data.length, 24);
+     central.writeUInt16LE(nameBuffer.length, 28);
+     central.writeUInt16LE(0, 30);
+     central.writeUInt16LE(0, 32);
+     central.writeUInt16LE(0, 34);
+     central.writeUInt16LE(0, 36);
+     central.writeUInt32LE(0, 38);
+     central.writeUInt32LE(offset, 42);
+     nameBuffer.copy(central, 46);
+     centralParts.push(central);
+     offset += local.length + data.length;
+   });
+   const centralDirectory = Buffer.concat(centralParts);
+   const end = Buffer.alloc(22);
+   end.writeUInt32LE(0x06054b50, 0);
+   end.writeUInt16LE(0, 4);
+   end.writeUInt16LE(0, 6);
+   end.writeUInt16LE(entries.length, 8);
+   end.writeUInt16LE(entries.length, 10);
+   end.writeUInt32LE(centralDirectory.length, 12);
+   end.writeUInt32LE(offset, 16);
+   end.writeUInt16LE(0, 20);
+   return Buffer.concat([...localParts, centralDirectory, end]);
+ }
 
 function sendFileDownload(res, filename, path, contentType) {
   res.writeHead(200, {
@@ -7528,6 +7609,137 @@ function buildLiveStrategySignals() {
   };
 }
 
+function normalizePaperSignalCode(value) {
+  return String(value || '').replace(/\.(XSHG|XSHE|SH|SZ)$/i, '').padStart(6, '0');
+}
+
+function paperSignalTimestamp(signalDate, clock) {
+  if (!signalDate) return '';
+  return `${signalDate}T${clock}+08:00`;
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function paperSignalContext(strategyId) {
+  const signalPack = buildLiveStrategySignals();
+  const strategies = [...(signalPack.formalStrategies || []), ...(signalPack.strategies || [])];
+  const strategy = strategies.find((item) => item.id === strategyId);
+  if (!strategy) return { signalPack, strategy: null, operations: null, sleeve: null, rawSleeve: null };
+  const operations = buildPaperWatchRoutes();
+  const rawSleeves = Array.isArray(operations.operationsPack?.capital_sleeves)
+    ? operations.operationsPack.capital_sleeves
+    : [];
+  const sleeve = (operations.paperWatchConsole?.sleeves || []).find((item) => item.strategyId === strategyId) || null;
+  const rawSleeve = rawSleeves.find((item) => item.strategy_id === strategyId) || null;
+  return { signalPack, strategy, operations, sleeve, rawSleeve };
+}
+
+function buildPaperSignal(strategyId) {
+  const { signalPack, strategy, operations, sleeve, rawSleeve } = paperSignalContext(strategyId);
+  if (!strategy) return null;
+  const latestSignal = rawSleeve?.latest_signal || sleeve?.latestSignal || {};
+  const latestLedger = rawSleeve?.latest_ledger || sleeve?.latestLedger || {};
+  const selectedCodes = selectedCodesList(
+    latestSignal.selected_codes || latestLedger.selected_codes || sleeve?.selectedCodes || [],
+  ).map(normalizePaperSignalCode).filter((code, index, values) => code && values.indexOf(code) === index);
+  const signalDate = dateOnly(latestSignal.signal_date || latestLedger.date || sleeve?.signalDate || signalPack.generatedAt);
+  const canTrade = Boolean(
+    sleeve?.canStartObservation
+    && ['open_allowed', 'paper_watch_open_allowed'].includes(sleeve.latestAction || latestSignal.action || '')
+    && selectedCodes.length,
+  );
+  const action = canTrade ? 'TARGET_PORTFOLIO' : 'RECORD_ONLY';
+  const gateStatus = sleeve?.gateStatus || rawSleeve?.operational_status || strategy.status || 'unknown';
+  const plannedWeightValue = Number(rawSleeve?.planned_weight ?? latestSignal.planned_weight ?? (canTrade ? 1 : 0));
+  const plannedWeight = Number.isFinite(plannedWeightValue) && plannedWeightValue >= 0 ? Math.min(1, plannedWeightValue) : 0;
+  const perPosition = selectedCodes.length ? plannedWeight / selectedCodes.length : 0;
+  const portfolio = selectedCodes.map((symbol, index) => ({
+    symbol,
+    asset_type: symbol.startsWith('5') || symbol.startsWith('1') ? 'etf' : 'stock',
+    target_weight: perPosition.toFixed(12),
+    target_quantity: null,
+    rank: index + 1,
+  }));
+  const identity = {
+    strategy_id: strategyId,
+    strategy_version: 'm-quant-route-v1',
+    sleeve_id: rawSleeve?.sleeve_id || sleeve?.sleeveId || strategyId,
+    signal_date: signalDate,
+    action,
+    gate_status: gateStatus,
+    planned_weight: plannedWeight.toFixed(12),
+    cash_target_weight: (1 - plannedWeight).toFixed(12),
+    portfolio,
+  };
+  const signalId = createHash('sha256').update(stableJson(identity)).digest('hex');
+  return {
+    schema_version: 'signal.v1',
+    signal_id: signalId,
+    strategy_id: strategyId,
+    strategy_version: 'm-quant-route-v1',
+    sleeve_id: identity.sleeve_id,
+    generated_at: new Date().toISOString(),
+    signal_date: signalDate,
+    effective_at: paperSignalTimestamp(signalDate, '09:30:00'),
+    expires_at: canTrade ? paperSignalTimestamp(signalDate, '15:00:00') : null,
+    action,
+    gate_status: gateStatus,
+    planned_weight: identity.planned_weight,
+    cash_target_weight: identity.cash_target_weight,
+    portfolio,
+    provenance: {
+      source: 'M-quant',
+      data_policy: signalPack.dataPolicy || operations?.dataPolicy || '本地研究平台生成的策略信号；不包含未来收益或实盘保证。',
+      source_date: signalDate,
+      run_id: signalPack.generatedAt || new Date().toISOString(),
+    },
+    metadata: {
+      strategy_name: strategy.name || strategyId,
+      strategy_status: strategy.status || '',
+      selected_count: selectedCodes.length,
+      export_warning: canTrade ? '' : '当前策略没有通过准模拟盘开仓门禁；该信号只能记录，不会创建订单。',
+    },
+  };
+}
+
+function paperSignalCsv(signal) {
+  const headers = ['signal_id', 'strategy_id', 'signal_date', 'symbol', 'asset_type', 'target_weight', 'target_quantity', 'rank', 'gate_status', 'action'];
+  const rows = (signal.portfolio || []).map((position) => ({
+    ...position,
+    signal_id: signal.signal_id,
+    strategy_id: signal.strategy_id,
+    signal_date: signal.signal_date,
+    gate_status: signal.gate_status,
+    action: signal.action,
+  }));
+  return [headers.join(','), ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(','))].join('\n');
+}
+
+function paperSignalContractText() {
+  const contractPath = join(projectRoot, 'docs', 'paper-signal-v1.md');
+  return existsSync(contractPath) ? readFileSync(contractPath, 'utf8') : '# M-quant signal.v1\n';
+}
+
+function paperSignalDownload(strategyId) {
+  const signal = buildPaperSignal(strategyId);
+  if (!signal) return null;
+  return {
+    signal,
+    csv: paperSignalCsv(signal),
+    zip: buildStoredZip([
+      { name: 'signal.json', content: `${JSON.stringify(signal, null, 2)}\n` },
+      { name: 'portfolio.csv', content: `\ufeff${paperSignalCsv(signal)}\n` },
+      { name: 'signal-contract.md', content: paperSignalContractText() },
+    ]),
+  };
+}
+
 async function handleApi(req, res, pathname) {
   const state = readState();
   const url = new URL(req.url || '/', `http://localhost:${port}`);
@@ -7906,6 +8118,37 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/strategy-api/paper-signal-export.json') {
+    const strategyId = url.searchParams.get('strategy') || '';
+    const download = paperSignalDownload(strategyId);
+    if (!download) {
+      sendError(res, `未知策略：${strategyId || '(empty)'}`, 404);
+      return true;
+    }
+    sendText(res, `m-quant-paper-signal-${safeFilename(strategyId)}.json`, `${JSON.stringify(download.signal, null, 2)}\n`, 'application/json; charset=utf-8');
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/strategy-api/paper-signal-export.csv') {
+    const strategyId = url.searchParams.get('strategy') || '';
+    const download = paperSignalDownload(strategyId);
+    if (!download) {
+      sendError(res, `未知策略：${strategyId || '(empty)'}`, 404);
+      return true;
+    }
+    sendCsv(res, `m-quant-paper-signal-${safeFilename(strategyId)}.csv`, download.csv);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/paper-signal-export.zip') {
+    const strategyId = url.searchParams.get('strategy') || '';
+    const download = paperSignalDownload(strategyId);
+    if (!download) {
+      sendError(res, `未知策略：${strategyId || '(empty)'}`, 404);
+      return true;
+    }
+    sendZip(res, `m-quant-paper-signal-${safeFilename(strategyId)}.zip`, download.zip);
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/strategy-api/definitions') {
     sendJson(res, readJsonFile(strategyDefinitionsPath, []));
     return true;
