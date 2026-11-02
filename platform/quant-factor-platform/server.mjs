@@ -7630,23 +7630,23 @@ function paperSignalContext(strategyId) {
   const signalPack = buildLiveStrategySignals();
   const strategies = [...(signalPack.formalStrategies || []), ...(signalPack.strategies || [])];
   const strategy = strategies.find((item) => item.id === strategyId);
-  if (!strategy) return { signalPack, strategy: null, operations: null, sleeve: null, rawSleeve: null };
+  if (!strategy) return { signalPack, strategy: null, operations: null, sleeve: null, rawSleeve: null, stressStrategy: null };
   const operations = buildPaperWatchRoutes();
   const rawSleeves = Array.isArray(operations.operationsPack?.capital_sleeves)
     ? operations.operationsPack.capital_sleeves
     : [];
   const sleeve = (operations.paperWatchConsole?.sleeves || []).find((item) => item.strategyId === strategyId) || null;
   const rawSleeve = rawSleeves.find((item) => item.strategy_id === strategyId) || null;
-  return { signalPack, strategy, operations, sleeve, rawSleeve };
+  const stressStrategy = (buildPositionStressStrategyCatalog().strategies || []).find((item) => item.strategyId === strategyId) || null;
+  return { signalPack, strategy, operations, sleeve, rawSleeve, stressStrategy };
 }
-
 function buildPaperSignal(strategyId) {
-  const { signalPack, strategy, operations, sleeve, rawSleeve } = paperSignalContext(strategyId);
+  const { signalPack, strategy, operations, sleeve, rawSleeve, stressStrategy } = paperSignalContext(strategyId);
   if (!strategy) return null;
   const latestSignal = rawSleeve?.latest_signal || sleeve?.latestSignal || {};
   const latestLedger = rawSleeve?.latest_ledger || sleeve?.latestLedger || {};
   const selectedCodes = selectedCodesList(
-    latestSignal.selected_codes || latestLedger.selected_codes || sleeve?.selectedCodes || [],
+    latestSignal.selected_codes || latestLedger.selected_codes || sleeve?.selectedCodes || stressStrategy?.selectedCodes || [],
   ).map(normalizePaperSignalCode).filter((code, index, values) => code && values.indexOf(code) === index);
   const signalDate = dateOnly(latestSignal.signal_date || latestLedger.date || sleeve?.signalDate || signalPack.generatedAt);
   const canTrade = Boolean(
