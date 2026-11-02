@@ -112,6 +112,10 @@ const elements = {
   positionStressEquityCanvas: document.querySelector('#position-stress-equity-canvas'),
   exportPositionStressEquity: document.querySelector('#export-position-stress-equity'),
   exportPositionStressTrades: document.querySelector('#export-position-stress-trades'),
+  positionStressExportJson: document.querySelector('#position-stress-export-json'),
+  positionStressExportCsv: document.querySelector('#position-stress-export-csv'),
+  positionStressExportZip: document.querySelector('#position-stress-export-zip'),
+  positionStressPaperExportStatus: document.querySelector('#position-stress-paper-export-status'),
   positionStressImportOhlcv: document.querySelector('#position-stress-import-ohlcv'),
   positionStressKlineCanvas: document.querySelector('#position-stress-kline-canvas'),
   positionStressKlineDaily: document.querySelector('#position-stress-kline-daily'),
@@ -2944,27 +2948,17 @@ function renderStrategyCard(strategy, options = {}) {
               <button type="button" data-strategy-download="${escapeHtml(strategy.specialBacktestScriptEndpoint)}">聚宽实测脚本</button>
             </div>
           ` : ''}
-          <div class="strategy-export-actions inline-actions">
-            <button type="button" data-strategy-download="${escapeHtml(paperSignalJson)}">模拟盘信号JSON</button>
-            <button type="button" data-strategy-download="${escapeHtml(paperSignalCsv)}">模拟盘组合CSV</button>
-            <button type="button" data-strategy-download="${escapeHtml(paperSignalZip)}">模拟盘导入ZIP</button>
-          </div>
-          <small class="strategy-export-note">未通过准入的策略导出为 RECORD_ONLY，只记录不创建订单。</small>
         </div>`
         : `<div class="strategy-export-actions">
           ${canSendToStress ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">选为压测策略</button>` : ''}
           <button type="button" data-strategy-download="${escapeHtml(exportBase)}">路线JSON</button>
           <button type="button" data-strategy-download="${escapeHtml(exportCsv)}">策略CSV</button>
-          <button type="button" data-strategy-download="${escapeHtml(paperSignalJson)}">模拟盘信号JSON</button>
-          <button type="button" data-strategy-download="${escapeHtml(paperSignalCsv)}">模拟盘组合CSV</button>
-          <button type="button" data-strategy-download="${escapeHtml(paperSignalZip)}">模拟盘导入ZIP</button>
           <button type="button" data-strategy-download="${escapeHtml(exportScript)}">聚宽脚本</button>
           <button type="button" data-strategy-download="${escapeHtml(historicalScript)}">历史脚本</button>
           <button type="button" data-strategy-download="${escapeHtml(volatilityRegimeScript)}">波动率脚本</button>
           <button type="button" data-strategy-download="${escapeHtml(marketCapScript)}">市值脚本</button>
           <button type="button" data-strategy-download="${escapeHtml(volatilitySizeScript)}">交叉脚本</button>
           <button type="button" data-strategy-download="${escapeHtml(tradingBacktestScript)}">回测脚本</button>
-          <small class="strategy-export-note">模拟盘导出为目标持仓信号；未通过准入时标记为 RECORD_ONLY，不会创建订单。</small>
         </div>`}
       ${strategy.exportable === false && canSendToStress ? `
         <div class="strategy-export-actions inline-actions">
@@ -4807,6 +4801,37 @@ elements.exportPositionStressTrades?.addEventListener('click', async () => {
     '导出Excel',
   );
 });
+
+function selectedPaperExportStrategy() {
+  const strategyId = selectedPositionStressStrategyId();
+  if (!strategyId) {
+    if (elements.positionStressPaperExportStatus) {
+      elements.positionStressPaperExportStatus.dataset.tone = 'error';
+      elements.positionStressPaperExportStatus.textContent = '请先选择压测策略。';
+    }
+    return '';
+  }
+  return strategyId;
+}
+
+function downloadPaperSignalFromStress(kind) {
+  const strategyId = selectedPaperExportStrategy();
+  if (!strategyId) return;
+  const endpoints = {
+    json: `/strategy-api/paper-signal-export.json?strategy=${encodeURIComponent(strategyId)}`,
+    csv: `/strategy-api/paper-signal-export.csv?strategy=${encodeURIComponent(strategyId)}`,
+    zip: `/strategy-api/paper-signal-export.zip?strategy=${encodeURIComponent(strategyId)}`,
+  };
+  window.location.href = endpoints[kind];
+  if (elements.positionStressPaperExportStatus) {
+    elements.positionStressPaperExportStatus.dataset.tone = 'success';
+    elements.positionStressPaperExportStatus.textContent = `已按当前压测策略 ${strategyId} 准备模拟盘${kind.toUpperCase()}导出。`;
+  }
+}
+
+elements.positionStressExportJson?.addEventListener('click', () => downloadPaperSignalFromStress('json'));
+elements.positionStressExportCsv?.addEventListener('click', () => downloadPaperSignalFromStress('csv'));
+elements.positionStressExportZip?.addEventListener('click', () => downloadPaperSignalFromStress('zip'));
 
 elements.positionStressStrategySelect?.addEventListener('change', async () => {
   const strategyId = elements.positionStressStrategySelect.value;
