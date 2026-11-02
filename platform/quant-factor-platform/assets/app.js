@@ -2944,6 +2944,12 @@ function renderStrategyCard(strategy, options = {}) {
               <button type="button" data-strategy-download="${escapeHtml(strategy.specialBacktestScriptEndpoint)}">聚宽实测脚本</button>
             </div>
           ` : ''}
+          <div class="strategy-export-actions inline-actions">
+            <button type="button" data-strategy-download="${escapeHtml(paperSignalJson)}">模拟盘信号JSON</button>
+            <button type="button" data-strategy-download="${escapeHtml(paperSignalCsv)}">模拟盘组合CSV</button>
+            <button type="button" data-strategy-download="${escapeHtml(paperSignalZip)}">模拟盘导入ZIP</button>
+          </div>
+          <small class="strategy-export-note">未通过准入的策略导出为 RECORD_ONLY，只记录不创建订单。</small>
         </div>`
         : `<div class="strategy-export-actions">
           ${canSendToStress ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">选为压测策略</button>` : ''}
