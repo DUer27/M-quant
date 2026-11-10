@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>量化因子策略平台</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260714-position-stress-layout" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260724-navigation-groups" />
     <script src="/config/app-config.js"></script>
   </head>
   <body>
@@ -17,19 +17,12 @@
             <span>Factor Lab</span>
           </div>
         </div>
-        <nav class="nav">
+        <nav class="nav" aria-label="主导航">
           <button class="active" data-view-target="dashboard">总览</button>
-          <button data-view-target="factor-library">因子库</button>
-          <button data-view-target="strategy-library">策略池</button>
+          <button class="group-nav" data-view-target="research-strategy" aria-controls="research-strategy-subnav">研究与策略</button>
+          <button class="group-nav" data-view-target="evidence-retest" aria-controls="evidence-retest-subnav">证据与复测</button>
           <button data-view-target="paper-watch">准模拟盘</button>
           <button data-view-target="position-stress">建仓压力测试</button>
-          <button data-view-target="research-pipeline">研究流水线</button>
-          <button data-view-target="backtest-center">回测中心</button>
-          <button data-view-target="validated-results">实测结果</button>
-          <button data-view-target="factor-activity">因子活性</button>
-          <button data-view-target="strategy-results">策略实测</button>
-          <button data-view-target="dashboard">风控监控</button>
-          <button data-view-target="dashboard">系统配置</button>
         </nav>
       </aside>
 
@@ -46,6 +39,29 @@
           </div>
         </header>
 
+        <div id="research-strategy-subnav" class="view-subnav" data-view-subnav="research-strategy" aria-label="研究与策略子页面" hidden>
+          <div class="view-subnav-heading">
+            <span class="eyebrow">Research &amp; Strategy</span>
+            <strong>研究与策略</strong>
+          </div>
+          <div class="view-subnav-actions" role="tablist" aria-label="研究与策略子页面切换">
+            <button class="active" type="button" role="tab" aria-selected="true" data-subview-target="factor-library">因子库</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="strategy-library">策略池</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="research-pipeline">研究流水线</button>
+          </div>
+        </div>
+        <div id="evidence-retest-subnav" class="view-subnav" data-view-subnav="evidence-retest" aria-label="证据与复测子页面" hidden>
+          <div class="view-subnav-heading">
+            <span class="eyebrow">Evidence &amp; Validation</span>
+            <strong>证据与复测</strong>
+          </div>
+          <div class="view-subnav-actions" role="tablist" aria-label="证据与复测子页面切换">
+            <button class="active" type="button" role="tab" aria-selected="true" data-subview-target="backtest-center">复测中心</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="validated-results">实测结果</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="factor-activity">因子活性</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="strategy-results">策略实测</button>
+          </div>
+        </div>
         <div id="dashboard-view" class="view active">
           <section class="metrics-grid" aria-label="核心指标">
             <article class="metric">
@@ -1100,7 +1116,6 @@
 	                    <th>历史收益</th>
                     <th>年化参考</th>
                     <th>赚钱次数占比</th>
-                    <th>最好/最差一次</th>
                     <th>候选数</th>
                     <th>来源</th>
                     <th>判断</th>
@@ -1115,6 +1130,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260724-factor-activity"></script>
+    <script type="module" src="/assets/app.js?v=20260724-navigation-groups"></script>
   </body>
 </html>

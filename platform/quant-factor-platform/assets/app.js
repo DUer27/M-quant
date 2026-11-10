@@ -86,6 +86,8 @@ const elements = {
   librarySourceKind: document.querySelector('#library-source-kind'),
   libraryUnavailableCount: document.querySelector('#library-unavailable-count'),
   navButtons: document.querySelectorAll('.nav button[data-view-target]'),
+  subnavButtons: document.querySelectorAll('[data-subview-target]'),
+  subnavs: document.querySelectorAll('[data-view-subnav]'),
   paperWatchControls: document.querySelector('#paper-watch-controls'),
   paperWatchConsoleSummary: document.querySelector('#paper-watch-console-summary'),
   paperWatchLedgerJson: document.querySelector('#paper-watch-ledger-json'),
@@ -4262,13 +4264,56 @@ function updatePositionStressKlineTooltip(event) {
   refreshPositionStressKline();
 }
 
+const viewGroups = {
+  'research-strategy': {
+    defaultView: 'factor-library',
+    subnav: 'research-strategy',
+    views: ['factor-library', 'strategy-library', 'research-pipeline'],
+  },
+  'evidence-retest': {
+    defaultView: 'backtest-center',
+    subnav: 'evidence-retest',
+    views: ['backtest-center', 'validated-results', 'factor-activity', 'strategy-results'],
+  },
+};
+
+const activeGroupViews = {
+  'research-strategy': 'factor-library',
+  'evidence-retest': 'backtest-center',
+};
+
+function groupForView(viewName) {
+  return Object.entries(viewGroups).find(([, group]) => group.views.includes(viewName))?.[0] || null;
+}
+
 function showView(viewName) {
+  const groupName = viewGroups[viewName] ? viewName : groupForView(viewName);
+  const resolvedView = groupName
+    ? (viewGroups[groupName].defaultView && viewGroups[groupName].views.includes(viewName)
+      ? viewName
+      : activeGroupViews[groupName] || viewGroups[groupName].defaultView)
+    : viewName;
+
+  if (groupName) activeGroupViews[groupName] = resolvedView;
+
   elements.views.forEach((view) => {
-    view.classList.toggle('active', view.id === `${viewName}-view`);
+    view.classList.toggle('active', view.id === `${resolvedView}-view`);
   });
 
   elements.navButtons.forEach((button) => {
-    button.classList.toggle('active', button.dataset.viewTarget === viewName);
+    const target = button.dataset.viewTarget;
+    button.classList.toggle('active', target === (groupName || resolvedView));
+  });
+
+  elements.subnavs.forEach((subnav) => {
+    const isVisible = groupName && subnav.dataset.viewSubnav === groupName;
+    subnav.hidden = !isVisible;
+  });
+
+  elements.subnavButtons.forEach((button) => {
+    const isActive = button.dataset.subviewTarget === resolvedView;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-selected', String(isActive));
   });
 }
 
@@ -5031,6 +5076,13 @@ elements.askResearchAssistant?.addEventListener('click', async () => {
 elements.navButtons.forEach((button) => {
   button.addEventListener('click', () => {
     showView(button.dataset.viewTarget);
+    requestAnimationFrame(syncCollapsibleData);
+  });
+});
+
+elements.subnavButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    showView(button.dataset.subviewTarget);
     requestAnimationFrame(syncCollapsibleData);
   });
 });
