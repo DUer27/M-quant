@@ -7658,14 +7658,21 @@ function buildPaperSignal(strategyId) {
   const gateStatus = sleeve?.gateStatus || rawSleeve?.operational_status || strategy.status || 'unknown';
   const plannedWeightValue = Number(rawSleeve?.planned_weight ?? latestSignal.planned_weight ?? (canTrade ? 1 : 0));
   const plannedWeight = Number.isFinite(plannedWeightValue) && plannedWeightValue >= 0 ? Math.min(1, plannedWeightValue) : 0;
-  const perPosition = selectedCodes.length ? plannedWeight / selectedCodes.length : 0;
-  const portfolio = selectedCodes.map((symbol, index) => ({
-    symbol,
-    asset_type: symbol.startsWith('5') || symbol.startsWith('1') ? 'etf' : 'stock',
-    target_weight: perPosition.toFixed(12),
-    target_quantity: null,
-    rank: index + 1,
-  }));
+  const plannedUnits = Math.max(0, Math.round(plannedWeight * 1_000_000_000_000));
+  const baseUnits = selectedCodes.length ? Math.floor(plannedUnits / selectedCodes.length) : 0;
+  const portfolio = selectedCodes.map((symbol, index) => {
+    const units = index === selectedCodes.length - 1
+      ? plannedUnits - baseUnits * (selectedCodes.length - 1)
+      : baseUnits;
+    const targetWeight = units / 1_000_000_000_000;
+    return {
+      symbol,
+      asset_type: symbol.startsWith('5') || symbol.startsWith('1') ? 'etf' : 'stock',
+      target_weight: targetWeight.toFixed(12),
+      target_quantity: null,
+      rank: index + 1,
+    };
+  });
   const identity = {
     strategy_id: strategyId,
     strategy_version: 'm-quant-route-v1',
