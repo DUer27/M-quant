@@ -18,8 +18,8 @@
           </div>
         </div>
         <nav class="nav" aria-label="主导航">
-          <button class="active" data-view-target="dashboard">总览</button>
-          <button class="group-nav" data-view-target="research-strategy" aria-controls="research-strategy-subnav">研究与策略</button>
+          <button data-view-target="dashboard">总览</button>
+          <button class="group-nav active" data-view-target="research-strategy" aria-controls="research-strategy-subnav">研究与策略</button>
           <button class="group-nav" data-view-target="evidence-retest" aria-controls="evidence-retest-subnav">证据与复测</button>
           <button data-view-target="paper-watch">准模拟盘</button>
           <button data-view-target="position-stress">建仓压力测试</button>
@@ -39,13 +39,13 @@
           </div>
         </header>
 
-        <div id="research-strategy-subnav" class="view-subnav" data-view-subnav="research-strategy" aria-label="研究与策略子页面" hidden>
+        <div id="research-strategy-subnav" class="view-subnav" data-view-subnav="research-strategy" aria-label="研究与策略子页面">
           <div class="view-subnav-heading">
             <span class="eyebrow">Research &amp; Strategy</span>
             <strong>研究与策略</strong>
           </div>
           <div class="view-subnav-actions" role="tablist" aria-label="研究与策略子页面切换">
-            <button class="active" type="button" role="tab" aria-selected="true" data-subview-target="factor-library">因子库</button>
+            <button class="active" type="button" role="tab" aria-selected="true" data-subview-target="research-agent">研究智能体</button>
             <button type="button" role="tab" aria-selected="false" data-subview-target="strategy-library">策略池</button>
             <button type="button" role="tab" aria-selected="false" data-subview-target="research-pipeline">研究流水线</button>
           </div>
@@ -314,6 +314,120 @@
           </section>
         </div>
 
+        <div id="research-agent-view" class="view active research-agent-page">
+          <section class="panel research-agent-hero">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Local Research Agent</p>
+                <h2>研究智能体</h2>
+                <p class="agent-intro">基于当前 M-quant 真实数据和本地规则，帮助整理研究证据、识别缺口并给出下一步。</p>
+              </div>
+              <div id="research-agent-status" class="assistant-status">
+                <span class="tag pending">本地规则</span>
+                <span>不接入外部 LLM，只读取当前页面已加载的 API 数据。</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="research-agent-context-grid" aria-label="研究智能体当前上下文">
+            <article class="agent-context-card">
+              <span>当前策略</span>
+              <strong id="research-agent-current-strategy">等待 API 数据</strong>
+              <small id="research-agent-current-strategy-id">-</small>
+            </article>
+            <article class="agent-context-card">
+              <span>最新状态</span>
+              <strong id="research-agent-latest-status">等待刷新</strong>
+              <small id="research-agent-latest-status-detail">-</small>
+            </article>
+            <article class="agent-context-card">
+              <span>数据日期</span>
+              <strong id="research-agent-data-date">-</strong>
+              <small id="research-agent-data-date-detail">来自当前真实截面/信号</small>
+            </article>
+            <article class="agent-context-card">
+              <span>证据状态</span>
+              <strong id="research-agent-evidence-status">等待加载</strong>
+              <small id="research-agent-evidence-detail">-</small>
+            </article>
+          </section>
+
+          <section class="content-grid research-agent-layout">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Task Templates</p>
+                  <h2>研究任务</h2>
+                </div>
+              </div>
+              <label class="agent-field">
+                分析方向
+                <select id="research-agent-direction" aria-label="研究智能体分析方向">
+                  <option value="strategy_data_analysis">策略数据分析</option>
+                  <option value="factor_quality_activity">因子质量与活性</option>
+                  <option value="strategy_evidence_admission">策略证据与准入</option>
+                  <option value="backtest_layering">回测与分层</option>
+                  <option value="stress_execution">压力测试与执行</option>
+                  <option value="paper_pnl_review">模拟盘盈亏复盘</option>
+                  <option value="data_gaps_next_steps">数据缺口与下一步</option>
+                </select>
+              </label>
+              <div class="agent-quick-tasks" id="research-agent-quick-tasks" aria-label="快捷任务">
+                <button type="button" data-agent-task="当前策略有哪些真实证据和风险？">检查当前策略</button>
+                <button type="button" data-agent-task="当前因子质量与活性如何，哪些需要补测？">检查因子活性</button>
+                <button type="button" data-agent-task="当前距离准入还缺什么证据？">检查准入缺口</button>
+                <button type="button" data-agent-task="回测和分层下一步应该怎么做？">规划回测</button>
+                <button type="button" data-agent-task="压力测试与执行链路有哪些阻塞？">检查压力测试</button>
+                <button type="button" data-agent-task="模拟盘当前是否有可复盘的真实盈亏？">复盘模拟盘</button>
+                <button type="button" data-agent-task="当前数据缺口和下一步优先级是什么？">列出数据缺口</button>
+              </div>
+              <label class="agent-field">
+                研究问题
+                <textarea id="research-agent-input" rows="5" placeholder="例如：当前策略离受控模拟观察还差什么证据？只根据真实数据回答。"></textarea>
+              </label>
+              <div class="assistant-actions agent-submit-row">
+                <span class="agent-readonly-hint">只读分析，不执行策略变更。</span>
+                <button id="ask-research-agent" class="primary" type="button">分析问题</button>
+              </div>
+            </section>
+
+            <section class="panel research-agent-answer-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Grounded Answer</p>
+                  <h2>回答</h2>
+                </div>
+              </div>
+              <div id="research-agent-answer" class="research-agent-answer">
+                <div class="agent-empty-state">选择一个分析方向或快捷任务，回答将只基于本地规则和真实数据。</div>
+              </div>
+              <div class="agent-evidence-block">
+                <h3>证据来源</h3>
+                <div id="research-agent-evidence" class="agent-list"><div class="agent-empty-state">尚未生成回答。</div></div>
+              </div>
+              <div class="agent-evidence-block">
+                <h3>下一步建议</h3>
+                <div id="research-agent-next-steps" class="agent-list"><div class="agent-empty-state">尚未生成回答。</div></div>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel research-agent-constraints">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Read Only Policy</p>
+                <h2>只读约束</h2>
+              </div>
+              <span class="tag pending">本地规则回答</span>
+            </div>
+            <ul class="agent-constraint-list">
+              <li>不改策略、不改准入。</li>
+              <li>不自动下单、不触发交易执行。</li>
+              <li>不生成未验证收益，不把候选、模拟观察或压力测试当作实盘结论。</li>
+              <li>证据不足时明确标记数据缺口，并给出可验证的下一步。</li>
+            </ul>
+          </section>
+        </div>
         <div id="factor-library-view" class="view">
           <section class="metrics-grid" aria-label="因子库指标">
             <article class="metric">

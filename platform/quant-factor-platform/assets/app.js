@@ -156,7 +156,22 @@ const elements = {
   importPaperWatchLedger: document.querySelector('#import-paper-watch-ledger'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
-  askResearchAssistant: document.querySelector('#ask-research-assistant'),
+  askResearchAgent: document.querySelector('#ask-research-agent'),
+  researchAgentAnswer: document.querySelector('#research-agent-answer'),
+  researchAgentCurrentStrategy: document.querySelector('#research-agent-current-strategy'),
+  researchAgentCurrentStrategyId: document.querySelector('#research-agent-current-strategy-id'),
+  researchAgentDataDate: document.querySelector('#research-agent-data-date'),
+  researchAgentDataDateDetail: document.querySelector('#research-agent-data-date-detail'),
+  researchAgentDirection: document.querySelector('#research-agent-direction'),
+  researchAgentEvidence: document.querySelector('#research-agent-evidence'),
+  researchAgentEvidenceDetail: document.querySelector('#research-agent-evidence-detail'),
+  researchAgentEvidenceStatus: document.querySelector('#research-agent-evidence-status'),
+  researchAgentInput: document.querySelector('#research-agent-input'),
+  researchAgentLatestStatus: document.querySelector('#research-agent-latest-status'),
+  researchAgentLatestStatusDetail: document.querySelector('#research-agent-latest-status-detail'),
+  researchAgentNextSteps: document.querySelector('#research-agent-next-steps'),
+  researchAgentStatus: document.querySelector('#research-agent-status'),
+  researchAgentQuickTasks: document.querySelector('#research-agent-quick-tasks'),
   refreshBacktestCenter: document.querySelector('#refresh-backtest-center'),
   researchActionList: document.querySelector('#research-action-list'),
   researchAssistantFactor: document.querySelector('#research-assistant-factor'),
@@ -5072,6 +5087,64 @@ elements.askResearchAssistant?.addEventListener('click', async () => {
     elements.askResearchAssistant.disabled = false;
   }
 });
+function renderResearchAgentContext() {
+  const signalPack = currentStrategySignalPack || {};
+  const catalog = currentPositionStressCatalog || {};
+  const current = catalog.current || {};
+  const strategy = (signalPack.formalStrategies || []).concat(signalPack.strategies || []).find((item) => item.id === current.strategyId) || current;
+  const status = current.gateStatus || current.gate_status || strategy.status || '等待加载';
+  const date = current.signalDate || signalPack.generatedAt || '-';
+  if (elements.researchAgentCurrentStrategy) elements.researchAgentCurrentStrategy.textContent = strategy.name || '暂无当前策略';
+  if (elements.researchAgentCurrentStrategyId) elements.researchAgentCurrentStrategyId.textContent = strategy.id || current.strategyId || '-';
+  if (elements.researchAgentLatestStatus) elements.researchAgentLatestStatus.textContent = status;
+  if (elements.researchAgentLatestStatusDetail) elements.researchAgentLatestStatusDetail.textContent = current.runnableReason || strategy.validationState || '上下文来自当前真实 API。';
+  if (elements.researchAgentDataDate) elements.researchAgentDataDate.textContent = dateOnly(date) || '-';
+  if (elements.researchAgentEvidenceStatus) elements.researchAgentEvidenceStatus.textContent = signalPack.formalStrategies?.length ? '有策略证据' : '证据待补齐';
+  if (elements.researchAgentEvidenceDetail) elements.researchAgentEvidenceDetail.textContent = '回答只使用研究流水线、复测状态、因子活性、策略信号和压力测试目录。';
+}
+
+function renderResearchAgentResponse(response) {
+  const answer = Array.isArray(response?.answer) ? response.answer : [response?.answer || '暂无本地规则回答。'];
+  const evidence = Array.isArray(response?.evidence) ? response.evidence : [];
+  const nextSteps = Array.isArray(response?.nextSteps) ? response.nextSteps : [];
+  if (elements.researchAgentAnswer) elements.researchAgentAnswer.innerHTML = `<ul>${answer.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+  if (elements.researchAgentEvidence) elements.researchAgentEvidence.innerHTML = evidence.length ? evidence.map((item) => `<div class="agent-list-item"><strong>${escapeHtml(item.name || '来源')}</strong><span>${escapeHtml(item.detail || item.source || '-')}</span></div>`).join('') : '<div class="agent-empty-state">暂无结构化来源。</div>';
+  if (elements.researchAgentNextSteps) elements.researchAgentNextSteps.innerHTML = [...nextSteps, ...(response?.limitations || [])].map((item) => `<div class="agent-list-item"><span>${escapeHtml(item)}</span></div>`).join('') || '<div class="agent-empty-state">暂无下一步建议。</div>';
+}
+
+elements.researchAgentQuickTasks?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-agent-task]');
+  if (!button || !elements.researchAgentInput) return;
+  elements.researchAgentInput.value = button.dataset.agentTask || '';
+  elements.researchAgentInput.focus();
+});
+
+elements.askResearchAgent?.addEventListener('click', async () => {
+  const message = elements.researchAgentInput?.value?.trim() || '';
+  const direction = elements.researchAgentDirection?.value || 'strategy_data_analysis';
+  if (!message) {
+    if (elements.researchAgentAnswer) elements.researchAgentAnswer.innerHTML = '<div class="agent-empty-state">请先选择快捷任务或输入研究问题。</div>';
+    return;
+  }
+  elements.askResearchAgent.disabled = true;
+  if (elements.researchAgentStatus) elements.researchAgentStatus.innerHTML = '<span class="tag pending">分析中</span><span>正在读取当前真实数据与证据状态。</span>';
+  try {
+    const response = await request('/research-api/assistant', { body: JSON.stringify({ direction, message }), method: 'POST' });
+    renderResearchAgentResponse(response);
+    if (elements.researchAgentStatus) elements.researchAgentStatus.innerHTML = '<span class="tag good">本地规则</span><span>回答已生成；未执行任何策略或交易操作。</span>';
+  } catch (error) {
+    if (elements.researchAgentAnswer) elements.researchAgentAnswer.innerHTML = `<div class="agent-empty-state">分析失败：${escapeHtml(error.message)}</div>`;
+  } finally {
+    elements.askResearchAgent.disabled = false;
+  }
+});
+
+const originalRefreshDashboard = refreshDashboard;
+refreshDashboard = async function refreshDashboardWithAgent() {
+  const result = await originalRefreshDashboard();
+  renderResearchAgentContext();
+  return result;
+};
 
 elements.navButtons.forEach((button) => {
   button.addEventListener('click', () => {

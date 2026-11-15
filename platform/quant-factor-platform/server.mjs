@@ -6101,9 +6101,9 @@ function buildResearchPipeline() {
 
   return {
     assistant: {
-      llmStatus: process.env.M_QUANT_LLM_PROVIDER ? 'configured' : 'not_configured',
-      mode: process.env.M_QUANT_LLM_PROVIDER ? 'llm_ready' : 'local_grounded_assistant',
-      policy: '助手只允许基于项目真实数据、真实回填结果和明确缺口输出建议；未接入模型时使用本地规则解释。',
+      llmStatus: 'not_configured',
+      mode: 'local_grounded_assistant',
+      policy: '研究智能体只使用项目真实数据、真实回填结果和明确缺口；不接入外部 LLM，不修改策略、准入或交易状态。',
     },
     blockers: backtestStatus.blockers,
     entries,
@@ -6302,8 +6302,12 @@ function buildFactorActivityReport() {
   };
 }
 
-function buildAssistantResponse(message, factorId) {
+function buildAssistantResponse(message, factorId, direction, context = {}) {
   const pipeline = buildResearchPipeline();
+  const backtest = buildBacktestResearchStatus();
+  const activity = buildFactorActivityReport();
+  const signalPack = buildLiveStrategySignals();
+  const stressCatalog = buildPositionStressStrategyCatalog();
   const text = String(message || '').trim();
   const lower = text.toLowerCase();
   const selected = factorId
@@ -6313,39 +6317,71 @@ function buildAssistantResponse(message, factorId) {
   const testedEntries = pipeline.entries.filter((entry) => entry.resultCount > 0);
   const waitingEntries = pipeline.entries.filter((entry) => entry.status === 'waiting_test' || entry.status === 'tracking');
   const blockedEntries = pipeline.entries.filter((entry) => entry.status === 'requires_more_data' || entry.status === 'unavailable');
-
-  const bullets = [];
+  const directionText = {
+    strategy_data_analysis: '策略数据分析',
+    factor_quality_activity: '因子质量与活性',
+    strategy_evidence_admission: '策略证据与准入',
+    backtest_layering: '回测与分层',
+    stress_execution: '压力测试与执行',
+    paper_pnl_review: '模拟盘盈亏复盘',
+    data_gaps_next_steps: '数据缺口与下一步',
+  }[direction] || '综合研究';
+  const bullets = [`分析方向：${directionText}（本地规则回答）`];
   if (selected) {
     bullets.push(`${selected.name}：${selected.decision}。${selected.evidence}`);
     bullets.push(`当前阶段：${selected.stage}；真实结果 ${selected.resultCount} 条，历史结果 ${selected.test.historicalCount} 条。`);
     if (selected.test.bestRankIc !== null) bullets.push(`最佳 RankIC：${Number(selected.test.bestRankIc).toFixed(4)}；RankIC t：${selected.test.bestRankIcT === null ? '缺失' : Number(selected.test.bestRankIcT).toFixed(2)}。`);
     if (selected.dataGaps.length) bullets.push(`数据缺口：${selected.dataGaps.join('；')}`);
     bullets.push(`下一步：${selected.nextAction}`);
-  } else if (lower.includes('缺') || text.includes('数据') || text.includes('采集')) {
+  } else if (direction === 'factor_quality_activity' || lower.includes('活性') || lower.includes('因子')) {
+    bullets.push(activity.summary?.headline || `因子流水线当前跟踪 ${pipeline.metrics.factorCount} 个因子，其中 ${pipeline.metrics.testedCount} 个已有真实回填结果。`);
+    bullets.push(`活跃 ${activity.metrics.activeCount} 个、观察 ${activity.metrics.watchCount} 个、待测/休眠 ${activity.metrics.dormantCount} 个、阻塞 ${activity.metrics.blockedCount} 个；没有真实证据的因子不作收益结论。`);
+    bullets.push(activity.summary?.nextAction || '先补历史截面和真实回测结果。');
+  } else if (direction === 'strategy_evidence_admission' || lower.includes('准入') || lower.includes('证据')) {
+    const formal = signalPack.formalPolicy || {};
+    bullets.push(formal.description || '当前策略证据仍需按策略级回测、分层、交易成本和样本外结果检查。');
+    bullets.push((formal.requiredEvidence || []).slice(0, 4).join('；') || '策略级收益、回撤、换手和成本敏感性仍需真实回填。');
+    bullets.push(`当前策略候选 ${signalPack.formalStrategies?.length || 0} 条；候选状态不等于准入通过。`);
+  } else if (direction === 'backtest_layering' || lower.includes('回测') || lower.includes('复测') || lower.includes('分层')) {
+    bullets.push(`复测数据 ${backtest.source.rows} 行、${backtest.source.uniqueDates} 个交易日、${backtest.source.uniqueStocks} 只股票；本地状态 ${backtest.metrics.localStatus}。`);
+    bullets.push('正式验证应覆盖 5/10/20 日未来收益、分组收益、策略净值，并完成大/中/小市值与高/中/低波动交叉分层。');
+    bullets.push(backtest.blockers.map((item) => `${item.title}：${item.detail}`).join('；'));
+  } else if (direction === 'stress_execution' || lower.includes('压力') || lower.includes('执行')) {
+    bullets.push(`建仓压力测试目录 ${stressCatalog.strategies.length} 条，其中 ${stressCatalog.strategies.filter((item) => item.runnable).length} 条可运行；${stressCatalog.dataPolicy}`);
+    bullets.push('压力测试只检查真实行情覆盖、成本、成交率、容量和延迟等执行链路，不改变策略或准入。');
+    bullets.push('下一步：选择已达准入审计的策略，确认请求日期真实行情完整后再运行。');
+  } else if (direction === 'paper_pnl_review' || lower.includes('模拟盘') || lower.includes('盈亏')) {
+    bullets.push('模拟盘盈亏只认本地账本中的真实观察收益字段；没有真实收益记录时不生成净值、胜率或收益推断。');
+    bullets.push('当前回答不自动导入账本、不生成订单，也不把信号候选当作成交结果。');
+    bullets.push('下一步：导入实际观察记录，再按策略、日期、信号状态和成交状态复盘。');
+  } else if (direction === 'data_gaps_next_steps' || lower.includes('缺') || text.includes('数据') || text.includes('采集')) {
     bullets.push(`当前最大缺口是历史深度：${pipeline.source.uniqueDates} 个交易日，项目内本地复测最低建议 60 日，专业验证建议 120-240 日。`);
-    bullets.push('还需要未来收益标签、交易日历、停牌/涨跌停和复权行情，才能在项目内完整计算 RankIC、分组收益和多空收益。');
+    bullets.push('还需要未来收益标签、交易日历、停牌/涨跌停和复权行情，才能完整计算 RankIC、分组收益和多空收益。');
     bullets.push(`等待字段或历史补齐的因子有 ${blockedEntries.length} 个。`);
   } else if (text.includes('哪个') || text.includes('最好') || text.includes('优先')) {
-    if (candidateEntries.length) {
-      bullets.push(`当前可优先关注 ${candidateEntries.length} 个重点候选：${candidateEntries.map((entry) => entry.name).join('、')}。`);
-      bullets.push('优先级依据来自真实回填的 RankIC/多空收益/历史样本，不包含估算绩效。');
-    } else {
-      bullets.push('当前没有满足重点候选规则的因子，建议先扩大历史样本或继续导入 JoinQuant 实测结果。');
-    }
-  } else if (text.includes('回测') || text.includes('复测')) {
-    bullets.push(`已有 ${testedEntries.length} 个因子导入过真实测试结果，${waitingEntries.length} 个因子仍需要继续复测或补历史。`);
-    bullets.push('短期仍建议用 JoinQuant 处理未来收益、停牌、涨跌停和复权；项目内回测需要先导入多日行情和未来收益。');
+    bullets.push(candidateEntries.length ? `当前可优先关注 ${candidateEntries.length} 个重点候选：${candidateEntries.map((entry) => entry.name).join('、')}。` : '当前没有满足重点候选规则的因子，建议先扩大历史样本或继续导入真实实测结果。');
+    bullets.push('优先级依据来自真实回填的 RankIC、多空收益和历史样本，不包含估算绩效。');
   } else {
     bullets.push(`因子研究流水线当前跟踪 ${pipeline.metrics.factorCount} 个因子，其中 ${pipeline.metrics.testedCount} 个已有真实回填结果。`);
     bullets.push(`重点候选 ${pipeline.metrics.strategyCandidateCount} 个，等待复测/跟踪 ${pipeline.metrics.waitingTestCount} 个，等待数据 ${pipeline.metrics.blockedCount} 个。`);
-    bullets.push('你可以问：哪个因子优先、某个因子缺什么数据、下一步如何复测、能不能进策略池。');
+    bullets.push('可以继续选择固定方向，或询问当前策略证据、分层回测、压力测试和模拟盘真实账本。');
   }
-
+  const source = [
+    { name: '研究流水线', detail: pipeline.source?.file || 'buildResearchPipeline' },
+    { name: '复测状态', detail: `${backtest.source?.file || 'buildBacktestResearchStatus'}；${backtest.source?.uniqueDates || 0} 个交易日` },
+    { name: '因子活性', detail: activity.source?.file || 'buildFactorActivityReport' },
+    { name: '策略信号', detail: signalPack.source?.file || 'buildLiveStrategySignals' },
+    { name: '压力测试目录', detail: 'buildPositionStressStrategyCatalog' },
+  ];
   return {
     answer: bullets,
+    context: { ...context, direction: directionText },
+    evidence: source,
     factor: selected?.factorId || null,
     generatedAt: new Date().toISOString(),
-    mode: pipeline.assistant.mode,
+    limitations: ['只读分析；不改策略、不改准入、不自动下单。', '没有真实未来收益或成交记录时，不生成未验证收益。'],
+    mode: 'local_grounded_assistant',
+    nextSteps: [selected?.nextAction || activity.summary?.nextAction || '补足真实历史、回测或账本证据后再复核。'],
     policy: pipeline.assistant.policy,
   };
 }
@@ -8360,7 +8396,7 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'POST' && pathname === '/research-api/assistant') {
     const body = await readJsonBody(req);
-    sendJson(res, buildAssistantResponse(body.message, body.factorId));
+    sendJson(res, buildAssistantResponse(body.message, body.factorId, body.direction, body.context || {}));
     return true;
   }
 
