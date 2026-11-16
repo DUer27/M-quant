@@ -7783,10 +7783,73 @@ function paperSignalDownload(strategyId) {
   };
 }
 
+function buildExecutionCatalog() {
+  const catalog = buildPositionStressStrategyCatalog();
+  const strategies = (catalog.strategies || []).map((item) => {
+    const signal = buildPaperSignal(item.strategyId);
+    return {
+      strategy_id: item.strategyId,
+      strategy_name: item.name,
+      strategy_version: 'm-quant-route-v1',
+      runnable: Boolean(item.runnable),
+      gate_status: item.gateStatus || '',
+      runnable_reason: item.runnableReason || '',
+      selected_count: Array.isArray(item.selectedCodes) ? item.selectedCodes.length : 0,
+      signal_date: signal?.signal_date || '',
+      action: signal?.action || 'RECORD_ONLY',
+      portfolio_count: signal?.portfolio?.length || 0,
+      data_policy: signal?.provenance?.data_policy || '',
+    };
+  });
+  return {
+    schema_version: 'execution-catalog.v1',
+    generated_at: new Date().toISOString(),
+    mode: 'PAPER',
+    source: 'M-quant',
+    data_policy: '只返回当前策略准入、信号和目标组合状态；不自动修改策略、不执行 LIVE 交易。',
+    current_strategy_id: catalog.current?.strategyId || '',
+    strategies,
+  };
+}
+
+function buildExecutionHealth() {
+  const catalog = buildExecutionCatalog();
+  return {
+    schema_version: 'execution-health.v1',
+    service: 'quant-factor-platform',
+    mode: 'PAPER',
+    api_version: 'execution.v1',
+    status: 'OK',
+    generated_at: new Date().toISOString(),
+    strategy_count: catalog.strategies.length,
+    runnable_count: catalog.strategies.filter((item) => item.runnable).length,
+  };
+}
+
 async function handleApi(req, res, pathname) {
   const state = readState();
   const url = new URL(req.url || '/', `http://localhost:${port}`);
 
+  if (req.method === 'GET' && pathname === '/strategy-api/execution-health') {
+    sendJson(res, buildExecutionHealth());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/execution-catalog') {
+    sendJson(res, buildExecutionCatalog());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/execution-signal') {
+    const strategyId = url.searchParams.get('strategy') || '';
+    const signal = buildPaperSignal(strategyId);
+    if (!signal) {
+      sendError(res, `未知策略：${strategyId || '(empty)'}`, 404);
+      return true;
+    }
+    sendJson(res, signal);
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/api/health') {
     sendJson(res, { ok: true, service: 'quant-factor-platform', timestamp: new Date().toISOString() });
     return true;
