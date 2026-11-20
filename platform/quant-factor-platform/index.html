@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>量化因子策略平台</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260724-navigation-groups" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260913-progressive-dashboard" />
     <script src="/config/app-config.js"></script>
   </head>
   <body>
@@ -42,6 +42,10 @@
               <span>开发环境</span>
               <strong id="api-url">/api</strong>
             </div>
+          </div>
+          <div class="load-strip" id="data-load-strip" hidden>
+            <span class="load-spinner"></span>
+            <span id="data-load-text">数据加载中…</span>
           </div>
         </header>
 
@@ -1250,6 +1254,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260724-navigation-groups"></script>
+    <script type="module" src="/assets/app.js?v=20260913-progressive-dashboard"></script>
   </body>
 </html>

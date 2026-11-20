@@ -56,6 +56,8 @@ const elements = {
   backtestStatusList: document.querySelector('#backtest-status-list'),
   buildBigquantPaperWatchPack: document.querySelector('#build-bigquant-paper-watch-pack'),
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
+  dataLoadStrip: document.querySelector('#data-load-strip'),
+  dataLoadText: document.querySelector('#data-load-text'),
   demoFactorCount: document.querySelector('#demo-factor-count'),
   downloadJoinquantCsv: document.querySelector('#download-joinquant-csv'),
   downloadJoinquantFactorScript: document.querySelector('#download-joinquant-factor-script'),
@@ -4393,43 +4395,76 @@ function drawChart(equity) {
   ctx.fillRect(padding + 202, 16, 24, 4);
 }
 
-async function refreshDashboard() {
-  const positionStressReportUrl = positionStressReportEndpoint();
-  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, factorActivity, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog, positionStressHistory] = await Promise.all([
-    request('/api/summary'),
-    request('/factor-api/real-factor-results?limit=100'),
-    request('/backtest-api/equity'),
-    request('/api/risk'),
-    request('/strategy-api/paper-watch-routes'),
-    request('/factor-api/real-factor-summary'),
-    request('/factor-api/activity'),
-    request('/strategy-api/definitions'),
-    request('/factor-api/indicator-factor-definitions'),
-    request('/strategy-api/live-signals'),
-    request('/backtest-api/research-status'),
-    request('/research-api/pipeline'),
-    request(positionStressReportUrl),
-    request('/position-stress-api/strategies'),
-    request('/position-stress-api/history'),
-  ]);
+function setDashboardLoading(isLoading, failures = []) {
+  if (!elements.dataLoadStrip || !elements.dataLoadText) return;
+  const strip = elements.dataLoadStrip;
+  if (isLoading) {
+    delete strip.dataset.tone;
+    elements.dataLoadText.textContent = '数据加载中…';
+    strip.hidden = false;
+    return;
+  }
+  if (failures.length) {
+    strip.dataset.tone = 'error';
+    elements.dataLoadText.textContent = `部分板块加载失败：${failures.join('、')}`;
+    return;
+  }
+  strip.hidden = true;
+}
 
-  currentPositionStressCatalog = positionStressCatalog;
-  renderSummary(summary);
-  renderFactors(factors);
-  renderRisk(risks);
-  renderPaperWatchRoutes(paperWatchRoutes);
-  drawChart(equity);
-  renderFactorLibrary(factorSummary, strategies, factorDefinitions, researchPipeline);
-  renderStrategyLibrary(strategies);
-  renderLiveStrategies(liveStrategies);
-  renderBacktestCenter(backtestStatus);
-  renderFactorActivity(factorActivity);
-  renderResearchPipeline(researchPipeline);
-  renderPositionStress(positionStress);
-  renderPositionStressHistory(positionStressHistory);
-  renderPositionStressCatalog(positionStressCatalog);
+async function refreshDashboard() {
+  setDashboardLoading(true);
+  const failures = [];
+  const tasks = [];
+  const track = (label, task, render) => {
+    tasks.push(
+      task
+        .then((data) => render(data))
+        .catch((error) => {
+          failures.push(label);
+          console.error(`[dashboard] ${label}加载失败`, error);
+        }),
+    );
+  };
+
+  const strategiesTask = request('/strategy-api/definitions');
+  const pipelineTask = request('/research-api/pipeline');
+  track('核心指标', request('/api/summary'), renderSummary);
+  track('真实因子排名', request('/factor-api/real-factor-results?limit=100'), renderFactors);
+  track('策略净值曲线', request('/backtest-api/equity'), drawChart);
+  track('组合风险', request('/api/risk'), renderRisk);
+  track('准模拟盘路线', request('/strategy-api/paper-watch-routes'), renderPaperWatchRoutes);
+  track('因子动态', request('/factor-api/activity'), renderFactorActivity);
+  track('策略池', strategiesTask, renderStrategyLibrary);
+  track('研究流水线', pipelineTask, renderResearchPipeline);
+  track('回测中心', request('/backtest-api/research-status'), renderBacktestCenter);
+
+  const catalogTask = request('/position-stress-api/strategies').then((catalog) => {
+    currentPositionStressCatalog = catalog;
+    return catalog;
+  });
+  track('压测策略目录', catalogTask, renderPositionStressCatalog);
+  track('实测策略', catalogTask.then(() => request('/strategy-api/live-signals')), renderLiveStrategies);
+  track('建仓压力测试', catalogTask.then(() => request(positionStressReportEndpoint())), renderPositionStress);
+  track('压力测试历史', request('/position-stress-api/history'), renderPositionStressHistory);
+  track(
+    '因子库',
+    Promise.all([
+      request('/factor-api/real-factor-summary'),
+      strategiesTask,
+      request('/factor-api/indicator-factor-definitions'),
+      pipelineTask,
+    ]),
+    ([factorSummary, strategies, factorDefinitions, researchPipeline]) => {
+      renderFactorLibrary(factorSummary, strategies, factorDefinitions, researchPipeline);
+    },
+  );
+
+  await Promise.all(tasks);
   bindCollapsibleData();
   requestAnimationFrame(syncCollapsibleData);
+  setDashboardLoading(false, failures);
+  return failures;
 }
 
 function positionStressDateParams() {
@@ -4455,8 +4490,12 @@ async function boot() {
   try {
     const preferences = await request('/api/preferences');
     renderPreferences(preferences);
-    await refreshDashboard();
-    setFormMessage('已连接本地后端 API', 'success');
+    const failures = await refreshDashboard();
+    if (failures.length) {
+      setFormMessage(`部分数据加载失败：${failures.join('、')}`, 'error');
+    } else {
+      setFormMessage('已连接本地后端 API', 'success');
+    }
   } catch (error) {
     setFormMessage(`加载失败：${error.message}`, 'error');
   }
