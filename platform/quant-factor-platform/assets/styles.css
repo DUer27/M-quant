@@ -443,11 +443,120 @@ h2 {
 .position-stress-trades-row .stress-trade-table {
   max-height: 460px;
 }
+.position-stress-run-record-panel {
+  grid-column: 1 / -1;
+  margin-top: var(--gap);
+}
+
+.position-stress-run-batches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.position-stress-run-table {
+  max-height: 560px;
+}
+
+.position-stress-run-table table {
+  min-width: 920px;
+}
+
+.position-stress-run-table td small {
+  color: var(--muted);
+}
 
 .content-grid.lower {
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
 }
+.strategy-import-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
 
+.strategy-imported-tag {
+  font-weight: 700;
+}
+
+.strategy-import-add,
+.strategy-import-remove {
+  border-radius: 6px;
+  padding: 7px 11px;
+}
+
+.strategy-import-remove {
+  background: #fff;
+  border: 1px solid #d64b4b;
+  color: #b73737;
+}
+
+.position-stress-imported-strategy-list {
+  background: #f4fbf7;
+  border: 1px solid #b9e4c9;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.position-stress-imported-strategy-list > strong {
+  color: #167447;
+}
+
+.position-stress-imported-strategy {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dcefe3;
+  border-radius: 6px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 9px 10px;
+}
+
+.position-stress-imported-strategy.active {
+  border-color: #27a35a;
+  box-shadow: 0 0 0 2px rgba(39, 163, 90, 0.12);
+}
+
+.position-stress-imported-strategy div {
+  display: grid;
+  gap: 3px;
+}
+
+.position-stress-imported-strategy small {
+  color: var(--muted);
+}
+.strategy-paper-management-panel {
+  margin-top: var(--gap);
+}
+
+.strategy-paper-management-list {
+  display: grid;
+  gap: 8px;
+}
+
+.strategy-paper-management-row {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.strategy-paper-management-row > div {
+  display: grid;
+  gap: 3px;
+}
+
+.strategy-paper-management-row small {
+  color: var(--muted);
+}
 .panel {
   align-content: start;
   display: grid;
@@ -2305,4 +2414,106 @@ meter {
   to {
     transform: rotate(360deg);
   }
+}
+.source-trace-policy {
+  color: var(--muted);
+  font-size: 12px;
+}
+.source-trace-list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.source-trace-list li {
+  line-height: 1.5;
+}
+.source-trace-list a,
+.source-trace-links a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+.source-trace-list a:hover,
+.source-trace-links a:hover {
+  text-decoration: underline;
+}
+.source-missing {
+  color: var(--warning);
+  font-size: 12px;
+}
+.source-trace-summary {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.source-trace-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 6px;
+}
+.source-trace-links a,
+.source-trace-links .source-missing {
+  font-size: 12px;
+}
+.factor-reference-links {
+  margin-top: 6px;
+}
+.factor-reference-links a {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.factor-reference-links a:hover {
+  text-decoration: underline;
+}
+.literature-index {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 10px;
+}
+.literature-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 8px;
+  padding: 10px;
+}
+.literature-item > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+.literature-item small {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.literature-factor-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.literature-factor-link {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--primary);
+  cursor: pointer;
+  display: grid;
+  font-size: 12px;
+  gap: 2px;
+  padding: 6px 8px;
+  text-align: left;
+}
+.literature-factor-link:hover {
+  border-color: var(--primary);
+}
+.literature-factor-link small {
+  color: var(--muted);
+  font-size: 11px;
 }

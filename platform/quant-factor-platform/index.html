@@ -240,14 +240,7 @@
                 <h2>准模拟盘观察台</h2>
               </div>
               <div class="paper-watch-head-actions">
-                <select id="paper-watch-refresh-mode" aria-label="一键刷新模式">
-                  <option value="joinquant_local">JoinQuant本地结果</option>
-                  <option value="local">本地快速</option>
-                  <option value="akshare_fast">AkShare核心50</option>
-                  <option value="akshare_csi300">AkShare沪深300</option>
-                </select>
-                <button id="run-paper-watch-daily-refresh" class="primary" type="button">一键刷新数据</button>
-                <span id="paper-watch-status" class="tag pending">未就绪</span>
+                <span class="tag neutral">策略由研究平台策略池管理</span>
               </div>
             </div>
             <section class="paper-watch-console">
@@ -257,8 +250,8 @@
                 <summary>JoinQuant准模拟报告</summary>
                 <div id="paper-watch-joinquant-report" class="paper-watch-joinquant-report">
                   <div class="paper-watch-note compact">
-                    <strong>等待刷新</strong>
-                    <p>点击一键刷新数据后，将自动扫描 JoinQuant 结果、生成信号账本和报告。</p>
+                    <strong>策略由研究平台策略池管理</strong>
+                    <p>请在研究与策略页面的“模拟盘策略列表”中加入或移除策略；此处只展示模拟盘运行结果。</p>
                   </div>
                 </div>
               </details>
@@ -302,21 +295,6 @@
               </div>
             </section>
             <div id="paper-watch-list" class="paper-watch-list"></div>
-            <details class="compact-details" open>
-              <summary>账本回填</summary>
-              <div class="ledger-import">
-                <label>
-                  粘贴模拟观察账本 JSON 或 CSV
-                  <textarea id="paper-watch-ledger-json" rows="5" title="这里是给系统读取的账本格式。sleeve_id 是观察账户编号，strategy_id 是策略编号，planned_weight 是计划观察比例。" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
-                </label>
-                <div class="backtest-actions">
-                  <button id="download-paper-watch-ledger-csv" type="button">下载CSV模板</button>
-                  <button id="download-paper-watch-ledger-json" type="button">下载JSON模板</button>
-                  <button id="import-paper-watch-ledger" class="primary" type="button">导入账本</button>
-                </div>
-                <p id="paper-watch-ledger-message" class="form-message">只导入真实观察记录；平台不生成收益或净值。</p>
-              </div>
-            </details>
             <details class="compact-details">
               <summary>运行约束</summary>
               <ul id="paper-watch-controls" class="text-list"></ul>
@@ -573,6 +551,16 @@
             <div id="strategy-live-list" class="strategy-list"></div>
             <div id="draft-strategy-pagination" class="pagination compact"></div>
           </section>
+          <section class="panel strategy-paper-management-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Paper Strategy Management</p>
+                <h2>模拟盘策略列表</h2>
+              </div>
+              <span class="library-source">只在这里添加或移除模拟盘策略</span>
+            </div>
+            <div id="strategy-paper-management-list" class="strategy-paper-management-list"></div>
+          </section>
 
           <section class="panel">
             <div class="panel-head">
@@ -685,6 +673,7 @@
                 </div>
               </div>
               <div id="position-stress-selected-strategy" class="stress-selected-strategy">等待从策略池选择策略</div>
+              <div id="position-stress-imported-strategy-list" class="position-stress-imported-strategy-list"></div>
               <div class="stress-controls">
                 <label>
                   开始日期
@@ -745,13 +734,6 @@
               <div class="backtest-actions stress-actions">
                 <button id="run-position-stress" class="primary" type="button">运行</button>
                 <button id="refresh-position-stress" type="button">刷新报告</button>
-              </div>
-              <label class="stress-import-box">
-                粘贴真实行情CSV/JSON
-                <textarea id="position-stress-import-ohlcv" rows="5" placeholder="date,code,open,high,low,close,volume,amount&#10;2026-07-22,000001,10.5,10.8,10.4,10.7,123456,123456789"></textarea>
-              </label>
-              <div class="backtest-actions stress-actions">
-                <button id="import-position-stress-ohlcv" type="button">导入真实行情</button>
               </div>
               <p id="position-stress-message" class="form-message">缺少任一请求日期真实行情时，正式运行会被阻断。</p>
               <div id="position-stress-warnings" class="status-list compact-status-list"></div>
@@ -832,6 +814,34 @@
               </div>
               <div id="position-stress-selection-list" class="status-list"></div>
             </section>
+            <section class="panel position-stress-run-record-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Strategy Run Ledger</p>
+                  <h2>策略选股与买卖记录</h2>
+                </div>
+                <div id="position-stress-run-summary" class="library-source">等待策略运行</div>
+              </div>
+              <div id="position-stress-run-batches" class="position-stress-run-batches"></div>
+              <div class="table-scroll position-stress-run-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>选股日</th>
+                      <th>股票</th>
+                      <th>分数/排名</th>
+                      <th>买入</th>
+                      <th>卖出</th>
+                      <th>收益</th>
+                      <th>退出原因</th>
+                    </tr>
+                  </thead>
+                  <tbody id="position-stress-run-record-table"></tbody>
+                </table>
+              </div>
+              <p class="library-source">记录来自本次策略运行结果；K 线中的 BUY/SELL 标记按真实交易日期匹配。表格最多展示最近 300 条，完整记录保存在本地运行账本。</p>
+            </section>
+
 
             <section class="panel position-stress-notes-panel">
               <div class="panel-head">
@@ -891,24 +901,25 @@
         <div id="research-pipeline-view" class="view">
           <section class="metrics-grid" aria-label="因子研究流水线指标">
             <article class="metric">
-              <span>研究因子</span>
+            <article class="metric">
+              <span>流水线条目</span>
               <strong id="research-factor-count">-</strong>
-              <small>纳入流水线</small>
+              <small>唯一 factorId，不去重变体</small>
             </article>
             <article class="metric">
-              <span>已实测</span>
-              <strong id="research-tested-count">-</strong>
-              <small>真实结果回填</small>
+              <span>逻辑因子</span>
+              <strong id="research-logical-factor-count">-</strong>
+              <small>CSI300/500 变体归并后</small>
             </article>
             <article class="metric">
-              <span>策略候选</span>
-              <strong id="research-candidate-count">-</strong>
-              <small>满足初筛规则</small>
+              <span>指数池变体</span>
+              <strong id="research-variant-count">-</strong>
+              <small>仅统计 csi300/csi500 前缀</small>
             </article>
             <article class="metric">
-              <span>等待数据</span>
-              <strong id="research-blocked-count">-</strong>
-              <small>字段/历史不足</small>
+              <span>状态合计校验</span>
+              <strong id="research-count-consistency">-</strong>
+              <small>互斥状态合计必须等于条目数</small>
             </article>
           </section>
 
@@ -1254,6 +1265,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260913-progressive-dashboard"></script>
+    <script type="module" src="/assets/app.js?v=20260913-paper-strategy-management"></script>
   </body>
 </html>

@@ -92,19 +92,16 @@ const elements = {
   subnavs: document.querySelectorAll('[data-view-subnav]'),
   paperWatchControls: document.querySelector('#paper-watch-controls'),
   paperWatchConsoleSummary: document.querySelector('#paper-watch-console-summary'),
-  paperWatchLedgerJson: document.querySelector('#paper-watch-ledger-json'),
   paperWatchLedgerMessage: document.querySelector('#paper-watch-ledger-message'),
   paperWatchLedgerSummary: document.querySelector('#paper-watch-ledger-summary'),
   paperWatchList: document.querySelector('#paper-watch-list'),
   paperWatchBigquantSummary: document.querySelector('#paper-watch-bigquant-summary'),
   paperWatchJoinquantReport: document.querySelector('#paper-watch-joinquant-report'),
   paperWatchPerformanceReport: document.querySelector('#paper-watch-performance-report'),
-  paperWatchRefreshMode: document.querySelector('#paper-watch-refresh-mode'),
   paperWatchRefreshSummary: document.querySelector('#paper-watch-refresh-summary'),
   paperWatchSignalList: document.querySelector('#paper-watch-signal-list'),
   paperWatchStatus: document.querySelector('#paper-watch-status'),
   paperWatchUpgradeList: document.querySelector('#paper-watch-upgrade-list'),
-  runPaperWatchDailyRefresh: document.querySelector('#run-paper-watch-daily-refresh'),
   positionStressArtifacts: document.querySelector('#position-stress-artifacts'),
   positionStressCapital: document.querySelector('#position-stress-capital'),
   positionStressComplete: document.querySelector('#position-stress-complete'),
@@ -120,7 +117,6 @@ const elements = {
   positionStressExportCsv: document.querySelector('#position-stress-export-csv'),
   positionStressExportZip: document.querySelector('#position-stress-export-zip'),
   positionStressPaperExportStatus: document.querySelector('#position-stress-paper-export-status'),
-  positionStressImportOhlcv: document.querySelector('#position-stress-import-ohlcv'),
   positionStressKlineCanvas: document.querySelector('#position-stress-kline-canvas'),
   positionStressKlineDaily: document.querySelector('#position-stress-kline-daily'),
   positionStressKlineMonthly: document.querySelector('#position-stress-kline-monthly'),
@@ -140,9 +136,14 @@ const elements = {
   positionStressRunStatus: document.querySelector('#position-stress-run-status'),
   positionStressScenarios: document.querySelector('#position-stress-scenarios'),
   positionStressSelectionList: document.querySelector('#position-stress-selection-list'),
+  positionStressRunBatches: document.querySelector('#position-stress-run-batches'),
+  positionStressRunRecordTable: document.querySelector('#position-stress-run-record-table'),
+  positionStressRunSummary: document.querySelector('#position-stress-run-summary'),
+  strategyPaperManagementList: document.querySelector('#strategy-paper-management-list'),
   positionStressSource: document.querySelector('#position-stress-source'),
   positionStressStart: document.querySelector('#position-stress-start'),
   positionStressStrategySelect: document.querySelector('#position-stress-strategy-select'),
+  positionStressImportedStrategyList: document.querySelector('#position-stress-imported-strategy-list'),
   positionStressStockCount: document.querySelector('#position-stress-stock-count'),
   positionStressHistoryMaxCount: document.querySelector('#position-stress-history-max-count'),
   positionStressTopN: document.querySelector('#position-stress-top-n'),
@@ -151,11 +152,6 @@ const elements = {
   positionStressTrades: document.querySelector('#position-stress-trades'),
   positionStressWarnings: document.querySelector('#position-stress-warnings'),
   refreshPositionStress: document.querySelector('#refresh-position-stress'),
-  importPositionStressOhlcv: document.querySelector('#import-position-stress-ohlcv'),
-  runPositionStress: document.querySelector('#run-position-stress'),
-  downloadPaperWatchLedgerCsv: document.querySelector('#download-paper-watch-ledger-csv'),
-  downloadPaperWatchLedgerJson: document.querySelector('#download-paper-watch-ledger-json'),
-  importPaperWatchLedger: document.querySelector('#import-paper-watch-ledger'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
   askResearchAgent: document.querySelector('#ask-research-agent'),
@@ -180,13 +176,13 @@ const elements = {
   researchAssistantInput: document.querySelector('#research-assistant-input'),
   researchAssistantMessages: document.querySelector('#research-assistant-messages'),
   researchAssistantStatus: document.querySelector('#research-assistant-status'),
-  researchBlockedCount: document.querySelector('#research-blocked-count'),
-  researchCandidateCount: document.querySelector('#research-candidate-count'),
+  researchCountConsistency: document.querySelector('#research-count-consistency'),
   researchFactorCount: document.querySelector('#research-factor-count'),
+  researchLogicalFactorCount: document.querySelector('#research-logical-factor-count'),
+  researchVariantCount: document.querySelector('#research-variant-count'),
   researchFactorDetail: document.querySelector('#research-factor-detail'),
   researchFactorList: document.querySelector('#research-factor-list'),
   researchSourceFile: document.querySelector('#research-source-file'),
-  researchTestedCount: document.querySelector('#research-tested-count'),
   risk: document.querySelector('#risk-control'),
   savePreferences: document.querySelector('#save-preferences'),
   runBacktest: document.querySelector('#run-backtest'),
@@ -233,6 +229,9 @@ let currentStrategySignalPack = null;
 let currentPositionStressCatalog = null;
 let currentPositionStressHistory = [];
 let currentPositionStressReport = null;
+let currentPositionStressImportedIds = new Set();
+let currentStrategyDefinitions = [];
+let currentPositionStressRuns = [];
 let currentPositionStressExplicitStrategyId = '';
 let positionStressKlinePeriod = 'daily';
 let positionStressKlineSearchTimer = 0;
@@ -2224,6 +2223,17 @@ function renderResearchDetail(entry) {
     ? explainFieldList(entry.dataDependencies)
     : '当前没有登记字段依赖';
 
+  const sourceReferences = Array.isArray(entry.sourceReferences) ? entry.sourceReferences : [];
+  const sourceReferencesHtml = sourceReferences.length
+    ? sourceReferences.map((source) => {
+      const status = source.status === 'available' ? '项目内可用' : '历史记录/当前缺失';
+      const tone = source.status === 'available' ? 'good' : 'watch';
+      const action = source.url
+        ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">打开文件</a>`
+        : '<span class="source-missing">不可打开</span>';
+      return `<li><span class="tag ${tone}">${status}</span> <strong>${escapeHtml(source.label || '来源文件')}</strong> ${action}<br><small>${escapeHtml(source.path || '')}；${escapeHtml(source.note || '')}</small></li>`;
+    }).join('')
+    : '<li>尚未登记来源文件。</li>';
   elements.researchFactorDetail.innerHTML = `
     <div class="research-detail-head">
       <div>
@@ -2273,6 +2283,11 @@ function renderResearchDetail(entry) {
       <p>${dependenciesHtml}</p>
     </div>
     <div class="research-section">
+      <strong>来源文件</strong>
+      <p class="source-trace-policy">项目内文件保留可点击链接；历史来源若当前不存在，保留登记路径但不伪造链接。</p>
+      <ul class="source-trace-list">${sourceReferencesHtml}</ul>
+    </div>
+    <div class="research-section">
       <strong>数据缺口</strong>
       <ul>${dataGaps}</ul>
     </div>
@@ -2293,13 +2308,35 @@ function renderResearchPipeline(pipeline) {
   }
 
   elements.researchFactorCount.textContent = metrics.factorCount ?? '-';
-  elements.researchTestedCount.textContent = metrics.testedCount ?? '-';
-  elements.researchCandidateCount.textContent = metrics.strategyCandidateCount ?? '-';
-  elements.researchBlockedCount.textContent = metrics.blockedCount ?? '-';
-  elements.researchSourceFile.textContent = pipeline.source?.file
-    ? `当前研究数据源：${pipeline.source.file}`
-    : '当前研究数据源：未加载';
-  elements.researchSourceFile.title = pipeline.source?.file ? fieldHint('source_file', pipeline.source.file) : '';
+  elements.researchLogicalFactorCount.textContent = metrics.logicalFactorCount ?? '-';
+  elements.researchVariantCount.textContent = metrics.variantCount ?? '-';
+  elements.researchCountConsistency.textContent = metrics.countsConsistent ? '通过' : `异常 ${metrics.statusCountsSum ?? 0}/${metrics.factorCount ?? 0}`;
+  const pipelineSources = Array.isArray(pipeline.sourceReferences) ? pipeline.sourceReferences : [];
+  const availableSources = pipelineSources.filter((source) => source.status === 'available');
+  const missingSources = pipelineSources.filter((source) => source.status !== 'available');
+  const literatureIndex = Array.isArray(pipeline.literatureIndex) ? pipeline.literatureIndex : [];
+  const literatureHtml = literatureIndex.length
+    ? `<div class="literature-index"><strong>文献 → 因子索引</strong>${literatureIndex.map((literature) => {
+      const source = literature.source || {};
+      const sourceLink = source.url
+        ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">打开文献</a>`
+        : `<span class="source-missing">文献缺失</span>`;
+      const factorLinks = (literature.factors || []).map((factor) => `<button type="button" class="literature-factor-link" data-literature-factor="${escapeHtml(factor.factorId)}">${escapeHtml(factor.name)}<small>${escapeHtml(factor.status)} / ${escapeHtml(factor.resultCount)} 条实测</small></button>`).join('');
+      return `<div class="literature-item"><div><strong>${escapeHtml(literature.title)}</strong> ${sourceLink}<small>${escapeHtml(literature.evidencePolicy || '')}</small></div><div class="literature-factor-list">${factorLinks || '<span class="source-missing">尚未登记关联因子</span>'}</div></div>`;
+    }).join('')}</div>`
+    : '';
+  elements.researchSourceFile.innerHTML = `${pipelineSources.length
+    ? `<strong>研究来源目录</strong><span class="source-trace-summary">${availableSources.length} 个项目内文件可打开；${missingSources.length} 个历史来源缺失</span><div class="source-trace-links">${pipelineSources.map((source) => source.url
+      ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.label)}</a>`
+      : `<span class="source-missing" title="${escapeHtml(source.note || '')}">${escapeHtml(source.label)}（缺失）</span>`).join('')}</div>`
+    : '当前研究来源：未登记'}${literatureHtml}`;
+  elements.researchSourceFile.title = pipelineSources.map((source) => `${source.label}: ${source.path}`).join('\n');
+  elements.researchSourceFile.querySelectorAll('[data-literature-factor]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeResearchFactor = button.dataset.literatureFactor;
+      renderResearchPipeline(currentResearchPipeline);
+    });
+  });
 
   elements.researchAssistantStatus.innerHTML = `
     <span class="tag ${pipeline.assistant?.llmStatus === 'configured' ? 'good' : 'pending'}">
@@ -2680,6 +2717,14 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
           ? value.requiredFields.join(', ')
         : value.formula || '-';
       const note = value.reason || value.note || value.signal || value.formula || '基于当前真实明细数据计算';
+      const referenceSources = Array.isArray(pipelineEntry?.sourceReferences)
+        ? pipelineEntry.sourceReferences.filter((source) => source.kind === 'reference_document')
+        : [];
+      const referenceSourcesHtml = referenceSources.length
+        ? `<div class="factor-reference-links">${referenceSources.map((source) => source.url
+          ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">参考文件：${escapeHtml(source.label)}</a>`
+          : `<span class="source-missing">参考文件缺失：${escapeHtml(source.path || source.label)}</span>`).join('')}</div>`
+        : '';
 
       return `
         <tr>
@@ -2704,6 +2749,7 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
               <summary>字段/口径</summary>
               <small>${explainFieldList(fields)}</small>
             </details>
+            ${referenceSourcesHtml}
           </td>
         </tr>
       `;
@@ -2751,34 +2797,48 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
 }
 
 function renderStrategyLibrary(strategies) {
-  elements.strategyLibraryList.innerHTML = strategies
+  currentStrategyDefinitions = Array.isArray(strategies) ? strategies : [];
+  elements.strategyLibraryList.innerHTML = currentStrategyDefinitions
     .map((strategy) => {
       const [label, tone] = labelForStatus(strategy.status);
       const effective = strategy.currentRealDataState?.effectiveNow || [];
       const pending = strategy.currentRealDataState?.notEffectiveYet || [];
+      const action = '';
       return `
         <article class="strategy-item">
           <div class="strategy-head">
             <div>
               <h3>${escapeHtml(strategy.name)}</h3>
+              <small>${escapeHtml(strategy.id)}</small>
               <p>${escapeHtml(strategy.dataPolicy)}</p>
             </div>
             <span class="tag ${tone}">${escapeHtml(label)}</span>
           </div>
           <div class="strategy-columns">
-            <div>
-              <strong>当前可用</strong>
-              <span>${escapeHtml(effective.join(', ') || '-')}</span>
-            </div>
-            <div>
-              <strong>等待数据</strong>
-              <span>${escapeHtml(pending.join(', ') || '-')}</span>
-            </div>
+            <div><strong>当前可用</strong><span>${escapeHtml(effective.join(', ') || '-')}</span></div>
+            <div><strong>等待数据</strong><span>${escapeHtml(pending.join(', ') || '-')}</span></div>
           </div>
+          <div class="strategy-import-actions">${action}</div>
         </article>
       `;
     })
     .join('');
+}
+
+function renderPaperStrategyManagement(strategies = currentStrategyDefinitions) {
+  if (!elements.strategyPaperManagementList) return;
+  const catalog = currentPositionStressCatalog?.strategies || [];
+  elements.strategyPaperManagementList.innerHTML = (strategies || []).map((strategy) => {
+    const executable = catalog.find((item) => item.strategyId === strategy.id && item.runnable);
+    const imported = currentPositionStressImportedIds.has(strategy.id);
+    return `<div class="strategy-paper-management-row">
+      <div><strong>${escapeHtml(strategy.name)}</strong><small>${escapeHtml(strategy.id)} · ${executable ? '可执行' : '待执行门槛'}</small></div>
+      ${executable ? (imported
+        ? `<span class="tag good">已加入模拟盘</span><button class="strategy-import-remove" type="button" data-remove-position-stress-strategy="${escapeHtml(strategy.id)}">移除</button>`
+        : `<button class="primary-lite strategy-import-add" type="button" data-import-position-stress-strategy="${escapeHtml(strategy.id)}">加入模拟盘</button>`)
+        : '<span class="tag neutral">不可加入</span>'}
+    </div>`;
+  }).join('') || '<div class="library-source">暂无研究策略。</div>';
 }
 
 function renderTextList(items) {
@@ -2904,6 +2964,8 @@ function renderStrategyCard(strategy, options = {}) {
   const paperSignalCsv = `/strategy-api/paper-signal-export.csv?strategy=${encodeURIComponent(strategy.id)}`;
   const paperSignalZip = `/strategy-api/paper-signal-export.zip?strategy=${encodeURIComponent(strategy.id)}`;
   const canSendToStress = strategy.canSendToPositionStress || strategy.positionStressReady;
+  const imported = currentPositionStressImportedIds.has(strategy.id);
+  const importAction = '';
   return `
     <article class="strategy-item${compactClass}">
       <div class="strategy-head">
@@ -2958,6 +3020,7 @@ function renderStrategyCard(strategy, options = {}) {
         <strong>下一步</strong>
         <span>${escapeHtml(strategy.nextAction || strategy.exportStatus || '-')}</span>
       </div>
+      <div class="strategy-import-actions">${canSendToStress && imported ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">选为压测策略</button>` : ''}</div>
       ${strategy.exportable === false
         ? `<div class="strategy-export-note">
           <strong>导出状态</strong>
@@ -3138,6 +3201,7 @@ function renderDraftStrategies(signalPack) {
     : '<div class="empty-state"><strong>没有匹配的策略</strong><span>换一个等级、策略名、因子名、状态或周期再筛选。</span></div>';
 
   const hiddenCount = Math.max(0, filtered.length - visibleStrategies.length);
+  renderPaperStrategyManagement(currentStrategyDefinitions);
   elements.draftStrategyToggle.textContent = filtered.length <= 2
     ? '已全部显示'
     : draftStrategyExpanded
@@ -3440,8 +3504,18 @@ function positionStressKlineRows(item) {
     current.volume += Number.isFinite(row.volume) ? row.volume : 0;
     current.amount += Number.isFinite(row.amount) ? row.amount : 0;
     current.strategy_score = row.strategy_score;
+
   });
   return [...buckets.values()];
+}
+function positionStressKlineEventMatches(item, row) {
+  const rowKey = String(row?.date || '');
+  return positionStressTradeEventsFor(item).flatMap((trade) => {
+    const events = [];
+    if (trade.entryDate && (positionStressKlinePeriod === 'daily' ? String(trade.entryDate) === rowKey : String(trade.entryDate).startsWith(rowKey))) events.push({ side: 'buy', date: trade.entryDate, price: Number(trade.entryPrice ?? trade.entryClose), trade });
+    if (trade.exitDate && (positionStressKlinePeriod === 'daily' ? String(trade.exitDate) === rowKey : String(trade.exitDate).startsWith(rowKey))) events.push({ side: 'sell', date: trade.exitDate, price: Number(trade.exitPrice ?? trade.exitClose), trade });
+    return events;
+  }).filter((event) => Number.isFinite(event.price) && event.price > 0);
 }
 
 function movingAverage(rows, windowSize) {
@@ -3724,6 +3798,35 @@ function drawPositionStressKline(item, options = {}) {
     ctx.fillStyle = up ? 'rgba(214, 75, 75, 0.45)' : 'rgba(15, 139, 111, 0.45)';
     ctx.fillRect(xx - candleWidth / 2, volumeTop + volumeHeight - volumeBarHeight, candleWidth, volumeBarHeight);
   });
+  visible.forEach((row, index) => {
+    const events = positionStressKlineEventMatches(item, row);
+    if (!events.length) return;
+    const xx = x(index);
+    events.forEach((event) => {
+      const buy = event.side === 'buy';
+      const yy = y(event.price);
+      const color = buy ? '#0f8b6f' : '#d64b4b';
+      const markerY = buy ? Math.max(topPad + 12, yy - 34) : Math.min(volumeTop - 12, yy + 34);
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (buy) {
+        ctx.moveTo(xx, markerY - 10); ctx.lineTo(xx - 7, markerY + 3); ctx.lineTo(xx - 3, markerY + 3); ctx.lineTo(xx - 3, markerY + 11); ctx.lineTo(xx + 3, markerY + 11); ctx.lineTo(xx + 3, markerY + 3); ctx.lineTo(xx + 7, markerY + 3);
+      } else {
+        ctx.moveTo(xx, markerY + 10); ctx.lineTo(xx - 7, markerY - 3); ctx.lineTo(xx - 3, markerY - 3); ctx.lineTo(xx - 3, markerY - 11); ctx.lineTo(xx + 3, markerY - 11); ctx.lineTo(xx + 3, markerY - 3); ctx.lineTo(xx + 7, markerY - 3);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(buy ? 'BUY' : 'SELL', xx + 9, buy ? markerY + 4 : markerY - 4);
+    });
+  });
+
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#0f8b6f';
+  ctx.fillText('▲ BUY', leftPad + 370, topPad - 12);
+  ctx.fillStyle = '#d64b4b';
+  ctx.fillText('▼ SELL', leftPad + 430, topPad - 12);
 
   const highRow = visible.reduce((best, row, index) => (row.high > best.row.high ? { row, index } : best), { row: visible[0], index: 0 });
   const lowRow = visible.reduce((best, row, index) => (row.low < best.row.low ? { row, index } : best), { row: visible[0], index: 0 });
@@ -3958,10 +4061,60 @@ function renderPositionStressUniverseContext(report = {}) {
     <span>历史版本包括3000只核心池和5578只全缓存全A（若存在），请通过上方选择器切换查看。</span>
   `;
 }
+function positionStressTradeEventsFor(item, report = currentPositionStressReport) {
+  const code = String(item?.code || '').trim();
+  return (report?.strategy?.trades || []).filter((trade) => String(trade.code || '').trim() === code);
+}
+
+function renderPositionStressRunRecords(runs = currentPositionStressRuns, report = currentPositionStressReport) {
+  currentPositionStressRuns = Array.isArray(runs) ? runs : [];
+  const activeRecord = report ? {
+    runId: report.generatedAt ? `当前运行 ${String(report.generatedAt).replace('T', ' ')}` : '当前运行',
+    generatedAt: report.generatedAt || '',
+    strategy: report.strategy || {},
+    dateRange: report.requestedDateRange || {},
+    selectionCount: (report.strategy?.dailySelections || []).reduce((sum, day) => sum + Number(day.selectedCount || day.items?.length || 0), 0),
+    selectedStockCount: new Set((report.strategy?.dailySelections || []).flatMap((day) => (day.items || []).map((item) => item.code)).filter(Boolean)).size,
+    tradeCount: (report.strategy?.trades || []).length,
+    buyCount: (report.strategy?.trades || []).filter((trade) => trade.entryDate).length,
+    sellCount: (report.strategy?.trades || []).filter((trade) => trade.exitDate).length,
+    selectedStocks: (report.strategy?.dailySelections || []).flatMap((day) => (day.items || []).map((item) => ({ ...item, date: day.date }))),
+    trades: report.strategy?.trades || [],
+  } : null;
+  const records = activeRecord ? [activeRecord, ...currentPositionStressRuns.filter((item) => item.reportPath !== report?.reportPath)] : currentPositionStressRuns;
+  const selected = records.flatMap((run) => (run.selectedStocks || []).map((stock) => {
+    const trade = (run.trades || []).find((item) => item.code === stock.code && (!item.signalDate || item.signalDate === stock.date));
+    return { ...stock, trade, run };
+  }));
+  if (elements.positionStressRunSummary) {
+    const latest = records[0];
+    elements.positionStressRunSummary.textContent = latest
+      ? `${latest.strategy?.name || latest.strategy?.id || '策略'} / ${latest.selectionCount || 0} 条选股 / 买 ${latest.buyCount || 0} / 卖 ${latest.sellCount || 0}`
+      : '暂无策略运行记录';
+  }
+  if (elements.positionStressRunBatches) {
+    elements.positionStressRunBatches.innerHTML = records.slice(0, 5).map((run) => `<span class="tag neutral">${escapeHtml(run.runId || '-')} · ${escapeHtml(run.generatedAt || '')} · 选股 ${escapeHtml(run.selectionCount ?? 0)} · 交易 ${escapeHtml(run.tradeCount ?? 0)}</span>`).join('') || '<span class="library-source">暂无已保存运行批次</span>';
+  }
+  if (elements.positionStressRunRecordTable) {
+    elements.positionStressRunRecordTable.innerHTML = selected.slice(0, 300).map((item) => {
+      const trade = item.trade || {};
+      return `<tr>
+        <td>${escapeHtml(item.date || trade.signalDate || '-')}</td>
+        <td><strong>${escapeHtml(item.name || trade.name || item.code || '-')}</strong><br><small>${escapeHtml(item.code || trade.code || '')}</small></td>
+        <td>${formatNumber(item.strategy_score ?? trade.strategyScore, 4)} / ${escapeHtml(item.rank ?? trade.entryRank ?? '-')}</td>
+        <td>${escapeHtml(trade.entryDate || '-')}<br><small>${formatNumber(trade.entryPrice ?? trade.entryClose, 2)}</small></td>
+        <td>${escapeHtml(trade.exitDate || '-')}<br><small>${formatNumber(trade.exitPrice ?? trade.exitClose, 2)}</small></td>
+        <td class="${Number(trade.return) >= 0 ? 'positive-number' : 'negative-number'}">${formatPercent(trade.return, 2)}</td>
+        <td>${escapeHtml(trade.exitReason || (item.trade ? '持仓中/未卖出' : '-'))}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="7">暂无选股记录。请先运行策略。</td></tr>';
+  }
+}
 
 function renderPositionStress(report) {
   if (!elements.positionStressComplete) return;
   currentPositionStressReport = report || {};
+  renderPositionStressRunRecords(currentPositionStressRuns, currentPositionStressReport);
   renderPositionStressUniverseContext(currentPositionStressReport);
   const metrics = report?.strategy?.metrics || {};
   const parameters = report?.strategy?.parameters || {};
@@ -4192,8 +4345,18 @@ function renderPositionStress(report) {
 
 function renderPositionStressCatalog(catalog) {
   currentPositionStressCatalog = catalog;
+  if (elements.positionStressImportedStrategyList) {
+    const imported = (catalog?.strategies || []).filter((item) => item.runnable && item.imported);
+    elements.positionStressImportedStrategyList.innerHTML = imported.length
+      ? `<strong>已导入模拟盘策略（${imported.length}）</strong>${imported.map((item) => `
+          <div class="position-stress-imported-strategy ${catalog.current?.strategyId === item.strategyId ? 'active' : ''}">
+            <div><span class="tag good">已导入</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.strategyId)} · 选${item.dailyTopN ?? 10}/持${item.maxHoldings ?? 10}</small></div>
+            <button type="button" data-select-imported-strategy="${escapeHtml(item.strategyId)}">${catalog.current?.strategyId === item.strategyId ? '当前策略' : '选择'}</button>
+          </div>`).join('')}`
+      : '<div class="library-source">暂无已导入策略，请先到研究平台策略池点击“加入模拟盘”。</div>';
+  }
   if (elements.positionStressStrategySelect) {
-    const runnable = (catalog?.strategies || []).filter((item) => item.runnable);
+    const runnable = (catalog?.strategies || []).filter((item) => item.runnable && item.imported);
     elements.positionStressStrategySelect.innerHTML = [
       '<option value="">从策略池选择</option>',
       ...runnable.map((item) => {
@@ -4267,11 +4430,15 @@ function updatePositionStressKlineTooltip(event) {
   }
   positionStressKlineView.hoverIndex = index;
   const change = row.open ? row.close / row.open - 1 : null;
+  const events = positionStressKlineEventMatches(item, row);
+  const eventText = events.length
+    ? `<br><strong>${events.map((event) => `${event.side === 'buy' ? 'BUY买入' : 'SELL卖出'} ${event.date} @ ${formatNumber(event.price, 2)}`).join('<br>')}</strong>`
+    : '';
   tooltip.innerHTML = `
     <strong>${escapeHtml(item?.name || item?.code || '')} ${escapeHtml(row.date)}</strong>
     开 ${formatNumber(row.open, 2)}　高 ${formatNumber(row.high, 2)}　低 ${formatNumber(row.low, 2)}　收 ${formatNumber(row.close, 2)}<br>
     涨跌 ${formatPercent(change, 2)}　成交量 ${formatNumber(row.volume / 10000, 1)}万<br>
-    成交额 ${formatAmountYi(row.amount)}　策略分 ${formatNumber(row.strategy_score, 4)}
+    成交额 ${formatAmountYi(row.amount)}　策略分 ${formatNumber(row.strategy_score, 4)}${eventText}
   `;
   const tipLeft = Math.min(Math.max(10, event.clientX - rect.left + 16), rect.width - 280);
   const tipTop = Math.min(Math.max(10, event.clientY - rect.top + 16), rect.height - 110);
@@ -4426,10 +4593,20 @@ async function refreshDashboard() {
         }),
     );
   };
+  track('策略运行记录', request('/position-stress-api/runs'), (runs) => {
+    currentPositionStressRuns = Array.isArray(runs) ? runs : [];
+    renderPositionStressRunRecords(currentPositionStressRuns);
+  });
 
+  const importedStrategiesTask = request('/position-stress-api/imported-strategies').then((state) => {
+    currentPositionStressImportedIds = new Set(state.importedStrategyIds || []);
+    return state;
+  });
+  track('模拟盘策略清单', importedStrategiesTask, (state) => {
+    renderPaperStrategyManagement(currentStrategyDefinitions);
+  });
   const strategiesTask = request('/strategy-api/definitions');
   const pipelineTask = request('/research-api/pipeline');
-  track('核心指标', request('/api/summary'), renderSummary);
   track('真实因子排名', request('/factor-api/real-factor-results?limit=100'), renderFactors);
   track('策略净值曲线', request('/backtest-api/equity'), drawChart);
   track('组合风险', request('/api/risk'), renderRisk);
@@ -4444,7 +4621,7 @@ async function refreshDashboard() {
     return catalog;
   });
   track('压测策略目录', catalogTask, renderPositionStressCatalog);
-  track('实测策略', catalogTask.then(() => request('/strategy-api/live-signals')), renderLiveStrategies);
+  track('实测策略', Promise.all([catalogTask, importedStrategiesTask]).then(([catalog]) => request('/strategy-api/live-signals').then((pack) => ({ ...pack, strategies: (pack.strategies || []).map((item) => ({ ...item, imported: currentPositionStressImportedIds.has(item.id) })), formalStrategies: (pack.formalStrategies || []).map((item) => ({ ...item, imported: currentPositionStressImportedIds.has(item.id) })) }))), renderLiveStrategies);
   track('建仓压力测试', catalogTask.then(() => request(positionStressReportEndpoint())), renderPositionStress);
   track('压力测试历史', request('/position-stress-api/history'), renderPositionStressHistory);
   track(
@@ -4604,7 +4781,65 @@ elements.formalStrategyPagination?.addEventListener('click', (event) => {
   renderFormalStrategies(currentStrategySignalPack);
 });
 
+async function refreshPositionStressImportedState() {
+  const state = await request('/position-stress-api/imported-strategies');
+  currentPositionStressImportedIds = new Set(state.importedStrategyIds || []);
+  return state;
+}
+
+async function refreshStrategyAndStressState() {
+  const [signalPack, catalog, importedState] = await Promise.all([
+    request('/strategy-api/live-signals'),
+    request('/position-stress-api/strategies'),
+    refreshPositionStressImportedState(),
+  ]);
+  currentPositionStressCatalog = catalog;
+  currentStrategySignalPack = signalPack;
+  renderPaperStrategyManagement(currentStrategyDefinitions);
+  renderLiveStrategies(signalPack);
+  renderPositionStressCatalog(catalog);
+  renderStrategyLibrary(currentStrategyDefinitions);
+  return importedState;
+}
+
+async function changeStrategyImport(strategyId, action) {
+  const endpoint = `/position-stress-api/import-strategy?strategyId=${encodeURIComponent(strategyId)}`;
+  const response = await request(endpoint, {
+    method: action === 'remove' ? 'DELETE' : 'POST',
+    ...(action === 'remove' ? {} : { body: JSON.stringify({ strategyId }), headers: { 'Content-Type': 'application/json' } }),
+  });
+  await refreshStrategyAndStressState();
+  if (elements.positionStressMessage) {
+    elements.positionStressMessage.textContent = response.message || (action === 'remove' ? '策略已移除。' : '策略已加入模拟盘。');
+    elements.positionStressMessage.dataset.tone = 'success';
+  }
+}
+
 function handleStrategyCardClick(event) {
+  const importedSelectButton = event.target.closest('[data-select-imported-strategy]');
+  if (importedSelectButton) {
+    const strategyId = importedSelectButton.dataset.selectImportedStrategy;
+    currentPositionStressExplicitStrategyId = strategyId;
+    if (elements.positionStressStrategySelect) elements.positionStressStrategySelect.value = strategyId;
+    elements.positionStressMessage.textContent = '已选择模拟盘策略，点击运行即可执行。';
+    elements.positionStressMessage.dataset.tone = 'success';
+    return;
+  }
+  const importButton = event.target.closest('[data-import-position-stress-strategy]');
+  const removeButton = event.target.closest('[data-remove-position-stress-strategy]');
+  if (importButton || removeButton) {
+    const button = importButton || removeButton;
+    const strategyId = button.dataset.importPositionStressStrategy || button.dataset.removePositionStressStrategy;
+    button.disabled = true;
+    changeStrategyImport(strategyId, removeButton ? 'remove' : 'import').catch((error) => {
+      button.disabled = false;
+      if (elements.positionStressMessage) {
+        elements.positionStressMessage.textContent = `策略${removeButton ? '移除' : '加入'}失败：${error.message}`;
+        elements.positionStressMessage.dataset.tone = 'error';
+      }
+    });
+    return;
+  }
   const stressButton = event.target.closest('[data-position-stress-strategy]');
   if (stressButton) {
     const strategyId = stressButton.dataset.positionStressStrategy;
@@ -4648,6 +4883,7 @@ function handleStrategyCardClick(event) {
 
 elements.strategyLiveList?.addEventListener('click', handleStrategyCardClick);
 elements.formalStrategyList?.addEventListener('click', handleStrategyCardClick);
+elements.strategyPaperManagementList?.addEventListener('click', handleStrategyCardClick);
 elements.paperWatchList?.addEventListener('click', async (event) => {
   const rebuildButton = event.target.closest('[data-paper-watch-rebuild]');
   if (!rebuildButton) return;
@@ -4661,51 +4897,6 @@ elements.paperWatchList?.addEventListener('click', async (event) => {
   }
 });
 
-elements.runPaperWatchDailyRefresh?.addEventListener('click', async () => {
-  const button = elements.runPaperWatchDailyRefresh;
-  const mode = elements.paperWatchRefreshMode?.value || 'local';
-  button.disabled = true;
-  const originalText = button.textContent;
-  button.textContent = mode === 'joinquant_local'
-    ? 'JoinQuant刷新中'
-    : mode === 'local'
-      ? '本地刷新中'
-      : '联网刷新中';
-  if (elements.paperWatchRefreshSummary) {
-    elements.paperWatchRefreshSummary.innerHTML = `
-      <div class="paper-watch-note compact">
-        <strong>一键刷新运行中</strong>
-        <span class="tag pending">${escapeHtml(mode)}</span>
-        <p>${mode === 'joinquant_local'
-          ? '正在扫描并导入 JoinQuant 真实结果，随后自动生成信号账本和报告。'
-          : '正在执行真实数据流水线，时间取决于 AkShare 接口和股票池大小。'}</p>
-      </div>
-    `;
-  }
-  try {
-    const response = await request('/paper-watch-api/run-daily-refresh', {
-      body: JSON.stringify({ mode }),
-      method: 'POST',
-    });
-    renderPaperWatchRefreshSummary(response.refresh);
-    renderJoinQuantPaperWatchReport(response.refresh?.report);
-    renderPaperWatchPerformanceReport(response.refresh?.report?.performance_report);
-    await refreshDashboard();
-  } catch (error) {
-    if (elements.paperWatchRefreshSummary) {
-      elements.paperWatchRefreshSummary.innerHTML = `
-        <div class="paper-watch-note compact">
-          <strong>一键刷新失败</strong>
-          <span class="tag watch">失败</span>
-          <p>${escapeHtml(error.message)}</p>
-        </div>
-      `;
-    }
-  } finally {
-    button.disabled = false;
-    button.textContent = originalText || '一键刷新数据';
-  }
-});
 
 elements.buildBigquantPaperWatchPack?.addEventListener('click', async () => {
   const button = elements.buildBigquantPaperWatchPack;
@@ -4988,7 +5179,11 @@ elements.runPositionStress?.addEventListener('click', async () => {
       }),
       method: 'POST',
     });
+    if (response.runRecord) currentPositionStressRuns = [response.runRecord, ...currentPositionStressRuns.filter((item) => item.reportPath !== response.runRecord.reportPath)];
     renderPositionStress(response.report);
+    renderPositionStressRunRecords(currentPositionStressRuns, response.report);
+    elements.positionStressMessage.textContent = response.message || response.report?.runGate?.reason || '运行完成';
+    elements.positionStressMessage.dataset.tone = response.report?.runGate?.formalRunAllowed ? 'success' : 'error';
     elements.positionStressMessage.textContent = response.message || response.report?.runGate?.reason || '运行完成';
     elements.positionStressMessage.dataset.tone = response.report?.runGate?.formalRunAllowed ? 'success' : 'error';
   } catch (error) {
@@ -5000,39 +5195,6 @@ elements.runPositionStress?.addEventListener('click', async () => {
   }
 });
 
-elements.importPositionStressOhlcv?.addEventListener('click', async () => {
-  const strategyId = requireSelectedPositionStressStrategy();
-  if (!strategyId) return;
-  const button = elements.importPositionStressOhlcv;
-  const originalText = button.textContent;
-  const text = elements.positionStressImportOhlcv?.value?.trim() || '';
-  if (!text) {
-    elements.positionStressMessage.textContent = '请先粘贴真实行情 CSV 或 JSON。';
-    elements.positionStressMessage.dataset.tone = 'error';
-    return;
-  }
-  button.disabled = true;
-  button.textContent = '导入中';
-  try {
-    const params = positionStressDateParams();
-    params.set('strategyId', strategyId);
-    const response = await request(`/position-stress-api/import-ohlcv?${params.toString()}`, {
-      body: text,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      method: 'POST',
-    });
-    renderPositionStress(response.report);
-    elements.positionStressImportOhlcv.value = '';
-    elements.positionStressMessage.textContent = response.message || '真实行情已导入';
-    elements.positionStressMessage.dataset.tone = response.report?.runGate?.formalRunAllowed ? 'success' : 'error';
-  } catch (error) {
-    elements.positionStressMessage.textContent = `导入失败：${error.message}`;
-    elements.positionStressMessage.dataset.tone = 'error';
-  } finally {
-    button.disabled = false;
-    button.textContent = originalText || '导入真实行情';
-  }
-});
 
 elements.refreshBacktestCenter?.addEventListener('click', async () => {
   try {
@@ -5077,30 +5239,6 @@ elements.importBacktestResult?.addEventListener('click', async () => {
   }
 });
 
-elements.importPaperWatchLedger?.addEventListener('click', async () => {
-  try {
-    const response = await request('/paper-watch-api/import-ledger', {
-      body: elements.paperWatchLedgerJson.value || '',
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      method: 'POST',
-    });
-    elements.paperWatchLedgerMessage.textContent = response.message;
-    elements.paperWatchLedgerMessage.dataset.tone = 'success';
-    elements.paperWatchLedgerJson.value = '';
-    await refreshDashboard();
-  } catch (error) {
-    elements.paperWatchLedgerMessage.textContent = `导入失败：${error.message}`;
-    elements.paperWatchLedgerMessage.dataset.tone = 'error';
-  }
-});
-
-elements.downloadPaperWatchLedgerCsv?.addEventListener('click', () => {
-  window.location.href = '/paper-watch-api/ledger-template.csv';
-});
-
-elements.downloadPaperWatchLedgerJson?.addEventListener('click', () => {
-  window.location.href = '/paper-watch-api/ledger-template.json';
-});
 
 elements.askResearchAssistant?.addEventListener('click', async () => {
   const message = elements.researchAssistantInput.value.trim();

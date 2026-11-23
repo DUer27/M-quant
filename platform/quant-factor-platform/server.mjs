@@ -41,6 +41,8 @@ const importedTradeabilityReviewsPath = join(dataDir, 'imported-tradeability-rev
 const importedCoreMediumSmallSignalReviewsPath = join(dataDir, 'imported-core-medium-small-signal-reviews.json');
 const importedPaperWatchLedgerPath = join(dataDir, 'imported-paper-watch-ledger.json');
 const positionStressSelectionPath = join(dataDir, 'position-stress-selection.json');
+const positionStressImportedStrategiesPath = join(dataDir, 'position-stress-imported-strategies.json');
+const positionStressRunLedgerPath = join(dataDir, 'position-stress-run-ledger.json');
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
 const akshareDailyCacheDir = outputPath('sources', 'akshare', 'raw', 'a_share_daily');
@@ -110,6 +112,14 @@ const akshareCandidateReviewScriptPath = outputPath('sources', 'joinquant', 'scr
 const csi500LowCrowdingReversalEnhancementScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_csi500_low_crowding_reversal_index_enhancement.py');
 const csi500LowCrowdingReversalEnhancementNotebookScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_csi500_low_crowding_reversal_index_enhancement_jq_notebook.py');
 const joinquantFactorTestScriptPath = outputPath('joinquant', 'm_quant_joinquant_factor_test.py');
+const yegReferenceFactorIds = [
+  'yeg_520_trend_turn_factor',
+  'yeg_volume_breakout_quality_factor',
+  'yeg_divergence_support_factor',
+  'yeg_sentiment_cycle_phase_factor',
+  'yeg_sector_leadership_resonance_factor',
+];
+const yegReferenceDocPath = 'docs/references/野人哥交易实战笔记_完整版_1_.docx';
 const requiredStrategyHorizons = [1, 5, 10, 20];
 const primaryStrategyHorizons = [5, 10, 20];
 const akshareLatestSignalTradeabilityReviewSource = 'joinquant_akshare_latest_signal_tradeability_review';
@@ -379,8 +389,63 @@ const indicatorFactorDefinitions = [
     signal: '异动出现时，如果量比、换手和主力净流入同步放大，且流通市值不过大，则信号更敏感。',
     usage: '适合做短线事件池，后续需要按开盘/盘中/收盘时间分层验证。',
   },
-];
+  {
+    category: 'trend',
+    dataSource: '野人哥交易实战笔记 DOCX + OHLCV',
+    direction: 'positive',
+    formula: '待计算：20日均线走平/拐头向上 + 5日均线上穿20日线；仅登记规则，不生成分数。',
+    id: 'yeg_520_trend_turn_factor',
+    name: '野人哥520均线拐头因子',
+    requiredFields: ['close', 'ma5', 'ma20', 'ma20_slope', 'ma5_cross_ma20'],
+    signal: '文档中的520战法与20日线拐头规则；当前项目没有明确的ma20_slope和交叉事件字段，因此暂不计算。',
+    usage: '候选趋势因子，待补历史OHLCV并定义无未来函数的均线斜率/交叉计算后验证。',
+  },
+  {
+    category: 'price_volume',
+    dataSource: '野人哥交易实战笔记 DOCX + OHLCV',
+    direction: 'positive',
+    formula: '待计算：突破时成交量/均量约1.5~2.5倍 + 收盘接近最高 + 后续缩量回踩不破突破阳半分位。',
+    id: 'yeg_volume_breakout_quality_factor',
+    name: '野人哥量价突破质量因子',
+    requiredFields: ['open', 'high', 'low', 'close', 'volume', 'volume_ma', 'prior_high', 'breakout_halfpoint', 'future_retest'],
+    signal: '文档中的有效突破/假突破和量价六原则；当前数据没有统一的前高、突破阳半分位和未来回踩字段，暂不计算。',
+    usage: '候选突破确认因子，先做事件定义，再进行样本外验证。',
+  },
+  {
+    category: 'price_volume',
+    dataSource: '野人哥交易实战笔记 DOCX + OHLCV',
+    direction: 'positive',
+    formula: '待计算：回撤15%~30% + 地量/缩量 + 长下影或放量反包 + 不破支撑锚点。',
+    id: 'yeg_divergence_support_factor',
+    name: '野人哥分歧承接因子',
+    requiredFields: ['close', 'high', 'low', 'volume', 'recent_high', 'drawdown', 'lower_shadow_ratio', 'support_anchor', 'intraday_reclaim'],
+    signal: '文档中的首次良性分歧、B点和真承接规则；Level2托单等盘口字段当前没有项目内真实输入，暂不计算。',
+    usage: '候选低吸/承接因子，不能用普通日线字段冒充盘口承接。',
+  },
+  {
+    category: 'market',
+    dataSource: '野人哥交易实战笔记 DOCX + 市场涨跌停/连板数据',
+    direction: 'positive',
+    formula: '待计算：连板高度、涨停数量、跌停数量、昨日涨停次日表现和核按钮比例共同定位冰点/启动/主升/高潮/退潮。',
+    id: 'yeg_sentiment_cycle_phase_factor',
+    name: '野人哥情绪周期阶段因子',
+    requiredFields: ['limit_up_count', 'limit_down_count', 'max_consecutive_board', 'yesterday_limit_up_failure_rate', 'nuclear_button_rate', 'sector_breadth'],
+    signal: '文档中的五阶段情绪周期；当前因子数据包没有完整涨跌停、连板和核按钮历史序列，暂不计算。',
+    usage: '候选市场环境因子，先补市场宽度历史，再验证仓位/选股交互，不直接作为个股收益因子。',
+  },
+  {
+    category: 'sector',
+    dataSource: '野人哥交易实战笔记 DOCX + 板块涨停/成分/资金数据',
+    direction: 'positive',
+    formula: '待计算：同题材涨停数量 + 空间龙高度 + 助攻晋级率 + 百亿中军同步强度 + 次日溢价验证。',
+    id: 'yeg_sector_leadership_resonance_factor',
+    name: '野人哥主线梯队共振因子',
+    requiredFields: ['sector_limit_up_count', 'leader_board_height', 'assistant_promotion_rate', 'large_cap_core_strength', 'next_day_premium'],
+    signal: '文档中的核心板块五步法和真龙/中军/补涨梯队规则；当前没有统一板块成分和梯队历史数据，暂不计算。',
+    usage: '候选板块环境/选股过滤因子，必须按时间截面构造，避免使用未来板块结果。',
+  },
 
+];
 function buildIndicatorDerivedFactors() {
   return [
     {
@@ -707,10 +772,6 @@ function readAkshareDailyKlineItem(query) {
   const last = rows.at(-1) || {};
   return {
     code: match.code,
-    dataSource: 'akshare_local_cache',
-    firstDate: first.date || match.firstDate || '',
-    latestClose: last.close,
-    latestDate: last.date || match.lastDate || '',
     latestScore: null,
     name: match.name || last.name || first.name || match.code,
     rowCount: rows.length,
@@ -722,6 +783,124 @@ function readAkshareDailyKlineItem(query) {
 function relativeOutputPath(path) {
   if (!path) return null;
   return normalize(path).replace(`${normalize(projectRoot)}/`, '');
+}
+function projectRelativePath(path) {
+  if (!path) return null;
+  const normalizedRoot = normalize(projectRoot);
+  const normalizedPath = normalize(path);
+  if (normalizedPath === normalizedRoot) return '';
+  const prefix = `${normalizedRoot}/`;
+  return normalizedPath.startsWith(prefix) ? normalizedPath.slice(prefix.length) : null;
+}
+function projectFileUrl(relativePath) {
+  return relativePath ? `/research-api/source?path=${encodeURIComponent(relativePath)}` : null;
+}
+function buildSourceReference(path, label, options = {}) {
+  const rawPath = String(path || '').trim();
+  if (!rawPath) return null;
+  const candidate = rawPath.startsWith('/') ? normalize(rawPath) : normalize(join(projectRoot, rawPath));
+  const relativePath = projectRelativePath(candidate);
+  const isProjectPath = relativePath !== null;
+  const exists = isProjectPath && existsSync(candidate) && statSync(candidate).isFile();
+  return {
+    label: label || basename(rawPath),
+    path: exists ? relativePath : rawPath,
+    url: exists ? projectFileUrl(relativePath) : null,
+    status: exists ? 'available' : 'missing',
+    kind: options.kind || (isProjectPath ? 'project_file' : 'external_record'),
+    note: options.note || (exists ? '项目内文件，可直接打开。' : '历史记录中的来源路径，当前项目内未找到。'),
+  };
+}
+function uniqueSourceReferences(references) {
+  const seen = new Set();
+  return references.filter(Boolean).filter((reference) => {
+    const key = `${reference.status}:${reference.path}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+function buildFactorSourceReferences({ factorId, definition, availabilityState, summary, hasPrimaryField, hasCapitalField }) {
+  const references = [];
+  const hasDefinition = Boolean(definition?.requiredFields || definition?.formula || availabilityState);
+  const category = String(definition?.category || availabilityState?.category || '').toLowerCase();
+  const isCapital = category === 'capital_flow' || /capital|fund|资金|active_ap|main_force|institutional|large_order|accumulation/.test(`${factorId} ${availabilityState?.displayName || ''}`.toLowerCase());
+  const isIndex = factorId.startsWith('index_growth_') || factorId.startsWith('csi300_index_growth_') || factorId.startsWith('csi500_index_growth_');
+  const isYegReferenceFactor = factorId.startsWith('yeg_');
+  if (isYegReferenceFactor) {
+    references.push(buildSourceReference(yegReferenceDocPath, '野人哥交易实战笔记（参考 DOCX）', {
+      kind: 'reference_document',
+      note: '项目内参考文件；只说明规则来源，不代表因子已计算或已验证。',
+    }));
+  }
+  if (hasDefinition) {
+    references.push(buildSourceReference('platform/quant-factor-platform/server.mjs', '因子定义与流水线实现', {
+      kind: 'implementation',
+      note: '项目内实现文件：仅表示定义或流水线规则在此维护，不代表该文件本身保存因子值。',
+    }));
+  }
+  if (isCapital) {
+    if (hasCapitalField || availabilityState?.category === 'capital_flow' || factorId === 'market_capital_regime') {
+      const capitalSummary = readJsonFile(capitalFactorSummaryPath, {});
+      references.push(
+        buildSourceReference(capitalFactorResultsPath, '资金因子结果 JSON', { kind: 'result_file' }),
+        buildSourceReference(capitalFactorSummaryPath, '资金因子汇总 JSON', { kind: 'summary_file' }),
+        ...(Array.isArray(capitalSummary.source_files) ? capitalSummary.source_files.map((path) => buildSourceReference(path, '资金批次原始文件', { kind: 'recorded_source' })) : []),
+      );
+    }
+  } else if (isIndex) {
+    if (availabilityState) {
+      const fetchSummary = readJsonFile(indexEnhancementFetchSummaryPath, {});
+      references.push(
+        buildSourceReference(indexEnhancementResearchPath, '指数增强研究结果 JSON', { kind: 'result_file' }),
+        buildSourceReference(indexEnhancementFetchSummaryPath, '指数增强采集汇总 JSON', { kind: 'summary_file' }),
+        ...(Array.isArray(fetchSummary.summaries) ? fetchSummary.summaries.flatMap((item) => [
+          buildSourceReference(item.combined_path, `${item.index_name || '指数'}日线数据`, { kind: 'input_file' }),
+          buildSourceReference(item.pool_path, `${item.index_name || '指数'}成分池`, { kind: 'input_file' }),
+        ]) : []),
+      );
+    }
+  } else if (hasPrimaryField || availabilityState) {
+    references.push(
+      buildSourceReference(researchFactorResultsPath, '研究因子结果 JSON', { kind: 'result_file' }),
+      buildSourceReference(researchFactorSummaryPath, '研究因子汇总 JSON', { kind: 'summary_file' }),
+      buildSourceReference(summary?.source_file, '汇总记录的原始研究文件', { kind: 'recorded_source' }),
+    );
+  }
+  return uniqueSourceReferences(references);
+}
+function buildResearchSourceReferences(summary) {
+  return uniqueSourceReferences([
+    buildSourceReference('platform/quant-factor-platform/server.mjs', '研究流水线实现', { kind: 'implementation', note: '项目内实现文件：研究流水线、来源规则和状态计算均在此维护。' }),
+    buildSourceReference(researchFactorResultsPath, '研究因子结果 JSON', { kind: 'result_file' }),
+    buildSourceReference(researchFactorSummaryPath, '研究因子汇总 JSON', { kind: 'summary_file' }),
+    buildSourceReference(summary?.source_file, '汇总记录的原始研究文件', { kind: 'recorded_source' }),
+    buildSourceReference(capitalFactorResultsPath, '资金因子结果 JSON', { kind: 'result_file' }),
+    buildSourceReference(capitalFactorSummaryPath, '资金因子汇总 JSON', { kind: 'summary_file' }),
+    buildSourceReference(indexEnhancementResearchPath, '指数增强研究结果 JSON', { kind: 'result_file' }),
+    buildSourceReference(indexEnhancementFetchSummaryPath, '指数增强采集汇总 JSON', { kind: 'summary_file' }),
+  ]);
+}
+function buildResearchLiteratureIndex(entries) {
+  const byId = new Map((entries || []).map((entry) => [entry.factorId, entry]));
+  const yegFactors = yegReferenceFactorIds.map((factorId) => byId.get(factorId)).filter(Boolean);
+  const reference = buildSourceReference(yegReferenceDocPath, '野人哥交易实战笔记（参考 DOCX）', {
+    kind: 'reference_document',
+    note: '项目内参考文件；只说明规则来源，不代表因子已计算或已验证。',
+  });
+  return [{
+    id: 'yeg-trading-notes',
+    title: '野人哥交易实战笔记',
+    source: reference,
+    evidencePolicy: '文献只用于登记规则来源；关联因子必须单独完成字段补齐、历史计算和收益验证。',
+    factors: yegFactors.map((entry) => ({
+      factorId: entry.factorId,
+      name: entry.name,
+      status: entry.status,
+      resultCount: entry.resultCount,
+      realStatus: entry.realStatus,
+    })),
+  }];
 }
 
 function readIndexEnhancementTrades() {
@@ -3932,6 +4111,49 @@ function readPositionStressReport(options = {}) {
     reportPath: reportPath ? relativeProjectPath(reportPath) : '',
     selectedStrategy: report.selectedStrategy || readPositionStressSelection(),
   };
+
+}
+function readPositionStressRunLedger() {
+  const value = readJsonFile(positionStressRunLedgerPath, []);
+  return Array.isArray(value) ? value : [];
+}
+
+function buildPositionStressRunRecord(report) {
+  if (!report?.strategy || !report.reportPath) return null;
+  const generatedAt = report.generatedAt || new Date().toISOString();
+  const runId = `run_${createHash('sha1').update(`${report.reportPath}|${generatedAt}`).digest('hex').slice(0, 12)}`;
+  const dailySelections = Array.isArray(report.strategy.dailySelections) ? report.strategy.dailySelections : [];
+  const selectedStocks = dailySelections.flatMap((day) => (Array.isArray(day.items) ? day.items : []).map((item) => ({ ...item, date: day.date, rank: item.rank ?? null })));
+  const trades = Array.isArray(report.strategy.trades) ? report.strategy.trades : [];
+  return {
+    runId, generatedAt, reportPath: report.reportPath, status: report.status || '',
+    complete: Boolean(report.complete || report.runGate?.formalRunAllowed),
+    strategy: { id: report.strategy.id || '', name: report.strategy.name || report.strategy.id || '', adapter: report.strategy.adapter || '' },
+    dateRange: report.requestedDateRange || {}, selectionCount: selectedStocks.length,
+    selectedStockCount: new Set(selectedStocks.map((item) => item.code).filter(Boolean)).size,
+    tradeCount: trades.length, buyCount: trades.filter((trade) => trade.entryDate).length, sellCount: trades.filter((trade) => trade.exitDate).length,
+    selectedStocks, trades,
+  };
+}
+
+function appendPositionStressRunRecord(report) {
+  const record = buildPositionStressRunRecord(report);
+  if (!record) return null;
+  const ledger = readPositionStressRunLedger();
+  const existingIndex = ledger.findIndex((item) => item.reportPath === record.reportPath);
+  if (existingIndex >= 0) ledger[existingIndex] = { ...ledger[existingIndex], ...record };
+  else ledger.unshift(record);
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(positionStressRunLedgerPath, `${JSON.stringify(ledger.slice(0, 50), null, 2)}\n`);
+  return record;
+}
+
+function buildPositionStressRunLedger() {
+  return readPositionStressRunLedger().map((record) => ({
+    ...record,
+    selectedStocks: Array.isArray(record.selectedStocks) ? record.selectedStocks : [],
+    trades: Array.isArray(record.trades) ? record.trades : [],
+  }));
 }
 
 
@@ -4109,7 +4331,62 @@ function normalizePositionStressStrategy(item) {
   };
 }
 
-function buildPositionStressStrategyCatalog() {
+function readPositionStressImportedStrategies() {
+  const value = readJsonFile(positionStressImportedStrategiesPath, null);
+  if (Array.isArray(value)) return value;
+  const legacy = readJsonFile(positionStressSelectionPath, null);
+  return legacy?.strategyId ? [legacy] : [];
+}
+
+function writePositionStressImportedStrategies(strategies) {
+  const unique = [...new Map((Array.isArray(strategies) ? strategies : []).filter((item) => item?.strategyId).map((item) => [item.strategyId, item])).values()];
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(positionStressImportedStrategiesPath, `${JSON.stringify(unique, null, 2)}\n`);
+  return unique;
+}
+
+function resolveRunnablePositionStressStrategy(strategyId) {
+  const catalog = buildPositionStressStrategyCatalog({ skipImported: true });
+  const strategy = catalog.strategies.find((item) => item.strategyId === String(strategyId || '').trim());
+  if (!strategy) throw new Error('研究策略尚未进入模拟盘可执行策略目录，不能导入。');
+  if (!strategy.runnable) throw new Error(strategy.runnableReason || '该策略当前不可执行，不能导入模拟盘。');
+  return strategy;
+}
+
+function buildPositionStressImportedStrategies() {
+  return readPositionStressImportedStrategies().map((item) => ({ ...item, imported: true }));
+}
+
+function importPositionStressStrategy(strategyId) {
+  const strategy = resolveRunnablePositionStressStrategy(strategyId);
+  const current = readPositionStressSelection();
+  const imported = { ...strategy, imported: true, importedAt: new Date().toISOString() };
+  const list = writePositionStressImportedStrategies([
+    ...readPositionStressImportedStrategies().filter((item) => item.strategyId !== strategy.strategyId),
+    imported,
+  ]);
+  if (!current?.strategyId) {
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(positionStressSelectionPath, `${JSON.stringify({ ...strategy, selectedAt: new Date().toISOString() }, null, 2)}\n`);
+  }
+  return { imported, strategies: list, current: current || imported };
+}
+
+function removePositionStressStrategy(strategyId) {
+  const id = String(strategyId || '').trim();
+  const list = writePositionStressImportedStrategies(readPositionStressImportedStrategies().filter((item) => item.strategyId !== id));
+  const current = readPositionStressSelection();
+  const clearedCurrent = current?.strategyId === id;
+  if (clearedCurrent && existsSync(positionStressSelectionPath)) unlinkSync(positionStressSelectionPath);
+  return { removed: id, strategies: list, current: clearedCurrent ? null : current, clearedCurrent };
+}
+
+function buildImportedStrategyState() {
+  const strategies = buildPositionStressImportedStrategies();
+  return { strategies, importedStrategyIds: strategies.map((item) => item.strategyId), current: readPositionStressSelection() };
+}
+
+function buildPositionStressStrategyCatalog(options = {}) {
   const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
   const sleeves = Array.isArray(operationsPack.capital_sleeves) ? operationsPack.capital_sleeves : [];
   const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
@@ -4208,22 +4485,23 @@ function buildPositionStressStrategyCatalog() {
     if (left.runnable !== right.runnable) return left.runnable ? -1 : 1;
     return String(left.name).localeCompare(String(right.name), 'zh-CN');
   });
+  const importedState = buildImportedStrategyState();
+  const importedIds = new Set(importedState.importedStrategyIds);
+  const decoratedStrategies = strategies.map((item) => ({ ...item, imported: importedIds.has(item.strategyId) }));
   return {
     current,
-    dataPolicy: '只允许准模拟盘运行包或准入审计中已达标的策略进入建仓压力测试；控制器类策略没有明确选股名单时不能直接运行。',
-    strategies,
+    importedStrategies: importedState.strategies,
+    importedStrategyIds: importedState.importedStrategyIds,
+    dataPolicy: '只允许导入已达到可执行门槛的策略进入模拟盘；未导入策略不能运行。',
+    strategies: options.skipImported ? decoratedStrategies : decoratedStrategies,
   };
 }
 
 function selectPositionStressStrategy(strategyId) {
   const catalog = buildPositionStressStrategyCatalog();
   const strategy = catalog.strategies.find((item) => item.strategyId === strategyId);
-  if (!strategy) {
-    throw new Error('该策略未达到准模拟盘标准，不能进入建仓压力测试。');
-  }
-  if (!strategy.runnable) {
-    throw new Error(strategy.runnableReason || '该策略当前不能直接进入建仓压力测试。');
-  }
+  if (!strategy || !strategy.runnable) throw new Error('该策略未达到模拟盘可执行标准。');
+  if (!catalog.importedStrategyIds.includes(strategyId)) throw new Error('请先从策略池加入模拟盘，再运行该策略。');
   const selected = {
     ...strategy,
     selectedAt: new Date().toISOString(),
@@ -5701,6 +5979,9 @@ const researchFactorDisplayNames = {
 function canonicalFactorId(id) {
   return researchFactorAliases[id] || id;
 }
+function logicalPipelineFactorId(id) {
+  return String(id || '').replace(/^csi(?:300|500)_/, '');
+}
 
 function researchFactorDisplayName(id) {
   if (researchFactorDisplayNames[id]) return researchFactorDisplayNames[id];
@@ -5978,7 +6259,6 @@ function factorBacktestProfile(factorId, role = 'signal') {
         positiveRatio: Number.isFinite(resultPositiveRatio(result)) ? resultPositiveRatio(result) : null,
         rankIc: Number.isFinite(resultRankIc(result)) ? resultRankIc(result) : null,
         rankIcT: Number.isFinite(resultRankIcT(result)) ? resultRankIcT(result) : null,
-        sampleDates: resultSampleDates(result),
         source: result.source || '',
       })),
     evidence: bestPrimary
@@ -6011,6 +6291,8 @@ function buildResearchPipeline() {
   const availability = summary.factor_meta?.availability || {};
   const importedResults = readImportedFactorResults();
   const resultStats = summarizeImportedResults(importedResults);
+  const primaryRows = readPrimaryFactorRows();
+  const capitalRows = readCapitalFactorRows();
   const definitionByCanonicalId = indicatorFactorDefinitions.reduce((map, definition) => {
     map[canonicalFactorId(definition.id)] = definition;
     return map;
@@ -6040,6 +6322,8 @@ function buildResearchPipeline() {
     const quality = qualityFromResultStats(stats);
     const exportRows = exportable ? buildJoinQuantFactorRows({ factor: factorId }).length : 0;
     const hasComputedRows = rows.some((row) => row[factorId] !== null && row[factorId] !== undefined);
+    const hasPrimaryField = primaryRows.some((row) => row[factorId] !== null && row[factorId] !== undefined && row[factorId] !== '');
+    const hasCapitalField = capitalRows.some((row) => row[factorId] !== null && row[factorId] !== undefined && row[factorId] !== '');
     const status = stats?.all.length
       ? quality.status
       : hasComputedRows || exportRows
@@ -6059,6 +6343,7 @@ function buildResearchPipeline() {
       dataGaps,
       dataSource: definition.dataSource || 'M-quant real factor/backtest records',
       decision: statusQuality.decision,
+      sourceReferences: buildFactorSourceReferences({ factorId, definition, availabilityState, summary, hasPrimaryField, hasCapitalField }),
       decisionTone: statusQuality.decisionTone,
       direction: exportable?.direction || definition.direction || availabilityState?.direction || 'positive',
       evidence: statusQuality.evidence,
@@ -6100,21 +6385,32 @@ function buildResearchPipeline() {
     return left.name.localeCompare(right.name, 'zh-CN');
   });
 
+  const statusCounts = entries.reduce((counts, entry) => {
+    counts[entry.status] = (counts[entry.status] || 0) + 1;
+    return counts;
+  }, {});
+  const logicalFactorCount = new Set(entries.map((entry) => logicalPipelineFactorId(entry.factorId))).size;
+  const variantCount = entries.filter((entry) => logicalPipelineFactorId(entry.factorId) !== entry.factorId).length;
+  const testedCount = entries.filter((entry) => entry.resultCount > 0).length;
   const metrics = {
-    blockedCount: entries.filter((entry) => entry.status === 'requires_more_data' || entry.status === 'unavailable').length,
+    blockedCount: (statusCounts.requires_more_data || 0) + (statusCounts.unavailable || 0),
     factorCount: entries.length,
-    strategyCandidateCount: entries.filter((entry) => entry.status === 'strategy_candidate').length,
-    testedCount: entries.filter((entry) => entry.resultCount > 0).length,
-    waitingTestCount: entries.filter((entry) => entry.status === 'waiting_test' || entry.status === 'tracking').length,
+    logicalFactorCount,
+    variantCount,
+    strategyCandidateCount: statusCounts.strategy_candidate || 0,
+    testedCount,
+    waitingTestCount: (statusCounts.waiting_test || 0) + (statusCounts.tracking || 0),
+    statusCounts,
+    statusCountsSum: Object.values(statusCounts).reduce((sum, count) => sum + count, 0),
   };
 
   return {
     assistant: {
       llmStatus: 'not_configured',
-      mode: 'local_grounded_assistant',
       policy: '研究智能体只使用项目真实数据、真实回填结果和明确缺口；不接入外部 LLM，不修改策略、准入或交易状态。',
     },
-    blockers: backtestStatus.blockers,
+    sourceReferences: buildResearchSourceReferences(summary),
+    literatureIndex: buildResearchLiteratureIndex(entries),
     entries,
     generatedAt: new Date().toISOString(),
     metrics,
@@ -7863,59 +8159,58 @@ async function handleApi(req, res, pathname) {
     sendJson(res, { ok: true, service: 'quant-factor-platform', timestamp: new Date().toISOString() });
     return true;
   }
-
   if (req.method === 'GET' && pathname === '/api/summary') {
     sendJson(res, buildSummary(state));
     return true;
   }
-
+  if (req.method === 'GET' && pathname === '/research-api/source') {
+    const requestedPath = String(url.searchParams.get('path') || '').trim();
+    const candidate = normalize(join(projectRoot, requestedPath));
+    const relativePath = projectRelativePath(candidate);
+    if (!requestedPath || requestedPath.startsWith('/') || relativePath === null || !existsSync(candidate) || !statSync(candidate).isFile()) {
+      sendError(res, '来源文件不存在或不允许访问', 404);
+      return true;
+    }
+    const contentType = contentTypes[extname(candidate)] || 'text/plain; charset=utf-8';
+    res.writeHead(200, { 'Cache-Control': 'no-store', 'Content-Type': contentType });
+    createReadStream(candidate).pipe(res);
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/api/preferences') {
     sendJson(res, state.preferences);
     return true;
   }
-
   if (req.method === 'PUT' && pathname === '/api/preferences') {
     const body = await readJsonBody(req);
-    const nextState = {
-      ...state,
-      preferences: {
-        ...state.preferences,
-        ...body,
-        feeRate: Number(body.feeRate ?? state.preferences.feeRate),
-        slippage: Number(body.slippage ?? state.preferences.slippage),
-      },
-    };
-
+    const nextState = { ...state, preferences: { ...state.preferences, ...body, feeRate: Number(body.feeRate ?? state.preferences.feeRate), slippage: Number(body.slippage ?? state.preferences.slippage) } };
     writeState(nextState);
     sendJson(res, nextState.preferences);
     return true;
   }
-
   if (req.method === 'GET' && pathname === '/position-stress-api/history') {
     sendJson(res, buildPositionStressHistory());
     return true;
   }
-
+  if (req.method === 'GET' && pathname === '/position-stress-api/runs') {
+    sendJson(res, buildPositionStressRunLedger());
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/position-stress-api/imported-strategies') {
+    sendJson(res, { ...buildImportedStrategyState(), dataPolicy: '只展示已经加入模拟盘且通过可执行校验的策略。' });
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/api/risk') {
     sendJson(res, buildDataCoverageRisks());
     return true;
   }
-
   if (req.method === 'GET' && pathname === '/position-stress-api/report') {
-    sendJson(res, readPositionStressReport({
-      end: url.searchParams.get('end'),
-      reportPath: url.searchParams.get('reportPath'),
-      start: url.searchParams.get('start'),
-    }));
+    sendJson(res, readPositionStressReport({ end: url.searchParams.get('end'), reportPath: url.searchParams.get('reportPath'), start: url.searchParams.get('start') }));
     return true;
   }
-
-
   if (req.method === 'GET' && pathname === '/position-stress-api/strategies') {
     sendJson(res, buildPositionStressStrategyCatalog());
     return true;
   }
-
   if (req.method === 'GET' && pathname === '/position-stress-api/kline-search') {
     const item = readAkshareDailyKlineItem(url.searchParams.get('q'));
     if (!item) {
@@ -7925,24 +8220,28 @@ async function handleApi(req, res, pathname) {
     sendJson(res, { item, message: `已从本地行情缓存加载 ${item.name} ${item.code}。` });
     return true;
   }
-
+  if (req.method === 'POST' && pathname === '/position-stress-api/import-strategy') {
+    const body = await readJsonBody(req);
+    const result = importPositionStressStrategy(String(body.strategyId || ''));
+    sendJson(res, { message: `${result.imported.name} 已加入模拟盘。`, ...result, catalog: buildPositionStressStrategyCatalog() });
+    return true;
+  }
+  if (req.method === 'DELETE' && pathname === '/position-stress-api/import-strategy') {
+    const result = removePositionStressStrategy(url.searchParams.get('strategyId'));
+    sendJson(res, { message: result.clearedCurrent ? '策略已从模拟盘移除，并清理当前选择。' : '策略已从模拟盘移除。', ...result, catalog: buildPositionStressStrategyCatalog() });
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/position-stress-api/equity-export.xlsx') {
-    const exportPath = exportPositionStressEquityExcel({
-      start: url.searchParams.get('start'),
-      end: url.searchParams.get('end'),
-    });
+    const exportPath = exportPositionStressEquityExcel({ start: url.searchParams.get('start'), end: url.searchParams.get('end') });
     sendFileDownload(res, `m-quant-position-stress-equity-${todayYmd()}.xlsx`, exportPath, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     return true;
   }
-
   if (req.method === 'GET' && pathname === '/position-stress-api/trades-export.xlsx') {
-    const exportPath = exportPositionStressTradesExcel({
-      start: url.searchParams.get('start'),
-      end: url.searchParams.get('end'),
-    });
+    const exportPath = exportPositionStressTradesExcel({ start: url.searchParams.get('start'), end: url.searchParams.get('end') });
     sendFileDownload(res, `m-quant-position-stress-trades-${todayYmd()}.xlsx`, exportPath, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     return true;
   }
+
 
   if (req.method === 'POST' && pathname === '/position-stress-api/select-strategy') {
     const body = await readJsonBody(req);
@@ -7962,6 +8261,7 @@ async function handleApi(req, res, pathname) {
   if (req.method === 'POST' && pathname === '/position-stress-api/run') {
     const body = await readJsonBody(req);
     const result = runPositionStressLab(body);
+    const runRecord = appendPositionStressRunRecord(result.report);
     sendJson(res, {
       message: result.errorKind === 'timeout'
         ? result.stepWarning || '建仓压力测试计算超时，请缩短窗口或稍后重跑。'
@@ -7970,6 +8270,7 @@ async function handleApi(req, res, pathname) {
           : result.step?.ok === false
             ? '建仓压力测试脚本运行失败，请查看错误详情。'
             : '建仓压力测试已生成预览，但数据不完整，正式运行已阻断。',
+      runRecord,
       ...result,
     }, result.ok ? 200 : 500);
     return true;
@@ -7986,11 +8287,13 @@ async function handleApi(req, res, pathname) {
       start: url.searchParams.get('start'),
       strategyId,
     });
+    const runRecord = appendPositionStressRunRecord(result.report);
     sendJson(res, {
       message: result.report?.runGate?.formalRunAllowed
         ? '真实行情已导入，数据完整，正式建仓压力测试已放行。'
         : '真实行情已导入并重跑，但数据仍不完整，请查看缺失日期。',
       importFile: relativeProjectPath(importFile),
+      runRecord,
       ...result,
     }, result.ok ? 200 : 500);
     return true;
