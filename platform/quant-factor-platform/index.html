@@ -6,6 +6,7 @@
     <title>量化因子策略平台</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260913-progressive-dashboard" />
     <script src="/config/app-config.js"></script>
+    <link rel="stylesheet" href="/assets/return-mapping.css?v=20261123-formula-v3" />
   </head>
   <body>
     <div class="app-shell">
@@ -100,8 +101,8 @@
             <section class="panel chart-panel">
               <div class="panel-head">
                 <div>
-                  <p class="eyebrow">Backtest Equity</p>
-                  <h2>策略净值曲线</h2>
+                  <p class="eyebrow">Prototype Preview</p>
+                  <h2>原型演示净值</h2>
                 </div>
                 <div class="segmented">
                   <button class="active">3Y</button>
@@ -109,6 +110,7 @@
                   <button>6M</button>
                 </div>
               </div>
+              <p class="library-source">此图由旧版原型参数生成，只用于界面演示；本次收益映射的真实留出验证请在“证据与复测”查看。</p>
               <canvas id="equity-chart" width="920" height="360"></canvas>
             </section>
 
@@ -116,7 +118,7 @@
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Preferences</p>
-                  <h2>默认策略参数</h2>
+                  <h2>原型默认策略参数</h2>
                 </div>
               </div>
               <form class="settings-form">
@@ -156,7 +158,7 @@
                 </label>
                 <div class="form-actions">
                   <button id="save-preferences" type="button">保存配置</button>
-                  <button id="run-backtest" class="primary" type="button">模拟回测</button>
+                  <button id="run-backtest" class="primary" type="button">配置收益映射回测</button>
                 </div>
                 <p id="form-message" class="form-message">配置由本地后端 API 管理</p>
               </form>
@@ -550,6 +552,10 @@
             <div id="strategy-level-index" class="strategy-level-index" aria-label="策略等级索引"></div>
             <div id="strategy-live-list" class="strategy-list"></div>
             <div id="draft-strategy-pagination" class="pagination compact"></div>
+          </section>
+          <section id="return-mapping-portfolio" class="panel rm-panel" aria-labelledby="rm-portfolio-title">
+            <div class="panel-head"><div><h2 id="rm-portfolio-title">组合构建：预期收益输入 μ</h2><p class="rm-intro">每个预期收益都保留模型版本、暴露时点和收益期限。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
+            <div data-rm-portfolio-content aria-live="polite"><p class="rm-empty">先在回测中心保存参数并估计模型，再生成组合。</p></div>
           </section>
           <section class="panel strategy-paper-management-panel">
             <div class="panel-head">
@@ -981,6 +987,10 @@
         </div>
 
         <div id="backtest-center-view" class="view">
+          <section id="return-mapping-config" class="panel rm-panel" aria-labelledby="rm-config-title">
+            <div class="panel-head"><div><h2 id="rm-config-title">信号到收益</h2><p class="rm-intro">用同一套参数连接因子暴露、预期收益与样本外检验。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
+            <div data-rm-config-content aria-live="polite"><p class="rm-empty">正在读取映射参数与真实数据范围。</p></div>
+          </section>
           <section class="metrics-grid" aria-label="复测中心指标">
             <article class="metric">
               <span>可导出样本</span>
@@ -1093,6 +1103,10 @@
         </div>
 
         <div id="validated-results-view" class="view">
+          <section id="return-mapping-attribution" class="panel rm-panel" aria-labelledby="rm-attribution-title">
+            <div class="panel-head"><div><h2 id="rm-attribution-title">收益分解</h2><p class="rm-intro">使用预测当时冻结的参数核对收益，不以事后拟合替代预测。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
+            <div data-rm-attribution-content aria-live="polite"><p class="rm-empty">模型估计完成后，这里展示样本外收益与因子贡献。</p></div>
+          </section>
           <section class="metrics-grid" aria-label="实测结果摘要">
             <article class="metric">
               <span>结果记录</span>
@@ -1265,6 +1279,7 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260913-paper-strategy-management"></script>
+    <script type="module" src="/assets/app.js?v=20261123-return-mapping-v1"></script>
+    <script type="module" src="/assets/return-mapping.js?v=20261123-formula-v3"></script>
   </body>
 </html>

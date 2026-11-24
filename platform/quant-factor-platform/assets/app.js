@@ -2296,6 +2296,8 @@ function renderResearchDetail(entry) {
       <p>${escapeHtml(entry.nextAction)}</p>
     </div>
   `;
+  window.mquantReturnMappingFactor = entry;
+  window.dispatchEvent(new CustomEvent('mquant:research-factor', { detail: entry }));
 }
 
 function renderResearchPipeline(pipeline) {
@@ -4608,7 +4610,7 @@ async function refreshDashboard() {
   const strategiesTask = request('/strategy-api/definitions');
   const pipelineTask = request('/research-api/pipeline');
   track('真实因子排名', request('/factor-api/real-factor-results?limit=100'), renderFactors);
-  track('策略净值曲线', request('/backtest-api/equity'), drawChart);
+  track('原型演示净值', request('/backtest-api/equity'), drawChart);
   track('组合风险', request('/api/risk'), renderRisk);
   track('准模拟盘路线', request('/strategy-api/paper-watch-routes'), renderPaperWatchRoutes);
   track('因子动态', request('/factor-api/activity'), renderFactorActivity);
@@ -4691,19 +4693,12 @@ elements.savePreferences?.addEventListener('click', async () => {
   }
 });
 
-elements.runBacktest?.addEventListener('click', async () => {
-  try {
-    const result = await request('/backtest-api/run', {
-      body: JSON.stringify(getPreferencePayload()),
-      method: 'POST',
-    });
-
-    renderSummary(result.summary);
-    drawChart(result.equity);
-    setFormMessage(result.message, 'success');
-  } catch (error) {
-    setFormMessage(`回测失败：${error.message}`, 'error');
-  }
+elements.runBacktest?.addEventListener('click', () => {
+  showView('backtest-center');
+  document.querySelector('#return-mapping-config')?.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    block: 'start',
+  });
 });
 
 elements.draftStrategySearch?.addEventListener('input', () => {

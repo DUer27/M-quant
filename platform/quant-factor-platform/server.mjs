@@ -13,6 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { basename, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createReturnMappingService } from './return-mapping-service.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const host = process.env.HOST || '127.0.0.1';
@@ -28,6 +29,7 @@ const projectRoot = projectRootCandidates.find((path) => existsSync(join(path, '
 const outputPath = (...parts) => join(projectRoot, 'outputs', ...parts);
 const bundledPythonPath = '/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3';
 const pythonExecutable = existsSync(bundledPythonPath) ? bundledPythonPath : (process.env.PYTHON || 'python3');
+const handleReturnMappingApi = createReturnMappingService({ root, projectRoot, pythonExecutable, sendJson });
 const realFactorResultsPath = outputPath('real-factors', 'yiwan-real-factor-results.json');
 const realFactorSummaryPath = outputPath('real-factors', 'yiwan-real-factor-summary.json');
 const researchFactorResultsPath = outputPath('research-factor-pipeline', 'yiwan-research-factor-results.json');
@@ -8132,6 +8134,7 @@ function buildExecutionHealth() {
 }
 
 async function handleApi(req, res, pathname) {
+  if (await handleReturnMappingApi(req, res, pathname)) return true;
   const state = readState();
   const url = new URL(req.url || '/', `http://localhost:${port}`);
 
@@ -9004,6 +9007,7 @@ function resolvePath(url) {
 createServer(async (req, res) => {
   const { pathname } = new URL(req.url || '/', `http://localhost:${port}`);
   const isApiRequest = pathname.startsWith('/api/')
+    || pathname.startsWith('/return-mapping-api/')
     || pathname.startsWith('/factor-api/')
     || pathname.startsWith('/backtest-api/')
     || pathname.startsWith('/market-api/')

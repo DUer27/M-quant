@@ -1,5 +1,6 @@
 .DS_Store
 __pycache__/
+platform/quant-factor-platform/data/return-mapping/
 *.pyc
 node_modules/
 .env.local
