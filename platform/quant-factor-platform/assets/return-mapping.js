@@ -1,17 +1,19 @@
-import { modelMath, targetMath, standardizationMath, neweyWestMath, operatorMath, portfolioMath, attributionMath, registeredFactorMath } from './return-mapping-math.js';
+import { renderModelExplanation } from './return-mapping-explanation.js';
 
 const API = '/return-mapping-api';
 const roots = {
   config: document.querySelector('[data-rm-config-content]'),
   portfolio: document.querySelector('[data-rm-portfolio-content]'),
   attribution: document.querySelector('[data-rm-attribution-content]'),
+  explanation: document.querySelector('[data-rm-explanation-content]'),
 };
 const state = {
   schema: null, config: null, revision: null, configHash: null,
   report: null, portfolio: null, attribution: null,
   dirty: false, stale: false, busy: false,
   activeFactor: window.mquantReturnMappingFactor || null,
-  detailTab: 'logic',
+  explanationSection: 'factor', explanationSource: 'draft', explanationFactorId: null,
+  explanationOrigin: null, openingExplanation: false,
 };
 
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -81,6 +83,7 @@ function renderVersions() {
     element.className = `tag ${activeReport() ? 'good' : 'pending'}`;
     element.title = state.report?.modelId || state.configHash || '';
   });
+  renderExplanationView();
 }
 
 function status(message, tone = '') {
@@ -100,9 +103,13 @@ function busy(value) {
 }
 
 function jump(view, anchor) {
-  const group = ['backtest-center', 'validated-results'].includes(view) ? 'evidence-retest' : 'research-strategy';
-  document.querySelector(`[data-view-target="${group}"]`)?.click();
-  document.querySelector(`[data-subview-target="${view}"]`)?.click();
+  const direct = document.querySelector(`[data-view-target="${view}"]`);
+  if (direct) direct.click();
+  else {
+    const group = ['backtest-center', 'validated-results', 'factor-activity', 'strategy-results'].includes(view) ? 'evidence-retest' : 'research-strategy';
+    document.querySelector(`[data-view-target="${group}"]`)?.click();
+    document.querySelector(`[data-subview-target="${view}"]`)?.click();
+  }
   if (anchor) document.getElementById(anchor)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
 }
 
@@ -145,7 +152,7 @@ function renderConfig() {
         <p class="rm-help">窗口与方向直接参与计算。登记因子若无法由当前数据精确复现，会在因子逻辑中显示缺口，不自动替换。</p>
         <div class="rm-factor-editor">${list(state.schema.factors).map((factor) => {
           const setting = selected.get(factor.id) || { id: factor.id, enabled: false, lookback: factor.defaultLookback, direction: factor.defaultDirection };
-          return `<div class="rm-factor-editor-row" data-rm-factor="${esc(factor.id)}"><label class="rm-factor-option"><input type="checkbox" name="factor:${esc(factor.id)}"${setting.enabled ? ' checked' : ''} /><span><strong>${esc(factor.name)}</strong><small>${esc(factor.formula)}</small></span></label><label class="rm-field" for="rm-lookback-${esc(factor.id)}">窗口<input id="rm-lookback-${esc(factor.id)}" data-rm-lookback type="number" min="2" max="252" step="1" value="${esc(setting.lookback)}" required /></label><label class="rm-field" for="rm-direction-${esc(factor.id)}">方向<select id="rm-direction-${esc(factor.id)}" data-rm-direction><option value="1"${Number(setting.direction) === 1 ? ' selected' : ''}>原方向 +1</option><option value="-1"${Number(setting.direction) === -1 ? ' selected' : ''}>反方向 −1</option></select></label><details class="rm-operator-logic"><summary>${esc(factor.name)} · 因子逻辑</summary><div data-rm-operator-logic></div></details></div>`;
+          return `<div class="rm-factor-editor-row" data-rm-factor="${esc(factor.id)}"><label class="rm-factor-option"><input type="checkbox" name="factor:${esc(factor.id)}"${setting.enabled ? ' checked' : ''} /><span><strong>${esc(factor.name)}</strong><small>${esc(factor.unit)}</small></span></label><label class="rm-field" for="rm-lookback-${esc(factor.id)}">窗口<input id="rm-lookback-${esc(factor.id)}" data-rm-lookback type="number" min="2" max="252" step="1" value="${esc(setting.lookback)}" required /></label><label class="rm-field" for="rm-direction-${esc(factor.id)}">方向<select id="rm-direction-${esc(factor.id)}" data-rm-direction><option value="1"${Number(setting.direction) === 1 ? ' selected' : ''}>原方向 +1</option><option value="-1"${Number(setting.direction) === -1 ? ' selected' : ''}>反方向 −1</option></select></label><button type="button" class="rm-context-link rm-operator-logic" data-rm-explain="factor" data-rm-factor-id="${esc(factor.id)}">查看${esc(factor.name)}的构造解释</button></div>`;
         }).join('')}</div>
       </fieldset>
       <fieldset class="rm-fieldset"><legend>组合约束与交易成本</legend><p class="rm-help">这些参数也写入同一模型快照。修改后重新估计，组合和验证报告不会混用版本。</p><div class="rm-form-grid">
@@ -161,7 +168,6 @@ function renderConfig() {
         <p class="rm-help">文件结构包含 factorIds、frequency、units: decimal 和 rows；每行包含 date、rf 及各因子的当期收益。只有真实对齐序列可用于严格风险溢价估计。</p>
         <p id="rm-calibration-status" class="rm-status" role="status">尚未读取校准数据状态。</p>
       </details>
-      <section id="rm-formula-preview" class="rm-math-note" aria-label="当前映射公式与符号含义">${modelMath(config.method, config)}</section>
       <div id="rm-data-requirements">${sourceSummary ? notice(sourceSummary) : ''}${method.requires ? warningsHtml(Array.isArray(method.requires) ? method.requires : [method.requires]) : ''}</div>
       <div class="rm-actions"><button data-rm-action="save" type="button">保存映射参数</button><button class="primary" data-rm-action="fit" type="submit">保存并估计模型</button><button data-rm-action="reload" type="button">读取已保存参数</button><span id="rm-operation-status" class="rm-status" role="status" aria-live="polite">${esc(state.revision ? `参数版本 ${state.revision}` : '参数待保存')}</span></div>
     </form>
@@ -175,7 +181,6 @@ function renderConfig() {
   form.querySelector('[data-rm-action="calibration"]').addEventListener('click', importCalibration);
   readCalibrationStatus();
   renderModelResult();
-  renderOperatorLogic();
   renderVersions();
 }
 
@@ -220,7 +225,6 @@ function handleConfigChange(event) {
   state.dirty = true;
   state.stale = Boolean(state.report);
   const method = methodInfo();
-  document.querySelector('#rm-formula-preview').innerHTML = modelMath(state.config.method, state.config);
   document.querySelector('#rm-method-meaning').textContent = method.interpretation || '';
   const dataPolicy = state.schema?.dataSummary?.policy;
   document.querySelector('#rm-data-requirements').innerHTML = (dataPolicy ? notice(dataPolicy) : '') + (method.requires ? warningsHtml(Array.isArray(method.requires) ? method.requires : [method.requires]) : '');
@@ -231,18 +235,7 @@ function handleConfigChange(event) {
   document.querySelector('#rm-risk-free-field').hidden = state.config.method !== 'risk_premium_fmb';
   document.querySelector('#rm-horizon').max = state.config.frequency === 'monthly' ? 12 : 60;
   status('参数尚未保存。旧模型仅供查看，不能继续应用到组合。');
-  renderVersions(); renderPortfolio(); renderAttribution(); renderFactorLogic(); renderOperatorLogic();
-}
-
-function renderOperatorLogic() {
-  document.querySelectorAll('[data-rm-factor]').forEach((row) => {
-    const factor = list(state.schema?.factors).find((item) => item.id === row.dataset.rmFactor);
-    const setting = list(state.config?.factors).find((item) => item.id === factor?.id);
-    const root = row.querySelector('[data-rm-operator-logic]');
-    if (!root || !factor) return;
-    const coefficient = list(state.report?.model?.coefficients).find((item) => item.factorId === factor.id);
-    root.innerHTML = `${operatorMath(factor, setting || {})}${keyValues([['独立映射编号', factor.id], ['暴露单位', factor.unit], ['经济假设', factor.meaning], ['当前窗口 / 方向', setting ? `${setting.lookback} 个交易日 / ${setting.direction === -1 ? '−1' : '+1'}` : '未配置'], ['标准化', '截面缩尾后 z-score；系数按一单位有向标准化暴露解释'], ['当前系数', activeReport() && coefficient ? percent(coefficient.estimate, 4) : '尚无可应用的同版本系数']])}<p class="rm-help">这是有独立编号、公式与参数的新计算算子。既有登记因子的复合公式与之不同，不自动认定为同一个因子。</p>`;
-  });
+  renderVersions(); renderPortfolio(); renderAttribution(); renderFactorSummary();
 }
 
 function validateForm() {
@@ -265,7 +258,7 @@ async function saveConfig() {
   state.dirty = false;
   state.stale = Boolean(state.report && (state.report.stale || state.report.configHash !== state.configHash));
   if (oldHash !== state.configHash) { state.portfolio = null; state.attribution = null; }
-  renderVersions(); renderPortfolio(); renderAttribution(); renderFactorLogic();
+  renderVersions(); renderPortfolio(); renderAttribution(); renderFactorSummary();
   status(state.stale ? '参数已保存。请重新估计，使回测、μ 和归因使用同一版本。' : '映射参数已保存。');
   return true;
 }
@@ -283,7 +276,7 @@ async function reloadConfig() {
     const response = await request('/config');
     state.config = response.config; state.revision = response.revision; state.configHash = response.configHash;
     state.dirty = false; state.stale = Boolean(state.report && (state.report.stale || state.report.configHash !== state.configHash));
-    renderConfig(); renderPortfolio(); renderAttribution(); renderFactorLogic();
+    renderConfig(); renderPortfolio(); renderAttribution(); renderFactorSummary();
     status('已读取保存的参数。');
   } catch (error) { status(error.message, 'error'); } finally { busy(false); }
 }
@@ -297,7 +290,7 @@ async function fitModel() {
     const report = await request('/fit', { method: 'POST', body: JSON.stringify({ revision: state.revision }) });
     state.report = report; state.portfolio = null; state.attribution = null;
     state.stale = Boolean(report.stale || report.configHash !== state.configHash);
-    renderModelResult(); renderPortfolio(); renderAttribution(); renderFactorLogic(); renderOperatorLogic(); renderVersions();
+    renderModelResult(); renderPortfolio(); renderAttribution(); renderFactorSummary(); renderVersions();
     if (report.status === 'ok') status('估计完成。参数快照已连接预期收益、组合与归因。');
     else status(report.message || report.reason || '当前数据或模型条件不满足，已阻塞计算。', 'error');
   } catch (error) { status(error.message, 'error'); } finally { busy(false); }
@@ -328,7 +321,7 @@ async function importCalibration() {
     const value = await request('/calibration-data', { method: 'PUT', body: JSON.stringify(payload) });
     state.stale = Boolean(state.report); if (state.report) state.report.stale = true; state.portfolio = null; state.attribution = null;
     element.textContent = value.message || `已保存 ${payload.rows.length} 期真实序列。请重新估计模型。`;
-    renderVersions(); renderPortfolio(); renderAttribution(); renderFactorLogic();
+    renderVersions(); renderPortfolio(); renderAttribution(); renderFactorSummary();
   } catch (error) { element.textContent = error.message; } finally { busy(false); }
 }
 
@@ -352,13 +345,13 @@ function renderModelResult() {
   root.innerHTML = `
     ${report.data?.asOf ? notice(`历史时点研究：当前暴露日期为 ${report.data.asOf}，行情截止 ${report.data.rawEnd || report.data.asOf}。以下 μ 属于该数据时点，不是运行当日的收益预测。`) : ''}
     <h3 class="rm-section-title">映射系数与经济含义</h3>
-    ${modelMath(model.method || report.config?.method, report.config || state.config)}
+    <button class="rm-context-link" type="button" data-rm-explain="mapping" data-rm-explanation-source="snapshot">查看这份模型快照的数学解释</button>
     <p class="rm-help">${esc(model.interpretation || '')}</p>
     ${isLocal ? notice(`系数表描述参考股票 ${local.anchorCode || '待指定'} 附近的局部线性代理。每只股票的非线性预测和边际贡献分别计算，不将参考点斜率当成全池统一风险价格。`) : ''}
     ${table(['因子 / 项', '系数', '稳健标准误', '稳健 t 值', '单位与解释'], coefficients.map((item) => [factorName(item.factorId), percent(item.estimate, 4), percent(item.standardError, 4), number(item.tStatistic, 3), [item.unit, item.meaning].filter(Boolean).join('；')]), '系数以收益率显示；统计解释和经济单位以模型记录为准。')}
     ${keyValues([['截距', percent(intercept, 4)], ['模型版本', report.modelId], ['标准化口径', model.normalization], ['Newey–West 核', isLocal ? '局部代理不输出 FMB/HAC t 值' : model.neweyWest?.kernel], ['实际稳健滞后阶数', isLocal ? undefined : model.neweyWest?.effectiveLags], ['稳健估计的时间样本数', isLocal ? undefined : model.neweyWest?.timeObservations], ['共线性处理', model.collinearity?.method || report.config?.collinearity?.method], ['训练标签截止', model.estimationCutoff || report.data?.trainLabelEnd]])}
     ${isLocal ? keyValues([['局部参考股票', local.anchorCode], ['核带宽', local.bandwidth], ['解释保真度（加权 R²）', number(local.weightedRSquared)], ['局部参考样本数', local.referenceRows], ['局部系数口径', local.coefficientMeaning], ['解释显著性', local.standardErrors]]) : ''}
-    <details class="rm-diagnostics"><summary>收益口径、标准化与稳健推断的公式</summary>${targetMath(report.config || state.config)}${model.method !== 'risk_premium_fmb' ? standardizationMath(report.config || state.config) : ''}${!isLocal ? neweyWestMath(report.config || state.config, report) : ''}</details>
+    <button class="rm-context-link" type="button" data-rm-explain="diagnostics" data-rm-explanation-source="snapshot">了解收益口径、标准化与稳健推断</button>
     ${collinearityHtml(model.collinearity)}
     ${diagnosticHtml(report)}
     ${backtestHtml(report.backtest)}
@@ -422,7 +415,6 @@ function renderPortfolio() {
   const isRisk = report.model?.method === 'risk_premium_fmb';
   roots.portfolio.innerHTML = `
     ${report.data?.asOf ? notice(`预期收益的暴露时点：${report.data.asOf}；请与运行日期区分。`) : ''}
-    ${portfolioMath(report.config || state.config)}
     <p class="rm-help">先按 μ 取 TopN 候选，再在候选内求解均值方差权重。协方差按收益期限缩放，属于风险近似；权重与约束使用同一模型快照。</p>
     ${keyValues([['模型', report.modelId], ['收益期限', `${report.config?.horizon ?? state.config.horizon} ${report.config?.frequency === 'monthly' ? '个月度观测期' : '个交易日'}`], ['暴露时点', predictions[0]?.date ?? report.data?.asOf], ['有效 μ 数', predictions.length], ['未来无风险收益假设', isRisk ? '最近已知 rf 持平并按持有期复合；并非未来已知值' : undefined]])}
     ${keyValues([['最多持有股票数', config.topN], ['风险厌恶 γ', config.riskAversion], ['单股权重上限', percent(config.maxWeight)], ['单边费率 / 滑点', `${percent(config.feeRate, 3)} / ${percent(config.slippage, 3)}`]])}
@@ -474,7 +466,6 @@ function renderAttribution() {
     return [row.date, percent(row.intercept, 3), ...factorIds.map((id) => percent(factorValues[id], 3)), percent(row.residual, 3), percent(row.realizedReturn, 3), percent(row.cost, 3), percent(row.netReturn, 3), difference === null ? '缺字段' : Math.abs(difference) < 1e-8 ? '通过' : `差额 ${number(difference, 8)}`];
   });
   roots.attribution.innerHTML = `
-    ${attributionMath(state.report.model?.method || state.report.config?.method)}
     <p class="rm-help">这里核对冻结模型的预期收益组成与实现误差：因子列是预测贡献，残差包含未预期的市场变化。它不等同于用实际风险因子收益乘β的传统业绩归因，也不构成因果解释。交易费用单列核对；加总通过仅说明口径一致，不证明预测有效。</p>
     ${keyValues([['模型版本', state.report.modelId], ['参数指纹', state.report.configHash], ['留出观测数', observations.length], ['收益口径', report.summary?.returnBasis || report.returnBasis || report.basis || '逐期收益；不将重叠期限简单累加']])}
     <div class="rm-actions"><button data-rm-action="attribution" type="button">核对收益分解</button><span id="rm-attribution-status" class="rm-status" role="status">${esc(report.message || '从模型快照读取留出记录。')}</span></div>
@@ -495,80 +486,125 @@ async function runAttribution() {
   } catch (error) { if (message) { message.textContent = error.message; message.classList.add('rm-error'); } } finally { busy(false); }
 }
 
-function installFactorTabs(entry) {
-  const root = document.querySelector('#research-factor-detail');
-  if (!root || !entry) return;
-  if (!root.querySelector('[data-rm-tabs]')) {
-    const head = root.querySelector('.research-detail-head');
-    const evidence = document.createElement('div');
-    evidence.id = 'rm-factor-evidence'; evidence.dataset.rmTabpanel = 'evidence'; evidence.setAttribute('role', 'tabpanel'); evidence.setAttribute('aria-labelledby', 'rm-evidence-tab');
-    [...root.childNodes].forEach((child) => { if (child !== head) evidence.append(child); });
-    const tabs = document.createElement('div');
-    tabs.className = 'rm-tabs'; tabs.dataset.rmTabs = ''; tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', '因子档案内容');
-    tabs.innerHTML = '<button id="rm-logic-tab" type="button" role="tab" data-rm-tab="logic" aria-controls="rm-factor-logic">因子逻辑</button><button id="rm-evidence-tab" type="button" role="tab" data-rm-tab="evidence" aria-controls="rm-factor-evidence">研究证据</button>';
-    const logic = document.createElement('div');
-    logic.id = 'rm-factor-logic'; logic.dataset.rmTabpanel = 'logic'; logic.setAttribute('role', 'tabpanel'); logic.setAttribute('aria-labelledby', 'rm-logic-tab');
-    root.append(tabs, logic, evidence);
-    tabs.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-rm-tab]');
-      if (!button) return;
-      state.detailTab = button.dataset.rmTab; selectFactorTab();
+function explanationIsVisible() {
+  return document.querySelector('#model-explanation-view')?.classList.contains('active');
+}
+
+function renderExplanationView() {
+  if (!roots.explanation || !explanationIsVisible()) return;
+  try {
+    roots.explanation.innerHTML = renderModelExplanation({
+      ...state, section: state.explanationSection, source: state.explanationSource,
     });
-    tabs.addEventListener('keydown', (event) => {
-      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-      event.preventDefault();
-      state.detailTab = event.key === 'Home' ? 'logic' : event.key === 'End' ? 'evidence' : state.detailTab === 'logic' ? 'evidence' : 'logic';
-      selectFactorTab(); root.querySelector(`[data-rm-tab="${state.detailTab}"]`)?.focus();
-    });
+  } catch (error) {
+    roots.explanation.textContent = `模型解释暂不可用，请返回回测配置核对参数。原因：${error.message}`;
+    console.error('Model explanation rendering failed', error);
   }
-  selectFactorTab(); renderFactorLogic();
 }
 
-function selectFactorTab() {
-  document.querySelectorAll('[data-rm-tab]').forEach((button) => {
-    const active = button.dataset.rmTab === state.detailTab;
-    button.setAttribute('aria-selected', String(active)); button.tabIndex = active ? 0 : -1;
-  });
-  document.querySelectorAll('[data-rm-tabpanel]').forEach((panel) => { panel.hidden = panel.dataset.rmTabpanel !== state.detailTab; });
+function rememberExplanationOrigin(trigger) {
+  const view = document.querySelector('.view.active');
+  if (!view || view.id === 'model-explanation-view') return;
+  state.explanationOrigin = {
+    view: view.id.replace(/-view$/, ''), x: window.scrollX, y: window.scrollY,
+    trigger: trigger || document.activeElement,
+  };
 }
 
-function renderFactorLogic() {
-  const root = document.querySelector('#rm-factor-logic');
-  if (!root || !state.activeFactor) return;
+function focusExplanationHeading() {
+  const target = roots.explanation?.querySelector('[data-rm-explanation-heading]') || roots.explanation;
+  target?.setAttribute('tabindex', '-1');
+  target?.focus({ preventScroll: true });
+}
+
+function openExplanation(section, source, factorId, trigger) {
+  rememberExplanationOrigin(trigger || document.activeElement);
+  state.explanationSection = section || 'factor';
+  state.explanationSource = source || 'draft';
+  state.explanationFactorId = factorId || null;
+  state.openingExplanation = true;
+  try { jump('model-explanation'); } finally { state.openingExplanation = false; }
+  renderExplanationView();
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  focusExplanationHeading();
+}
+
+function renderFactorSummary() {
+  const root = document.querySelector('#research-factor-detail');
   const entry = state.activeFactor;
+  const head = root?.querySelector('.research-detail-head');
+  if (!head || !entry) return;
+  let summary = root.querySelector('[data-rm-factor-summary]');
+  if (!summary) {
+    summary = document.createElement('div');
+    summary.className = 'rm-factor-summary';
+    summary.dataset.rmFactorSummary = '';
+    head.after(summary);
+  }
   const factor = list(state.schema?.factors).find((item) => item.id === entry.factorId || list(item.aliases).includes(entry.factorId));
   const setting = list(state.config?.factors).find((item) => item.id === factor?.id);
-  const coefficient = list(state.report?.model?.coefficients).find((item) => item.factorId === factor?.id);
-  const usesOperatorPath = state.config?.method !== 'risk_premium_fmb';
-  const snapshotHasFactor = Boolean(factor && coefficient && state.report?.status === 'ok'
-    && state.report.model?.method !== 'risk_premium_fmb'
-    && list(state.report.config?.factors).some((item) => item.id === factor.id && item.enabled));
-  const mappingStatus = !factor ? '未绑定本地收益映射'
-    : !usesOperatorPath ? '当前风险模型读取导入β，不读取此OHLCV算子'
-    : !setting?.enabled ? '本地算子未启用'
-    : snapshotHasFactor && activeReport() ? '已进入当前有效模型快照'
-    : snapshotHasFactor ? '存在历史快照；当前不可应用'
-    : '已配置，尚无包含该因子的有效估计快照';
-  const boundModel = snapshotHasFactor ? `${state.report.modelId}${activeReport() ? '' : '（历史快照）'}` : '未绑定';
-  root.innerHTML = `
-    <h3 class="rm-section-title">${esc(entry.name)}的数学身份证</h3>
-    ${notice(`研究证据：${entry.decision || entry.stage || '待验证'}${entry.resultCount ? `（${entry.resultCount}条回填汇总）` : ''}；本地收益映射：${mappingStatus}。研究状态与本地模型绑定分别记录。`)}
-    ${factor ? operatorMath(factor, setting || {}) : registeredFactorMath(entry)}
-    ${keyValues([['登记编号', entry.factorId], ['来源与输入', entry.dataSource || list(entry.dataDependencies).join('、')], ['数学角色', factor?.meaning || entry.usage || '研究假设，待定义映射角色'], ['暴露单位', factor?.unit || '来源评分单位与本地收益映射暴露分开；本地尚未绑定'], ['原登记方向', entry.direction === 'negative' ? '反向（来源登记）' : entry.direction === 'positive' ? '正向（来源登记）' : '待登记'], ['本地可调窗口', setting && usesOperatorPath ? `${setting.lookback} 个交易日` : '未绑定本地可调窗口'], ['本地映射方向', setting && usesOperatorPath ? setting.direction === -1 ? '反向 −1' : '原方向 +1' : '未绑定'], ['本地映射状态', mappingStatus], ['本地绑定模型', boundModel]])}
-    ${factor ? `<p class="rm-help">${esc(methodInfo().interpretation || '估计后显示单位暴露对应的条件预期收益变化。')}</p>${snapshotHasFactor ? keyValues([[activeReport() ? '当前条件收益系数' : '历史快照系数（当前不可应用）', percent(coefficient.estimate, 4)], ['稳健 t 值', number(coefficient.tStatistic)], ['系数经济含义', coefficient.meaning || coefficient.unit]]) : notice('这个暴露尚无已绑定的本地模型系数。配置并完成估计后，才显示对应的收益映射。')}` : notice('该因子可以已有外部回填实测，但本地尚无完整、可精确重建的历史因子序列，因此未绑定当前收益映射，也不显示其他因子的模型编号。', 'warning')}
-    ${state.dirty || state.stale ? notice('参数或模型依赖已变化，当前系数快照不可继续应用。', 'warning') : ''}
-    ${list(entry.dataGaps).length ? `<details class="rm-diagnostics"><summary>本地计算数据缺口</summary><p class="rm-help">这里说明本地逐股票历史输入的缺口；回填实测及其样本期在“研究证据”中单独查看。</p>${warningsHtml(entry.dataGaps)}</details>` : ''}
-    <div class="rm-actions"><button type="button" data-rm-jump="config">配置收益映射</button></div>`;
-  root.querySelector('[data-rm-jump]').addEventListener('click', () => jump('backtest-center', 'return-mapping-config'));
+  const mapping = !factor ? '未绑定本地收益映射' : state.config?.method === 'risk_premium_fmb' ? '当前风险模型使用历史风险暴露 β' : !setting?.enabled ? '本地算子未启用' : activeReport() && list(state.report?.model?.coefficients).some((item) => item.factorId === factor.id) ? '已有同版本收益映射' : '尚无可应用的同版本收益映射';
+  summary.innerHTML = `<span>${esc(mapping)}</span><button class="rm-context-link" type="button" data-rm-explain="factor">查看模型解释</button>`;
+  renderExplanationView();
 }
+
+document.addEventListener('click', (event) => {
+  const navigation = event.target.closest?.('[data-view-target="model-explanation"]');
+  if (!navigation || state.openingExplanation) return;
+  rememberExplanationOrigin(navigation);
+  // A native event may flush microtasks between capture and target listeners.
+  // Wait for the application's navigation handler before reading visibility.
+  window.requestAnimationFrame(() => {
+    renderExplanationView();
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    focusExplanationHeading();
+  });
+}, true);
+
+document.addEventListener('click', (event) => {
+  const entry = event.target.closest?.('[data-rm-explain]');
+  if (entry) {
+    event.preventDefault();
+    const section = entry.dataset.rmExplain;
+    const source = entry.dataset.rmExplanationSource || (['portfolio', 'attribution'].includes(section) ? 'snapshot' : 'draft');
+    openExplanation(section, source, entry.dataset.rmFactorId, entry);
+    return;
+  }
+  const section = event.target.closest?.('[data-rm-explain-section]');
+  if (section) {
+    state.explanationSection = section.dataset.rmExplainSection;
+    renderExplanationView();
+    roots.explanation.querySelector(`[data-rm-explain-section="${state.explanationSection}"]`)?.focus({ preventScroll: true });
+    return;
+  }
+  if (event.target.closest?.('[data-rm-explanation-back]')) {
+    const origin = state.explanationOrigin;
+    jump(origin?.view || 'research-pipeline');
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ left: origin?.x || 0, top: origin?.y || 0, behavior: 'auto' });
+      if (origin?.trigger?.isConnected) origin.trigger.focus({ preventScroll: true });
+    });
+    return;
+  }
+  if (event.target.closest?.('[data-rm-explain-config]')) jump('backtest-center', 'return-mapping-config');
+  if (event.target.closest?.('[data-rm-explain-research]')) jump('research-pipeline');
+});
+
+document.addEventListener('change', (event) => {
+  if (!event.target.matches?.('[data-rm-explanation-source]')) return;
+  state.explanationSource = event.target.value === 'snapshot' ? 'snapshot' : 'draft';
+  renderExplanationView();
+  roots.explanation.querySelector('[data-rm-explanation-source]')?.focus({ preventScroll: true });
+});
 
 window.addEventListener('mquant:research-factor', (event) => {
   state.activeFactor = event.detail;
-  installFactorTabs(event.detail);
+  state.explanationFactorId = null;
+  renderFactorSummary();
 });
 
 async function initialize() {
-  installFactorTabs(state.activeFactor);
+  renderFactorSummary();
   try {
     const [schema, saved, report] = await Promise.all([
       request('/schema'), request('/config'), request('/result'),
@@ -576,7 +612,7 @@ async function initialize() {
     state.schema = schema; state.config = saved.config; state.revision = saved.revision; state.configHash = saved.configHash;
     state.report = report.status === 'needs_run' ? null : report;
     state.stale = Boolean(state.report && (state.report.stale || state.report.configHash !== state.configHash));
-    renderConfig(); renderPortfolio(); renderAttribution(); renderFactorLogic(); renderVersions();
+    renderConfig(); renderPortfolio(); renderAttribution(); renderFactorSummary(); renderVersions();
   } catch (error) {
     roots.config.innerHTML = notice(`收益映射服务尚未就绪：${error.message}`, 'warning') + '<div class="rm-actions"><button type="button" data-rm-retry>重新连接</button></div>';
     roots.config.querySelector('[data-rm-retry]').addEventListener('click', initialize);

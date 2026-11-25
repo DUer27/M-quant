@@ -439,6 +439,386 @@
   display: none !important;
 }
 
+/* A separate reading surface, with context kept beside the model explanation. */
+#model-explanation-view,
+#model-explanation-view [data-rm-explanation-content] {
+  min-width: 0;
+}
+
+#model-explanation-view > .panel > .panel-head {
+  align-items: flex-start;
+  gap: 14px 24px;
+}
+
+.rm-explain-title-row {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.rm-explain-title-row h2 {
+  margin: 0;
+}
+
+.rm-context-link {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  color: var(--primary, #146eb4);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.7;
+  min-height: 32px;
+  padding: 3px 0;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: #a5c9e4;
+  text-underline-offset: 4px;
+}
+
+.rm-context-link:hover {
+  color: #0c528c;
+  text-decoration-color: currentColor;
+}
+
+.rm-factor-summary {
+  align-items: baseline;
+  border-top: 1px solid var(--border, #d7e0ea);
+  color: var(--muted, #607086);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 16px;
+  font-size: 12px;
+  line-height: 1.75;
+  margin: 14px 0 0;
+  padding-top: 10px;
+}
+
+.rm-factor-summary p {
+  margin: 0;
+}
+
+.rm-explain-heading {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border, #d7e0ea);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  min-width: 0;
+  padding-bottom: 18px;
+}
+
+.rm-explain-heading > .rm-field {
+  flex: 0 1 320px;
+  max-width: 100%;
+  min-width: min(240px, 100%);
+}
+
+.rm-explain-heading h2,
+.rm-explain-heading h3 {
+  color: var(--text, #162033);
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.45;
+  margin: 4px 0 12px;
+}
+
+.rm-explain-kicker {
+  color: var(--muted, #607086);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0 0 5px;
+}
+
+.rm-explain-context {
+  align-items: baseline;
+  color: var(--muted, #607086);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 7px 22px;
+  line-height: 1.7;
+  margin: 10px 0 0;
+}
+
+.rm-explain-context > div {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.rm-explain-context dt,
+.rm-explain-context dd,
+.rm-explain-context p {
+  margin: 0;
+}
+
+.rm-explain-context dd,
+.rm-explain-context strong {
+  color: var(--text, #162033);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.rm-explain-layout {
+  align-items: start;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-width: 0;
+}
+
+.rm-explain-nav {
+  border-right: 1px solid var(--border, #d7e0ea);
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding-right: 16px;
+}
+
+.rm-explain-nav button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--muted, #607086);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 40px;
+  padding: 9px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.rm-explain-nav button:hover {
+  background: #f3f8fc;
+  color: var(--primary, #146eb4);
+}
+
+.rm-explain-nav button[aria-current="page"] {
+  background: #edf5fc;
+  border-color: #c9def0;
+  color: var(--primary, #146eb4);
+  font-weight: 600;
+}
+
+.rm-explain-nav button strong,
+.rm-explain-nav button small {
+  display: block;
+}
+
+.rm-explain-nav button small {
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: 3px;
+}
+
+.rm-explain-article {
+  color: var(--text, #162033);
+  font-size: 14px;
+  line-height: 1.9;
+  max-width: 860px;
+  min-width: 0;
+  width: 100%;
+}
+
+.rm-explain-article > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.rm-explain-article h3 {
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+
+.rm-explain-article h4 {
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 24px 0 8px;
+}
+
+.rm-explain-article p {
+  margin: 0 0 14px;
+}
+
+.rm-explain-article :is(p, li, dd) {
+  overflow-wrap: anywhere;
+}
+
+.rm-explain-article :is(ul, ol) {
+  margin: 10px 0 18px;
+  padding-left: 22px;
+}
+
+.rm-explain-article li + li {
+  margin-top: 7px;
+}
+
+.rm-explain-lead {
+  border-left: 3px solid var(--primary, #146eb4);
+  color: #254c6e;
+  font-size: 15px;
+  line-height: 1.9;
+  margin-bottom: 22px;
+  max-width: 76ch;
+  padding: 2px 0 2px 16px;
+}
+
+.rm-explain-lead > :last-child {
+  margin-bottom: 0;
+}
+
+.rm-explain-boundary {
+  background: #f5f8fb;
+  border-left: 3px solid #a7b9c9;
+  color: #52657a;
+  font-size: 13px;
+  line-height: 1.85;
+  margin: 22px 0;
+  padding: 13px 16px;
+}
+
+.rm-explain-boundary > :first-child {
+  margin-top: 0;
+}
+
+.rm-explain-boundary > :last-child {
+  margin-bottom: 0;
+}
+
+.rm-explain-formula {
+  border-bottom: 1px solid var(--border, #d7e0ea);
+  border-top: 1px solid var(--border, #d7e0ea);
+  margin: 24px 0;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.rm-explain-formula > summary,
+.rm-explain-formula details > summary {
+  color: var(--primary, #146eb4);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.7;
+  padding: 12px 0;
+}
+
+.rm-explain-formula[open] > summary,
+.rm-explain-formula details[open] > summary {
+  margin-bottom: 5px;
+}
+
+.rm-explain-formula :is(.rm-math-note, .rm-equation-block, .rm-equation-display) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.rm-explain-formula .rm-formula {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.rm-explain-actions {
+  align-items: center;
+  border-top: 1px solid var(--border, #d7e0ea);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 24px;
+  padding-top: 14px;
+}
+
+#model-explanation-view :is(button, a, summary):focus-visible,
+.rm-context-link:focus-visible,
+.rm-explain-nav button:focus-visible {
+  outline: 3px solid #80b8e4;
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .rm-explain-layout {
+    gap: 22px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rm-explain-nav {
+    border-bottom: 1px solid var(--border, #d7e0ea);
+    border-right: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 0 14px;
+  }
+
+  .rm-explain-nav button {
+    width: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  #model-explanation-view > .panel > .panel-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rm-explain-heading {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+  }
+
+  .rm-explain-heading h2,
+  .rm-explain-heading h3 {
+    font-size: 20px;
+  }
+
+  .rm-explain-context {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rm-explain-article {
+    font-size: 13px;
+  }
+
+  .rm-explain-lead {
+    font-size: 14px;
+    padding-left: 12px;
+  }
+
+  .rm-explain-actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #model-explanation-view *,
+  .rm-context-link,
+  .rm-explain-nav button {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
 @media (max-width: 1100px) {
   .rm-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

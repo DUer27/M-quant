@@ -2262,11 +2262,7 @@ function renderResearchDetail(entry) {
     </div>
     <div class="research-section">
       <strong>研究假设</strong>
-      <p>${escapeHtml(entry.usage || entry.formula || '当前只登记为研究对象。')}</p>
-    </div>
-    <div class="research-section">
-      <strong>因子公式/口径</strong>
-      <p>${escapeHtml(entry.formula || '-')}</p>
+      <p>${escapeHtml(entry.usage || '当前登记为研究对象；构造方式与适用边界可在模型解释中查看。')}</p>
     </div>
     <div class="research-section">
       <strong>实测证据</strong>
@@ -4452,9 +4448,9 @@ function updatePositionStressKlineTooltip(event) {
 
 const viewGroups = {
   'research-strategy': {
-    defaultView: 'factor-library',
+    defaultView: 'research-agent',
     subnav: 'research-strategy',
-    views: ['factor-library', 'strategy-library', 'research-pipeline'],
+    views: ['research-agent', 'factor-library', 'strategy-library', 'research-pipeline'],
   },
   'evidence-retest': {
     defaultView: 'backtest-center',
@@ -4464,7 +4460,7 @@ const viewGroups = {
 };
 
 const activeGroupViews = {
-  'research-strategy': 'factor-library',
+  'research-strategy': 'research-agent',
   'evidence-retest': 'backtest-center',
 };
 
@@ -5259,6 +5255,10 @@ elements.askResearchAssistant?.addEventListener('click', async () => {
     elements.askResearchAssistant.disabled = false;
   }
 });
+function dateOnly(value) {
+  return String(value || '').slice(0, 10);
+}
+
 function renderResearchAgentContext() {
   const signalPack = currentStrategySignalPack || {};
   const catalog = currentPositionStressCatalog || {};

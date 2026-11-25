@@ -6,7 +6,7 @@
     <title>量化因子策略平台</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260913-progressive-dashboard" />
     <script src="/config/app-config.js"></script>
-    <link rel="stylesheet" href="/assets/return-mapping.css?v=20261123-formula-v3" />
+    <link rel="stylesheet" href="/assets/return-mapping.css?v=20261125-explanation-v2" />
   </head>
   <body>
     <div class="app-shell">
@@ -24,6 +24,7 @@
           <button class="group-nav" data-view-target="evidence-retest" aria-controls="evidence-retest-subnav">证据与复测</button>
           <button data-view-target="paper-watch">准模拟盘</button>
           <button data-view-target="position-stress">建仓压力测试</button>
+          <button type="button" data-view-target="model-explanation">模型解释</button>
         </nav>
       </aside>
 
@@ -73,7 +74,22 @@
             <button type="button" role="tab" aria-selected="false" data-subview-target="strategy-results">策略实测</button>
           </div>
         </div>
-        <div id="dashboard-view" class="view active">
+        <div id="model-explanation-view" class="view">
+          <section class="panel rm-panel" aria-labelledby="rm-explanation-title">
+            <div class="panel-head">
+              <div>
+                <h2 id="rm-explanation-title">模型解释</h2>
+                <p class="rm-intro">从因子定义到收益映射，查看当前研究对象的输入、计算逻辑与适用边界。</p>
+              </div>
+              <button type="button" class="rm-context-link" data-rm-explanation-back>返回研究页面</button>
+            </div>
+            <div data-rm-explanation-content aria-live="polite">
+              <p class="rm-empty" role="status">正在读取模型解释。也可以从研究页面选择“查看模型解释”，定位到对应内容。</p>
+            </div>
+          </section>
+        </div>
+
+        <div id="dashboard-view" class="view">
           <section class="metrics-grid" aria-label="核心指标">
             <article class="metric">
               <span>候选因子</span>
@@ -554,7 +570,7 @@
             <div id="draft-strategy-pagination" class="pagination compact"></div>
           </section>
           <section id="return-mapping-portfolio" class="panel rm-panel" aria-labelledby="rm-portfolio-title">
-            <div class="panel-head"><div><h2 id="rm-portfolio-title">组合构建：预期收益输入 μ</h2><p class="rm-intro">每个预期收益都保留模型版本、暴露时点和收益期限。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
+            <div class="panel-head"><div><div class="rm-explain-title-row"><h2 id="rm-portfolio-title">组合构建：预期收益输入 μ</h2><button type="button" class="rm-context-link" data-rm-explain="portfolio">查看模型解释</button></div><p class="rm-intro">每个预期收益都保留模型版本、暴露时点和收益期限。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
             <div data-rm-portfolio-content aria-live="polite"><p class="rm-empty">先在回测中心保存参数并估计模型，再生成组合。</p></div>
           </section>
           <section class="panel strategy-paper-management-panel">
@@ -988,7 +1004,7 @@
 
         <div id="backtest-center-view" class="view">
           <section id="return-mapping-config" class="panel rm-panel" aria-labelledby="rm-config-title">
-            <div class="panel-head"><div><h2 id="rm-config-title">信号到收益</h2><p class="rm-intro">用同一套参数连接因子暴露、预期收益与样本外检验。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
+            <div class="panel-head"><div><div class="rm-explain-title-row"><h2 id="rm-config-title">信号到收益</h2><button type="button" class="rm-context-link" data-rm-explain="mapping">查看模型解释</button></div><p class="rm-intro">用同一套参数连接因子暴露、预期收益与样本外检验。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
             <div data-rm-config-content aria-live="polite"><p class="rm-empty">正在读取映射参数与真实数据范围。</p></div>
           </section>
           <section class="metrics-grid" aria-label="复测中心指标">
@@ -1104,7 +1120,7 @@
 
         <div id="validated-results-view" class="view">
           <section id="return-mapping-attribution" class="panel rm-panel" aria-labelledby="rm-attribution-title">
-            <div class="panel-head"><div><h2 id="rm-attribution-title">收益分解</h2><p class="rm-intro">使用预测当时冻结的参数核对收益，不以事后拟合替代预测。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
+            <div class="panel-head"><div><div class="rm-explain-title-row"><h2 id="rm-attribution-title">收益分解</h2><button type="button" class="rm-context-link" data-rm-explain="attribution">查看模型解释</button></div><p class="rm-intro">使用预测当时冻结的参数核对收益，不以事后拟合替代预测。</p></div><span class="tag pending" data-rm-version>等待模型</span></div>
             <div data-rm-attribution-content aria-live="polite"><p class="rm-empty">模型估计完成后，这里展示样本外收益与因子贡献。</p></div>
           </section>
           <section class="metrics-grid" aria-label="实测结果摘要">
@@ -1279,7 +1295,14 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20261123-return-mapping-v1"></script>
-    <script type="module" src="/assets/return-mapping.js?v=20261123-formula-v3"></script>
+    <script type="module" src="/assets/app.js?v=20261125-explanation-v2"></script>
+    <script type="module">
+      import('/assets/return-mapping.js?v=20261125-explanation-v3').catch((error) => {
+        document.querySelectorAll('[data-rm-explanation-content], [data-rm-config-content]').forEach((element) => {
+          element.textContent = `模型界面未能载入，请刷新页面重试。原因：${error.message}`;
+        });
+        console.error('Return mapping interface failed to load', error);
+      });
+    </script>
   </body>
 </html>
