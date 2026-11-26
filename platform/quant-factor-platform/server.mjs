@@ -4,11 +4,13 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  unlinkSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { basename, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,16 +32,32 @@ const realFactorResultsPath = outputPath('real-factors', 'yiwan-real-factor-resu
 const realFactorSummaryPath = outputPath('real-factors', 'yiwan-real-factor-summary.json');
 const researchFactorResultsPath = outputPath('research-factor-pipeline', 'yiwan-research-factor-results.json');
 const researchFactorSummaryPath = outputPath('research-factor-pipeline', 'yiwan-research-factor-summary.json');
+const paperExecutionRoot = normalize(process.env.MQUANT_EXECUTION_ROOT || join(root, '..', '..', '..', 'mquant-execution'));
+const paperExecutionIndexPath = join(paperExecutionRoot, 'mquant_execution', 'web_static', 'index.html');
 const capitalFactorResultsPath = outputPath('capital-flow-factors', 'yiwan-capital-factor-results.json');
 const capitalFactorSummaryPath = outputPath('capital-flow-factors', 'yiwan-capital-factor-summary.json');
 const strategyDefinitionsPath = join(dataDir, 'strategy-definitions.json');
+const positionStressSelectionConfigPath = join(dataDir, 'position-stress-selection-config.json');
 const importedBacktestResultsPath = join(dataDir, 'imported-backtest-results.json');
 const importedTradeabilityReviewsPath = join(dataDir, 'imported-tradeability-reviews.json');
-const importedCoreMediumSmallSignalReviewsPath = join(dataDir, 'imported-core-medium-small-signal-reviews.json');
 const importedPaperWatchLedgerPath = join(dataDir, 'imported-paper-watch-ledger.json');
 const positionStressSelectionPath = join(dataDir, 'position-stress-selection.json');
+const positionStressImportedStrategiesPath = join(dataDir, 'position-stress-imported-strategies.json');
+const positionStressRunLedgerPath = join(dataDir, 'position-stress-run-ledger.json');
 const strictFactorAuditPath = outputPath('factors', 'joinquant', 'm_quant_strict_factor_audit_20260708.json');
 const akshareHistorySummaryPath = outputPath('sources', 'akshare', 'results', 'a_share_daily_history_summary.json');
+const akshareDailyCacheDir = outputPath('sources', 'akshare', 'raw', 'a_share_daily');
+// 数据更新脚本每次会生成带日期标签的新审计文件，这里自动选用最新一份
+const akshareCompletionAuditCandidates = readdirSync(outputPath('sources', 'akshare', 'results'))
+  .filter((name) => /^a_share_all_completion_audit_\d{8}\.csv$/.test(name))
+  .sort()
+  .reverse();
+const akshareCompletionAuditPath = akshareCompletionAuditCandidates.length
+  ? join(outputPath('sources', 'akshare', 'results'), akshareCompletionAuditCandidates[0])
+  : outputPath('sources', 'akshare', 'results', 'a_share_all_completion_audit_20260723.csv');
+const akshareCompletionAuditFallbackPath = akshareCompletionAuditCandidates[1]
+  ? join(outputPath('sources', 'akshare', 'results'), akshareCompletionAuditCandidates[1])
+  : outputPath('sources', 'akshare', 'results', 'a_share_all_completion_audit_20260720.csv');
 const akshareOhlcvBacktestPath = outputPath('sources', 'akshare', 'results', 'akshare_ohlcv_factor_backtest_results.json');
 const akshareStrategyValidationPath = outputPath('sources', 'akshare', 'results', 'akshare_strategy_candidate_validation.json');
 const akshareFactorQualityAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_factor_quality_audit.json');
@@ -57,8 +75,12 @@ const bigQuantPaperWatchPackPath = outputPath('paper-watch', 'results', 'bigquan
 const joinQuantPaperWatchReportPath = outputPath('paper-watch', 'results', 'joinquant_paper_watch_report_latest.json');
 const paperWatchPerformanceReportPath = outputPath('paper-watch', 'results', 'paper_watch_performance_report_latest.json');
 const joinQuantResultsDir = outputPath('sources', 'joinquant', 'results');
+const csi500LcrV1CandidateFallbackPath = outputPath('sources', 'joinquant', 'results', 'csi500_low_crowding_reversal_index_enhancement_v1_candidate_20260723-001813.json');
 const positionStressLatestPath = outputPath('position-stress', 'results', 'position_stress_latest.json');
+const positionStressConstrainedLatestPath = outputPath('position-stress', 'results', 'position_stress_constrained_liquidity_latest.json');
+const positionStressResultsDir = outputPath('position-stress', 'results');
 const positionStressScriptPath = outputPath('position-stress', 'scripts', 'position_stress_lab.py');
+const positionStressExcelExportScriptPath = outputPath('position-stress', 'scripts', 'export_position_stress_excel.py');
 const paperWatchDerivedScriptPaths = [
   outputPath('paper-watch', 'scripts', 'build_paper_watch_operations_pack.py'),
   outputPath('paper-watch', 'scripts', 'audit_independent_sleeve_candidates.py'),
@@ -71,8 +93,15 @@ const aksharePaperWatchExecutionPackPath = outputPath('sources', 'akshare', 'res
 const aksharePaperWatchLatestSignalPath = outputPath('sources', 'akshare', 'results', 'akshare_paper_watch_latest_signal_20260709.json');
 const akshareRegimeSwitchPaperWatchPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_paper_watch_strategy_20260709.json');
 const akshareRegimeSwitchRobustnessAuditPath = outputPath('sources', 'akshare', 'results', 'akshare_regime_switch_robustness_audit_20260709.json');
-const csi500IndexEnhancementPrimaryTradePath = outputPath('sources', 'akshare', 'index_enhancement', 'results', 'csi500_z_f_volume_confirmation_top80_core75_buf200_risk0_trades.csv');
-const csi500IndexEnhancementConservativeTradePath = outputPath('sources', 'akshare', 'index_enhancement', 'results', 'csi500_z_f_volume_confirmation_top100_core85_buf200_risk0_trades.csv');
+const indexEnhancementResearchPath = outputPath('sources', 'akshare', 'index_enhancement', 'results', 'index_enhancement_research_results.json');
+const indexEnhancementFetchSummaryPath = outputPath('sources', 'akshare', 'index_enhancement', 'results', 'index_enhancement_fetch_summary.json');
+const indexEnhancementReportPath = outputPath('_docs', 'akshare-index-enhancement-research.md');
+const indexEnhancementTradePaths = {
+  csi300_primary: outputPath('sources', 'akshare', 'index_enhancement', 'results', 'csi300_z_f_volume_confirmation_top30_core75_buf150_risk0_trades.csv'),
+  csi300_conservative: outputPath('sources', 'akshare', 'index_enhancement', 'results', 'csi300_z_f_volume_confirmation_top40_core85_buf200_risk0_trades.csv'),
+  csi500_primary: outputPath('sources', 'akshare', 'index_enhancement', 'results', 'csi500_z_f_volume_confirmation_top80_core75_buf200_risk0_trades.csv'),
+  csi500_conservative: outputPath('sources', 'akshare', 'index_enhancement', 'results', 'csi500_z_f_volume_confirmation_top100_core85_buf200_risk0_trades.csv'),
+};
 const akshareFetchHistoryScriptPath = outputPath('sources', 'akshare', 'scripts', 'fetch_a_share_history.py');
 const akshareGeneratePaperWatchSignalScriptPath = outputPath('sources', 'akshare', 'scripts', 'generate_akshare_paper_watch_signal.py');
 const akshareLatestSignalTradeabilityReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_latest_signal_tradeability_review_20260709.py');
@@ -81,7 +110,18 @@ const jqQualityProfitLiquidityBacktestScriptPath = outputPath('sources', 'joinqu
 const capitalFollowBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_capital_follow_strategy_backtest.py');
 const klineAssistedBacktestScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_emotion_weighted_kline_strategy_backtest.py');
 const akshareCandidateReviewScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_akshare_ohlcv_candidate_review.py');
+const csi500LowCrowdingReversalEnhancementScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_csi500_low_crowding_reversal_index_enhancement.py');
+const csi500LowCrowdingReversalEnhancementNotebookScriptPath = outputPath('sources', 'joinquant', 'scripts', 'm_quant_csi500_low_crowding_reversal_index_enhancement_jq_notebook.py');
 const joinquantFactorTestScriptPath = outputPath('joinquant', 'm_quant_joinquant_factor_test.py');
+const yegReferenceFactorIds = [
+  'yeg_520_trend_turn_factor',
+  'yeg_volume_breakout_quality_factor',
+  'yeg_divergence_support_factor',
+  'yeg_sentiment_cycle_phase_factor',
+  'yeg_sector_leadership_resonance_factor',
+];
+const yegReferenceDocPath = 'docs/references/野人哥交易实战笔记_完整版_1_.docx';
+const requiredStrategyHorizons = [1, 5, 10, 20];
 const primaryStrategyHorizons = [5, 10, 20];
 const akshareLatestSignalTradeabilityReviewSource = 'joinquant_akshare_latest_signal_tradeability_review';
 const coreMediumSmallLatestSignalReviewSource = 'joinquant_core_medium_small_latest_signal_review';
@@ -95,68 +135,7 @@ const contentTypes = {
 };
 
 const seedState = {
-  factors: [
-    {
-      category: 'price_volume',
-      description: '近20个交易日价格趋势强度，偏向捕捉中短期趋势延续。',
-      direction: 'positive',
-      ic: 0.071,
-      id: 'momentum_20d',
-      longShortReturn: 0.098,
-      name: '动量_20D',
-      rankIc: 0.083,
-      status: '有效',
-      window: 20,
-    },
-    {
-      category: 'price_volume',
-      description: '近5个交易日短周期反转信号，适合和动量类因子组合降相关。',
-      direction: 'negative',
-      ic: 0.042,
-      id: 'reversal_5d',
-      longShortReturn: 0.052,
-      name: '反转_5D',
-      rankIc: 0.057,
-      status: '观察',
-      window: 5,
-    },
-    {
-      category: 'risk',
-      description: '近60个交易日波动率，负IC表示低波动组合更可能获得超额收益。',
-      direction: 'negative',
-      ic: -0.038,
-      id: 'volatility_60d',
-      longShortReturn: 0.041,
-      name: '波动率_60D',
-      rankIc: -0.044,
-      status: '有效',
-      window: 60,
-    },
-    {
-      category: 'liquidity',
-      description: '成交额变化率，用于识别资金关注度和流动性改善。',
-      direction: 'positive',
-      ic: 0.052,
-      id: 'turnover_change',
-      longShortReturn: 0.067,
-      name: '成交额变化',
-      rankIc: 0.061,
-      status: '有效',
-      window: 20,
-    },
-    {
-      category: 'fundamental',
-      description: '盈利稳定性和利润质量的综合打分，当前信号偏弱，建议继续观察。',
-      direction: 'positive',
-      ic: 0.034,
-      id: 'earnings_quality',
-      longShortReturn: 0.039,
-      name: '盈利质量',
-      rankIc: 0.049,
-      status: '观察',
-      window: 252,
-    },
-  ],
+  factors: [],
   preferences: {
     benchmark: '000300.SH',
     feeRate: 0.0003,
@@ -411,8 +390,63 @@ const indicatorFactorDefinitions = [
     signal: '异动出现时，如果量比、换手和主力净流入同步放大，且流通市值不过大，则信号更敏感。',
     usage: '适合做短线事件池，后续需要按开盘/盘中/收盘时间分层验证。',
   },
-];
+  {
+    category: 'trend',
+    dataSource: '野人哥交易实战笔记 DOCX + OHLCV',
+    direction: 'positive',
+    formula: '待计算：20日均线走平/拐头向上 + 5日均线上穿20日线；仅登记规则，不生成分数。',
+    id: 'yeg_520_trend_turn_factor',
+    name: '野人哥520均线拐头因子',
+    requiredFields: ['close', 'ma5', 'ma20', 'ma20_slope', 'ma5_cross_ma20'],
+    signal: '文档中的520战法与20日线拐头规则；当前项目没有明确的ma20_slope和交叉事件字段，因此暂不计算。',
+    usage: '候选趋势因子，待补历史OHLCV并定义无未来函数的均线斜率/交叉计算后验证。',
+  },
+  {
+    category: 'price_volume',
+    dataSource: '野人哥交易实战笔记 DOCX + OHLCV',
+    direction: 'positive',
+    formula: '待计算：突破时成交量/均量约1.5~2.5倍 + 收盘接近最高 + 后续缩量回踩不破突破阳半分位。',
+    id: 'yeg_volume_breakout_quality_factor',
+    name: '野人哥量价突破质量因子',
+    requiredFields: ['open', 'high', 'low', 'close', 'volume', 'volume_ma', 'prior_high', 'breakout_halfpoint', 'future_retest'],
+    signal: '文档中的有效突破/假突破和量价六原则；当前数据没有统一的前高、突破阳半分位和未来回踩字段，暂不计算。',
+    usage: '候选突破确认因子，先做事件定义，再进行样本外验证。',
+  },
+  {
+    category: 'price_volume',
+    dataSource: '野人哥交易实战笔记 DOCX + OHLCV',
+    direction: 'positive',
+    formula: '待计算：回撤15%~30% + 地量/缩量 + 长下影或放量反包 + 不破支撑锚点。',
+    id: 'yeg_divergence_support_factor',
+    name: '野人哥分歧承接因子',
+    requiredFields: ['close', 'high', 'low', 'volume', 'recent_high', 'drawdown', 'lower_shadow_ratio', 'support_anchor', 'intraday_reclaim'],
+    signal: '文档中的首次良性分歧、B点和真承接规则；Level2托单等盘口字段当前没有项目内真实输入，暂不计算。',
+    usage: '候选低吸/承接因子，不能用普通日线字段冒充盘口承接。',
+  },
+  {
+    category: 'market',
+    dataSource: '野人哥交易实战笔记 DOCX + 市场涨跌停/连板数据',
+    direction: 'positive',
+    formula: '待计算：连板高度、涨停数量、跌停数量、昨日涨停次日表现和核按钮比例共同定位冰点/启动/主升/高潮/退潮。',
+    id: 'yeg_sentiment_cycle_phase_factor',
+    name: '野人哥情绪周期阶段因子',
+    requiredFields: ['limit_up_count', 'limit_down_count', 'max_consecutive_board', 'yesterday_limit_up_failure_rate', 'nuclear_button_rate', 'sector_breadth'],
+    signal: '文档中的五阶段情绪周期；当前因子数据包没有完整涨跌停、连板和核按钮历史序列，暂不计算。',
+    usage: '候选市场环境因子，先补市场宽度历史，再验证仓位/选股交互，不直接作为个股收益因子。',
+  },
+  {
+    category: 'sector',
+    dataSource: '野人哥交易实战笔记 DOCX + 板块涨停/成分/资金数据',
+    direction: 'positive',
+    formula: '待计算：同题材涨停数量 + 空间龙高度 + 助攻晋级率 + 百亿中军同步强度 + 次日溢价验证。',
+    id: 'yeg_sector_leadership_resonance_factor',
+    name: '野人哥主线梯队共振因子',
+    requiredFields: ['sector_limit_up_count', 'leader_board_height', 'assistant_promotion_rate', 'large_cap_core_strength', 'next_day_premium'],
+    signal: '文档中的核心板块五步法和真龙/中军/补涨梯队规则；当前没有统一板块成分和梯队历史数据，暂不计算。',
+    usage: '候选板块环境/选股过滤因子，必须按时间截面构造，避免使用未来板块结果。',
+  },
 
+];
 function buildIndicatorDerivedFactors() {
   return [
     {
@@ -599,6 +633,17 @@ function readJsonFile(path, fallback) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
+function readLatestCsi500LcrV1Candidate() {
+  const prefix = 'csi500_low_crowding_reversal_index_enhancement_v1_candidate_';
+  const candidates = existsSync(joinQuantResultsDir)
+    ? readdirSync(joinQuantResultsDir)
+      .filter((file) => file.startsWith(prefix) && file.endsWith('.json'))
+      .sort((left, right) => right.localeCompare(left))
+      .map((file) => join(joinQuantResultsDir, file))
+    : [];
+  return readFirstJsonFile([...candidates, csi500LcrV1CandidateFallbackPath], null);
+}
+
 function readFirstJsonFile(paths, fallback) {
   for (const path of paths) {
     if (existsSync(path)) {
@@ -607,6 +652,454 @@ function readFirstJsonFile(paths, fallback) {
   }
 
   return fallback;
+}
+
+function parseCsvRecords(path, limit = 80) {
+  if (!existsSync(path)) return [];
+  const text = readFileSync(path, 'utf8').replace(/^\ufeff/, '').trim();
+  if (!text) return [];
+  const [headerLine, ...lines] = text.split(/\r?\n/);
+  const headers = headerLine.split(',');
+  return lines.slice(0, limit).map((line) => {
+    const values = line.split(',');
+    return headers.reduce((record, key, index) => {
+      record[key] = values[index] ?? '';
+      return record;
+    }, {});
+  });
+}
+
+function parseDelimitedCsv(text) {
+  const lines = String(text || '').replace(/^\ufeff/, '').trim().split(/\r?\n/).filter(Boolean);
+  if (!lines.length) return [];
+  const headers = parseCsvLine(lines[0]).map((header) => header.trim());
+  return lines.slice(1).map((line) => {
+    const cells = parseCsvLine(line);
+    return headers.reduce((record, header, index) => {
+      record[header] = cells[index] ?? '';
+      return record;
+    }, {});
+  });
+}
+
+function normalizeStockCode(value) {
+  const match = String(value || '').match(/\d{6}/);
+  return match ? match[0] : '';
+}
+
+function akshareDailyCachePathForCode(code) {
+  const normalizedCode = normalizeStockCode(code);
+  if (!normalizedCode) return null;
+  return join(akshareDailyCacheDir, `${normalizedCode}.csv`);
+}
+
+let akshareDailyCacheIndex = null;
+
+function readAkshareDailyRows(code) {
+  const path = akshareDailyCachePathForCode(code);
+  if (!path || !existsSync(path)) return [];
+  return parseDelimitedCsv(readFileSync(path, 'utf8'))
+    .map((row) => ({
+      amount: toNumber(row.amount, null),
+      close: toNumber(row.close, null),
+      code: normalizeStockCode(row.code || code),
+      date: row.date,
+      high: toNumber(row.high, null),
+      low: toNumber(row.low, null),
+      name: row.name || '',
+      open: toNumber(row.open, null),
+      security: row.security || jqSecurityCode(row.code || code),
+      source: row.source || '',
+      volume: toNumber(row.volume, null),
+    }))
+    .filter((row) => row.date && Number.isFinite(row.open) && Number.isFinite(row.close) && Number.isFinite(row.high) && Number.isFinite(row.low))
+    .sort((left, right) => String(left.date).localeCompare(String(right.date)));
+}
+
+function buildAkshareDailyCacheIndex() {
+  if (akshareDailyCacheIndex) return akshareDailyCacheIndex;
+  const byCode = new Map();
+  const auditPath = existsSync(akshareCompletionAuditPath) ? akshareCompletionAuditPath : akshareCompletionAuditFallbackPath;
+  if (existsSync(auditPath)) {
+    parseDelimitedCsv(readFileSync(auditPath, 'utf8')).forEach((row) => {
+      const code = normalizeStockCode(row.code);
+      if (!code) return;
+      byCode.set(code, {
+        code,
+        firstDate: row.first_date || '',
+        lastDate: row.last_date || '',
+        name: row.name || '',
+        rowCount: toNumber(row.rows, 0),
+        status: row.status || '',
+      });
+    });
+  }
+  if (existsSync(akshareDailyCacheDir)) {
+    readdirSync(akshareDailyCacheDir)
+      .filter((name) => /^\d{6}\.csv$/.test(name))
+      .forEach((file) => {
+        const code = file.slice(0, 6);
+        const current = byCode.get(code) || { code, firstDate: '', lastDate: '', name: '', rowCount: 0, status: '' };
+        if (!current.name || !current.rowCount || !current.lastDate) {
+          const rows = readAkshareDailyRows(code);
+          const first = rows[0] || {};
+          const last = rows.at(-1) || {};
+          byCode.set(code, {
+            ...current,
+            firstDate: current.firstDate || first.date || '',
+            lastDate: current.lastDate || last.date || '',
+            name: current.name || last.name || first.name || '',
+            rowCount: current.rowCount || rows.length,
+          });
+        }
+      });
+  }
+  akshareDailyCacheIndex = [...byCode.values()].sort((left, right) => left.code.localeCompare(right.code));
+  return akshareDailyCacheIndex;
+}
+
+function readAkshareDailyKlineItem(query) {
+  const term = String(query || '').trim().toLowerCase();
+  if (!term) return null;
+  const normalizedCode = normalizeStockCode(term);
+  const index = buildAkshareDailyCacheIndex();
+  const match = normalizedCode
+    ? index.find((item) => item.code === normalizedCode)
+    : index.find((item) => [item.code, item.name].filter(Boolean).join(' ').toLowerCase().includes(term));
+  if (!match) return null;
+  const rows = readAkshareDailyRows(match.code);
+  if (!rows.length) return null;
+  const first = rows[0] || {};
+  const last = rows.at(-1) || {};
+  return {
+    code: match.code,
+    latestScore: null,
+    name: match.name || last.name || first.name || match.code,
+    rowCount: rows.length,
+    rows,
+    security: last.security || first.security || jqSecurityCode(match.code),
+  };
+}
+
+function relativeOutputPath(path) {
+  if (!path) return null;
+  return normalize(path).replace(`${normalize(projectRoot)}/`, '');
+}
+function projectRelativePath(path) {
+  if (!path) return null;
+  const normalizedRoot = normalize(projectRoot);
+  const normalizedPath = normalize(path);
+  if (normalizedPath === normalizedRoot) return '';
+  const prefix = `${normalizedRoot}/`;
+  return normalizedPath.startsWith(prefix) ? normalizedPath.slice(prefix.length) : null;
+}
+function projectFileUrl(relativePath) {
+  return relativePath ? `/research-api/source?path=${encodeURIComponent(relativePath)}` : null;
+}
+function buildSourceReference(path, label, options = {}) {
+  const rawPath = String(path || '').trim();
+  if (!rawPath) return null;
+  const candidate = rawPath.startsWith('/') ? normalize(rawPath) : normalize(join(projectRoot, rawPath));
+  const relativePath = projectRelativePath(candidate);
+  const isProjectPath = relativePath !== null;
+  const exists = isProjectPath && existsSync(candidate) && statSync(candidate).isFile();
+  return {
+    label: label || basename(rawPath),
+    path: exists ? relativePath : rawPath,
+    url: exists ? projectFileUrl(relativePath) : null,
+    status: exists ? 'available' : 'missing',
+    kind: options.kind || (isProjectPath ? 'project_file' : 'external_record'),
+    note: options.note || (exists ? '项目内文件，可直接打开。' : '历史记录中的来源路径，当前项目内未找到。'),
+  };
+}
+function uniqueSourceReferences(references) {
+  const seen = new Set();
+  return references.filter(Boolean).filter((reference) => {
+    const key = `${reference.status}:${reference.path}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+function buildFactorSourceReferences({ factorId, definition, availabilityState, summary, hasPrimaryField, hasCapitalField }) {
+  const references = [];
+  const hasDefinition = Boolean(definition?.requiredFields || definition?.formula || availabilityState);
+  const category = String(definition?.category || availabilityState?.category || '').toLowerCase();
+  const isCapital = category === 'capital_flow' || /capital|fund|资金|active_ap|main_force|institutional|large_order|accumulation/.test(`${factorId} ${availabilityState?.displayName || ''}`.toLowerCase());
+  const isIndex = factorId.startsWith('index_growth_') || factorId.startsWith('csi300_index_growth_') || factorId.startsWith('csi500_index_growth_');
+  const isYegReferenceFactor = factorId.startsWith('yeg_');
+  if (isYegReferenceFactor) {
+    references.push(buildSourceReference(yegReferenceDocPath, '野人哥交易实战笔记（参考 DOCX）', {
+      kind: 'reference_document',
+      note: '项目内参考文件；只说明规则来源，不代表因子已计算或已验证。',
+    }));
+  }
+  if (hasDefinition) {
+    references.push(buildSourceReference('platform/quant-factor-platform/server.mjs', '因子定义与流水线实现', {
+      kind: 'implementation',
+      note: '项目内实现文件：仅表示定义或流水线规则在此维护，不代表该文件本身保存因子值。',
+    }));
+  }
+  if (isCapital) {
+    if (hasCapitalField || availabilityState?.category === 'capital_flow' || factorId === 'market_capital_regime') {
+      const capitalSummary = readJsonFile(capitalFactorSummaryPath, {});
+      references.push(
+        buildSourceReference(capitalFactorResultsPath, '资金因子结果 JSON', { kind: 'result_file' }),
+        buildSourceReference(capitalFactorSummaryPath, '资金因子汇总 JSON', { kind: 'summary_file' }),
+        ...(Array.isArray(capitalSummary.source_files) ? capitalSummary.source_files.map((path) => buildSourceReference(path, '资金批次原始文件', { kind: 'recorded_source' })) : []),
+      );
+    }
+  } else if (isIndex) {
+    if (availabilityState) {
+      const fetchSummary = readJsonFile(indexEnhancementFetchSummaryPath, {});
+      references.push(
+        buildSourceReference(indexEnhancementResearchPath, '指数增强研究结果 JSON', { kind: 'result_file' }),
+        buildSourceReference(indexEnhancementFetchSummaryPath, '指数增强采集汇总 JSON', { kind: 'summary_file' }),
+        ...(Array.isArray(fetchSummary.summaries) ? fetchSummary.summaries.flatMap((item) => [
+          buildSourceReference(item.combined_path, `${item.index_name || '指数'}日线数据`, { kind: 'input_file' }),
+          buildSourceReference(item.pool_path, `${item.index_name || '指数'}成分池`, { kind: 'input_file' }),
+        ]) : []),
+      );
+    }
+  } else if (hasPrimaryField || availabilityState) {
+    references.push(
+      buildSourceReference(researchFactorResultsPath, '研究因子结果 JSON', { kind: 'result_file' }),
+      buildSourceReference(researchFactorSummaryPath, '研究因子汇总 JSON', { kind: 'summary_file' }),
+      buildSourceReference(summary?.source_file, '汇总记录的原始研究文件', { kind: 'recorded_source' }),
+    );
+  }
+  return uniqueSourceReferences(references);
+}
+function buildResearchSourceReferences(summary) {
+  return uniqueSourceReferences([
+    buildSourceReference('platform/quant-factor-platform/server.mjs', '研究流水线实现', { kind: 'implementation', note: '项目内实现文件：研究流水线、来源规则和状态计算均在此维护。' }),
+    buildSourceReference(researchFactorResultsPath, '研究因子结果 JSON', { kind: 'result_file' }),
+    buildSourceReference(researchFactorSummaryPath, '研究因子汇总 JSON', { kind: 'summary_file' }),
+    buildSourceReference(summary?.source_file, '汇总记录的原始研究文件', { kind: 'recorded_source' }),
+    buildSourceReference(capitalFactorResultsPath, '资金因子结果 JSON', { kind: 'result_file' }),
+    buildSourceReference(capitalFactorSummaryPath, '资金因子汇总 JSON', { kind: 'summary_file' }),
+    buildSourceReference(indexEnhancementResearchPath, '指数增强研究结果 JSON', { kind: 'result_file' }),
+    buildSourceReference(indexEnhancementFetchSummaryPath, '指数增强采集汇总 JSON', { kind: 'summary_file' }),
+  ]);
+}
+function buildResearchLiteratureIndex(entries) {
+  const byId = new Map((entries || []).map((entry) => [entry.factorId, entry]));
+  const yegFactors = yegReferenceFactorIds.map((factorId) => byId.get(factorId)).filter(Boolean);
+  const reference = buildSourceReference(yegReferenceDocPath, '野人哥交易实战笔记（参考 DOCX）', {
+    kind: 'reference_document',
+    note: '项目内参考文件；只说明规则来源，不代表因子已计算或已验证。',
+  });
+  return [{
+    id: 'yeg-trading-notes',
+    title: '野人哥交易实战笔记',
+    source: reference,
+    evidencePolicy: '文献只用于登记规则来源；关联因子必须单独完成字段补齐、历史计算和收益验证。',
+    factors: yegFactors.map((entry) => ({
+      factorId: entry.factorId,
+      name: entry.name,
+      status: entry.status,
+      resultCount: entry.resultCount,
+      realStatus: entry.realStatus,
+    })),
+  }];
+}
+
+function readIndexEnhancementTrades() {
+  return Object.fromEntries(Object.entries(indexEnhancementTradePaths).map(([key, path]) => [key, {
+    path: relativeOutputPath(path),
+    rows: parseCsvRecords(path, 80),
+  }]));
+}
+
+function formatRatioPercent(value, digits = 2) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  return `${(number * 100).toFixed(digits)}%`;
+}
+
+const indexEnhancementFactorDefinitions = {
+  index_growth_medium_trend: {
+    category: 'trend',
+    direction: 'positive',
+    displayName: '指数增长中期趋势',
+    fields: ['ret_20', 'ret_60'],
+    formula: '中期收益趋势，惩罚短期过热后的排名分数。',
+    usage: '趋势增长策略核心因子',
+  },
+  index_growth_long_trend: {
+    category: 'trend',
+    direction: 'positive',
+    displayName: '指数增长长期趋势',
+    fields: ['ret_60', 'ret_120', 'vol_60'],
+    formula: '长期收益趋势，扣除中期波动后的排名分数。',
+    usage: '趋势增长策略核心因子',
+  },
+  index_growth_volume_price_confirmation: {
+    category: 'price_volume',
+    direction: 'positive',
+    displayName: '指数增长量价确认',
+    fields: ['ret_20', 'volume_ma_20', 'volume_ma_60'],
+    formula: '20日价格变化与20/60日成交量结构同向时加分。',
+    usage: '趋势增长策略确认因子',
+  },
+  index_growth_close_strength: {
+    category: 'price_volume',
+    direction: 'positive',
+    displayName: '指数增长收盘强度',
+    fields: ['open', 'high', 'low', 'close'],
+    formula: '收盘价在当日区间位置越强，分数越高。',
+    usage: '趋势增长策略入场质量因子',
+  },
+  index_growth_short_reversal: {
+    category: 'reversal',
+    direction: 'positive',
+    displayName: '指数增长短期反转',
+    fields: ['ret_5', 'ret_10'],
+    formula: '短期跌幅越大，修复分数越高。',
+    usage: '稳健增长策略修复因子',
+  },
+  index_growth_low_volatility: {
+    category: 'risk',
+    direction: 'positive',
+    displayName: '指数增长低波动',
+    fields: ['vol_20', 'vol_60'],
+    formula: '近期波动越低，分数越高。',
+    usage: '稳健增长策略风险因子',
+  },
+  index_growth_volume_stability: {
+    category: 'liquidity',
+    direction: 'positive',
+    displayName: '指数增长量能稳定',
+    fields: ['volume_ma_20', 'volume_ma_60'],
+    formula: '20日成交量波动越低，分数越高。',
+    usage: '稳健增长策略成交稳定因子',
+  },
+  index_growth_drawdown_control: {
+    category: 'risk',
+    direction: 'positive',
+    displayName: '指数增长回撤控制',
+    fields: ['drawdown_120'],
+    formula: '相对阶段高点回撤越可控，分数越高。',
+    usage: '稳健增长策略回撤因子',
+  },
+  index_growth_gap_risk_control: {
+    category: 'risk',
+    direction: 'positive',
+    displayName: '指数增长跳空风险控制',
+    fields: ['open', 'close'],
+    formula: '近20日跳空幅度越小，分数越高。',
+    usage: '稳健增长策略隔夜风险因子',
+  },
+  index_growth_anti_crowding: {
+    category: 'risk',
+    direction: 'positive',
+    displayName: '指数增长反拥挤',
+    fields: ['turnover', 'volume', 'return'],
+    formula: '短期涨幅、放量、价格偏离和换手越不拥挤，分数越高。',
+    usage: '趋势增长和稳健增长共同过滤因子',
+  },
+};
+
+function findIndexEnhancementPortfolio(research, spec) {
+  const rows = Array.isArray(research?.portfolios) ? research.portfolios : [];
+  return rows.find((row) => (
+    row.dataset === spec.dataset
+    && row.score_col === spec.scoreCol
+    && Number(row.horizon) === Number(spec.horizon)
+    && Number(row.top_n) === Number(spec.topN)
+    && Number(row.core_weight) === Number(spec.coreWeight)
+    && Number(row.buffer_multiple) === Number(spec.bufferMultiple)
+    && Number(row.risk_penalty || 0) === Number(spec.riskPenalty || 0)
+  ));
+}
+
+function normalizeIndexEnhancementPortfolio(row, fallback) {
+  const metrics = row?.metrics || {};
+  const active = metrics.active || {};
+  const strategy = metrics.strategy || {};
+  const benchmark = metrics.benchmark || {};
+  return {
+    activeAnnualReturn: active.annual_return ?? fallback.activeAnnualReturn,
+    activeMaxDrawdown: active.max_drawdown ?? fallback.activeMaxDrawdown,
+    activeReturn: active.total_return ?? fallback.activeReturn,
+    activeSharpe: active.sharpe ?? fallback.activeSharpe,
+    avgTurnover: metrics.avg_turnover ?? fallback.avgTurnover,
+    benchmarkReturn: benchmark.total_return ?? fallback.benchmarkReturn,
+    bufferMultiple: row?.buffer_multiple ?? fallback.bufferMultiple,
+    coreWeight: row?.core_weight ?? fallback.coreWeight,
+    dataset: row?.dataset ?? fallback.dataset,
+    label: fallback.label,
+    scoreCol: row?.score_col ?? fallback.scoreCol,
+    stabilityScore: row?.stability_score ?? fallback.stabilityScore,
+    strategyReturn: strategy.total_return ?? fallback.strategyReturn,
+    tag: fallback.tag,
+    topN: row?.top_n ?? fallback.topN,
+    tradeFile: row?.trade_path || fallback.tradeFile,
+    yearlyActive: (row?.yearly || fallback.yearlyActive || []).map((item) => ({
+      year: item.year,
+      activeReturn: item.active_return ?? item.activeReturn,
+    })),
+  };
+}
+
+function buildIndexEnhancementReport() {
+  const research = readJsonFile(indexEnhancementResearchPath, null);
+  const fetchSummary = readJsonFile(indexEnhancementFetchSummaryPath, null);
+  const reportExists = existsSync(indexEnhancementReportPath);
+  const tradeFiles = readIndexEnhancementTrades();
+  const portfolios = Array.isArray(research?.portfolio_top) ? research.portfolio_top : [];
+  const primary = portfolios.slice(0, 1).map((row) => normalizeIndexEnhancementPortfolio(row, {
+    dataset: row.dataset,
+    label: row.score_col,
+    scoreCol: row.score_col,
+    tag: 'strict_factor_gate_passed',
+  }));
+  const conservative = portfolios.slice(1, 3).map((row) => normalizeIndexEnhancementPortfolio(row, {
+    dataset: row.dataset,
+    label: row.score_col,
+    scoreCol: row.score_col,
+    tag: 'strict_factor_gate_passed_alternative',
+  }));
+  const gateAudit = Array.isArray(research?.factor_gate_audit) ? research.factor_gate_audit : [];
+  const passedGateCount = gateAudit.filter((row) => row.gate_passed).length;
+  const topFactors = (Array.isArray(research?.factor_ic_top) ? research.factor_ic_top : []).slice(0, 5);
+  const failedItems = passedGateCount
+    ? []
+    : [
+      `严格因子门禁通过数量 ${passedGateCount}/${gateAudit.length || 0}`,
+      '本轮覆盖 1/5/10/20 日逐日 RankIC 和日度 Top20%-Bottom20% 多空收益检查',
+      '复合评分在 20 日主周期未同时满足 RankIC、RankIC t、多空收益和多空胜率',
+      '未通过因子门禁，因此不生成准入型策略组合回测',
+      '本地 AkShare 数据缺少真实市值、行业、换手、停牌涨跌停和指数权重，仍需 JoinQuant 原生复核',
+    ];
+  return {
+    dataPolicy: research?.data_policy || '只展示本地 AkShare 静态成分、等权基准、真实 OHLCV 研究结果；不标记为准模拟盘，不生成新收益。',
+    factorDefinitions: indexEnhancementFactorDefinitions,
+    fetchSummary,
+    gate: {
+      decision: passedGateCount ? 'strict_factor_gate_passed' : 'strict_factor_gate_not_passed',
+      label: passedGateCount ? '严格因子门禁已有通过项' : '严格因子门禁未通过',
+      passed: passedGateCount > 0,
+      failedItems,
+      nextActions: [
+        '保留本轮严格因子结果，禁止使用旧的强制绕门禁组合收益作为准入证据',
+        '若继续研究，先重新设计评分方向和组合权重，让多空收益与 RankIC 同向',
+        '在 JoinQuant 中补历史成分、市值/行业/流动性、停牌涨跌停和交易成本复核',
+        '只有因子门禁通过后，才允许生成 5 日调仓交易回测',
+      ],
+    },
+    factorBacktestPolicy: research?.factor_backtest_policy || null,
+    factorGateAudit: gateAudit,
+    generatedAt: research?.generated_at || null,
+    primary,
+    conservative,
+    reportPath: reportExists ? relativeOutputPath(indexEnhancementReportPath) : null,
+    researchAvailable: Boolean(research),
+    researchPath: relativeOutputPath(indexEnhancementResearchPath),
+    strategyBacktestPolicy: research?.strategy_backtest_policy || null,
+    topFactors,
+    trades: tradeFiles,
+  };
 }
 
 function sendJson(res, data, status = 200) {
@@ -635,45 +1128,98 @@ function sendText(res, filename, text, contentType = 'text/plain; charset=utf-8'
   res.end(text);
 }
 
+ function sendZip(res, filename, buffer) {
+   res.writeHead(200, {
+     'Cache-Control': 'no-store',
+     'Content-Disposition': `attachment; filename="${filename}"`,
+     'Content-Type': 'application/zip',
+   });
+   res.end(buffer);
+ }
+
+ function crc32(buffer) {
+   let crc = 0xffffffff;
+   for (const byte of buffer) {
+     crc ^= byte;
+     for (let bit = 0; bit < 8; bit += 1) {
+       crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+     }
+   }
+   return (crc ^ 0xffffffff) >>> 0;
+ }
+
+ function buildStoredZip(entries) {
+   const localParts = [];
+   const centralParts = [];
+   let offset = 0;
+   const dosTime = 0;
+   const dosDate = 0x5b7c;
+   entries.forEach(({ name, content }) => {
+     const nameBuffer = Buffer.from(name, 'utf8');
+     const data = Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf8');
+     const checksum = crc32(data);
+     const local = Buffer.alloc(30 + nameBuffer.length);
+     local.writeUInt32LE(0x04034b50, 0);
+     local.writeUInt16LE(20, 4);
+     local.writeUInt16LE(0x800, 6);
+     local.writeUInt16LE(0, 8);
+     local.writeUInt16LE(dosTime, 10);
+     local.writeUInt16LE(dosDate, 12);
+     local.writeUInt32LE(checksum, 14);
+     local.writeUInt32LE(data.length, 18);
+     local.writeUInt32LE(data.length, 22);
+     local.writeUInt16LE(nameBuffer.length, 26);
+     local.writeUInt16LE(0, 28);
+     nameBuffer.copy(local, 30);
+     localParts.push(local, data);
+
+     const central = Buffer.alloc(46 + nameBuffer.length);
+     central.writeUInt32LE(0x02014b50, 0);
+     central.writeUInt16LE(20, 4);
+     central.writeUInt16LE(20, 6);
+     central.writeUInt16LE(0x800, 8);
+     central.writeUInt16LE(0, 10);
+     central.writeUInt16LE(dosTime, 12);
+     central.writeUInt16LE(dosDate, 14);
+     central.writeUInt32LE(checksum, 16);
+     central.writeUInt32LE(data.length, 20);
+     central.writeUInt32LE(data.length, 24);
+     central.writeUInt16LE(nameBuffer.length, 28);
+     central.writeUInt16LE(0, 30);
+     central.writeUInt16LE(0, 32);
+     central.writeUInt16LE(0, 34);
+     central.writeUInt16LE(0, 36);
+     central.writeUInt32LE(0, 38);
+     central.writeUInt32LE(offset, 42);
+     nameBuffer.copy(central, 46);
+     centralParts.push(central);
+     offset += local.length + data.length;
+   });
+   const centralDirectory = Buffer.concat(centralParts);
+   const end = Buffer.alloc(22);
+   end.writeUInt32LE(0x06054b50, 0);
+   end.writeUInt16LE(0, 4);
+   end.writeUInt16LE(0, 6);
+   end.writeUInt16LE(entries.length, 8);
+   end.writeUInt16LE(entries.length, 10);
+   end.writeUInt32LE(centralDirectory.length, 12);
+   end.writeUInt32LE(offset, 16);
+   end.writeUInt16LE(0, 20);
+   return Buffer.concat([...localParts, centralDirectory, end]);
+ }
+
+function sendFileDownload(res, filename, path, contentType) {
+  res.writeHead(200, {
+    'Cache-Control': 'no-store',
+    'Content-Disposition': `attachment; filename="${filename}"`,
+    'Content-Type': contentType,
+  });
+  createReadStream(path).pipe(res);
+}
+
 function sendError(res, message, status = 400) {
   sendJson(res, { error: message }, status);
 }
-
-function sendDownloadRemoved(res) {
-  sendError(res, 'Only the BigQuant .py template download is available.', 404);
-}
-
-const removedDownloadPaths = new Set([
-  '/paper-watch-api/bigquant-test-pack.json',
-  '/paper-watch-api/bigquant-test-targets.csv',
-  '/paper-watch-api/bigquant-test-guide.md',
-  '/paper-watch-api/bigquant-template-input.csv',
-  '/paper-watch-api/bigquant-template-notebook.ipynb',
-  '/paper-watch-api/bigquant-template-strategy.ipynb',
-  '/paper-watch-api/bigquant-template-guide.md',
-  '/paper-watch-api/ledger-template.csv',
-  '/paper-watch-api/ledger-template.json',
-  '/strategy-api/joinquant-strategy-export.json',
-  '/strategy-api/joinquant-strategy-export.csv',
-  '/strategy-api/bigquant-strategy-export.json',
-  '/strategy-api/bigquant-strategy-input.csv',
-  '/strategy-api/bigquant-strategy-script.py',
-  '/strategy-api/bigquant-strategy-notebook.ipynb',
-  '/strategy-api/bigquant-strategy-script.ipynb',
-  '/strategy-api/joinquant-strategy-script.py',
-  '/strategy-api/joinquant-strategy-historical-script.py',
-  '/strategy-api/joinquant-volatility-regime-script.py',
-  '/strategy-api/joinquant-market-cap-script.py',
-  '/strategy-api/joinquant-volatility-size-script.py',
-  '/strategy-api/joinquant-trading-backtest-script.py',
-  '/strategy-api/joinquant-jq-quality-profit-liquidity-backtest-script.py',
-  '/strategy-api/joinquant-akshare-candidate-review-script.py',
-  '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py',
-  '/strategy-api/joinquant-core-medium-small-latest-signal-review.py',
-  '/backtest-api/joinquant-factor-export',
-  '/backtest-api/joinquant-factor-export.csv',
-  '/backtest-api/joinquant-factor-test-script.py',
-]);
 
 async function readJsonBody(req) {
   const text = await readTextBody(req);
@@ -1191,20 +1737,9 @@ function selectedCodesList(value) {
   return String(value).split(/[|,，\s]+/).map((item) => item.trim()).filter(Boolean);
 }
 
-function bigQuantInstrument(code) {
-  const raw = String(code || '').trim().toUpperCase();
-  if (!raw) return '';
-  if (raw.endsWith('.SZ') || raw.endsWith('.SH')) return raw;
-  if (raw.endsWith('.XSHE')) return raw.replace('.XSHE', '.SZ');
-  if (raw.endsWith('.XSHG')) return raw.replace('.XSHG', '.SH');
-  const localCode = raw.replace(/\D/g, '').padStart(6, '0').slice(-6);
-  if (!localCode) return raw;
-  return `${localCode}.${localCode.startsWith('6') ? 'SH' : 'SZ'}`;
-}
-
-function localStockCode(code) {
-  const match = String(code || '').match(/\d{6}/);
-  return match ? match[0] : String(code || '').trim();
+function csi500LcrV1LatestSelectedCodes() {
+  const candidate = readLatestCsi500LcrV1Candidate() || {};
+  return selectedCodesList(candidate.latest_selection?.codes || candidate.latest_selection?.selected_codes);
 }
 
 function paperWatchActivityStatus(metrics) {
@@ -3217,22 +3752,6 @@ function parseCsvLine(line) {
   return cells;
 }
 
-function parseCsvRows(text) {
-  const lines = String(text || '')
-    .replace(/^\ufeff/, '')
-    .split(/\r?\n/)
-    .filter((line) => line.trim() !== '');
-  if (lines.length < 2) return [];
-  const headers = parseCsvLine(lines[0]).map((header) => header.trim());
-  return lines.slice(1).map((line) => {
-    const cells = parseCsvLine(line);
-    return headers.reduce((row, header, index) => {
-      row[header] = cells[index] ?? '';
-      return row;
-    }, {});
-  });
-}
-
 function parsePaperWatchLedgerCsv(text) {
   const lines = text
     .replace(/^\ufeff/, '')
@@ -3527,16 +4046,42 @@ function runPythonRefreshStep(name, scriptPath, args = [], timeout = 180_000) {
     status: result.status,
     stderr: String(result.stderr || '').trim(),
     stdout: String(result.stdout || '').trim(),
+    timedOut: Boolean(result.error && result.error.code === 'ETIMEDOUT'),
+    timeoutMs: timeout,
   };
 }
 
-function readPositionStressReport() {
-  const report = readJsonFile(positionStressLatestPath, {
+function compactDate(value) {
+  return String(value || '').replace(/[^0-9]/g, '');
+}
+
+function positionStressReportPathFromRequest(reportPath) {
+  const requested = String(reportPath || '').trim();
+  if (!requested) return null;
+  const candidate = normalize(requested.startsWith(projectRoot) ? requested : join(projectRoot, requested));
+  const resultsPrefix = `${positionStressResultsDir}${process.platform === 'win32' ? '\\' : '/'}`;
+  if (!candidate.startsWith(resultsPrefix) || extname(candidate) !== '.json' || !existsSync(candidate)) return null;
+  return candidate;
+}
+
+function positionStressReportPathForRange(start, end) {
+  const startKey = compactDate(start);
+  const endKey = compactDate(end);
+  if (!startKey || !endKey) return existsSync(positionStressConstrainedLatestPath) ? positionStressConstrainedLatestPath : positionStressLatestPath;
+  const constrainedPath = join(positionStressResultsDir, `position_stress_constrained_liquidity_${startKey}_${endKey}.json`);
+  if (existsSync(constrainedPath)) return constrainedPath;
+  const datedPath = join(positionStressResultsDir, `position_stress_${startKey}_${endKey}.json`);
+  return existsSync(datedPath) ? datedPath : null;
+}
+
+
+function emptyPositionStressReport(options = {}) {
+  return {
     status: 'missing',
     sourceMode: '',
-    sourceMessage: '尚未生成建仓压力测试报告。',
-    dataPolicy: '点击一键导入运行后生成 2026-07-06 至 2026-07-13 的行情、K线、建仓模拟和压力测试报告。',
-    requestedDateRange: { start: '2026-07-06', end: '2026-07-13' },
+    sourceMessage: options.sourceMessage || '尚未生成建仓压力测试报告。',
+    dataPolicy: '先选择压测策略，再点击运行；股票池口径可在不同规模的历史股票池之间切换，报告会标明实际覆盖范围、数据来源和完整性。',
+    requestedDateRange: { start: options.start || '2025-01-01', end: options.end || '2026-07-22' },
     actualDates: [],
     missingDates: [],
     stockCount: 0,
@@ -3546,13 +4091,133 @@ function readPositionStressReport() {
     kline: [],
     strategy: { dailySelections: [], equityCurve: [], trades: [], metrics: {} },
     stress: [],
-    warnings: ['还没有运行导入。'],
-    nextActions: ['点击一键导入运行生成第一版报告。'],
-  });
+    warnings: options.warnings || ['还没有运行导入。'],
+    nextActions: ['先选择压测策略，再点击运行生成第一版报告。'],
+  };
+}
+
+function readPositionStressReport(options = {}) {
+  const reportPath = positionStressReportPathFromRequest(options.reportPath)
+    || positionStressReportPathForRange(options.start, options.end);
+  const explicitRange = Boolean(compactDate(options.start) && compactDate(options.end));
+  const report = reportPath
+    ? readJsonFile(reportPath, emptyPositionStressReport(options))
+    : emptyPositionStressReport({
+      ...options,
+      sourceMessage: explicitRange ? '当前日期区间还没有生成建仓压力测试报告。' : undefined,
+      warnings: explicitRange ? ['当前日期区间尚未生成报告，请点击运行生成。'] : undefined,
+    });
   return {
     ...report,
+    reportPath: reportPath ? relativeProjectPath(reportPath) : '',
     selectedStrategy: report.selectedStrategy || readPositionStressSelection(),
   };
+
+}
+function readPositionStressRunLedger() {
+  const value = readJsonFile(positionStressRunLedgerPath, []);
+  return Array.isArray(value) ? value : [];
+}
+
+function buildPositionStressRunRecord(report) {
+  if (!report?.strategy || !report.reportPath) return null;
+  const generatedAt = report.generatedAt || new Date().toISOString();
+  const runId = `run_${createHash('sha1').update(`${report.reportPath}|${generatedAt}`).digest('hex').slice(0, 12)}`;
+  const dailySelections = Array.isArray(report.strategy.dailySelections) ? report.strategy.dailySelections : [];
+  const selectedStocks = dailySelections.flatMap((day) => (Array.isArray(day.items) ? day.items : []).map((item) => ({ ...item, date: day.date, rank: item.rank ?? null })));
+  const trades = Array.isArray(report.strategy.trades) ? report.strategy.trades : [];
+  return {
+    runId, generatedAt, reportPath: report.reportPath, status: report.status || '',
+    complete: Boolean(report.complete || report.runGate?.formalRunAllowed),
+    strategy: { id: report.strategy.id || '', name: report.strategy.name || report.strategy.id || '', adapter: report.strategy.adapter || '' },
+    dateRange: report.requestedDateRange || {}, selectionCount: selectedStocks.length,
+    selectedStockCount: new Set(selectedStocks.map((item) => item.code).filter(Boolean)).size,
+    tradeCount: trades.length, buyCount: trades.filter((trade) => trade.entryDate).length, sellCount: trades.filter((trade) => trade.exitDate).length,
+    selectedStocks, trades,
+  };
+}
+
+function appendPositionStressRunRecord(report) {
+  const record = buildPositionStressRunRecord(report);
+  if (!record) return null;
+  const ledger = readPositionStressRunLedger();
+  const existingIndex = ledger.findIndex((item) => item.reportPath === record.reportPath);
+  if (existingIndex >= 0) ledger[existingIndex] = { ...ledger[existingIndex], ...record };
+  else ledger.unshift(record);
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(positionStressRunLedgerPath, `${JSON.stringify(ledger.slice(0, 50), null, 2)}\n`);
+  return record;
+}
+
+function buildPositionStressRunLedger() {
+  return readPositionStressRunLedger().map((record) => ({
+    ...record,
+    selectedStocks: Array.isArray(record.selectedStocks) ? record.selectedStocks : [],
+    trades: Array.isArray(record.trades) ? record.trades : [],
+  }));
+}
+
+
+function buildPositionStressHistory() {
+  let files = [];
+  try {
+    files = readdirSync(positionStressResultsDir)
+      .filter((file) => file.endsWith('.json') && !file.endsWith('_latest.json'));
+  } catch (error) {
+    return [];
+  }
+
+  return files
+    .map((file) => {
+      const filePath = join(positionStressResultsDir, file);
+      try {
+        const report = JSON.parse(readFileSync(filePath, 'utf8'));
+        if (!report || typeof report !== 'object' || Array.isArray(report)) return null;
+        if (!Array.isArray(report.actualDates) || report.stockCount === undefined || !report.strategy || typeof report.strategy !== 'object') return null;
+        const requestedDateRange = report.requestedDateRange || report.dateRange || {};
+        const dataCompleteness = report.dataCompleteness || {};
+        const universe = report.universe || {};
+        const strategy = report.strategy || {};
+        const generatedAt = report.generatedAt || report.generated_at || (() => {
+          try {
+            return statSync(filePath).mtime.toISOString();
+          } catch (statError) {
+            return '';
+          }
+        })();
+        return {
+          reportPath: relativeProjectPath(filePath),
+          generatedAt,
+          requestedDateRange: {
+            start: requestedDateRange.start || '',
+            end: requestedDateRange.end || '',
+          },
+          stockCount: report.stockCount ?? dataCompleteness.stockCount ?? null,
+          rowCount: report.rowCount ?? dataCompleteness.rowCount ?? null,
+          universe: {
+            sourceFile: universe.sourceFile || null,
+            size: universe.size ?? null,
+          },
+          strategy: {
+            id: strategy.id || report.strategyId || '',
+            name: strategy.name || report.strategyName || '',
+          },
+          status: report.status || '',
+          complete: report.complete ?? false,
+          coverage: {
+            mode: report.coverage?.mode || dataCompleteness.coverageMode || '',
+          },
+        };
+      } catch (error) {
+        return null;
+      }
+    })
+    .filter(Boolean)
+    .sort((left, right) => {
+      const rightTime = Date.parse(right.generatedAt || '') || 0;
+      const leftTime = Date.parse(left.generatedAt || '') || 0;
+      return rightTime - leftTime || right.reportPath.localeCompare(left.reportPath);
+    });
 }
 
 function readPositionStressSelection() {
@@ -3566,30 +4231,163 @@ function positionStressAdapterFor(strategyId, selectedCodes = []) {
   if (strategyId === 'kline_assisted_confirmation') return 'ohlcv_kline_confirmation';
   if (strategyId === 'core_volume_price_trend_v1') return 'ohlcv_core_volume_price';
   if (strategyId === 'jq_quality_profit_liquidity_v1') return 'ohlcv_liquidity_quality_proxy';
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v0') return 'ohlcv_low_crowding_reversal_proxy';
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v1') {
+    return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_low_crowding_reversal_proxy';
+  }
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2') {
+    return selectedCodes.length ? 'selected_codes_mean_reversion' : 'ohlcv_low_crowding_reversal_proxy';
+  }
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2_1') {
+    return 'ohlcv_low_crowding_reversal_proxy';
+  }
   return 'ohlcv_core_volume_price';
+}
+
+function positionStressExecutionParamsFor(strategyId) {
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2') {
+    return {
+      dailyTopN: 10,
+      maxHoldings: 10,
+      holdingPolicy: 'dynamic_signal',
+      minHoldingDays: 1,
+      baseHoldingDays: 5,
+      maxHoldingDays: 20,
+      hardMaxHoldingDays: 60,
+      signalBufferN: 80,
+      trendExtendBufferN: 40,
+      trendExtendMinReturn: 0.03,
+      stopLossPct: 0.08,
+      takeProfitPct: 0.12,
+      trailingStopPct: 0.06,
+      scoreDropPct: 0.30,
+      executionModel: 'constrained_liquidity',
+      maxParticipationPct: 0.05,
+      capitalSweep: [500_000, 1_000_000, 2_000_000, 3_000_000, 5_000_000, 8_000_000, 10_000_000, 15_000_000, 20_000_000, 30_000_000, 50_000_000, 80_000_000, 100_000_000],
+      symbolsFile: 'auto_cache_all',
+    };
+  }
+  if (strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2_1') {
+    return {
+      dailyTopN: 10,
+      maxHoldings: 10,
+      holdingPolicy: 'dynamic_signal',
+      minHoldingDays: 1,
+      baseHoldingDays: 5,
+      maxHoldingDays: 20,
+      hardMaxHoldingDays: 60,
+      signalBufferN: 80,
+      trendExtendBufferN: 40,
+      trendExtendMinReturn: 0.03,
+      stopLossPct: 0.08,
+      takeProfitPct: 0.12,
+      trailingStopPct: 0.06,
+      scoreDropPct: 0.30,
+      executionModel: 'constrained_liquidity',
+      maxParticipationPct: 0.05,
+      capitalSweep: [1_000_000, 10_000_000, 20_000_000, 30_000_000, 40_000_000, 50_000_000, 80_000_000, 100_000_000],
+      symbolsFile: 'outputs/sources/akshare/index_enhancement/processed/csi500_pool.csv',
+    };
+  }
+  return {
+    dailyTopN: 10,
+    maxHoldings: 10,
+    holdingPolicy: 'dynamic_signal',
+    executionModel: 'constrained_liquidity',
+    maxParticipationPct: 0.05,
+  };
 }
 
 function normalizePositionStressStrategy(item) {
   const selectedCodes = selectedCodesList(item.selected_codes || item.selectedCodes || item.latestSignal?.selected_codes);
   const strategyId = item.strategy_id || item.strategyId || item.id || '';
-  const adapter = item.adapter || positionStressAdapterFor(strategyId, selectedCodes);
+  const selectionConfig = readJsonFile(positionStressSelectionConfigPath, {})[strategyId] || {};
+  const adapter = strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2_1'
+    ? positionStressAdapterFor(strategyId, selectedCodes)
+    : item.adapter || positionStressAdapterFor(strategyId, selectedCodes);
+  const pressureSelectedCodes = strategyId === 'csi500_low_crowding_reversal_index_enhancement_v2_1' ? [] : selectedCodes;
   const runnable = item.runnable !== false && adapter !== 'controller_not_directly_executable';
+  const execution = {
+    ...positionStressExecutionParamsFor(strategyId),
+    ...selectionConfig,
+    ...(item.execution || {}),
+  };
+  const dailyTopN = Math.max(1, Number(execution.dailyTopN ?? execution.topN ?? 10));
+  const maxHoldings = Math.max(1, Number(execution.maxHoldings ?? dailyTopN));
   return {
     adapter,
     baseline: item.baseline || null,
+    dailyTopN,
+    maxHoldings,
     evidence: item.evidence || item.evidence_system || item.source || '',
     gateStatus: item.operational_status || item.gateStatus || item.readiness_decision || item.decision || '',
     layer: item.layer || item.allowed_layer || item.market_regime || '',
     name: item.strategy_name || item.strategyName || item.name || strategyId,
     runnable,
     runnableReason: item.runnableReason || (runnable ? '可进入建仓压力测试。' : '该策略是控制器或缺少可复现选股名单，不能直接压测。'),
-    selectedCodes,
+    selectedCodes: pressureSelectedCodes,
     source: item.source || item.evidence_system || '',
     strategyId,
+    execution: { ...execution, dailyTopN, maxHoldings },
   };
 }
 
-function buildPositionStressStrategyCatalog() {
+function readPositionStressImportedStrategies() {
+  const value = readJsonFile(positionStressImportedStrategiesPath, null);
+  if (Array.isArray(value)) return value;
+  const legacy = readJsonFile(positionStressSelectionPath, null);
+  return legacy?.strategyId ? [legacy] : [];
+}
+
+function writePositionStressImportedStrategies(strategies) {
+  const unique = [...new Map((Array.isArray(strategies) ? strategies : []).filter((item) => item?.strategyId).map((item) => [item.strategyId, item])).values()];
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(positionStressImportedStrategiesPath, `${JSON.stringify(unique, null, 2)}\n`);
+  return unique;
+}
+
+function resolveRunnablePositionStressStrategy(strategyId) {
+  const catalog = buildPositionStressStrategyCatalog({ skipImported: true });
+  const strategy = catalog.strategies.find((item) => item.strategyId === String(strategyId || '').trim());
+  if (!strategy) throw new Error('研究策略尚未进入模拟盘可执行策略目录，不能导入。');
+  if (!strategy.runnable) throw new Error(strategy.runnableReason || '该策略当前不可执行，不能导入模拟盘。');
+  return strategy;
+}
+
+function buildPositionStressImportedStrategies() {
+  return readPositionStressImportedStrategies().map((item) => ({ ...item, imported: true }));
+}
+
+function importPositionStressStrategy(strategyId) {
+  const strategy = resolveRunnablePositionStressStrategy(strategyId);
+  const current = readPositionStressSelection();
+  const imported = { ...strategy, imported: true, importedAt: new Date().toISOString() };
+  const list = writePositionStressImportedStrategies([
+    ...readPositionStressImportedStrategies().filter((item) => item.strategyId !== strategy.strategyId),
+    imported,
+  ]);
+  if (!current?.strategyId) {
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(positionStressSelectionPath, `${JSON.stringify({ ...strategy, selectedAt: new Date().toISOString() }, null, 2)}\n`);
+  }
+  return { imported, strategies: list, current: current || imported };
+}
+
+function removePositionStressStrategy(strategyId) {
+  const id = String(strategyId || '').trim();
+  const list = writePositionStressImportedStrategies(readPositionStressImportedStrategies().filter((item) => item.strategyId !== id));
+  const current = readPositionStressSelection();
+  const clearedCurrent = current?.strategyId === id;
+  if (clearedCurrent && existsSync(positionStressSelectionPath)) unlinkSync(positionStressSelectionPath);
+  return { removed: id, strategies: list, current: clearedCurrent ? null : current, clearedCurrent };
+}
+
+function buildImportedStrategyState() {
+  const strategies = buildPositionStressImportedStrategies();
+  return { strategies, importedStrategyIds: strategies.map((item) => item.strategyId), current: readPositionStressSelection() };
+}
+
+function buildPositionStressStrategyCatalog(options = {}) {
   const operationsPack = readJsonFile(paperWatchOperationsPackPath, {});
   const sleeves = Array.isArray(operationsPack.capital_sleeves) ? operationsPack.capital_sleeves : [];
   const readinessAudit = readJsonFile(paperWatchReadinessAuditPath, {});
@@ -3629,27 +4427,82 @@ function buildPositionStressStrategyCatalog() {
       if (!byId.has(item.strategyId)) byId.set(item.strategyId, item);
     });
 
+  if (!byId.has('csi500_low_crowding_reversal_index_enhancement_v0')) {
+    byId.set('csi500_low_crowding_reversal_index_enhancement_v0', normalizePositionStressStrategy({
+      adapter: 'ohlcv_low_crowding_reversal_proxy',
+      evidence: 'joinquant_csi500_low_crowding_reversal_index_enhancement_v0',
+      gateStatus: 'paper_trade_candidate',
+      layer: '中证500指数增强',
+      name: '中证500低拥挤反转指数增强候选策略 v0',
+      runnable: true,
+      runnableReason: '已导入真实 JoinQuant 候选结果；建仓压测使用 OHLCV 低拥挤反转代理分数检查执行链路。',
+      source: 'joinquant_csi500_low_crowding_reversal_index_enhancement_v0',
+      strategyId: 'csi500_low_crowding_reversal_index_enhancement_v0',
+    }));
+  }
+
+  const v1SelectedCodesForV2 = csi500LcrV1LatestSelectedCodes();
+  if (!byId.has('csi500_low_crowding_reversal_index_enhancement_v2')) {
+    byId.set('csi500_low_crowding_reversal_index_enhancement_v2', normalizePositionStressStrategy({
+      adapter: positionStressAdapterFor('csi500_low_crowding_reversal_index_enhancement_v2', v1SelectedCodesForV2),
+      evidence: 'v1_candidate_plus_dynamic_signal_holding',
+      gateStatus: 'experimental_candidate',
+      layer: '中证500指数增强',
+      name: '中证500低拥挤反转指数增强试验版 v2（固定名单版）',
+      runnable: true,
+      runnableReason: '保留旧 v2 固定最新名单口径作为试验版；用于固定篮子容量预览和 v2.1 动态池口径对照。',
+      selectedCodes: v1SelectedCodesForV2,
+      source: 'csi500_lcr_v1_dynamic_signal_holding_upgrade',
+      strategyId: 'csi500_low_crowding_reversal_index_enhancement_v2',
+      execution: positionStressExecutionParamsFor('csi500_low_crowding_reversal_index_enhancement_v2'),
+    }));
+  }
+
+  if (!byId.has('csi500_low_crowding_reversal_index_enhancement_v2_1')) {
+    byId.set('csi500_low_crowding_reversal_index_enhancement_v2_1', normalizePositionStressStrategy({
+      adapter: 'ohlcv_low_crowding_reversal_proxy',
+      evidence: 'v2_fixed_basket_bugfix_dynamic_csi500_pool',
+      gateStatus: 'experimental_candidate',
+      layer: '中证500指数增强',
+      name: '中证500低拥挤反转指数增强试验版 v2.1（动态池修正版）',
+      runnable: true,
+      runnableReason: '保留 v2.1 动态池修正口径作为试验版：使用中证500池逐日动态选股，压测账本采用信号驱动持仓和真实成交约束。',
+      source: 'csi500_lcr_v2_dynamic_pool_bugfix',
+      strategyId: 'csi500_low_crowding_reversal_index_enhancement_v2_1',
+      execution: positionStressExecutionParamsFor('csi500_low_crowding_reversal_index_enhancement_v2_1'),
+    }));
+  }
+
+  const current = readPositionStressSelection();
+  if (current?.strategyId && !byId.has(current.strategyId)) {
+    byId.set(current.strategyId, normalizePositionStressStrategy({
+      ...current,
+      runnable: current.runnable !== false,
+      runnableReason: current.runnableReason || '当前已保存为建仓压力测试策略，可继续运行或刷新报告。',
+    }));
+  }
+
   const strategies = [...byId.values()].sort((left, right) => {
     if (left.runnable !== right.runnable) return left.runnable ? -1 : 1;
     return String(left.name).localeCompare(String(right.name), 'zh-CN');
   });
-  const current = readPositionStressSelection();
+  const importedState = buildImportedStrategyState();
+  const importedIds = new Set(importedState.importedStrategyIds);
+  const decoratedStrategies = strategies.map((item) => ({ ...item, imported: importedIds.has(item.strategyId) }));
   return {
     current,
-    dataPolicy: '只允许准模拟盘运行包或准入审计中已达标的策略进入建仓压力测试；控制器类策略没有明确选股名单时不能直接运行。',
-    strategies,
+    importedStrategies: importedState.strategies,
+    importedStrategyIds: importedState.importedStrategyIds,
+    dataPolicy: '只允许导入已达到可执行门槛的策略进入模拟盘；未导入策略不能运行。',
+    strategies: options.skipImported ? decoratedStrategies : decoratedStrategies,
   };
 }
 
 function selectPositionStressStrategy(strategyId) {
   const catalog = buildPositionStressStrategyCatalog();
   const strategy = catalog.strategies.find((item) => item.strategyId === strategyId);
-  if (!strategy) {
-    throw new Error('该策略未达到准模拟盘标准，不能进入建仓压力测试。');
-  }
-  if (!strategy.runnable) {
-    throw new Error(strategy.runnableReason || '该策略当前不能直接进入建仓压力测试。');
-  }
+  if (!strategy || !strategy.runnable) throw new Error('该策略未达到模拟盘可执行标准。');
+  if (!catalog.importedStrategyIds.includes(strategyId)) throw new Error('请先从策略池加入模拟盘，再运行该策略。');
   const selected = {
     ...strategy,
     selectedAt: new Date().toISOString(),
@@ -3659,19 +4512,32 @@ function selectPositionStressStrategy(strategyId) {
   return selected;
 }
 
+function requirePositionStressStrategyId(value) {
+  const strategyId = String(value || '').trim();
+  if (!strategyId) {
+    throw new Error('请先从策略池选择压测策略，再运行建仓压力测试。');
+  }
+  return strategyId;
+}
+
 function runPositionStressLab(options = {}) {
-  const start = String(options.start || '2026-07-06');
-  const end = String(options.end || '2026-07-13');
-  const topN = String(Number(options.topN || 10));
+  const start = String(options.start || '2025-01-01');
+  const end = String(options.end || '2026-07-22');
   const capital = String(Number(options.capital || 1_000_000));
   const source = ['auto', 'joinquant', 'akshare', 'akshare_cache'].includes(options.source) ? options.source : 'auto';
-  const selectedStrategy = options.strategyId
-    ? selectPositionStressStrategy(String(options.strategyId))
-    : readPositionStressSelection();
+  const selectedStrategy = selectPositionStressStrategy(requirePositionStressStrategyId(options.strategyId));
+  const expectedTopN = Number(selectedStrategy.dailyTopN);
+  const expectedMaxHoldings = Number(selectedStrategy.maxHoldings);
+  const requestedTopN = Number(options.topN ?? expectedTopN);
+  const requestedMaxHoldings = Number(options.maxHoldings ?? expectedMaxHoldings);
+  if (requestedTopN !== expectedTopN || requestedMaxHoldings !== expectedMaxHoldings) {
+    throw new Error(`${selectedStrategy.name} 的选股口径已锁定：每日选前 ${expectedTopN} 只、最大持仓 ${expectedMaxHoldings} 只；拒绝不匹配的手工参数。`);
+  }
   const args = [
     '--start', start,
     '--end', end,
-    '--top-n', topN,
+    '--top-n', String(expectedTopN),
+    '--max-holdings', String(expectedMaxHoldings),
     '--capital', capital,
     '--source', source,
   ];
@@ -3679,19 +4545,77 @@ function runPositionStressLab(options = {}) {
     args.push('--strategy-id', selectedStrategy.strategyId);
     args.push('--strategy-name', selectedStrategy.name || selectedStrategy.strategyId);
     args.push('--strategy-adapter', selectedStrategy.adapter || 'ohlcv_core_volume_price');
+    const execution = selectedStrategy.execution || positionStressExecutionParamsFor(selectedStrategy.strategyId);
+    args.push('--holding-policy', execution.holdingPolicy || 'next_day');
+    if (execution.minHoldingDays !== undefined) args.push('--min-holding-days', String(execution.minHoldingDays));
+    if (execution.baseHoldingDays !== undefined) args.push('--base-holding-days', String(execution.baseHoldingDays));
+    if (execution.maxHoldingDays !== undefined) args.push('--max-holding-days', String(execution.maxHoldingDays));
+    if (execution.hardMaxHoldingDays !== undefined) args.push('--hard-max-holding-days', String(execution.hardMaxHoldingDays));
+    if (execution.signalBufferN !== undefined) args.push('--signal-buffer-n', String(execution.signalBufferN));
+    if (execution.trendExtendBufferN !== undefined) args.push('--trend-extend-buffer-n', String(execution.trendExtendBufferN));
+    if (execution.trendExtendMinReturn !== undefined) args.push('--trend-extend-min-return', String(execution.trendExtendMinReturn));
+    if (execution.stopLossPct !== undefined) args.push('--stop-loss-pct', String(execution.stopLossPct));
+    if (execution.takeProfitPct !== undefined) args.push('--take-profit-pct', String(execution.takeProfitPct));
+    if (execution.trailingStopPct !== undefined) args.push('--trailing-stop-pct', String(execution.trailingStopPct));
+    if (execution.scoreDropPct !== undefined) args.push('--score-drop-pct', String(execution.scoreDropPct));
+    if (execution.executionModel !== undefined) args.push('--execution-model', String(execution.executionModel));
+    if (execution.maxParticipationPct !== undefined) args.push('--max-participation-pct', String(execution.maxParticipationPct));
+    if (Array.isArray(execution.capitalSweep) && execution.capitalSweep.length) {
+      args.push('--capital-sweep', execution.capitalSweep.join(','));
+    }
     if (Array.isArray(selectedStrategy.selectedCodes) && selectedStrategy.selectedCodes.length) {
       args.push('--selected-codes', selectedStrategy.selectedCodes.join(','));
+    }
+    if (execution.symbolsFile) {
+      args.push('--symbols-file', String(execution.symbolsFile));
     }
   }
   if (options.importFile) {
     args.push('--import-file', String(options.importFile));
   }
-  const step = runPythonRefreshStep('position_stress_lab', positionStressScriptPath, args, 240_000);
+  const step = runPythonRefreshStep('position_stress_lab', positionStressScriptPath, args, 900_000);
+  const report = readPositionStressReport({ start, end });
+  const reportComplete = Boolean(report?.complete || report?.runGate?.formalRunAllowed);
+  const timedOut = Boolean(step.timedOut || step.signal === 'SIGTERM');
   return {
-    ok: step.ok,
+    ok: step.ok || reportComplete,
     step,
-    report: readPositionStressReport(),
+    report,
+    errorKind: !step.ok && timedOut ? 'timeout' : !step.ok ? 'script_failed' : '',
+    stepWarning: !step.ok && reportComplete
+      ? '压测报告已完整生成，但脚本收尾触达接口超时边界；请以已落盘报告为准。'
+      : timedOut
+        ? `压测计算超过 ${Math.round((step.timeoutMs || 0) / 1000)} 秒被终止；请缩短窗口或稍后重跑。`
+        : '',
   };
+}
+
+function exportPositionStressEquityExcel(options = {}) {
+  const reportPath = positionStressReportPathForRange(options.start, options.end);
+  if (!reportPath) throw new Error('当前日期区间还没有生成组合净值报告，请先运行建仓压力测试。');
+  const step = runPythonRefreshStep('position_stress_excel_export', positionStressExcelExportScriptPath, ['--report', reportPath], 120_000);
+  if (!step.ok) {
+    throw new Error(step.stderr || step.stdout || '组合净值结果 Excel 导出失败。');
+  }
+  const outputPath = String(step.stdout || '').trim().split(/\r?\n/).filter(Boolean).at(-1);
+  if (!outputPath || !existsSync(outputPath)) {
+    throw new Error('组合净值结果 Excel 已执行，但没有找到导出文件。');
+  }
+  return outputPath;
+}
+
+function exportPositionStressTradesExcel(options = {}) {
+  const reportPath = positionStressReportPathForRange(options.start, options.end);
+  if (!reportPath) throw new Error('当前日期区间还没有生成成交明细报告，请先运行建仓压力测试。');
+  const step = runPythonRefreshStep('position_stress_trades_excel_export', positionStressExcelExportScriptPath, ['--report', reportPath, '--sheet', 'trades'], 120_000);
+  if (!step.ok) {
+    throw new Error(step.stderr || step.stdout || '成交明细 Excel 导出失败。');
+  }
+  const outputPath = String(step.stdout || '').trim().split(/\r?\n/).filter(Boolean).at(-1);
+  if (!outputPath || !existsSync(outputPath)) {
+    throw new Error('成交明细 Excel 已执行，但没有找到导出文件。');
+  }
+  return outputPath;
 }
 
 function writePositionStressImportFile(text) {
@@ -4562,778 +5486,6 @@ function buildBigQuantPaperWatchGuide(pack = buildBigQuantPaperWatchPack()) {
   return `${lines.join('\n')}\n`;
 }
 
-function bigQuantExportRows(pack = buildBigQuantPaperWatchPack()) {
-  const targets = Array.isArray(pack.targets) ? pack.targets : [];
-  const rows = [];
-  targets
-    .filter((target) => target.bigquant_test_status === 'ready_for_bigquant_real_test')
-    .forEach((target) => {
-      const selectedCodes = selectedCodesList(target.selected_codes);
-      if (!selectedCodes.length) return;
-      const targetWeight = selectedCodes.length ? 1 / selectedCodes.length : 0;
-      selectedCodes.forEach((code, index) => {
-        const instrument = bigQuantInstrument(code);
-        rows.push({
-          date: dateOnly(target.signal_date || todayYmd()),
-          instrument,
-          local_code: localStockCode(code),
-          score: Number((selectedCodes.length - index) / selectedCodes.length).toFixed(8),
-          position: Number(targetWeight).toFixed(8),
-          rank: index + 1,
-          sleeve_id: target.sleeve_id || '',
-          strategy_id: target.strategy_id || '',
-          strategy_name: target.strategy_name || '',
-        });
-      });
-    });
-  return rows;
-}
-
-function buildBigQuantPositionInputCsv(rows) {
-  const headers = [
-    'date',
-    'instrument',
-    'local_code',
-    'score',
-    'position',
-    'rank',
-    'sleeve_id',
-    'strategy_id',
-    'strategy_name',
-  ];
-  return [
-    headers.join(','),
-    ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
-  ].join('\n');
-}
-
-function buildBigQuantTemplateInputCsv(pack = buildBigQuantPaperWatchPack()) {
-  return buildBigQuantPositionInputCsv(bigQuantExportRows(pack));
-}
-
-function buildBigQuantTemplateScript(packOrOptions = buildBigQuantPaperWatchPack()) {
-  const options = Array.isArray(packOrOptions?.rows)
-    ? packOrOptions
-    : { rows: bigQuantExportRows(packOrOptions) };
-  const rows = options.rows || [];
-  const firstDate = rows[0]?.date || todayYmd();
-  const lastDate = rows[rows.length - 1]?.date || firstDate;
-  const signalCsv = buildBigQuantPositionInputCsv(rows).replace(/"""/g, '"" "');
-  const title = options.title || 'M-quant BigQuant template strategy export';
-  const benchmark = options.benchmark || '沪深300指数';
-  const maxDailyCount = Math.max(1, ...rows.reduce((map, row) => {
-    const date = row.date || firstDate;
-    map.set(date, (map.get(date) || 0) + 1);
-    return map;
-  }, new Map()).values());
-  const stockCount = Math.max(1, Number(options.stockCount || maxDailyCount || rows.length || 5));
-  const changeNum = Math.max(1, Number(options.changeNum || Math.min(stockCount, 5)));
-  const dataTableName = options.dataTableName || 'data_xs1sxs123gh';
-  return `from bigmodule import M
-
-# <aistudiograph>
-
-# @param(id="m1", name="initialize")
-# 交易引擎：初始化函数，只执行一次
-def m1_initialize_bigquant_run(context):
-    from bigtrader.finance.commission import PerOrder
-
-    # 系统已经设置了默认的交易手续费和滑点，要修改手续费可使用如下函数
-    context.set_commission(PerOrder(buy_cost=0.0003, sell_cost=0.0013, min_cost=5))
-
-# @param(id="m1", name="before_trading_start")
-# 交易引擎：每个单位时间开盘前调用一次。
-def m1_before_trading_start_bigquant_run(context, data):
-    # 盘前处理，订阅行情等
-    pass
-
-# @param(id="m1", name="handle_tick")
-# 交易引擎：tick数据处理函数，每个tick执行一次
-def m1_handle_tick_bigquant_run(context, tick):
-    pass
-
-# @param(id="m1", name="handle_data")
-def m1_handle_data_bigquant_run(context, data):
-    import pandas as pd
-
-    # 下一个交易日不是调仓日，则不生成信号
-    if not context.rebalance_period.is_signal_date(data.current_dt.date()):
-        return
-
-    # 从传入的数据 context.data 中读取今天的信号数据
-    today_df = context.data[context.data["date"] == data.current_dt.strftime("%Y-%m-%d")]
-    print(f"handel_data({data.current_dt}), today_df=\n", today_df)
-    target_instruments = set(today_df["instrument"])
-
-    # 获取当前已持有股票
-    holding_instruments = set(context.get_account_positions().keys())
-    print(f"handel_data({data.current_dt}), target_instruments={target_instruments}, holding_instruments={holding_instruments}")
-
-    # 卖出不在目标持有列表中的股票
-    for instrument in holding_instruments - target_instruments:
-        context.order_target_percent(instrument, 0)
-
-    # 买入目标持有列表中的股票
-    for i, x in today_df.iterrows():
-        # 处理 null 或者 decimal.Decimal 类型等
-        position = 0.0 if pd.isnull(x.position) else float(x.position)
-        rv = context.order_target_percent(x.instrument, position)
-        print(f"handel_data({data.current_dt}), order_target_percent({x.instrument},{position}), rv={rv}")
-
-# @param(id="m1", name="handle_trade")
-# 交易引擎：成交回报处理函数，每个成交发生时执行一次
-def m1_handle_trade_bigquant_run(context, trade):
-    pass
-
-# @param(id="m1", name="handle_order")
-# 交易引擎：委托回报处理函数，每个委托变化时执行一次
-def m1_handle_order_bigquant_run(context, order):
-    pass
-
-# @param(id="m1", name="after_trading")
-# 交易引擎：盘后处理函数，每日盘后执行一次
-def m1_after_trading_bigquant_run(context, data):
-    pass
-
-# @module(position="-642,-1705", comment="""""", comment_collapsed=True)
-m6 = M.input_features_dai.v30(
-    mode="""表达式""",
-    expr="""position""",
-    expr_tables="""${dataTableName}""",
-    extra_fields="""date, instrument""",
-    order_by="""date, instrument""",
-    expr_drop_na=True,
-    extract_data=False,
-    m_name="""m6"""
-)
-
-# @module(position="-653,-1606", comment="""抽取预测数据""", comment_collapsed=False)
-m3 = M.extract_data_dai.v17(
-    sql=m6.data,
-    start_date="""${firstDate}""",
-    start_date_bound_to_trading_date=False,
-    end_date="""${lastDate}""",
-    end_date_bound_to_trading_date=True,
-    before_start_days=0,
-    debug=False,
-    m_name="""m3"""
-)
-
-# @module(position="-666,-1487", comment="""交易，日线，设置初始化函数和K线处理函数，以及初始资金、基准等""", comment_collapsed=True)
-m1 = M.bigtrader.v34(
-    data=m3.data,
-    start_date="""""",
-    end_date="""""",
-    initialize=m1_initialize_bigquant_run,
-    before_trading_start=m1_before_trading_start_bigquant_run,
-    handle_tick=m1_handle_tick_bigquant_run,
-    handle_data=m1_handle_data_bigquant_run,
-    handle_trade=m1_handle_trade_bigquant_run,
-    handle_order=m1_handle_order_bigquant_run,
-    after_trading=m1_after_trading_bigquant_run,
-    capital_base=150000,
-    frequency="""daily""",
-    product_type="""基金""",
-    rebalance_period_type="""周度交易日""",
-    rebalance_period_days="""1""",
-    rebalance_period_roll_forward=True,
-    backtest_engine_mode="""标准模式""",
-    before_start_days=0,
-    volume_limit=1,
-    order_price_field_buy="""open""",
-    order_price_field_sell="""open""",
-    benchmark=${JSON.stringify(benchmark)},
-    plot_charts=True,
-    debug=True,
-    backtest_only=False,
-    m_name="""m1"""
-)
-# </aistudiograph>
-`;
-  return `from bigmodule import M
-import io
-import re
-import pandas as pd
-
-
-"""
-${title}.
-
-Compatibility notes copied from the working BigQuant notebook pattern:
-- The graph shape is input_features_dai -> extract_data_dai -> bigtrader when
-  USE_DAI_TABLE is True.
-- start_date/end_date are always plain YYYY-MM-DD strings.
-- Callback dates and uploaded date columns are normalized before comparison.
-
-This file contains only M-quant audited test inputs. It does not contain or
-infer any BigQuant result.
-"""
-
-
-USE_DAI_TABLE = False
-USER_SIGNAL_TABLE = ""  # Optional: publish the CSV as a BigQuant DAI table and put the table name here.
-START_DATE_TEXT = "${firstDate}"
-END_DATE_TEXT = "${lastDate}"
-CAPITAL_BASE = 1000000
-STOCK_COUNT = ${stockCount}
-CHANGE_NUM = ${changeNum}
-
-SIGNAL_CSV = """${signalCsv}"""
-
-
-def bq_date_text(value):
-    """Return a plain YYYY-MM-DD string; avoids BigQuantDate module-cache errors."""
-    if value is None:
-        return ""
-    if hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
-        try:
-            return "%04d-%02d-%02d" % (int(value.year), int(value.month), int(value.day))
-        except Exception:
-            pass
-    if hasattr(value, "strftime"):
-        try:
-            return value.strftime("%Y-%m-%d")
-        except Exception:
-            pass
-    text = str(value).strip()
-    match = re.search(r"(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})", text)
-    if match:
-        year, month, day = match.groups()
-        return "%04d-%02d-%02d" % (int(year), int(month), int(day))
-    return text[:10]
-
-
-def build_signal_data():
-    frame = pd.read_csv(io.StringIO(SIGNAL_CSV), dtype={"date": str, "instrument": str})
-    if frame.empty:
-        raise ValueError("No BigQuant-ready selected-code rows were exported. Generate the M-quant BigQuant pack first.")
-    frame["date"] = frame["date"].map(bq_date_text).astype(str)
-    frame["instrument"] = frame["instrument"].astype(str)
-    frame["score"] = pd.to_numeric(frame.get("score", 0), errors="coerce").fillna(0.0)
-    frame["position"] = pd.to_numeric(frame.get("position", 0), errors="coerce").fillna(0.0)
-    frame = frame.sort_values(["date", "score", "rank"], ascending=[True, False, True])
-    return frame
-
-
-signal_data = build_signal_data()
-bigtrader_data = signal_data[["date", "instrument", "position", "score", "rank"]].copy()
-bigtrader_data["date"] = bigtrader_data["date"].map(bq_date_text).astype(str)
-
-START_DATE_TEXT = bq_date_text(START_DATE_TEXT)
-END_DATE_TEXT = bq_date_text(END_DATE_TEXT)
-if not isinstance(START_DATE_TEXT, str) or not isinstance(END_DATE_TEXT, str):
-    raise TypeError("BigQuant module dates must be plain YYYY-MM-DD strings")
-if not bigtrader_data["date"].map(lambda item: isinstance(item, str)).all():
-    raise TypeError("bigtrader_data.date must contain plain YYYY-MM-DD strings")
-
-print("M-quant BigQuant export ready", START_DATE_TEXT, END_DATE_TEXT, len(bigtrader_data))
-print("date_types", type(START_DATE_TEXT).__name__, bigtrader_data["date"].map(type).map(lambda item: item.__name__).unique().tolist())
-
-
-def m3_initialize_bigquant_run(context):
-    from bigtrader.finance.commission import PerOrder
-    context.set_commission(PerOrder(buy_cost=0.0003, sell_cost=0.0013, min_cost=5))
-    context.stock_count = int(STOCK_COUNT)
-    context.change_num = int(CHANGE_NUM)
-    context.stock_weights = 1.0 / max(context.stock_count, 1)
-    context.my_data = context.data.copy()
-    context.my_data["date_text"] = context.my_data["date"].map(bq_date_text).astype(str)
-    context.my_data = context.my_data.sort_values(["date_text", "score", "rank"], ascending=[True, False, True])
-
-
-def m3_before_trading_start_bigquant_run(context, data):
-    pass
-
-
-def m3_handle_tick_bigquant_run(context, tick):
-    pass
-
-
-def _order_target_weight(context, instrument, weight):
-    if hasattr(context, "order_target_percent"):
-        rv = context.order_target_percent(instrument, float(weight))
-        return 0 if rv is None else rv
-    cash_for_buy = context.portfolio.portfolio_value * float(weight)
-    rv = context.order_value(instrument, cash_for_buy)
-    return 0 if rv is None else rv
-
-
-def m3_handle_data_bigquant_run(context, data):
-    today = bq_date_text(data.current_dt)
-    ranker_prediction = context.my_data[context.my_data.date_text == today]
-    if ranker_prediction.empty:
-        return
-
-    target_codes = list(ranker_prediction.instrument.unique())[:context.stock_count]
-    current_positions = {code: pos for code, pos in context.portfolio.positions.items() if pos.amount > 0}
-
-    for instrument in list(current_positions):
-        if instrument not in target_codes:
-            rv = context.order_target(instrument, 0)
-            if rv != 0:
-                print("sell failed", instrument, context.get_error_msg(rv))
-
-    held_count = len([code for code in current_positions if code in target_codes])
-    for row in ranker_prediction.itertuples(index=False):
-        if row.instrument in current_positions:
-            continue
-        if held_count >= context.stock_count:
-            break
-        rv = _order_target_weight(context, row.instrument, float(row.position))
-        if rv != 0:
-            print("buy failed", row.instrument, context.get_error_msg(rv))
-            continue
-        held_count += 1
-
-
-def m3_handle_trade_bigquant_run(context, trade):
-    pass
-
-
-def m3_handle_order_bigquant_run(context, order):
-    pass
-
-
-def m3_after_trading_bigquant_run(context, data):
-    pass
-
-
-if USE_DAI_TABLE:
-    if not USER_SIGNAL_TABLE:
-        raise ValueError("Set USER_SIGNAL_TABLE before using the DAI workflow")
-
-    # Same module chain as the successful notebook: input_features_dai -> extract_data_dai -> bigtrader.
-    m4 = M.input_features_dai.v27(
-        mode="\u8868\u8fbe\u5f0f",
-        expr="position, score, rank",
-        expr_filters="",
-        expr_tables=USER_SIGNAL_TABLE,
-        extra_fields="date, instrument",
-        order_by="date, instrument",
-        expr_drop_na=True,
-        expr_add_sql=False,
-        sql="",
-        extract_data=False,
-        m_cached=False,
-        m_name="m4",
-    )
-
-    m7 = M.extract_data_dai.v17(
-        sql=m4.data,
-        start_date=START_DATE_TEXT,
-        start_date_bound_to_trading_date=True,
-        end_date=END_DATE_TEXT,
-        end_date_bound_to_trading_date=True,
-        before_start_days=10,
-        debug=False,
-        m_name="m7",
-    )
-    BIGTRADER_INPUT = m7.data
-else:
-    BIGTRADER_INPUT = bigtrader_data
-
-
-m3 = M.bigtrader.v19(
-    data=BIGTRADER_INPUT,
-    start_date=START_DATE_TEXT,
-    end_date=END_DATE_TEXT,
-    initialize=m3_initialize_bigquant_run,
-    before_trading_start=m3_before_trading_start_bigquant_run,
-    handle_tick=m3_handle_tick_bigquant_run,
-    handle_data=m3_handle_data_bigquant_run,
-    handle_trade=m3_handle_trade_bigquant_run,
-    handle_order=m3_handle_order_bigquant_run,
-    after_trading=m3_after_trading_bigquant_run,
-    capital_base=CAPITAL_BASE,
-    frequency="daily",
-    product_type="\u80a1\u7968",
-    rebalance_period_type="\u4ea4\u6613\u65e5",
-    rebalance_period_days="1",
-    rebalance_period_roll_forward=True,
-    backtest_engine_mode="\u6807\u51c6\u6a21\u5f0f",
-    before_start_days=0,
-    volume_limit=1,
-    order_price_field_buy="open",
-    order_price_field_sell="close",
-    benchmark=${JSON.stringify(benchmark)},
-    plot_charts=True,
-    debug=False,
-    backtest_only=False,
-    m_name="m3",
-)
-`;
-}
-
-function buildBigQuantTemplateGuide(pack = buildBigQuantPaperWatchPack()) {
-  const rows = bigQuantExportRows(pack);
-  const readyTargets = (Array.isArray(pack.targets) ? pack.targets : [])
-    .filter((target) => target.bigquant_test_status === 'ready_for_bigquant_real_test');
-  const controllerTargets = readyTargets.filter((target) => !selectedCodesList(target.selected_codes).length);
-  return `${[
-    '# M-quant BigQuant template export',
-    '',
-    `Generated at: ${new Date().toISOString()}`,
-    '',
-    '## What to download',
-    '',
-    '1. Download `bigquant-template-strategy.py` and upload it to a BigQuant strategy/notebook task.',
-    '2. Download `bigquant-template-input.csv` if you prefer to publish the input as a BigQuant DAI table.',
-    '3. Keep `START_DATE_TEXT` and `END_DATE_TEXT` as plain quoted strings. Do not pass visual-parameter BigQuantDate objects into module parameters.',
-    '',
-    '## BigQuantDate compatibility',
-    '',
-    'The generated script normalizes all callback dates with `bq_date_text()` and passes only Python strings into `M.extract_data_dai` and `M.bigtrader`. This is intended to avoid `TypeError: Expected unicode, got BigQuantDate`.',
-    '',
-    '## Export scope',
-    '',
-    `Selected-code rows: ${rows.length}`,
-    `Ready targets: ${readyTargets.length}`,
-    `Ready controller-only targets: ${controllerTargets.length}`,
-    '',
-    ...readyTargets.map((target) => `- ${target.sleeve_id || '-'} / ${target.strategy_id || '-'} / selected_codes=${selectedCodesList(target.selected_codes).length}`),
-    '',
-    'Controller-only targets do not have a single selected-code CSV payload. Recreate their controller logic in BigQuant, then backfill real BigQuant results into M-quant.',
-    '',
-  ].join('\n')}\n`;
-}
-
-const csi500IndexEnhancementExportStrategy = {
-  id: 'csi500_z_f_volume_confirmation_top80_core75_buf200_risk0',
-  name: '中证500量价确认指数增强首选组合',
-  benchmark: '中证500指数',
-  sourcePath: csi500IndexEnhancementPrimaryTradePath,
-  stockCount: 80,
-  changeNum: 80,
-  dataPolicy: '使用 AkShare 中证500静态成分池真实 OHLCV 研究生成的历史调仓清单；不包含 BigQuant 回测结论。',
-};
-
-function normalizeBigQuantPositionRows(rows, options = {}) {
-  const strategyId = options.strategyId || '';
-  const strategyName = options.strategyName || '';
-  return rows
-    .filter((row) => row && row.date && row.instrument)
-    .map((row, index) => ({
-      date: dateOnly(row.date),
-      instrument: bigQuantInstrument(row.instrument),
-      local_code: row.local_code || localStockCode(row.instrument),
-      score: Number(row.score ?? 0).toFixed(8),
-      position: Number(row.position ?? 0).toFixed(8),
-      rank: Number(row.rank || index + 1),
-      sleeve_id: row.sleeve_id || options.sleeveId || '',
-      strategy_id: row.strategy_id || strategyId,
-      strategy_name: row.strategy_name || strategyName,
-    }))
-    .sort((left, right) => String(left.date).localeCompare(String(right.date)) || Number(left.rank) - Number(right.rank));
-}
-
-function buildBigQuantRowsFromTradeCsv(strategy) {
-  if (!existsSync(strategy.sourcePath)) return [];
-  const tradeRows = parseCsvRows(readFileSync(strategy.sourcePath, 'utf8'));
-  return tradeRows.flatMap((row) => {
-    const selectedCodes = selectedCodesList(row.selected_codes);
-    const selectedCount = selectedCodes.length || Number(row.selected_count || strategy.stockCount || 0);
-    if (!selectedCodes.length || !selectedCount) return [];
-    const targetWeight = 1 / selectedCount;
-    return selectedCodes.map((code, index) => ({
-      date: dateOnly(row.date),
-      instrument: bigQuantInstrument(code),
-      local_code: localStockCode(code),
-      score: Number((selectedCount - index) / selectedCount).toFixed(8),
-      position: Number(targetWeight).toFixed(8),
-      rank: index + 1,
-      sleeve_id: strategy.id,
-      strategy_id: strategy.id,
-      strategy_name: strategy.name,
-    }));
-  });
-}
-
-function factorDirectionForWeight(weight) {
-  return Number(weight) < 0 ? -1 : 1;
-}
-
-function buildStrategyPoolBigQuantRows(strategyId) {
-  const { strategy } = findLiveStrategy(strategyId);
-  if (!strategy) {
-    return { exportable: false, reason: `Unknown strategy: ${strategyId}`, rows: [] };
-  }
-  if (strategy.exportable === false) {
-    return { exportable: false, reason: strategy.exportStatus || 'Strategy is marked non-exportable in the strategy pool.', rows: [] };
-  }
-  const factors = (Array.isArray(strategy.factorState) ? strategy.factorState : [])
-    .map((factor) => (typeof factor === 'string' ? { factorId: factor, weight: 1 } : factor))
-    .filter((factor) => factor.factorId && Number.isFinite(Number(factor.weight)));
-  if (!factors.length) {
-    return { exportable: false, reason: 'No weighted factorState is available, so position rows cannot be rebuilt.', rows: [] };
-  }
-  const sourceRows = readBacktestFactorRows();
-  const grouped = sourceRows.reduce((map, row) => {
-    const date = dateOnly(row.date || row.stock_date);
-    if (!date) return map;
-    if (!map.has(date)) map.set(date, []);
-    map.get(date).push(row);
-    return map;
-  }, new Map());
-  const outputRows = [];
-  const topN = Number(strategy.bigquantTopN || 30);
-
-  grouped.forEach((rows, date) => {
-    const scored = rows.map((row) => {
-      let score = 0;
-      let usableFactors = 0;
-      factors.forEach((factor) => {
-        const value = Number(row[factor.factorId]);
-        if (!Number.isFinite(value)) return;
-        score += Math.abs(Number(factor.weight)) * value * factorDirectionForWeight(factor.weight);
-        usableFactors += 1;
-      });
-      return { row, score, usableFactors };
-    }).filter((item) => item.usableFactors > 0);
-
-    let filtered = scored;
-    if (strategyId === 'core_volume_price_trend_v1') {
-      filtered = filtered.filter(({ row }) => {
-        const action = actionForCoreStrategy(row).action;
-        return action === '核心入池' || action === '二线观察' || action === '鏍稿績鍏ユ睜' || action === '浜岀嚎瑙傚療';
-      });
-    }
-    if (strategyId === 'capital_follow_v0') {
-      filtered = filtered.filter(({ row }) => {
-        const action = actionForCapitalStrategy(row).action;
-        return action === '资金跟随候选' || action === '资金观察' || action === '璧勯噾璺熼殢鍊欓€?' || action === '璧勯噾瑙傚療';
-      });
-    }
-
-    const selected = filtered.sort((left, right) => right.score - left.score).slice(0, topN);
-    const position = selected.length ? 1 / selected.length : 0;
-    selected.forEach((item, index) => {
-      const code = item.row.stock_code || item.row.code || item.row.security;
-      outputRows.push({
-        date,
-        instrument: bigQuantInstrument(code),
-        local_code: localStockCode(code),
-        score: Number(item.score).toFixed(8),
-        position: Number(position).toFixed(8),
-        rank: index + 1,
-        sleeve_id: strategy.id,
-        strategy_id: strategy.id,
-        strategy_name: strategy.name,
-      });
-    });
-  });
-
-  if (!outputRows.length) {
-    return { exportable: false, reason: 'No date/instrument/position rows could be generated from current real factor rows.', rows: [] };
-  }
-  return {
-    exportable: true,
-    reason: '',
-    rows: normalizeBigQuantPositionRows(outputRows, { strategyId: strategy.id, strategyName: strategy.name }),
-    strategy,
-    benchmark: '沪深300指数',
-    stockCount: topN,
-    changeNum: topN,
-  };
-}
-
-function buildBigQuantStrategyExport(strategyId) {
-  if (strategyId === csi500IndexEnhancementExportStrategy.id || strategyId === 'csi500_index_enhancement') {
-    const rows = normalizeBigQuantPositionRows(buildBigQuantRowsFromTradeCsv(csi500IndexEnhancementExportStrategy), {
-      strategyId: csi500IndexEnhancementExportStrategy.id,
-      strategyName: csi500IndexEnhancementExportStrategy.name,
-      sleeveId: csi500IndexEnhancementExportStrategy.id,
-    });
-    return {
-      exportable: rows.length > 0,
-      reason: rows.length ? '' : '中证500交易清单不存在或没有 selected_codes。',
-      strategy: csi500IndexEnhancementExportStrategy,
-      rows,
-      benchmark: csi500IndexEnhancementExportStrategy.benchmark,
-      stockCount: csi500IndexEnhancementExportStrategy.stockCount,
-      changeNum: csi500IndexEnhancementExportStrategy.changeNum,
-      dataPolicy: csi500IndexEnhancementExportStrategy.dataPolicy,
-      sourcePath: relativeProjectPath(csi500IndexEnhancementExportStrategy.sourcePath),
-    };
-  }
-  const built = buildStrategyPoolBigQuantRows(strategyId);
-  return {
-    exportable: built.exportable,
-    reason: built.reason,
-    strategy: built.strategy ? { id: built.strategy.id, name: built.strategy.name } : { id: strategyId, name: strategyId },
-    rows: built.rows,
-    benchmark: built.benchmark || '沪深300指数',
-    stockCount: built.stockCount || 30,
-    changeNum: built.changeNum || 30,
-    dataPolicy: '由策略池因子路线和当前已落地真实因子行生成 BigQuant date/instrument/position 输入；不包含 BigQuant 回测结论。',
-    sourcePath: relativeProjectPath(researchFactorResultsPath),
-  };
-}
-
-function buildBigQuantStrategyExportStatus(strategyId) {
-  const built = buildBigQuantStrategyExport(strategyId);
-  return {
-    generatedAt: new Date().toISOString(),
-    exportable: built.exportable,
-    reason: built.reason,
-    dataPolicy: built.dataPolicy,
-    strategy: built.strategy,
-    sourcePath: built.sourcePath,
-    metrics: {
-      rows: built.rows.length,
-      uniqueDates: new Set(built.rows.map((row) => row.date)).size,
-      uniqueStocks: new Set(built.rows.map((row) => row.instrument)).size,
-      firstDate: built.rows[0]?.date || '',
-      lastDate: built.rows[built.rows.length - 1]?.date || '',
-      stockCount: built.stockCount,
-    },
-    endpoints: {},
-  };
-}
-
-function buildBigQuantStrategyInputCsv(strategyId) {
-  const built = buildBigQuantStrategyExport(strategyId);
-  if (!built.exportable) return null;
-  return buildBigQuantPositionInputCsv(built.rows);
-}
-
-function buildBigQuantStrategyScript(strategyId) {
-  const built = buildBigQuantStrategyExport(strategyId);
-  if (!built.exportable) return null;
-  return buildBigQuantTemplateScript({
-    rows: built.rows,
-    title: `M-quant BigQuant strategy export: ${built.strategy.name}`,
-    benchmark: built.benchmark,
-    stockCount: built.stockCount,
-    changeNum: built.changeNum,
-  });
-}
-
-function notebookSourceLines(code) {
-  return String(code || '').split('\n').map((line, index, lines) => (
-    index === lines.length - 1 ? line : `${line}\n`
-  ));
-}
-
-function buildBigQuantNotebook(script, title = 'M-quant BigQuant strategy export') {
-  return `${JSON.stringify({
-    cells: [
-      {
-        cell_type: 'code',
-        execution_count: null,
-        metadata: {},
-        outputs: [],
-        source: notebookSourceLines(script),
-      },
-    ],
-    metadata: {
-      kernelspec: {
-        display_name: 'Python 3',
-        language: 'python',
-        name: 'python3',
-      },
-      language_info: {
-        codemirror_mode: {
-          name: 'ipython',
-          version: 3,
-        },
-        file_extension: '.py',
-        mimetype: 'text/x-python',
-        name: 'python',
-        nbconvert_exporter: 'python',
-        pygments_lexer: 'ipython3',
-        version: '3.11.8',
-      },
-      m_quant: {
-        title,
-        generated_at: new Date().toISOString(),
-        template_reference: '因子筛选大盘股策略-20260714142052.ipynb',
-        compatibility: 'date parameters are plain strings and callback dates are normalized with bq_date_text',
-      },
-    },
-    nbformat: 4,
-    nbformat_minor: 2,
-  }, null, 2)}\n`;
-}
-
-function buildBigQuantTemplateNotebook(pack = buildBigQuantPaperWatchPack()) {
-  return buildBigQuantNotebook(
-    buildBigQuantTemplateScript(pack),
-    'M-quant BigQuant paper-watch template export',
-  );
-}
-
-function buildBigQuantStrategyNotebook(strategyId) {
-  const script = buildBigQuantStrategyScript(strategyId);
-  if (script === null) return null;
-  return buildBigQuantNotebook(script, `M-quant BigQuant strategy export: ${strategyId}`);
-}
-
-function buildBigQuantExportStatus(pack = null) {
-  pack = pack || readJsonFile(bigQuantPaperWatchPackPath, { targets: [] });
-  const targets = Array.isArray(pack.targets) ? pack.targets : [];
-  const rows = bigQuantExportRows(pack);
-  const readyTargets = targets.filter((target) => target.bigquant_test_status === 'ready_for_bigquant_real_test');
-  const selectedCodeTargets = readyTargets.filter((target) => selectedCodesList(target.selected_codes).length > 0);
-  const strategyPool = buildLiveStrategySignals();
-  const strategyTargets = [
-    csi500IndexEnhancementExportStrategy.id,
-    ...(strategyPool.formalStrategies || []).map((strategy) => strategy.id),
-    ...(strategyPool.strategies || []).map((strategy) => strategy.id),
-  ];
-  const uniqueStrategyTargets = Array.from(new Set(strategyTargets.filter(Boolean)));
-  const strategyExportStatuses = uniqueStrategyTargets.map((strategyId) => buildBigQuantStrategyExportStatus(strategyId));
-  const exportableStrategyStatuses = strategyExportStatuses.filter((item) => item.exportable);
-  const allInputRows = rows.length + exportableStrategyStatuses.reduce((sum, item) => sum + Number(item.metrics?.rows || 0), 0);
-  const allTargets = [
-    ...targets.map((target) => ({
-      sleeve_id: target.sleeve_id || '',
-      strategy_id: target.strategy_id || '',
-      strategy_name: target.strategy_name || '',
-      source_type: 'paper_watch',
-      status: target.bigquant_test_status || '',
-      priority: target.bigquant_test_priority || '',
-      signal_date: target.signal_date || '',
-      selected_count: selectedCodesList(target.selected_codes).length,
-      payload_type: target.bigquant_payload_type || '',
-      blocked_reasons: Array.isArray(target.blocked_reasons) ? target.blocked_reasons : [],
-      endpoints: {},
-    })),
-    ...strategyExportStatuses.map((item) => ({
-      sleeve_id: item.strategy?.id || '',
-      strategy_id: item.strategy?.id || '',
-      strategy_name: item.strategy?.name || item.strategy?.id || '',
-      source_type: item.strategy?.id === csi500IndexEnhancementExportStrategy.id ? 'index_enhancement' : 'strategy_pool',
-      status: item.exportable ? 'ready_for_bigquant_real_test' : 'blocked_before_bigquant_test',
-      priority: item.exportable ? 'template_export_ready' : 'cannot_build_position_rows',
-      signal_date: item.metrics?.lastDate || item.metrics?.firstDate || '',
-      selected_count: item.metrics?.rows || 0,
-      payload_type: item.exportable ? 'historical_position_rows' : 'not_exportable',
-      blocked_reasons: item.exportable ? [] : [item.reason || 'Cannot export this strategy as BigQuant position rows.'],
-      endpoints: item.endpoints || {},
-    })),
-  ];
-  return {
-    generatedAt: new Date().toISOString(),
-    dataPolicy: 'BigQuant export contains only audited M-quant test inputs and template code. It does not contain BigQuant performance conclusions.',
-    compatibility: {
-      templateReference: '因子筛选大盘股策略-20260714142052.ipynb',
-      dateRule: 'All module dates are plain YYYY-MM-DD strings; callback/date-column values are normalized with bq_date_text().',
-      avoidedError: 'TypeError: Expected unicode, got BigQuantDate',
-    },
-    metrics: {
-      targetCount: allTargets.length,
-      readyTargetCount: readyTargets.length + exportableStrategyStatuses.length,
-      selectedCodeTargetCount: selectedCodeTargets.length + exportableStrategyStatuses.length,
-      inputRowCount: allInputRows,
-      firstDate: rows[0]?.date || '',
-    },
-    endpoints: {
-      script: '/paper-watch-api/bigquant-template-strategy.py',
-    },
-    targets: allTargets,
-  };
-}
-
 function readAkshareLocalBacktestRecords() {
   const pack = readJsonFile(akshareOhlcvBacktestPath, null);
   if (!pack) return [];
@@ -5663,12 +5815,26 @@ function readBacktestFactorRows() {
 function readCombinedFactorSummary() {
   const primary = readFirstJsonFile([researchFactorSummaryPath, realFactorSummaryPath], {});
   const capital = readJsonFile(capitalFactorSummaryPath, {});
+  const indexEnhancement = buildIndexEnhancementReport();
   const primaryMeta = primary.factor_meta || {};
   const capitalMeta = capital.factor_meta || {};
   const primaryAvailability = primaryMeta.availability || {};
   const capitalAvailability = capitalMeta.availability || {};
+  const indexEnhancementAvailability = indexEnhancement.researchAvailable ? Object.fromEntries(
+    Object.entries(indexEnhancement.factorDefinitions || {}).map(([id, definition]) => [id, {
+      category: definition.category,
+      dataSource: 'akshare_index_enhancement',
+      direction: definition.direction,
+      displayName: definition.displayName,
+      fields: definition.fields,
+      formula: definition.formula,
+      note: '指数增强子因子，仅保留为严格门禁审计输入；未过门禁的 ie_* 复合 alpha 不进入当前候选池。',
+      status: 'computed',
+      usage: definition.usage,
+    }]),
+  ) : {};
 
-  if (!Object.keys(capital).length) return primary;
+  if (!Object.keys(capital).length && !Object.keys(indexEnhancementAvailability).length) return primary;
 
   return {
     ...primary,
@@ -5687,6 +5853,7 @@ function readCombinedFactorSummary() {
       availability: {
         ...primaryAvailability,
         ...capitalAvailability,
+        ...indexEnhancementAvailability,
       },
       capital_factor_meta: capitalMeta,
       capital_market_regimes: capital.market_regimes || [],
@@ -5703,8 +5870,8 @@ function buildBacktestResearchStatus() {
   const uniqueStocks = new Set(rows.map((row) => row.stock_code || row.code).filter(Boolean));
   const exportRows = buildJoinQuantFactorRows();
   const importedResults = readBacktestResultsForDisplay();
-  const importedFactorResults = readImportedFactorResults();
-  const importedStrategyResults = readImportedStrategyResults();
+  const importedFactorResults = importedResults.filter((result) => !isStrategyBacktestRecord(result));
+  const importedStrategyResults = importedResults.filter(isStrategyBacktestRecord);
   const localAkshareResults = readAkshareLocalBacktestRecords();
   const localAkshareFactorResults = localAkshareResults.filter((result) => !isStrategyBacktestRecord(result));
   const localAkshareStrategyResults = localAkshareResults.filter(isStrategyBacktestRecord);
@@ -5725,8 +5892,8 @@ function buildBacktestResearchStatus() {
       exportableRows: exportRows.length,
       exportableFactors: exportableBacktestFactors.length,
       importedResultCount: importedResults.length,
-      importedFactorResultCount: importedFactorResults.length + localAkshareFactorResults.length,
-      importedStrategyResultCount: importedStrategyResults.length + localAkshareStrategyResults.length,
+      importedFactorResultCount: importedFactorResults.length,
+      importedStrategyResultCount: importedStrategyResults.length,
       localAkshareFactorResultCount: localAkshareFactorResults.length,
       localAkshareStrategyResultCount: localAkshareStrategyResults.length,
       localStatus: canRunLocalValidatedBacktest ? 'ready_for_local_factor_test' : 'blocked',
@@ -5780,7 +5947,9 @@ function buildBacktestResearchStatus() {
         '把实跑结果 JSON 回填到本平台复测中心。',
       ],
     },
+    importedFactorResults,
     importedResults,
+    importedStrategyResults,
   };
 }
 
@@ -5796,10 +5965,23 @@ const researchFactorAliases = {
 const researchFactorDisplayNames = {
   active_large_order_accumulation: '超大/大单吸筹代理',
   capital_source_count: '资金来源数',
+  f_anti_crowding: '指数增强反拥挤',
+  f_close_strength: '指数增强收盘强度',
+  f_gap_risk_control: '指数增强跳空风险控制',
+  f_market_regime_fit: '指数增强市场适配',
+  f_medium_momentum: '指数增强中期动量',
+  f_orderly_trend: '指数增强有序趋势',
+  f_residual_low_volatility: '指数增强残差低波',
+  f_short_reversal: '指数增强短反转',
+  f_volume_stability: '指数增强量能稳定',
+  f_volume_confirmation: '指数增强量价确认（f_volume_confirmation）',
 };
 
 function canonicalFactorId(id) {
   return researchFactorAliases[id] || id;
+}
+function logicalPipelineFactorId(id) {
+  return String(id || '').replace(/^csi(?:300|500)_/, '');
 }
 
 function researchFactorDisplayName(id) {
@@ -5814,9 +5996,16 @@ function factorResultId(result) {
   return result.factor_name || result.factor || result.name || 'unknown';
 }
 
+function canonicalFactorResultId(result) {
+  const id = factorResultId(result);
+  const indexEnhancementPrefix = /^index_enhancement_(?:csi300|csi500)_/;
+  if (indexEnhancementPrefix.test(id)) return canonicalFactorId(id.replace(indexEnhancementPrefix, ''));
+  return canonicalFactorId(id);
+}
+
 function summarizeImportedResults(results) {
   return results.reduce((groups, result) => {
-    const factorId = factorResultId(result);
+    const factorId = canonicalFactorResultId(result);
     const current = groups[factorId] || {
       all: [],
       bestLongShort: null,
@@ -6031,7 +6220,8 @@ function akshareFactorBacktestProfile(factorId, role = 'signal') {
 }
 
 function factorBacktestProfile(factorId, role = 'signal') {
-  const importedResults = readImportedFactorResults().filter((result) => factorResultId(result) === factorId);
+  const canonicalId = canonicalFactorId(factorId);
+  const importedResults = readImportedFactorResults().filter((result) => canonicalFactorResultId(result) === canonicalId);
   if (!importedResults.length) {
     const akshareProfile = akshareFactorBacktestProfile(factorId, role);
     if (akshareProfile) return akshareProfile;
@@ -6070,7 +6260,6 @@ function factorBacktestProfile(factorId, role = 'signal') {
         positiveRatio: Number.isFinite(resultPositiveRatio(result)) ? resultPositiveRatio(result) : null,
         rankIc: Number.isFinite(resultRankIc(result)) ? resultRankIc(result) : null,
         rankIcT: Number.isFinite(resultRankIcT(result)) ? resultRankIcT(result) : null,
-        sampleDates: resultSampleDates(result),
         source: result.source || '',
       })),
     evidence: bestPrimary
@@ -6103,6 +6292,8 @@ function buildResearchPipeline() {
   const availability = summary.factor_meta?.availability || {};
   const importedResults = readImportedFactorResults();
   const resultStats = summarizeImportedResults(importedResults);
+  const primaryRows = readPrimaryFactorRows();
+  const capitalRows = readCapitalFactorRows();
   const definitionByCanonicalId = indicatorFactorDefinitions.reduce((map, definition) => {
     map[canonicalFactorId(definition.id)] = definition;
     return map;
@@ -6132,6 +6323,8 @@ function buildResearchPipeline() {
     const quality = qualityFromResultStats(stats);
     const exportRows = exportable ? buildJoinQuantFactorRows({ factor: factorId }).length : 0;
     const hasComputedRows = rows.some((row) => row[factorId] !== null && row[factorId] !== undefined);
+    const hasPrimaryField = primaryRows.some((row) => row[factorId] !== null && row[factorId] !== undefined && row[factorId] !== '');
+    const hasCapitalField = capitalRows.some((row) => row[factorId] !== null && row[factorId] !== undefined && row[factorId] !== '');
     const status = stats?.all.length
       ? quality.status
       : hasComputedRows || exportRows
@@ -6151,6 +6344,7 @@ function buildResearchPipeline() {
       dataGaps,
       dataSource: definition.dataSource || 'M-quant real factor/backtest records',
       decision: statusQuality.decision,
+      sourceReferences: buildFactorSourceReferences({ factorId, definition, availabilityState, summary, hasPrimaryField, hasCapitalField }),
       decisionTone: statusQuality.decisionTone,
       direction: exportable?.direction || definition.direction || availabilityState?.direction || 'positive',
       evidence: statusQuality.evidence,
@@ -6192,21 +6386,32 @@ function buildResearchPipeline() {
     return left.name.localeCompare(right.name, 'zh-CN');
   });
 
+  const statusCounts = entries.reduce((counts, entry) => {
+    counts[entry.status] = (counts[entry.status] || 0) + 1;
+    return counts;
+  }, {});
+  const logicalFactorCount = new Set(entries.map((entry) => logicalPipelineFactorId(entry.factorId))).size;
+  const variantCount = entries.filter((entry) => logicalPipelineFactorId(entry.factorId) !== entry.factorId).length;
+  const testedCount = entries.filter((entry) => entry.resultCount > 0).length;
   const metrics = {
-    blockedCount: entries.filter((entry) => entry.status === 'requires_more_data' || entry.status === 'unavailable').length,
+    blockedCount: (statusCounts.requires_more_data || 0) + (statusCounts.unavailable || 0),
     factorCount: entries.length,
-    strategyCandidateCount: entries.filter((entry) => entry.status === 'strategy_candidate').length,
-    testedCount: entries.filter((entry) => entry.resultCount > 0).length,
-    waitingTestCount: entries.filter((entry) => entry.status === 'waiting_test' || entry.status === 'tracking').length,
+    logicalFactorCount,
+    variantCount,
+    strategyCandidateCount: statusCounts.strategy_candidate || 0,
+    testedCount,
+    waitingTestCount: (statusCounts.waiting_test || 0) + (statusCounts.tracking || 0),
+    statusCounts,
+    statusCountsSum: Object.values(statusCounts).reduce((sum, count) => sum + count, 0),
   };
 
   return {
     assistant: {
-      llmStatus: process.env.M_QUANT_LLM_PROVIDER ? 'configured' : 'not_configured',
-      mode: process.env.M_QUANT_LLM_PROVIDER ? 'llm_ready' : 'local_grounded_assistant',
-      policy: '助手只允许基于项目真实数据、真实回填结果和明确缺口输出建议；未接入模型时使用本地规则解释。',
+      llmStatus: 'not_configured',
+      policy: '研究智能体只使用项目真实数据、真实回填结果和明确缺口；不接入外部 LLM，不修改策略、准入或交易状态。',
     },
-    blockers: backtestStatus.blockers,
+    sourceReferences: buildResearchSourceReferences(summary),
+    literatureIndex: buildResearchLiteratureIndex(entries),
     entries,
     generatedAt: new Date().toISOString(),
     metrics,
@@ -6214,8 +6419,201 @@ function buildResearchPipeline() {
   };
 }
 
-function buildAssistantResponse(message, factorId) {
+function activityStatusFromEntry(entry) {
+  if (entry.status === 'strategy_candidate') return 'active';
+  if (entry.status === 'watch' || entry.status === 'tracking') return 'watch';
+  if (entry.status === 'waiting_test') return 'dormant';
+  if (entry.status === 'hold') return 'dormant';
+  return 'blocked';
+}
+
+function activityScore(entry) {
+  const activityStatus = activityStatusFromEntry(entry);
+  const rankIc = Number(entry.test?.bestRankIc);
+  const rankIcT = Number(entry.test?.bestRankIcT);
+  const longShort = Number(entry.test?.bestLongShort);
+  const historicalCount = Number(entry.test?.historicalCount || 0);
+  const resultCount = Number(entry.resultCount || 0);
+  const exportRows = Number(entry.exportRows || 0);
+  const computedBonus = entry.realStatus === 'computed' ? 8 : 0;
+  const resultBonus = Math.min(20, resultCount * 2) + Math.min(15, historicalCount * 5);
+  const exportBonus = exportRows > 0 ? 10 : 0;
+  const signalBonus = (Number.isFinite(rankIc) ? Math.max(-15, Math.min(30, rankIc * 900)) : 0)
+    + (Number.isFinite(rankIcT) ? Math.max(-10, Math.min(20, rankIcT * 4)) : 0)
+    + (Number.isFinite(longShort) ? Math.max(-10, Math.min(20, longShort * 500)) : 0);
+  const statusBonus = {
+    strategy_candidate: 25,
+    watch: 10,
+    tracking: 4,
+    waiting_test: 0,
+    hold: -10,
+    requires_more_data: -20,
+    unavailable: -25,
+  }[entry.status] || 0;
+  const cap = {
+    active: 100,
+    blocked: 49,
+    dormant: 64,
+    watch: 84,
+  }[activityStatus] || 84;
+  return Math.round(Math.max(0, Math.min(cap, 35 + computedBonus + resultBonus + exportBonus + signalBonus + statusBonus)));
+}
+
+function activityLabel(status) {
+  return ({
+    active: '活跃',
+    blocked: '阻塞',
+    dormant: '休眠',
+    watch: '观察',
+  })[status] || '观察';
+}
+
+function activityTone(status) {
+  return ({
+    active: 'good',
+    blocked: 'watch',
+    dormant: 'neutral',
+    watch: 'pending',
+  })[status] || 'pending';
+}
+
+function buildFactorActivityReport() {
   const pipeline = buildResearchPipeline();
+  const backtestStatus = buildBacktestResearchStatus();
+  const pipelineFactorIds = new Set(pipeline.entries.map((entry) => entry.factorId));
+  const akshareAudit = readAkshareFactorQualityAudit();
+  const akshareEntries = (Array.isArray(akshareAudit.factors) ? akshareAudit.factors : [])
+    .filter((factor) => factor?.factor_id && !pipelineFactorIds.has(factor.factor_id))
+    .map((factor) => {
+      const best = factor.best_primary_result || {};
+      const allResults = Array.isArray(factor.all_results) ? factor.all_results : [];
+      const primaryResults = allResults.filter((result) => [5, 10, 20].includes(toNumber(result.horizon, 0)) && resultSampleDates(result) >= 20);
+      return {
+        category: 'akshare_local',
+        decision: factor.decision_name || factor.decision || '本地审计',
+        direction: factor.direction || 'positive',
+        evidence: `${factor.evidence || 'AkShare 本地真实 OHLCV 因子审计。'} 数据源：${akshareAudit.source || 'akshare_factor_quality_audit'}。`,
+        exportRows: 0,
+        factorId: factor.factor_id,
+        name: factor.name || researchFactorDisplayName(factor.factor_id),
+        nextAction: factor.decision === 'alpha_candidate'
+          ? '进入策略候选复核，并等待 JoinQuant 或准模拟盘样本外确认。'
+          : factor.decision === 'reject_standalone'
+            ? '暂不单独使用；如保留，只能作为辅助过滤项重新组合后再测。'
+            : '继续观察可交易性、分层收益和样本外表现，暂不直接升级为成熟策略。',
+        realStatus: 'computed',
+        resultCount: allResults.length || Number(factor.primary_result_count || 0),
+        stage: '本地真实OHLCV审计',
+        status: akshareFactorDecisionStatus(factor.decision),
+        test: {
+          bestHorizon: best.horizon ?? null,
+          bestLongShort: best.long_short_mean ?? null,
+          bestRankIc: best.rank_ic_mean ?? null,
+          bestRankIcT: best.rank_ic_t ?? null,
+          historicalCount: primaryResults.length,
+          singleDayCount: allResults.filter((result) => toNumber(result.horizon, 0) === 1).length,
+        },
+      };
+    });
+  const entries = [...pipeline.entries, ...akshareEntries].map((entry) => {
+    const status = activityStatusFromEntry(entry);
+    const score = activityScore(entry);
+    const dataGaps = Array.isArray(entry.dataGaps) ? entry.dataGaps : [];
+    const relevantGaps = Number(entry.resultCount || 0) > 0
+      ? dataGaps.filter((gap) => !String(gap).includes('当前真实结果中没有该因子值')
+        && !String(gap).includes('历史截面不足')
+        && !String(gap).includes('缺少明确字段定义'))
+      : dataGaps;
+    const blockers = [
+      ...relevantGaps,
+      ...((Number(entry.resultCount || 0) === 0 && (status === 'dormant' || status === 'blocked')) ? ['尚未导入真实因子回测结果。'] : []),
+    ];
+    return {
+      activityLabel: activityLabel(status),
+      activityScore: score,
+      activityStatus: status,
+      activityTone: activityTone(status),
+      bestHorizon: entry.test?.bestHorizon ?? null,
+      bestLongShort: entry.test?.bestLongShort ?? null,
+      bestRankIc: entry.test?.bestRankIc ?? null,
+      bestRankIcT: entry.test?.bestRankIcT ?? null,
+      category: entry.category,
+      decision: entry.decision,
+      direction: entry.direction,
+      evidence: entry.evidence,
+      exportRows: entry.exportRows,
+      factorId: entry.factorId,
+      historicalCount: entry.test?.historicalCount || 0,
+      name: entry.name,
+      nextAction: entry.nextAction,
+      resultCount: entry.resultCount,
+      blockers,
+      stage: entry.stage,
+      status: entry.status,
+    };
+  }).sort((left, right) => {
+    const order = { active: 0, watch: 1, dormant: 2, blocked: 3 };
+    const statusDiff = (order[left.activityStatus] ?? 9) - (order[right.activityStatus] ?? 9);
+    if (statusDiff !== 0) return statusDiff;
+    if (right.activityScore !== left.activityScore) return right.activityScore - left.activityScore;
+    return left.name.localeCompare(right.name, 'zh-CN');
+  });
+
+  const counts = entries.reduce((acc, entry) => {
+    acc[entry.activityStatus] = (acc[entry.activityStatus] || 0) + 1;
+    return acc;
+  }, { active: 0, blocked: 0, dormant: 0, watch: 0 });
+  const activeEntries = entries.filter((entry) => entry.activityStatus === 'active');
+  const watchEntries = entries.filter((entry) => entry.activityStatus === 'watch');
+  const best = [...entries].sort((left, right) => right.activityScore - left.activityScore)[0] || null;
+
+  return {
+    dataPolicy: '因子活性只使用真实因子值、真实回填结果和本地真实 OHLCV 审计；没有未来收益标签时只做覆盖和待测诊断，不生成 IC 或收益。',
+    generatedAt: new Date().toISOString(),
+    metrics: {
+      activeCount: counts.active,
+      blockedCount: counts.blocked,
+      dormantCount: counts.dormant,
+      factorCount: entries.length,
+      historicalResultCount: entries.reduce((sum, entry) => sum + Number(entry.historicalCount || 0), 0),
+      testedCount: entries.filter((entry) => entry.resultCount > 0).length,
+      watchCount: counts.watch,
+    },
+    source: {
+      ...pipeline.source,
+      exportableRows: backtestStatus.metrics.exportableRows,
+      importedFactorResultCount: backtestStatus.metrics.importedFactorResultCount,
+      localAkshareFactorResultCount: backtestStatus.metrics.localAkshareFactorResultCount,
+      requiredTradingDays: backtestStatus.metrics.requiredTradingDays,
+    },
+    summary: {
+      bestFactor: best ? {
+        activityScore: best.activityScore,
+        activityStatus: best.activityStatus,
+        factorId: best.factorId,
+        name: best.name,
+      } : null,
+      headline: activeEntries.length
+        ? `${activeEntries.length} 个因子活性良好，可优先进入策略组合复核。`
+        : watchEntries.length
+          ? `${watchEntries.length} 个因子处于观察状态，还需要显著性或样本深度确认。`
+          : '当前没有足够证据判定因子活跃，先补历史截面或导入真实回测结果。',
+      nextAction: activeEntries.length
+        ? '优先把活跃因子接入组合回测，同时继续记录样本外表现。'
+        : backtestStatus.source.uniqueDates < backtestStatus.metrics.requiredTradingDays
+          ? `先补足历史截面：当前 ${backtestStatus.source.uniqueDates} 日，最低建议 ${backtestStatus.metrics.requiredTradingDays} 日。`
+          : '下载待测因子 CSV 到 JoinQuant，回填 5/10/20 日 RankIC 和分组收益。',
+    },
+    entries,
+  };
+}
+
+function buildAssistantResponse(message, factorId, direction, context = {}) {
+  const pipeline = buildResearchPipeline();
+  const backtest = buildBacktestResearchStatus();
+  const activity = buildFactorActivityReport();
+  const signalPack = buildLiveStrategySignals();
+  const stressCatalog = buildPositionStressStrategyCatalog();
   const text = String(message || '').trim();
   const lower = text.toLowerCase();
   const selected = factorId
@@ -6225,39 +6623,71 @@ function buildAssistantResponse(message, factorId) {
   const testedEntries = pipeline.entries.filter((entry) => entry.resultCount > 0);
   const waitingEntries = pipeline.entries.filter((entry) => entry.status === 'waiting_test' || entry.status === 'tracking');
   const blockedEntries = pipeline.entries.filter((entry) => entry.status === 'requires_more_data' || entry.status === 'unavailable');
-
-  const bullets = [];
+  const directionText = {
+    strategy_data_analysis: '策略数据分析',
+    factor_quality_activity: '因子质量与活性',
+    strategy_evidence_admission: '策略证据与准入',
+    backtest_layering: '回测与分层',
+    stress_execution: '压力测试与执行',
+    paper_pnl_review: '模拟盘盈亏复盘',
+    data_gaps_next_steps: '数据缺口与下一步',
+  }[direction] || '综合研究';
+  const bullets = [`分析方向：${directionText}（本地规则回答）`];
   if (selected) {
     bullets.push(`${selected.name}：${selected.decision}。${selected.evidence}`);
     bullets.push(`当前阶段：${selected.stage}；真实结果 ${selected.resultCount} 条，历史结果 ${selected.test.historicalCount} 条。`);
     if (selected.test.bestRankIc !== null) bullets.push(`最佳 RankIC：${Number(selected.test.bestRankIc).toFixed(4)}；RankIC t：${selected.test.bestRankIcT === null ? '缺失' : Number(selected.test.bestRankIcT).toFixed(2)}。`);
     if (selected.dataGaps.length) bullets.push(`数据缺口：${selected.dataGaps.join('；')}`);
     bullets.push(`下一步：${selected.nextAction}`);
-  } else if (lower.includes('缺') || text.includes('数据') || text.includes('采集')) {
+  } else if (direction === 'factor_quality_activity' || lower.includes('活性') || lower.includes('因子')) {
+    bullets.push(activity.summary?.headline || `因子流水线当前跟踪 ${pipeline.metrics.factorCount} 个因子，其中 ${pipeline.metrics.testedCount} 个已有真实回填结果。`);
+    bullets.push(`活跃 ${activity.metrics.activeCount} 个、观察 ${activity.metrics.watchCount} 个、待测/休眠 ${activity.metrics.dormantCount} 个、阻塞 ${activity.metrics.blockedCount} 个；没有真实证据的因子不作收益结论。`);
+    bullets.push(activity.summary?.nextAction || '先补历史截面和真实回测结果。');
+  } else if (direction === 'strategy_evidence_admission' || lower.includes('准入') || lower.includes('证据')) {
+    const formal = signalPack.formalPolicy || {};
+    bullets.push(formal.description || '当前策略证据仍需按策略级回测、分层、交易成本和样本外结果检查。');
+    bullets.push((formal.requiredEvidence || []).slice(0, 4).join('；') || '策略级收益、回撤、换手和成本敏感性仍需真实回填。');
+    bullets.push(`当前策略候选 ${signalPack.formalStrategies?.length || 0} 条；候选状态不等于准入通过。`);
+  } else if (direction === 'backtest_layering' || lower.includes('回测') || lower.includes('复测') || lower.includes('分层')) {
+    bullets.push(`复测数据 ${backtest.source.rows} 行、${backtest.source.uniqueDates} 个交易日、${backtest.source.uniqueStocks} 只股票；本地状态 ${backtest.metrics.localStatus}。`);
+    bullets.push('正式验证应覆盖 5/10/20 日未来收益、分组收益、策略净值，并完成大/中/小市值与高/中/低波动交叉分层。');
+    bullets.push(backtest.blockers.map((item) => `${item.title}：${item.detail}`).join('；'));
+  } else if (direction === 'stress_execution' || lower.includes('压力') || lower.includes('执行')) {
+    bullets.push(`建仓压力测试目录 ${stressCatalog.strategies.length} 条，其中 ${stressCatalog.strategies.filter((item) => item.runnable).length} 条可运行；${stressCatalog.dataPolicy}`);
+    bullets.push('压力测试只检查真实行情覆盖、成本、成交率、容量和延迟等执行链路，不改变策略或准入。');
+    bullets.push('下一步：选择已达准入审计的策略，确认请求日期真实行情完整后再运行。');
+  } else if (direction === 'paper_pnl_review' || lower.includes('模拟盘') || lower.includes('盈亏')) {
+    bullets.push('模拟盘盈亏只认本地账本中的真实观察收益字段；没有真实收益记录时不生成净值、胜率或收益推断。');
+    bullets.push('当前回答不自动导入账本、不生成订单，也不把信号候选当作成交结果。');
+    bullets.push('下一步：导入实际观察记录，再按策略、日期、信号状态和成交状态复盘。');
+  } else if (direction === 'data_gaps_next_steps' || lower.includes('缺') || text.includes('数据') || text.includes('采集')) {
     bullets.push(`当前最大缺口是历史深度：${pipeline.source.uniqueDates} 个交易日，项目内本地复测最低建议 60 日，专业验证建议 120-240 日。`);
-    bullets.push('还需要未来收益标签、交易日历、停牌/涨跌停和复权行情，才能在项目内完整计算 RankIC、分组收益和多空收益。');
+    bullets.push('还需要未来收益标签、交易日历、停牌/涨跌停和复权行情，才能完整计算 RankIC、分组收益和多空收益。');
     bullets.push(`等待字段或历史补齐的因子有 ${blockedEntries.length} 个。`);
   } else if (text.includes('哪个') || text.includes('最好') || text.includes('优先')) {
-    if (candidateEntries.length) {
-      bullets.push(`当前可优先关注 ${candidateEntries.length} 个重点候选：${candidateEntries.map((entry) => entry.name).join('、')}。`);
-      bullets.push('优先级依据来自真实回填的 RankIC/多空收益/历史样本，不包含估算绩效。');
-    } else {
-      bullets.push('当前没有满足重点候选规则的因子，建议先扩大历史样本或继续导入 JoinQuant 实测结果。');
-    }
-  } else if (text.includes('回测') || text.includes('复测')) {
-    bullets.push(`已有 ${testedEntries.length} 个因子导入过真实测试结果，${waitingEntries.length} 个因子仍需要继续复测或补历史。`);
-    bullets.push('短期仍建议用 JoinQuant 处理未来收益、停牌、涨跌停和复权；项目内回测需要先导入多日行情和未来收益。');
+    bullets.push(candidateEntries.length ? `当前可优先关注 ${candidateEntries.length} 个重点候选：${candidateEntries.map((entry) => entry.name).join('、')}。` : '当前没有满足重点候选规则的因子，建议先扩大历史样本或继续导入真实实测结果。');
+    bullets.push('优先级依据来自真实回填的 RankIC、多空收益和历史样本，不包含估算绩效。');
   } else {
     bullets.push(`因子研究流水线当前跟踪 ${pipeline.metrics.factorCount} 个因子，其中 ${pipeline.metrics.testedCount} 个已有真实回填结果。`);
     bullets.push(`重点候选 ${pipeline.metrics.strategyCandidateCount} 个，等待复测/跟踪 ${pipeline.metrics.waitingTestCount} 个，等待数据 ${pipeline.metrics.blockedCount} 个。`);
-    bullets.push('你可以问：哪个因子优先、某个因子缺什么数据、下一步如何复测、能不能进策略池。');
+    bullets.push('可以继续选择固定方向，或询问当前策略证据、分层回测、压力测试和模拟盘真实账本。');
   }
-
+  const source = [
+    { name: '研究流水线', detail: pipeline.source?.file || 'buildResearchPipeline' },
+    { name: '复测状态', detail: `${backtest.source?.file || 'buildBacktestResearchStatus'}；${backtest.source?.uniqueDates || 0} 个交易日` },
+    { name: '因子活性', detail: activity.source?.file || 'buildFactorActivityReport' },
+    { name: '策略信号', detail: signalPack.source?.file || 'buildLiveStrategySignals' },
+    { name: '压力测试目录', detail: 'buildPositionStressStrategyCatalog' },
+  ];
   return {
     answer: bullets,
+    context: { ...context, direction: directionText },
+    evidence: source,
     factor: selected?.factorId || null,
     generatedAt: new Date().toISOString(),
-    mode: pipeline.assistant.mode,
+    limitations: ['只读分析；不改策略、不改准入、不自动下单。', '没有真实未来收益或成交记录时，不生成未验证收益。'],
+    mode: 'local_grounded_assistant',
+    nextSteps: [selected?.nextAction || activity.summary?.nextAction || '补足真实历史、回测或账本证据后再复核。'],
     policy: pipeline.assistant.policy,
   };
 }
@@ -6631,7 +7061,186 @@ function buildLiveStrategySignals() {
     && akshareLocalSwitchSleeve?.operational_status === 'ready_for_controlled_paper_watch'
     && akshareTradeabilityReview.decision === 'tradeability_review_passed',
   );
+  const indexEnhancement = buildIndexEnhancementReport();
+  const indexEnhancementPrimary = Array.isArray(indexEnhancement.primary) ? indexEnhancement.primary : [];
+  const indexEnhancementConservative = Array.isArray(indexEnhancement.conservative) ? indexEnhancement.conservative : [];
+  const indexEnhancementRows = [...indexEnhancementPrimary, ...indexEnhancementConservative];
+  const indexEnhancementCsi300 = indexEnhancementPrimary.find((item) => item.dataset === 'csi300') || {};
+  const indexEnhancementCsi500 = indexEnhancementPrimary.find((item) => item.dataset === 'csi500') || {};
+  const csi500LcrStrategyId = 'csi500_low_crowding_reversal_index_enhancement_v0';
+  const csi500LcrStrategyStats = strategyResultStats[csi500LcrStrategyId];
+  const csi500LcrFactorResults = readImportedFactorResults().filter((result) => (
+    result.strategy_id === csi500LcrStrategyId
+    || result.source === 'joinquant_csi500_low_crowding_reversal_index_enhancement_v0'
+  ));
+  const csi500LcrValidation = buildStrategyValidation(csi500LcrStrategyStats, '中证500低拥挤反转指数增强策略');
+  const csi500LcrLayeredValidation = buildLayeredStrategyValidation(csi500LcrStrategyStats, '中证500低拥挤反转指数增强策略');
+  const csi500LcrTradingValidation = buildTradingStrategyValidation(csi500LcrStrategyStats, '中证500低拥挤反转指数增强策略');
+  const csi500LcrTradingResult = csi500LcrTradingValidation.tradingResult;
+  const csi500LcrStatus = csi500LcrTradingResult?.strategy_status || (csi500LcrStrategyStats?.all?.length ? 'real_strategy_backtested' : 'waiting_joinquant_retest');
+  const csi500LcrStatusName = csi500LcrTradingResult?.strategy_status_name || (csi500LcrStrategyStats?.all?.length ? '已有真实策略回测，等待准模拟盘审计' : '等待 JoinQuant 原生复测');
+  const csi500LcrPaperWatchCandidate = csi500LcrStatus === 'paper_trade_candidate'
+    && csi500LcrValidation.validated
+    && csi500LcrLayeredValidation.validated
+    && csi500LcrTradingValidation.validated;
+  const csi500LcrFactorGatePassCount = toNumber(csi500LcrTradingResult?.factor_gate_pass_count, csi500LcrFactorResults.filter((result) => result.gate_passed).length);
+  const csi500LcrFactors = [
+    strategyFactor('jq_lcr_active_reversal', '主动反转修复', 0.30),
+    strategyFactor('jq_lcr_low_crowding_resilience', '低拥挤韧性', 0.22),
+    strategyFactor('jq_lcr_residual_low_volatility', '残差低波', 0.18),
+    strategyFactor('jq_lcr_volume_stability', '量能稳定', 0.15),
+    strategyFactor('jq_lcr_gap_risk_control', '跳空风险控制', 0.10),
+    strategyFactor('jq_lcr_short_reversal', '短期反转', 0.05),
+  ];
+  const csi500LcrV1 = readLatestCsi500LcrV1Candidate();
+  const csi500LcrV1Primary = csi500LcrV1?.primary_trading || null;
+  const csi500LcrV1LatestSelection = csi500LcrV1?.latest_selection || {};
+  const csi500LcrV1SelectedCodes = Array.isArray(csi500LcrV1LatestSelection.selected_codes)
+    ? csi500LcrV1LatestSelection.selected_codes
+    : [];
+  const csi500LcrV1Checks = csi500LcrV1?.strategy_checks || {};
+  const csi500LcrV1Ready = Boolean(
+    csi500LcrV1Primary
+    && csi500LcrV1?.strategy_status === 'candidate_for_pressure_test'
+    && csi500LcrV1Checks.primary_exists
+    && csi500LcrV1Checks.primary_positive_return
+    && csi500LcrV1Checks.primary_positive_excess
+    && csi500LcrV1Checks.primary_active_sharpe_positive
+    && csi500LcrV1Checks.primary_drawdown_within_floor
+  );
+  const csi500LcrV1Factors = Object.entries(csi500LcrV1?.v1_config?.weights || {}).map(([factor, weight]) => strategyFactor(factor, factor, weight));
+  const csi500LcrV1KeptFactorCount = Array.isArray(csi500LcrV1?.kept_factors) ? csi500LcrV1.kept_factors.length : csi500LcrV1Factors.length;
+  const csi500LcrV1AllowedLayerNames = Array.isArray(csi500LcrV1?.allowed_layer_names) ? csi500LcrV1.allowed_layer_names : [];
   const formalStrategiesUnsorted = [
+    ...(csi500LcrV1Ready
+      ? [
+        {
+          id: 'csi500_low_crowding_reversal_index_enhancement_v2',
+          name: '中证500低拥挤反转指数增强试验版 v2（固定名单版）',
+          pool: 'experimental_candidate',
+          status: 'experimental_candidate',
+          validationState: 'v2 作为固定最新名单试验版保留，执行层为信号驱动动态持仓；用于复查固定名单压测路径，不作为历史动态选股回测定稿。',
+          role: '压力测试试验版：中证500指数增强袖 v2 固定名单口径',
+          objective: '保留 v2 固定最新名单收益路径，便于和 v2.1 动态池试验版做口径对照。',
+          dataBasis: `${csi500LcrV1.data_policy || '真实 JoinQuant factor slice 合并复算；v2 当前使用本地 OHLCV 执行压测复核。'} 最新信号 ${csi500LcrV1LatestSelection.date || '-'}，入选 ${csi500LcrV1SelectedCodes.length || csi500LcrV1LatestSelection.selected_count || 0} 只。`,
+          factorState: csi500LcrV1Factors,
+          rankingFormula: '固定使用 v1 最新候选名单，并在固定篮子内用 OHLCV 代理分数排序；不是逐日中证500全池排序。',
+          entryRules: [
+            '沿用 v1 通过门禁的最新候选名单执行固定篮子压测',
+            '空仓槽位按当天信号补入，不再每日全卖全买',
+            '默认持仓锚定5个交易日；T+1 后每日复核信号',
+            `最新名单：${csi500LcrV1SelectedCodes.slice(0, 8).join(', ')}${csi500LcrV1SelectedCodes.length > 8 ? '...' : ''}`,
+          ],
+          riskFilters: [
+            '止损：单票从成交价回撤8%退出',
+            '止盈：单票浮盈达到12%后，从峰值回撤6%退出',
+            '信号退出：持满5日后跌出Buffer80或分数衰减30%退出',
+            '趋势延续保护：20日后仍在前40且收益超过3%，不因到期机械卖出',
+            '硬上限60个交易日，样本结束强制平仓',
+          ],
+          portfolioRules: ['Top15/TopN 等权槽位', '动态补仓', '信号退出', '止损8%', '止盈回撤6%', '20日趋势复核', '60日硬上限'],
+          nextAction: '继续作为固定名单试验版留档和容量对照；和 v2.1 动态池试验版并列观察。',
+          candidateCount: csi500LcrV1SelectedCodes.length || csi500LcrV1Primary.sample_trades || 0,
+          computedSignalCount: csi500LcrV1Primary.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
+          exportable: false,
+          exportStatus: 'v2 固定名单试验版已保留；系统会将固定 selected_codes 运行标记为固定篮子预览。',
+        },
+        {
+          id: 'csi500_low_crowding_reversal_index_enhancement_v2_1',
+          name: '中证500低拥挤反转指数增强试验版 v2.1（动态池修正版）',
+          pool: 'experimental_candidate',
+          status: 'experimental_candidate',
+          validationState: 'v2.1 作为动态池修正式验版保留：使用中证500池逐日动态排序，执行层沿用信号驱动持仓、止盈止损、分数衰减和真实成交约束。',
+          role: '压力测试试验版：中证500指数增强袖 v2.1 动态池口径',
+          objective: '用可审计的中证500宽股票池逐日选股替代固定最新名单，和 v2 固定名单试验版并列对照。',
+          dataBasis: '本地 AkShare 中证500池与 OHLCV 代理因子；用于真实成交压力测试，不等价于 JoinQuant 原生因子回测。',
+          factorState: csi500LcrV1Factors,
+          rankingFormula: 'OHLCV 低拥挤、反转修复、成交活跃和收盘强度代理分数；每日在中证500池内动态取 TopN/Buffer。',
+          entryRules: [
+            '每日在中证500池内重算代理分数并动态选股',
+            '空仓槽位按当天信号补入，不再每日全卖全买',
+            '默认持仓锚定5个交易日；T+1 后每日复核信号',
+            '真实成交约束使用单票单日成交额参与率上限',
+          ],
+          riskFilters: [
+            '固定名单运行会被系统降级为篮子预览，v2.1 不传 selectedCodes',
+            '止损：单票从成交价回撤8%退出',
+            '止盈：单票浮盈达到12%后，从峰值回撤6%退出',
+            '宽股票池按最小可交易样本检查，并披露缺失成分',
+          ],
+          portfolioRules: ['中证500池逐日动态选股', 'TopN 等权槽位', '动态补仓', '信号退出', '止损8%', '止盈回撤6%', '20日趋势复核', '60日硬上限'],
+          nextAction: '继续作为动态池试验版做压力测试，并补 JoinQuant 原生逐日信号复核后再决定是否升级。',
+          candidateCount: 500,
+          computedSignalCount: csi500LcrV1Primary.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
+          exportable: false,
+          exportStatus: 'v2.1 动态池试验版已保留；用于和 v2 固定名单试验版对照，而不是覆盖 v2。',
+        },
+        {
+          id: csi500LcrV1.strategy_id || 'csi500_low_crowding_reversal_index_enhancement_v1',
+          name: csi500LcrV1.strategy_name || '中证500低拥挤反转指数增强候选策略 v1',
+          pool: 'formal_candidate',
+          status: 'candidate_for_pressure_test',
+          validationState: `已生成 v1 真实调仓候选包：${csi500LcrV1Primary.horizon_label || '5日真实调仓'}，主动收益 ${(Number(csi500LcrV1Primary.excess_return || 0) * 100).toFixed(2)}%，主动Sharpe ${Number(csi500LcrV1Primary.active_sharpe || 0).toFixed(2)}，最大回撤 ${(Number(csi500LcrV1Primary.max_drawdown || 0) * 100).toFixed(2)}%，平均换手 ${Number(csi500LcrV1Primary.avg_turnover || 0).toFixed(3)}；保留因子 ${csi500LcrV1KeptFactorCount} 个。`,
+          role: '压力测试候选：中证500指数增强袖 v1',
+          objective: '在 v0 基础上先做因子门禁，保留量能稳定、流动性均衡、市值中性量稳和残差量稳，过滤拖累分层后用真实调仓步长做中证500增强。',
+          dataBasis: `${csi500LcrV1.data_policy || '真实 JoinQuant factor slice 合并复算；交易回测使用非重叠真实调仓步长。'} 样本 ${csi500LcrV1Primary.sample_dates || 0} 个调仓日，最新信号 ${csi500LcrV1LatestSelection.date || '-'}，入选 ${csi500LcrV1SelectedCodes.length || csi500LcrV1LatestSelection.selected_count || 0} 只。`,
+          factorState: csi500LcrV1Factors,
+          rankingFormula: '0.25*量能稳定 + 0.25*市值中性量稳 + 0.35*量能流动性均衡 + 0.15*残差量稳；Top15 / Buffer80 / 分层过滤 / 市值中性 / 流动性25%过滤。',
+          entryRules: [
+            '只使用通过 20日门禁且 5日同向为正的因子',
+            `开放分层：${csi500LcrV1AllowedLayerNames.join('、') || '等待候选包回填'}`,
+            '5日真实调仓作为主压力测试口径，同时保留10日和20日成本压力结果',
+            `最新压力测试名单：${csi500LcrV1SelectedCodes.slice(0, 8).join(', ')}${csi500LcrV1SelectedCodes.length > 8 ? '...' : ''}`,
+          ],
+          riskFilters: [
+            '当前状态是可进入压力测试候选，不等于正式实盘批准',
+            '已剔除 20日门禁未通过或 5日多空不为正的低拥挤/反转类旧因子',
+            '继续补真实指数权重、行业暴露、停牌涨跌停、容量和样本外模拟观察账本',
+          ],
+          portfolioRules: ['中证500历史成分内选股', 'Top15 等权增强候选', 'Buffer80 换手缓冲', '5/10/20日非重叠真实调仓', '成本1.0x/1.5x/2.0x压力测试'],
+          nextAction: '已进入策略池；下一步用最新 Top15 名单跑建仓压力测试、交易可行性和受控模拟观察审计。',
+          candidateCount: csi500LcrV1Primary.sample_trades || csi500LcrV1SelectedCodes.length || 0,
+          computedSignalCount: csi500LcrV1Primary.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
+          exportable: false,
+          exportStatus: `v1 已达压力测试候选标准；${csi500LcrV1.strategy_status_name || '可进入压力测试候选'}`,
+        },
+      ]
+      : []),
+    ...(csi500LcrPaperWatchCandidate
+      ? [
+        {
+          id: csi500LcrStrategyId,
+          name: '中证500低拥挤反转指数增强候选策略 v0',
+          pool: 'formal_candidate',
+          status: 'paper_trade_candidate',
+          validationState: `${csi500LcrValidation.evidence} ${csi500LcrLayeredValidation.evidence} ${csi500LcrTradingValidation.evidence} 因子门禁通过 ${csi500LcrFactorGatePassCount} 个；${csi500LcrStatusName}。`,
+          role: '准模拟盘候选：中证500指数增强袖',
+          objective: '围绕中证500基准做低拥挤、反转修复、残差低波和量能稳定的主动增强，优先控制主动回撤和换手。',
+          dataBasis: `JoinQuant 原生结果 ${csi500LcrStrategyStats.all.length} 条；因子实测 ${csi500LcrFactorResults.length} 条；使用历史成分、OHLCV、market_cap、turnover_ratio 和指数行情。`,
+          factorState: csi500LcrFactors,
+          rankingFormula: '0.30*主动反转修复 + 0.22*低拥挤韧性 + 0.18*残差低波 + 0.15*量能稳定 + 0.10*跳空风险控制 + 0.05*短期反转；通过门禁的因子优先重归一。',
+          entryRules: [
+            '因子必须先完成 1/5/10/20 日 JoinQuant RankIC 与多空收益复测',
+            '策略组合默认取中证500成分内评分前100只',
+            '1/5/10/20日调仓交易净值必须扣交易成本和滑点，5日调仓作为准模拟盘主准入周期',
+            '基准使用同日中证500成分等权收益，重点看主动收益和主动回撤',
+          ],
+          riskFilters: [
+            '准模拟盘只记录样本外观察，不直接等同实盘批准',
+            '高/中/低波动 × 大/中/小市值九宫格必须完整回填',
+            '未通过的分层不得单独放开为模拟盘交易袖',
+            '后续仍需补行业暴露、真实指数权重、停牌涨跌停和容量审计',
+          ],
+          portfolioRules: ['中证500成分内选股', 'Top100 等权增强诊断', '1/5/10/20日调仓；5日主准入', '高中低波动 × 大中小市值分层审计'],
+          nextAction: '进入受控模拟观察账本前，先检查最近一期可交易名单、行业暴露和单票权重约束。',
+          candidateCount: csi500LcrTradingResult?.sample_trades || 0,
+          computedSignalCount: csi500LcrTradingResult?.sample_dates || csi500LcrFactorResults.length,
+          exportable: false,
+          specialBacktestScriptEndpoint: '/strategy-api/joinquant-csi500-low-crowding-reversal-index-enhancement.py',
+          exportStatus: `已达准模拟盘候选标准；${csi500LcrStatusName}`,
+        },
+      ]
+      : []),
     ...(coreStrategyValidated
       ? [
       {
@@ -6811,11 +7420,15 @@ function buildLiveStrategySignals() {
       : []),
   ];
   const formalStrategyPriority = {
-    jq_quality_profit_liquidity_v1: 0,
-    kline_assisted_confirmation: 1,
-    core_volume_price_trend_v1: 2,
-    capital_follow_v0: 3,
-    akshare_regime_switch_contraction_mean_reversion_v1: 4,
+    csi500_low_crowding_reversal_index_enhancement_v0: 0,
+    csi500_low_crowding_reversal_index_enhancement_v1: 1,
+    csi500_low_crowding_reversal_index_enhancement_v2: 2,
+    csi500_low_crowding_reversal_index_enhancement_v2_1: 3,
+    jq_quality_profit_liquidity_v1: 4,
+    kline_assisted_confirmation: 5,
+    core_volume_price_trend_v1: 6,
+    capital_follow_v0: 7,
+    akshare_regime_switch_contraction_mean_reversion_v1: 8,
   };
   const formalStrategies = [...formalStrategiesUnsorted].sort((left, right) => (
     (formalStrategyPriority[left.id] ?? 99) - (formalStrategyPriority[right.id] ?? 99)
@@ -6835,8 +7448,10 @@ function buildLiveStrategySignals() {
       rows: coreRows.length + capitalSignalRows.length,
     },
     metrics: {
-      draftStrategies: 7,
+      draftStrategies: 8,
       executableStrategies: [
+        csi500LcrV1Ready,
+        csi500LcrPaperWatchCandidate,
         coreStrategyValidated,
         capitalStrategyValidated,
         jqQualityStrategyValidated,
@@ -6854,6 +7469,79 @@ function buildLiveStrategySignals() {
       riskWatchRows: labelCounts['风险观察'] || 0,
     },
     strategies: [
+      ...(csi500LcrV1
+        ? [
+          {
+            id: csi500LcrV1.strategy_id || 'csi500_low_crowding_reversal_index_enhancement_v1',
+            name: csi500LcrV1.strategy_name || '中证500低拥挤反转指数增强候选策略 v1',
+            pool: 'draft',
+            status: csi500LcrV1Ready ? 'candidate_for_pressure_test' : csi500LcrV1.strategy_status || 'candidate_pending_review',
+            validationState: csi500LcrV1Primary
+              ? `v1 已生成真实调仓候选包：${csi500LcrV1Primary.horizon_label || '5日真实调仓'}，策略收益 ${(Number(csi500LcrV1Primary.strategy_return || 0) * 100).toFixed(2)}%，主动收益 ${(Number(csi500LcrV1Primary.excess_return || 0) * 100).toFixed(2)}%，主动Sharpe ${Number(csi500LcrV1Primary.active_sharpe || 0).toFixed(2)}，最大回撤 ${(Number(csi500LcrV1Primary.max_drawdown || 0) * 100).toFixed(2)}%。`
+              : 'v1 候选包已登记，但未找到主交易回测结果。',
+            role: '中证500指数增强压力测试候选',
+            objective: '用通过门禁的量能稳定/流动性质量因子替代 v0 中未通过门禁的低拥挤反转因子，形成可压测的中证500增强候选。',
+            dataBasis: csi500LcrV1.data_policy || '真实 JoinQuant factor slice 合并复算；5/10/20日交易回测使用非重叠真实调仓步长。',
+            factorState: csi500LcrV1Factors,
+            rankingFormula: '0.25*量能稳定 + 0.25*市值中性量稳 + 0.35*量能流动性均衡 + 0.15*残差量稳；Top15 / Buffer80 / 分层过滤。',
+            entryRules: [
+              '保留 20日门禁通过且 5日同向为正的因子',
+              `Top${csi500LcrV1?.v1_config?.top_n || 15} / Buffer${csi500LcrV1?.v1_config?.buffer_n || 80}`,
+              `流动性过滤分位 ${Math.round(Number(csi500LcrV1?.v1_config?.liquidity_quantile || 0) * 100)}%`,
+              `开放分层：${csi500LcrV1AllowedLayerNames.join('、') || '-'}`,
+            ],
+            riskFilters: [
+              '仍是压力测试候选，进入实盘前必须补交易可行性、行业暴露和容量审计',
+              '分层过滤以候选包中的开放分层为准，未开放分层不得单独放行',
+              '成本1.5x和2.0x压力结果应继续跟踪，避免高换手侵蚀主动收益',
+            ],
+            portfolioRules: ['中证500历史成分内选股', 'Top15 等权候选', '5/10/20日真实调仓', '成本1.0x/1.5x/2.0x压力测试', '最新名单可进入建仓压测'],
+            nextAction: csi500LcrV1Ready
+              ? '从策略池选择 v1，运行建仓压力测试并补最新交易可行性审计。'
+              : '先检查 v1 候选包缺失的主交易回测或策略检查项。',
+            candidateCount: csi500LcrV1Primary?.sample_trades || csi500LcrV1SelectedCodes.length || 0,
+            computedSignalCount: csi500LcrV1Primary?.sample_dates || csi500LcrV1?.slice_audit?.factor_dates || 0,
+            exportable: false,
+            exportStatus: csi500LcrV1Ready ? '已补入策略池；可进入建仓压力测试候选' : '候选包已登记，等待检查项通过',
+          },
+        ]
+        : []),
+      {
+        id: csi500LcrStrategyId,
+        name: '中证500低拥挤反转指数增强候选策略 v0',
+        pool: 'draft',
+        status: csi500LcrPaperWatchCandidate ? 'paper_trade_candidate' : csi500LcrStatus,
+        validationState: csi500LcrStrategyStats?.all?.length
+          ? `${csi500LcrValidation.evidence} ${csi500LcrLayeredValidation.evidence} ${csi500LcrTradingValidation.evidence} 因子门禁通过 ${csi500LcrFactorGatePassCount} 个；${csi500LcrStatusName}。`
+          : '等待 JoinQuant 原生复测：先跑 1/5/10/20 日因子门禁，再回填策略事件回测、1/5/10/20日调仓净值和波动×市值九宫格。',
+        role: csi500LcrPaperWatchCandidate ? '准模拟盘候选：中证500指数增强袖' : '指数增强候选；等待聚宽实测',
+        objective: '围绕中证500基准做低拥挤、反转修复、残差低波和量能稳定的主动增强，目标是稳健小超额而不是高换手追涨。',
+        dataBasis: csi500LcrStrategyStats?.all?.length
+          ? `JoinQuant 原生策略结果 ${csi500LcrStrategyStats.all.length} 条；因子实测 ${csi500LcrFactorResults.length} 条。`
+          : '尚未导入 JoinQuant 结果；本地只登记策略路线和脚本入口，不展示未实测绩效。',
+        factorState: csi500LcrFactors,
+        rankingFormula: '0.30*主动反转修复 + 0.22*低拥挤韧性 + 0.18*残差低波 + 0.15*量能稳定 + 0.10*跳空风险控制 + 0.05*短期反转；通过门禁的因子优先重归一。',
+        entryRules: [
+          '所有因子先经过 JoinQuant 1/5/10/20 日 RankIC 和 Top20%-Bottom20% 多空收益复测',
+          '20日主周期通过门禁后才作为正式组合因子',
+          '中证500成分内评分前100只作为增强诊断组合',
+          '策略级结果必须包含1/5/10/20日调仓交易净值、成本、滑点、主动收益和主动回撤；5日作为主准入周期',
+        ],
+        riskFilters: [
+          '未回填 JoinQuant 结果前不进入正式策略池',
+          '高中低波动 × 大中小市值九宫格必须完整测试',
+          '准模拟盘前继续补行业暴露、真实指数权重、停牌涨跌停和容量审计',
+        ],
+        portfolioRules: ['中证500成分内选股', 'Top100 等权增强诊断', '1/5/10/20日调仓；5日主准入', '高中低波动 × 大中小市值分层审计'],
+        nextAction: csi500LcrStrategyStats?.all?.length
+          ? (csi500LcrPaperWatchCandidate ? '检查最近一期可交易名单和行业暴露，准备受控模拟观察账本。' : '查看未通过的因子门禁、主动收益或九宫格分层，决定是否调整因子权重。')
+          : '下载专属 JoinQuant 脚本，在 JoinQuant Python3 研究环境运行后，将打印 JSON 粘贴回结果回填。',
+        candidateCount: csi500LcrTradingResult?.sample_trades || 0,
+        computedSignalCount: csi500LcrTradingResult?.sample_dates || csi500LcrFactorResults.length,
+        exportable: false,
+        specialBacktestScriptEndpoint: '/strategy-api/joinquant-csi500-low-crowding-reversal-index-enhancement.py',
+        exportStatus: csi500LcrStrategyStats?.all?.length ? csi500LcrStatusName : '已生成 JoinQuant 原生复测脚本；等待真实结果回填',
+      },
       {
         id: 'core_volume_price_trend_v1',
         name: '核心量价趋势策略 v1',
@@ -7114,7 +7802,7 @@ function buildLiveStrategySignals() {
         riskFilters: [
           klineStrategyValidated
             ? '已使用 JoinQuant 真实240日 volume/money 计算情绪系数'
-            : '缺少 240 日成交量历史时不计算 emotion_weighted_kline_score',
+            : '缺少 240 日成交量历史时不启用情绪加权K线因子',
           '不复制研报原始收益，不展示未实测绩效',
         ],
         portfolioRules: klineStrategyValidated
@@ -7126,6 +7814,38 @@ function buildLiveStrategySignals() {
         candidateCount: klineValidation.bestResult?.packetSample?.candidate_rows || klineRows.length,
         computedSignalCount: klineValidation.bestResult?.packetSample?.factor_rows || coreRows.length,
         exportStatus: klineStrategyValidated ? '已有真实策略级结果，建议作为辅助确认模块继续组合回测' : '单根K线可观察；完整策略待数据',
+      },
+      {
+        id: 'akshare_index_enhancement_volume_confirmation_v0',
+        name: 'AkShare指数增强严格因子复测 v0',
+        pool: 'draft',
+        status: indexEnhancement.gate.passed ? 'ready_for_joinquant_strategy_backtest' : 'factor_gate_not_passed',
+        validationState: `${indexEnhancement.gate.label}：严格复测覆盖 1/5/10/20 日，因子门禁通过 ${indexEnhancement.factorGateAudit?.filter((row) => row.gate_passed).length || 0}/${indexEnhancement.factorGateAudit?.length || 0}；未通过前不生成准入型策略回测。`,
+        role: '指数增强因子诊断；未过门禁前不建策略',
+        objective: '按 JoinQuant 策略实测要求重做指数增强：先做 1/5/10/20 日因子门禁，再决定是否进入交易回测。当前本地 AkShare 严格复测未放行策略。',
+        dataBasis: `${indexEnhancement.dataPolicy} 研究文件：${indexEnhancement.researchPath || '-'}；报告：${indexEnhancement.reportPath || '-'}。`,
+        factorState: [],
+        rankingFormula: '未过严格因子门禁的 ie_* 复合 alpha 已从当前候选池移除；仅保留审计记录。',
+        entryRules: indexEnhancementRows.length
+          ? indexEnhancementRows.map((row) => `${row.label}：${row.scoreCol} Top${row.topN}，核心权重 ${Math.round(Number(row.coreWeight || 0) * 100)}%，缓冲 ${row.bufferMultiple}x，平均换手 ${formatRatioPercent(row.avgTurnover, 1)}`)
+          : ['严格因子门禁未通过，不生成 TopN 组合和调仓规则'],
+        riskFilters: [
+          ...indexEnhancement.gate.failedItems,
+          '没有历史成分、真实指数权重、行业市值中性前，不把本地结果当成可交易结论',
+        ],
+        portfolioRules: indexEnhancementRows.length
+          ? [
+            ...indexEnhancementPrimary.map((row) => `${row.label}：主动收益 ${formatRatioPercent(row.activeReturn)}，主动年化 ${formatRatioPercent(row.activeAnnualReturn)}，主动回撤 ${formatRatioPercent(row.activeMaxDrawdown)}，平均换手 ${formatRatioPercent(row.avgTurnover, 1)}`),
+            ...indexEnhancementConservative.map((row) => `${row.label}：主动收益 ${formatRatioPercent(row.activeReturn)}，主动年化 ${formatRatioPercent(row.activeAnnualReturn)}，主动回撤 ${formatRatioPercent(row.activeMaxDrawdown)}，平均换手 ${formatRatioPercent(row.avgTurnover, 1)}`),
+          ]
+          : ['本轮严格复测没有通过门禁的 score_col，组合回测为空。'],
+        nextAction: indexEnhancement.gate.nextActions.join('；'),
+        candidateCount: indexEnhancementRows.length,
+        computedSignalCount: indexEnhancement.factorGateAudit?.length || 0,
+        exportable: false,
+        exportStatus: indexEnhancement.gate.passed
+          ? '因子门禁已有通过项；下一步生成 JoinQuant 原生交叉回测脚本。'
+          : '严格因子门禁未通过；不提供策略导出，不进入模拟观察。',
       },
       {
         id: 'market_capital_regime_position',
@@ -7231,61 +7951,298 @@ function buildLiveStrategySignals() {
   };
 }
 
+function normalizePaperSignalCode(value) {
+  return String(value || '').replace(/\.(XSHG|XSHE|SH|SZ)$/i, '').padStart(6, '0');
+}
+
+function paperSignalTimestamp(signalDate, clock) {
+  if (!signalDate) return '';
+  return `${signalDate}T${clock}+08:00`;
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function paperSignalContext(strategyId) {
+  const signalPack = buildLiveStrategySignals();
+  const strategies = [...(signalPack.formalStrategies || []), ...(signalPack.strategies || [])];
+  const strategy = strategies.find((item) => item.id === strategyId);
+  if (!strategy) return { signalPack, strategy: null, operations: null, sleeve: null, rawSleeve: null, stressStrategy: null };
+  const operations = buildPaperWatchRoutes();
+  const rawSleeves = Array.isArray(operations.operationsPack?.capital_sleeves)
+    ? operations.operationsPack.capital_sleeves
+    : [];
+  const sleeve = (operations.paperWatchConsole?.sleeves || []).find((item) => item.strategyId === strategyId) || null;
+  const rawSleeve = rawSleeves.find((item) => item.strategy_id === strategyId) || null;
+  const stressStrategy = (buildPositionStressStrategyCatalog().strategies || []).find((item) => item.strategyId === strategyId) || null;
+  return { signalPack, strategy, operations, sleeve, rawSleeve, stressStrategy };
+}
+function buildPaperSignal(strategyId) {
+  const { signalPack, strategy, operations, sleeve, rawSleeve, stressStrategy } = paperSignalContext(strategyId);
+  if (!strategy) return null;
+  const latestSignal = rawSleeve?.latest_signal || sleeve?.latestSignal || {};
+  const latestLedger = rawSleeve?.latest_ledger || sleeve?.latestLedger || {};
+  const selectedCodes = selectedCodesList(
+    latestSignal.selected_codes || latestLedger.selected_codes || sleeve?.selectedCodes || stressStrategy?.selectedCodes || [],
+  ).map(normalizePaperSignalCode).filter((code, index, values) => code && values.indexOf(code) === index);
+  const signalDate = dateOnly(latestSignal.signal_date || latestLedger.date || sleeve?.signalDate || signalPack.generatedAt);
+  const canTrade = Boolean(
+    sleeve?.canStartObservation
+    && ['open_allowed', 'paper_watch_open_allowed'].includes(sleeve.latestAction || latestSignal.action || '')
+    && selectedCodes.length,
+  );
+  const action = canTrade ? 'TARGET_PORTFOLIO' : 'RECORD_ONLY';
+  const gateStatus = sleeve?.gateStatus || rawSleeve?.operational_status || strategy.status || 'unknown';
+  const plannedWeightValue = Number(rawSleeve?.planned_weight ?? latestSignal.planned_weight ?? (canTrade ? 1 : 0));
+  const plannedWeight = Number.isFinite(plannedWeightValue) && plannedWeightValue >= 0 ? Math.min(1, plannedWeightValue) : 0;
+  const plannedUnits = Math.max(0, Math.round(plannedWeight * 1_000_000_000_000));
+  const baseUnits = selectedCodes.length ? Math.floor(plannedUnits / selectedCodes.length) : 0;
+  const portfolio = selectedCodes.map((symbol, index) => {
+    const units = index === selectedCodes.length - 1
+      ? plannedUnits - baseUnits * (selectedCodes.length - 1)
+      : baseUnits;
+    const targetWeight = units / 1_000_000_000_000;
+    return {
+      symbol,
+      asset_type: symbol.startsWith('5') || symbol.startsWith('1') ? 'etf' : 'stock',
+      target_weight: targetWeight.toFixed(12),
+      target_quantity: null,
+      rank: index + 1,
+    };
+  });
+  const identity = {
+    strategy_id: strategyId,
+    strategy_version: 'm-quant-route-v1',
+    sleeve_id: rawSleeve?.sleeve_id || sleeve?.sleeveId || strategyId,
+    signal_date: signalDate,
+    action,
+    gate_status: gateStatus,
+    planned_weight: plannedWeight.toFixed(12),
+    cash_target_weight: (1 - plannedWeight).toFixed(12),
+    portfolio,
+  };
+  const signalId = createHash('sha256').update(stableJson(identity)).digest('hex');
+  return {
+    schema_version: 'signal.v1',
+    signal_id: signalId,
+    strategy_id: strategyId,
+    strategy_version: 'm-quant-route-v1',
+    sleeve_id: identity.sleeve_id,
+    generated_at: new Date().toISOString(),
+    signal_date: signalDate,
+    effective_at: paperSignalTimestamp(signalDate, '09:30:00'),
+    expires_at: canTrade ? paperSignalTimestamp(signalDate, '15:00:00') : null,
+    action,
+    gate_status: gateStatus,
+    planned_weight: identity.planned_weight,
+    cash_target_weight: identity.cash_target_weight,
+    portfolio,
+    provenance: {
+      source: 'M-quant',
+      data_policy: signalPack.dataPolicy || operations?.dataPolicy || '本地研究平台生成的策略信号；不包含未来收益或实盘保证。',
+      source_date: signalDate,
+      run_id: signalPack.generatedAt || new Date().toISOString(),
+    },
+    metadata: {
+      strategy_name: strategy.name || strategyId,
+      strategy_status: strategy.status || '',
+      selected_count: selectedCodes.length,
+      export_warning: canTrade ? '' : '当前策略没有通过准模拟盘开仓门禁；该信号只能记录，不会创建订单。',
+    },
+  };
+}
+
+function paperSignalCsv(signal) {
+  const headers = ['signal_id', 'strategy_id', 'signal_date', 'symbol', 'asset_type', 'target_weight', 'target_quantity', 'rank', 'gate_status', 'action'];
+  const rows = (signal.portfolio || []).map((position) => ({
+    ...position,
+    signal_id: signal.signal_id,
+    strategy_id: signal.strategy_id,
+    signal_date: signal.signal_date,
+    gate_status: signal.gate_status,
+    action: signal.action,
+  }));
+  return [headers.join(','), ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(','))].join('\n');
+}
+
+function paperSignalContractText() {
+  const contractPath = join(projectRoot, 'docs', 'paper-signal-v1.md');
+  return existsSync(contractPath) ? readFileSync(contractPath, 'utf8') : '# M-quant signal.v1\n';
+}
+
+function paperSignalDownload(strategyId) {
+  const signal = buildPaperSignal(strategyId);
+  if (!signal) return null;
+  return {
+    signal,
+    csv: paperSignalCsv(signal),
+    zip: buildStoredZip([
+      { name: 'signal.json', content: `${JSON.stringify(signal, null, 2)}\n` },
+      { name: 'portfolio.csv', content: `\ufeff${paperSignalCsv(signal)}\n` },
+      { name: 'signal-contract.md', content: paperSignalContractText() },
+    ]),
+  };
+}
+
+function buildExecutionCatalog() {
+  const catalog = buildPositionStressStrategyCatalog();
+  const strategies = (catalog.strategies || []).map((item) => {
+    const signal = buildPaperSignal(item.strategyId);
+    return {
+      strategy_id: item.strategyId,
+      strategy_name: item.name,
+      strategy_version: 'm-quant-route-v1',
+      runnable: Boolean(item.runnable),
+      gate_status: item.gateStatus || '',
+      runnable_reason: item.runnableReason || '',
+      selected_count: Array.isArray(item.selectedCodes) ? item.selectedCodes.length : 0,
+      signal_date: signal?.signal_date || '',
+      action: signal?.action || 'RECORD_ONLY',
+      portfolio_count: signal?.portfolio?.length || 0,
+      data_policy: signal?.provenance?.data_policy || '',
+    };
+  });
+  return {
+    schema_version: 'execution-catalog.v1',
+    generated_at: new Date().toISOString(),
+    mode: 'PAPER',
+    source: 'M-quant',
+    data_policy: '只返回当前策略准入、信号和目标组合状态；不自动修改策略、不执行 LIVE 交易。',
+    current_strategy_id: catalog.current?.strategyId || '',
+    strategies,
+  };
+}
+
+function buildExecutionHealth() {
+  const catalog = buildExecutionCatalog();
+  return {
+    schema_version: 'execution-health.v1',
+    service: 'quant-factor-platform',
+    mode: 'PAPER',
+    api_version: 'execution.v1',
+    status: 'OK',
+    generated_at: new Date().toISOString(),
+    strategy_count: catalog.strategies.length,
+    runnable_count: catalog.strategies.filter((item) => item.runnable).length,
+  };
+}
+
 async function handleApi(req, res, pathname) {
   const state = readState();
   const url = new URL(req.url || '/', `http://localhost:${port}`);
 
-  if (req.method === 'GET' && removedDownloadPaths.has(pathname)) {
-    sendDownloadRemoved(res);
+  if (req.method === 'GET' && pathname === '/strategy-api/execution-health') {
+    sendJson(res, buildExecutionHealth());
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/strategy-api/execution-catalog') {
+    sendJson(res, buildExecutionCatalog());
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/execution-signal') {
+    const strategyId = url.searchParams.get('strategy') || '';
+    const signal = buildPaperSignal(strategyId);
+    if (!signal) {
+      sendError(res, `未知策略：${strategyId || '(empty)'}`, 404);
+      return true;
+    }
+    sendJson(res, signal);
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/api/health') {
     sendJson(res, { ok: true, service: 'quant-factor-platform', timestamp: new Date().toISOString() });
     return true;
   }
-
   if (req.method === 'GET' && pathname === '/api/summary') {
     sendJson(res, buildSummary(state));
     return true;
   }
-
+  if (req.method === 'GET' && pathname === '/research-api/source') {
+    const requestedPath = String(url.searchParams.get('path') || '').trim();
+    const candidate = normalize(join(projectRoot, requestedPath));
+    const relativePath = projectRelativePath(candidate);
+    if (!requestedPath || requestedPath.startsWith('/') || relativePath === null || !existsSync(candidate) || !statSync(candidate).isFile()) {
+      sendError(res, '来源文件不存在或不允许访问', 404);
+      return true;
+    }
+    const contentType = contentTypes[extname(candidate)] || 'text/plain; charset=utf-8';
+    res.writeHead(200, { 'Cache-Control': 'no-store', 'Content-Type': contentType });
+    createReadStream(candidate).pipe(res);
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/api/preferences') {
     sendJson(res, state.preferences);
     return true;
   }
-
   if (req.method === 'PUT' && pathname === '/api/preferences') {
     const body = await readJsonBody(req);
-    const nextState = {
-      ...state,
-      preferences: {
-        ...state.preferences,
-        ...body,
-        feeRate: Number(body.feeRate ?? state.preferences.feeRate),
-        slippage: Number(body.slippage ?? state.preferences.slippage),
-      },
-    };
-
+    const nextState = { ...state, preferences: { ...state.preferences, ...body, feeRate: Number(body.feeRate ?? state.preferences.feeRate), slippage: Number(body.slippage ?? state.preferences.slippage) } };
     writeState(nextState);
     sendJson(res, nextState.preferences);
     return true;
   }
-
+  if (req.method === 'GET' && pathname === '/position-stress-api/history') {
+    sendJson(res, buildPositionStressHistory());
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/position-stress-api/runs') {
+    sendJson(res, buildPositionStressRunLedger());
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/position-stress-api/imported-strategies') {
+    sendJson(res, { ...buildImportedStrategyState(), dataPolicy: '只展示已经加入模拟盘且通过可执行校验的策略。' });
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/api/risk') {
     sendJson(res, buildDataCoverageRisks());
     return true;
   }
-
   if (req.method === 'GET' && pathname === '/position-stress-api/report') {
-    sendJson(res, readPositionStressReport());
+    sendJson(res, readPositionStressReport({ end: url.searchParams.get('end'), reportPath: url.searchParams.get('reportPath'), start: url.searchParams.get('start') }));
     return true;
   }
-
   if (req.method === 'GET' && pathname === '/position-stress-api/strategies') {
     sendJson(res, buildPositionStressStrategyCatalog());
     return true;
   }
+  if (req.method === 'GET' && pathname === '/position-stress-api/kline-search') {
+    const item = readAkshareDailyKlineItem(url.searchParams.get('q'));
+    if (!item) {
+      sendJson(res, { error: '本地行情缓存中没有找到该股票。' }, 404);
+      return true;
+    }
+    sendJson(res, { item, message: `已从本地行情缓存加载 ${item.name} ${item.code}。` });
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/position-stress-api/import-strategy') {
+    const body = await readJsonBody(req);
+    const result = importPositionStressStrategy(String(body.strategyId || ''));
+    sendJson(res, { message: `${result.imported.name} 已加入模拟盘。`, ...result, catalog: buildPositionStressStrategyCatalog() });
+    return true;
+  }
+  if (req.method === 'DELETE' && pathname === '/position-stress-api/import-strategy') {
+    const result = removePositionStressStrategy(url.searchParams.get('strategyId'));
+    sendJson(res, { message: result.clearedCurrent ? '策略已从模拟盘移除，并清理当前选择。' : '策略已从模拟盘移除。', ...result, catalog: buildPositionStressStrategyCatalog() });
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/position-stress-api/equity-export.xlsx') {
+    const exportPath = exportPositionStressEquityExcel({ start: url.searchParams.get('start'), end: url.searchParams.get('end') });
+    sendFileDownload(res, `m-quant-position-stress-equity-${todayYmd()}.xlsx`, exportPath, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/position-stress-api/trades-export.xlsx') {
+    const exportPath = exportPositionStressTradesExcel({ start: url.searchParams.get('start'), end: url.searchParams.get('end') });
+    sendFileDownload(res, `m-quant-position-stress-trades-${todayYmd()}.xlsx`, exportPath, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    return true;
+  }
+
 
   if (req.method === 'POST' && pathname === '/position-stress-api/select-strategy') {
     const body = await readJsonBody(req);
@@ -7294,7 +8251,10 @@ async function handleApi(req, res, pathname) {
       message: `${selected.name} 已送入建仓压力测试。`,
       selected,
       catalog: buildPositionStressStrategyCatalog(),
-      report: readPositionStressReport(),
+      report: readPositionStressReport({
+        start: body.start,
+        end: body.end,
+      }),
     });
     return true;
   }
@@ -7302,26 +8262,39 @@ async function handleApi(req, res, pathname) {
   if (req.method === 'POST' && pathname === '/position-stress-api/run') {
     const body = await readJsonBody(req);
     const result = runPositionStressLab(body);
+    const runRecord = appendPositionStressRunRecord(result.report);
     sendJson(res, {
-      message: result.report?.runGate?.formalRunAllowed
-        ? '建仓压力测试数据完整，短窗口结果已生成。'
-        : '建仓压力测试已生成预览，但数据不完整，正式运行已阻断。',
+      message: result.errorKind === 'timeout'
+        ? result.stepWarning || '建仓压力测试计算超时，请缩短窗口或稍后重跑。'
+        : result.report?.runGate?.formalRunAllowed
+          ? '建仓压力测试数据完整，结果已生成。'
+          : result.step?.ok === false
+            ? '建仓压力测试脚本运行失败，请查看错误详情。'
+            : '建仓压力测试已生成预览，但数据不完整，正式运行已阻断。',
+      runRecord,
       ...result,
     }, result.ok ? 200 : 500);
     return true;
   }
 
   if (req.method === 'POST' && pathname === '/position-stress-api/import-ohlcv') {
-    const bodyText = await readTextBody(req);
-    const importFile = writePositionStressImportFile(bodyText);
-    const result = runPositionStressLab({ importFile, source: 'akshare_cache' });
-    sendJson(res, {
-      message: result.report?.runGate?.formalRunAllowed
-        ? '真实行情已导入，数据完整，正式建仓压力测试已放行。'
-        : '真实行情已导入并重跑，但数据仍不完整，请查看缺失日期。',
-      importFile: relativeProjectPath(importFile),
-      ...result,
-    }, result.ok ? 200 : 500);
+    sendError(res, '外部行情导入已关闭；请使用内部策略和平台自动行情链路。', 410);
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/paper-watch-api/import-ledger') {
+    sendError(res, '外部策略信号/观察账本导入已关闭；请使用内部策略自动生成链路。', 410);
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/backtest-api/validate-tradeability-review') {
+    sendError(res, '外部策略信号复核导入已关闭；请使用内部策略测试链路。', 410);
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/backtest-api/validate-core-medium-small-signal-review') {
+    sendError(res, '外部策略信号复核导入已关闭；请使用内部策略测试链路。', 410);
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/backtest-api/import-results') {
+    sendError(res, '外部回测/策略结果导入已关闭；请使用内部策略自动测试链路。', 410);
     return true;
   }
 
@@ -7449,53 +8422,6 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
-  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-template-export') {
-    sendJson(res, buildBigQuantExportStatus());
-    return true;
-  }
-
-  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-template-input.csv') {
-    const pack = buildBigQuantPaperWatchPack();
-    sendCsv(res, `m-quant-bigquant-template-input-${todayYmd()}.csv`, buildBigQuantTemplateInputCsv(pack));
-    return true;
-  }
-
-  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-template-strategy.py') {
-    const pack = buildBigQuantPaperWatchPack();
-    sendText(
-      res,
-      `m-quant-bigquant-template-strategy-${todayYmd()}.py`,
-      buildBigQuantTemplateScript(pack),
-      'text/x-python; charset=utf-8',
-    );
-    return true;
-  }
-
-  if (req.method === 'GET' && (
-    pathname === '/paper-watch-api/bigquant-template-notebook.ipynb'
-    || pathname === '/paper-watch-api/bigquant-template-strategy.ipynb'
-  )) {
-    const pack = readJsonFile(bigQuantPaperWatchPackPath, { targets: [] });
-    sendText(
-      res,
-      `m-quant-bigquant-template-strategy-${todayYmd()}.ipynb`,
-      buildBigQuantTemplateNotebook(pack),
-      'application/x-ipynb+json; charset=utf-8',
-    );
-    return true;
-  }
-
-  if (req.method === 'GET' && pathname === '/paper-watch-api/bigquant-template-guide.md') {
-    const pack = buildBigQuantPaperWatchPack();
-    sendText(
-      res,
-      `m-quant-bigquant-template-guide-${todayYmd()}.md`,
-      buildBigQuantTemplateGuide(pack),
-      'text/markdown; charset=utf-8',
-    );
-    return true;
-  }
-
   if (req.method === 'GET' && pathname === '/paper-watch-api/ledger') {
     sendJson(res, {
       dataPolicy: '只展示用户导入的模拟观察账本记录；不生成收益、净值、成交或持仓。',
@@ -7505,16 +8431,7 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'POST' && pathname === '/paper-watch-api/import-ledger') {
-    const body = parsePaperWatchLedgerPayload(await readTextBody(req));
-    const importedAt = new Date().toISOString();
-    const rows = normalizePaperWatchLedgerRows(body, importedAt);
-    const nextLedger = [...rows, ...readImportedPaperWatchLedger()].slice(0, 500);
-    writeFileSync(importedPaperWatchLedgerPath, `${JSON.stringify(nextLedger, null, 2)}\n`);
-    sendJson(res, {
-      message: `模拟观察账本已导入 ${rows.length} 条；本接口不生成收益或净值。`,
-      importedCount: rows.length,
-      records: nextLedger,
-    }, 201);
+    sendError(res, '外部策略信号/观察账本导入已关闭；请使用内部策略自动生成链路。', 410);
     return true;
   }
 
@@ -7594,6 +8511,11 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/factor-api/activity') {
+    sendJson(res, buildFactorActivityReport());
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/factor-api/indicator-fields') {
     sendJson(res, indicatorFields);
     return true;
@@ -7604,6 +8526,37 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/strategy-api/paper-signal-export.json') {
+    const strategyId = url.searchParams.get('strategy') || '';
+    const download = paperSignalDownload(strategyId);
+    if (!download) {
+      sendError(res, `未知策略：${strategyId || '(empty)'}`, 404);
+      return true;
+    }
+    sendText(res, `m-quant-paper-signal-${safeFilename(strategyId)}.json`, `${JSON.stringify(download.signal, null, 2)}\n`, 'application/json; charset=utf-8');
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/strategy-api/paper-signal-export.csv') {
+    const strategyId = url.searchParams.get('strategy') || '';
+    const download = paperSignalDownload(strategyId);
+    if (!download) {
+      sendError(res, `未知策略：${strategyId || '(empty)'}`, 404);
+      return true;
+    }
+    sendCsv(res, `m-quant-paper-signal-${safeFilename(strategyId)}.csv`, download.csv);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/strategy-api/paper-signal-export.zip') {
+    const strategyId = url.searchParams.get('strategy') || '';
+    const download = paperSignalDownload(strategyId);
+    if (!download) {
+      sendError(res, `未知策略：${strategyId || '(empty)'}`, 404);
+      return true;
+    }
+    sendZip(res, `m-quant-paper-signal-${safeFilename(strategyId)}.zip`, download.zip);
+    return true;
+  }
   if (req.method === 'GET' && pathname === '/strategy-api/definitions') {
     sendJson(res, readJsonFile(strategyDefinitionsPath, []));
     return true;
@@ -7649,66 +8602,6 @@ async function handleApi(req, res, pathname) {
       return true;
     }
     sendCsv(res, `m-quant-strategy-${safeFilename(strategyId)}-joinquant.csv`, csv);
-    return true;
-  }
-
-  if (req.method === 'GET' && pathname === '/strategy-api/bigquant-strategy-export.json') {
-    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
-    const status = buildBigQuantStrategyExportStatus(strategyId);
-    if (!status.strategy?.id && !status.exportable) {
-      sendError(res, `未知策略：${strategyId}`, 404);
-      return true;
-    }
-    sendJson(res, status, status.exportable ? 200 : 422);
-    return true;
-  }
-
-  if (req.method === 'GET' && pathname === '/strategy-api/bigquant-strategy-input.csv') {
-    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
-    const csv = buildBigQuantStrategyInputCsv(strategyId);
-    if (csv === null) {
-      const status = buildBigQuantStrategyExportStatus(strategyId);
-      sendError(res, status.reason || `无法导出策略：${strategyId}`, 422);
-      return true;
-    }
-    sendCsv(res, `m-quant-bigquant-${safeFilename(strategyId)}-input.csv`, csv);
-    return true;
-  }
-
-  if (req.method === 'GET' && pathname === '/strategy-api/bigquant-strategy-script.py') {
-    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
-    const script = buildBigQuantStrategyScript(strategyId);
-    if (script === null) {
-      const status = buildBigQuantStrategyExportStatus(strategyId);
-      sendError(res, status.reason || `无法导出策略：${strategyId}`, 422);
-      return true;
-    }
-    sendText(
-      res,
-      `m-quant-bigquant-${safeFilename(strategyId)}-strategy.py`,
-      script,
-      'text/x-python; charset=utf-8',
-    );
-    return true;
-  }
-
-  if (req.method === 'GET' && (
-    pathname === '/strategy-api/bigquant-strategy-notebook.ipynb'
-    || pathname === '/strategy-api/bigquant-strategy-script.ipynb'
-  )) {
-    const strategyId = url.searchParams.get('strategy') || 'core_volume_price_trend_v1';
-    const notebook = buildBigQuantStrategyNotebook(strategyId);
-    if (notebook === null) {
-      const status = buildBigQuantStrategyExportStatus(strategyId);
-      sendError(res, status.reason || `无法导出策略：${strategyId}`, 422);
-      return true;
-    }
-    sendText(
-      res,
-      `m-quant-bigquant-${safeFilename(strategyId)}-strategy.ipynb`,
-      notebook,
-      'application/x-ipynb+json; charset=utf-8',
-    );
     return true;
   }
 
@@ -7825,6 +8718,20 @@ async function handleApi(req, res, pathname) {
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/strategy-api/joinquant-csi500-low-crowding-reversal-index-enhancement.py') {
+    const scriptPath = existsSync(csi500LowCrowdingReversalEnhancementNotebookScriptPath)
+      ? csi500LowCrowdingReversalEnhancementNotebookScriptPath
+      : csi500LowCrowdingReversalEnhancementScriptPath;
+    const script = readFileSync(scriptPath, 'utf8');
+    sendText(
+      res,
+      'm-quant-csi500-low-crowding-reversal-index-enhancement.py',
+      script,
+      'text/x-python; charset=utf-8',
+    );
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/strategy-api/joinquant-akshare-latest-signal-tradeability-review.py') {
     const script = readFileSync(akshareLatestSignalTradeabilityReviewScriptPath, 'utf8');
     sendText(
@@ -7854,7 +8761,7 @@ async function handleApi(req, res, pathname) {
 
   if (req.method === 'POST' && pathname === '/research-api/assistant') {
     const body = await readJsonBody(req);
-    sendJson(res, buildAssistantResponse(body.message, body.factorId));
+    sendJson(res, buildAssistantResponse(body.message, body.factorId, body.direction, body.context || {}));
     return true;
   }
 
@@ -7938,105 +8845,16 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === 'POST' && pathname === '/backtest-api/validate-tradeability-review') {
-    const body = await readJsonBody(req);
-    if (!isTradeabilityReviewPayload(body)) {
-      sendError(res, '这里只校验 JoinQuant 交易可行性复核 JSON。');
-      return true;
-    }
-    const checked = normalizeTradeabilityReview(body, new Date().toISOString());
-    sendJson(res, {
-      dataPolicy: '只校验交易可行性复核 JSON；不写入复核库，不刷新运行包，不生成收益、净值、成交或持仓。',
-      message: `交易可行性复核 JSON 校验通过：${checked.tradable_count}/${checked.candidate_count} 可交易，结论 ${checked.decision}。尚未导入。`,
-      result: {
-        blocked_count: checked.blocked_count,
-        candidate_count: checked.candidate_count,
-        decision: checked.decision,
-        signal_date: checked.signal_date,
-        strategy_id: checked.strategy_id,
-        tradable_count: checked.tradable_count,
-      },
-    });
+    sendError(res, '外部策略信号复核导入已关闭；请使用内部策略测试链路。', 410);
     return true;
   }
-
   if (req.method === 'POST' && pathname === '/backtest-api/validate-core-medium-small-signal-review') {
-    const body = await readJsonBody(req);
-    if (!isCoreMediumSmallSignalReviewPayload(body)) {
-      sendError(res, '这里只校验核心量价中波动小市值最新信号复核 JSON。');
-      return true;
-    }
-    const checked = normalizeCoreMediumSmallSignalReview(body, new Date().toISOString());
-    sendJson(res, {
-      dataPolicy: '只校验核心量价最新信号 JSON；不写入复核库，不刷新运行包，不生成收益、净值、成交或持仓。',
-      message: `核心量价最新信号 JSON 校验通过：${checked.market_regime}/${checked.target_market_cap_bucket}，入选 ${checked.selected_count}，结论 ${checked.decision}。尚未导入。`,
-      result: {
-        decision: checked.decision,
-        market_regime: checked.market_regime,
-        selected_count: checked.selected_count,
-        signal_date: checked.signal_date,
-        sleeve_id: checked.sleeve_id,
-        strategy_id: checked.strategy_id,
-        target_market_cap_bucket: checked.target_market_cap_bucket,
-      },
-    });
+    sendError(res, '外部策略信号复核导入已关闭；请使用内部策略测试链路。', 410);
     return true;
   }
 
   if (req.method === 'POST' && pathname === '/backtest-api/import-results') {
-    const body = await readJsonBody(req);
-    const importedAt = new Date().toISOString();
-    if (isTradeabilityReviewPayload(body)) {
-      const nextItem = normalizeTradeabilityReview(body, importedAt);
-      const nextReviews = [nextItem, ...readImportedTradeabilityReviews()].slice(0, 100);
-      writeFileSync(importedTradeabilityReviewsPath, `${JSON.stringify(nextReviews, null, 2)}\n`);
-      const refresh = rebuildPaperWatchDerivedArtifacts();
-      sendJson(res, {
-        message: `交易可行性复核已导入：${nextItem.tradable_count}/${nextItem.candidate_count} 可交易，结论 ${nextItem.decision}。派生包刷新${refresh.ok ? '完成' : '存在失败'}。`,
-        refresh,
-        result: nextItem,
-        importedCount: 1,
-        results: nextReviews,
-      }, 201);
-      return true;
-    }
-
-    if (isCoreMediumSmallSignalReviewPayload(body)) {
-      const nextItem = normalizeCoreMediumSmallSignalReview(body, importedAt);
-      const nextReviews = [nextItem, ...readImportedCoreMediumSmallSignalReviews()].slice(0, 100);
-      writeFileSync(importedCoreMediumSmallSignalReviewsPath, `${JSON.stringify(nextReviews, null, 2)}\n`);
-      const refresh = rebuildPaperWatchDerivedArtifacts();
-      sendJson(res, {
-        message: `核心量价最新信号复核已导入：${nextItem.market_regime}/${nextItem.target_market_cap_bucket}，入选 ${nextItem.selected_count}，结论 ${nextItem.decision}。派生包刷新${refresh.ok ? '完成' : '存在失败'}。`,
-        refresh,
-        result: nextItem,
-        importedCount: 1,
-        results: nextReviews,
-      }, 201);
-      return true;
-    }
-
-    const rawItems = Array.isArray(body)
-      ? body
-      : Array.isArray(body.records)
-        ? body.records
-        : Array.isArray(body.results)
-          ? body.results
-          : [body];
-    const nextItems = rawItems
-      .filter((item) => item && typeof item === 'object')
-      .map((item) => ({
-        ...item,
-        importedAt,
-        source: item.source || body.source || 'joinquant',
-      }));
-    const nextResults = [...nextItems, ...readImportedBacktestResults()].slice(0, 300);
-    writeFileSync(importedBacktestResultsPath, `${JSON.stringify(nextResults, null, 2)}\n`);
-    sendJson(res, {
-      message: `复测结果已导入 ${nextItems.length} 条；本平台只展示你外部实跑的真实结果。`,
-      result: nextItems[0] || null,
-      importedCount: nextItems.length,
-      results: nextResults,
-    }, 201);
+    sendError(res, '外部回测/策略结果导入已关闭；请使用内部策略自动测试链路。', 410);
     return true;
   }
 
@@ -8080,9 +8898,61 @@ function resolvePath(url) {
 
   return fullPath;
 }
+function sendPaperPage(res) {
+  if (!existsSync(paperExecutionIndexPath)) {
+    sendError(res, 'Paper 模拟盘页面未找到，请检查执行模块。', 404);
+    return;
+  }
+  const html = readFileSync(paperExecutionIndexPath, 'utf8')
+    .replaceAll('href="/"', 'href="/paper/"')
+    .replaceAll("fetch('/api/v1/", "fetch('/paper/api/v1/");
+  res.writeHead(200, { 'Cache-Control': 'no-store', 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
+function proxyPaperApi(req, res) {
+  const { pathname } = new URL(req.url || '/', `http://localhost:${port}`);
+  const blocked = new Set([
+    '/api/v1/market/bars/import',
+    '/api/v1/accounts/paper/signals/import',
+    '/api/v1/accounts/paper/signals/import-file',
+    '/api/v1/accounts/paper/quotes/import',
+  ]);
+  if (blocked.has(pathname)) {
+    sendError(res, '外部导入已关闭；请使用 M-quant 内部策略和行情链路。', 410);
+    return;
+  }
+  const upstream = httpRequest({
+    hostname: '127.0.0.1',
+    port: 8080,
+    path: req.url,
+    method: req.method,
+    headers: { ...req.headers, host: '127.0.0.1:8080' },
+  }, (response) => {
+    res.writeHead(response.statusCode || 502, response.headers);
+    response.pipe(res);
+  });
+  upstream.on('error', () => sendError(res, 'Paper 模拟盘服务暂不可用。', 502));
+  req.pipe(upstream);
+}
+
+function handlePaperRequest(req, res, pathname) {
+  if (pathname === '/paper/' || pathname === '/paper/index.html') {
+    sendPaperPage(res);
+    return true;
+  }
+  if (pathname.startsWith('/paper/api/v1/')) {
+    req.url = req.url.replace(/^\/paper/, '');
+    proxyPaperApi(req, res);
+    return true;
+  }
+  return false;
+}
+
 
 createServer(async (req, res) => {
   const { pathname } = new URL(req.url || '/', `http://localhost:${port}`);
+  if (handlePaperRequest(req, res, pathname)) return;
   const isApiRequest = pathname.startsWith('/api/')
     || pathname.startsWith('/factor-api/')
     || pathname.startsWith('/backtest-api/')
@@ -8095,16 +8965,18 @@ createServer(async (req, res) => {
   if (isApiRequest) {
     try {
       const handled = await handleApi(req, res, pathname);
-
       if (!handled) {
         sendError(res, '接口不存在', 404);
       }
     } catch (error) {
-      sendError(res, error instanceof Error ? error.message : '服务异常', 500);
+      const message = error instanceof Error ? error.message : '服务异常';
+      const status = message.includes('选股口径已锁定') ? 400 : 500;
+      sendError(res, message, status);
     }
 
     return;
   }
+
 
   const fullPath = resolvePath(req.url || '/');
 

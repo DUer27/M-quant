@@ -1,0 +1,891 @@
+{
+  "generated_at": "2026-07-24T14:00:20.869Z",
+  "strategy_id": "structured_reversal_csi500_v1",
+  "runner_count": 88,
+  "window_months": 3,
+  "security_batch_limit": 80,
+  "output_dir": "outputs/sources/joinquant/notebook_batches/structured_reversal",
+  "records": [
+    {
+      "tag": "2024q1_b000_080",
+      "slice_start": "2024-01-01",
+      "slice_end": "2024-03-31",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q1_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q1_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q1_b000_080_status.json"
+    },
+    {
+      "tag": "2024q1_b080_160",
+      "slice_start": "2024-01-01",
+      "slice_end": "2024-03-31",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q1_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q1_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q1_b080_160_status.json"
+    },
+    {
+      "tag": "2024q1_b160_240",
+      "slice_start": "2024-01-01",
+      "slice_end": "2024-03-31",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q1_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q1_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q1_b160_240_status.json"
+    },
+    {
+      "tag": "2024q1_b240_320",
+      "slice_start": "2024-01-01",
+      "slice_end": "2024-03-31",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q1_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q1_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q1_b240_320_status.json"
+    },
+    {
+      "tag": "2024q1_b320_400",
+      "slice_start": "2024-01-01",
+      "slice_end": "2024-03-31",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q1_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q1_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q1_b320_400_status.json"
+    },
+    {
+      "tag": "2024q1_b400_480",
+      "slice_start": "2024-01-01",
+      "slice_end": "2024-03-31",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q1_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q1_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q1_b400_480_status.json"
+    },
+    {
+      "tag": "2024q1_b480_560",
+      "slice_start": "2024-01-01",
+      "slice_end": "2024-03-31",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q1_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q1_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q1_b480_560_status.json"
+    },
+    {
+      "tag": "2024q1_b560_640",
+      "slice_start": "2024-01-01",
+      "slice_end": "2024-03-31",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q1_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q1_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q1_b560_640_status.json"
+    },
+    {
+      "tag": "2024q2_b000_080",
+      "slice_start": "2024-04-01",
+      "slice_end": "2024-06-30",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q2_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q2_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q2_b000_080_status.json"
+    },
+    {
+      "tag": "2024q2_b080_160",
+      "slice_start": "2024-04-01",
+      "slice_end": "2024-06-30",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q2_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q2_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q2_b080_160_status.json"
+    },
+    {
+      "tag": "2024q2_b160_240",
+      "slice_start": "2024-04-01",
+      "slice_end": "2024-06-30",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q2_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q2_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q2_b160_240_status.json"
+    },
+    {
+      "tag": "2024q2_b240_320",
+      "slice_start": "2024-04-01",
+      "slice_end": "2024-06-30",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q2_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q2_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q2_b240_320_status.json"
+    },
+    {
+      "tag": "2024q2_b320_400",
+      "slice_start": "2024-04-01",
+      "slice_end": "2024-06-30",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q2_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q2_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q2_b320_400_status.json"
+    },
+    {
+      "tag": "2024q2_b400_480",
+      "slice_start": "2024-04-01",
+      "slice_end": "2024-06-30",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q2_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q2_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q2_b400_480_status.json"
+    },
+    {
+      "tag": "2024q2_b480_560",
+      "slice_start": "2024-04-01",
+      "slice_end": "2024-06-30",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q2_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q2_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q2_b480_560_status.json"
+    },
+    {
+      "tag": "2024q2_b560_640",
+      "slice_start": "2024-04-01",
+      "slice_end": "2024-06-30",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q2_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q2_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q2_b560_640_status.json"
+    },
+    {
+      "tag": "2024q3_b000_080",
+      "slice_start": "2024-07-01",
+      "slice_end": "2024-09-30",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q3_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q3_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q3_b000_080_status.json"
+    },
+    {
+      "tag": "2024q3_b080_160",
+      "slice_start": "2024-07-01",
+      "slice_end": "2024-09-30",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q3_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q3_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q3_b080_160_status.json"
+    },
+    {
+      "tag": "2024q3_b160_240",
+      "slice_start": "2024-07-01",
+      "slice_end": "2024-09-30",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q3_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q3_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q3_b160_240_status.json"
+    },
+    {
+      "tag": "2024q3_b240_320",
+      "slice_start": "2024-07-01",
+      "slice_end": "2024-09-30",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q3_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q3_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q3_b240_320_status.json"
+    },
+    {
+      "tag": "2024q3_b320_400",
+      "slice_start": "2024-07-01",
+      "slice_end": "2024-09-30",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q3_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q3_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q3_b320_400_status.json"
+    },
+    {
+      "tag": "2024q3_b400_480",
+      "slice_start": "2024-07-01",
+      "slice_end": "2024-09-30",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q3_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q3_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q3_b400_480_status.json"
+    },
+    {
+      "tag": "2024q3_b480_560",
+      "slice_start": "2024-07-01",
+      "slice_end": "2024-09-30",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q3_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q3_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q3_b480_560_status.json"
+    },
+    {
+      "tag": "2024q3_b560_640",
+      "slice_start": "2024-07-01",
+      "slice_end": "2024-09-30",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q3_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q3_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q3_b560_640_status.json"
+    },
+    {
+      "tag": "2024q4_b000_080",
+      "slice_start": "2024-10-01",
+      "slice_end": "2024-12-31",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q4_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q4_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q4_b000_080_status.json"
+    },
+    {
+      "tag": "2024q4_b080_160",
+      "slice_start": "2024-10-01",
+      "slice_end": "2024-12-31",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q4_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q4_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q4_b080_160_status.json"
+    },
+    {
+      "tag": "2024q4_b160_240",
+      "slice_start": "2024-10-01",
+      "slice_end": "2024-12-31",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q4_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q4_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q4_b160_240_status.json"
+    },
+    {
+      "tag": "2024q4_b240_320",
+      "slice_start": "2024-10-01",
+      "slice_end": "2024-12-31",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q4_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q4_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q4_b240_320_status.json"
+    },
+    {
+      "tag": "2024q4_b320_400",
+      "slice_start": "2024-10-01",
+      "slice_end": "2024-12-31",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q4_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q4_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q4_b320_400_status.json"
+    },
+    {
+      "tag": "2024q4_b400_480",
+      "slice_start": "2024-10-01",
+      "slice_end": "2024-12-31",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q4_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q4_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q4_b400_480_status.json"
+    },
+    {
+      "tag": "2024q4_b480_560",
+      "slice_start": "2024-10-01",
+      "slice_end": "2024-12-31",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q4_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q4_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q4_b480_560_status.json"
+    },
+    {
+      "tag": "2024q4_b560_640",
+      "slice_start": "2024-10-01",
+      "slice_end": "2024-12-31",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2024q4_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2024q4_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2024q4_b560_640_status.json"
+    },
+    {
+      "tag": "2025q1_b000_080",
+      "slice_start": "2025-01-01",
+      "slice_end": "2025-03-31",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q1_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q1_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q1_b000_080_status.json"
+    },
+    {
+      "tag": "2025q1_b080_160",
+      "slice_start": "2025-01-01",
+      "slice_end": "2025-03-31",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q1_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q1_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q1_b080_160_status.json"
+    },
+    {
+      "tag": "2025q1_b160_240",
+      "slice_start": "2025-01-01",
+      "slice_end": "2025-03-31",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q1_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q1_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q1_b160_240_status.json"
+    },
+    {
+      "tag": "2025q1_b240_320",
+      "slice_start": "2025-01-01",
+      "slice_end": "2025-03-31",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q1_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q1_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q1_b240_320_status.json"
+    },
+    {
+      "tag": "2025q1_b320_400",
+      "slice_start": "2025-01-01",
+      "slice_end": "2025-03-31",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q1_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q1_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q1_b320_400_status.json"
+    },
+    {
+      "tag": "2025q1_b400_480",
+      "slice_start": "2025-01-01",
+      "slice_end": "2025-03-31",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q1_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q1_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q1_b400_480_status.json"
+    },
+    {
+      "tag": "2025q1_b480_560",
+      "slice_start": "2025-01-01",
+      "slice_end": "2025-03-31",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q1_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q1_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q1_b480_560_status.json"
+    },
+    {
+      "tag": "2025q1_b560_640",
+      "slice_start": "2025-01-01",
+      "slice_end": "2025-03-31",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q1_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q1_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q1_b560_640_status.json"
+    },
+    {
+      "tag": "2025q2_b000_080",
+      "slice_start": "2025-04-01",
+      "slice_end": "2025-06-30",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q2_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q2_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q2_b000_080_status.json"
+    },
+    {
+      "tag": "2025q2_b080_160",
+      "slice_start": "2025-04-01",
+      "slice_end": "2025-06-30",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q2_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q2_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q2_b080_160_status.json"
+    },
+    {
+      "tag": "2025q2_b160_240",
+      "slice_start": "2025-04-01",
+      "slice_end": "2025-06-30",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q2_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q2_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q2_b160_240_status.json"
+    },
+    {
+      "tag": "2025q2_b240_320",
+      "slice_start": "2025-04-01",
+      "slice_end": "2025-06-30",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q2_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q2_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q2_b240_320_status.json"
+    },
+    {
+      "tag": "2025q2_b320_400",
+      "slice_start": "2025-04-01",
+      "slice_end": "2025-06-30",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q2_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q2_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q2_b320_400_status.json"
+    },
+    {
+      "tag": "2025q2_b400_480",
+      "slice_start": "2025-04-01",
+      "slice_end": "2025-06-30",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q2_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q2_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q2_b400_480_status.json"
+    },
+    {
+      "tag": "2025q2_b480_560",
+      "slice_start": "2025-04-01",
+      "slice_end": "2025-06-30",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q2_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q2_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q2_b480_560_status.json"
+    },
+    {
+      "tag": "2025q2_b560_640",
+      "slice_start": "2025-04-01",
+      "slice_end": "2025-06-30",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q2_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q2_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q2_b560_640_status.json"
+    },
+    {
+      "tag": "2025q3_b000_080",
+      "slice_start": "2025-07-01",
+      "slice_end": "2025-09-30",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q3_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q3_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q3_b000_080_status.json"
+    },
+    {
+      "tag": "2025q3_b080_160",
+      "slice_start": "2025-07-01",
+      "slice_end": "2025-09-30",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q3_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q3_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q3_b080_160_status.json"
+    },
+    {
+      "tag": "2025q3_b160_240",
+      "slice_start": "2025-07-01",
+      "slice_end": "2025-09-30",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q3_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q3_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q3_b160_240_status.json"
+    },
+    {
+      "tag": "2025q3_b240_320",
+      "slice_start": "2025-07-01",
+      "slice_end": "2025-09-30",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q3_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q3_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q3_b240_320_status.json"
+    },
+    {
+      "tag": "2025q3_b320_400",
+      "slice_start": "2025-07-01",
+      "slice_end": "2025-09-30",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q3_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q3_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q3_b320_400_status.json"
+    },
+    {
+      "tag": "2025q3_b400_480",
+      "slice_start": "2025-07-01",
+      "slice_end": "2025-09-30",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q3_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q3_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q3_b400_480_status.json"
+    },
+    {
+      "tag": "2025q3_b480_560",
+      "slice_start": "2025-07-01",
+      "slice_end": "2025-09-30",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q3_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q3_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q3_b480_560_status.json"
+    },
+    {
+      "tag": "2025q3_b560_640",
+      "slice_start": "2025-07-01",
+      "slice_end": "2025-09-30",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q3_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q3_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q3_b560_640_status.json"
+    },
+    {
+      "tag": "2025q4_b000_080",
+      "slice_start": "2025-10-01",
+      "slice_end": "2025-12-31",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q4_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q4_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q4_b000_080_status.json"
+    },
+    {
+      "tag": "2025q4_b080_160",
+      "slice_start": "2025-10-01",
+      "slice_end": "2025-12-31",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q4_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q4_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q4_b080_160_status.json"
+    },
+    {
+      "tag": "2025q4_b160_240",
+      "slice_start": "2025-10-01",
+      "slice_end": "2025-12-31",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q4_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q4_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q4_b160_240_status.json"
+    },
+    {
+      "tag": "2025q4_b240_320",
+      "slice_start": "2025-10-01",
+      "slice_end": "2025-12-31",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q4_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q4_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q4_b240_320_status.json"
+    },
+    {
+      "tag": "2025q4_b320_400",
+      "slice_start": "2025-10-01",
+      "slice_end": "2025-12-31",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q4_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q4_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q4_b320_400_status.json"
+    },
+    {
+      "tag": "2025q4_b400_480",
+      "slice_start": "2025-10-01",
+      "slice_end": "2025-12-31",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q4_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q4_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q4_b400_480_status.json"
+    },
+    {
+      "tag": "2025q4_b480_560",
+      "slice_start": "2025-10-01",
+      "slice_end": "2025-12-31",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q4_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q4_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q4_b480_560_status.json"
+    },
+    {
+      "tag": "2025q4_b560_640",
+      "slice_start": "2025-10-01",
+      "slice_end": "2025-12-31",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2025q4_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2025q4_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2025q4_b560_640_status.json"
+    },
+    {
+      "tag": "2026q1_b000_080",
+      "slice_start": "2026-01-01",
+      "slice_end": "2026-03-31",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q1_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q1_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q1_b000_080_status.json"
+    },
+    {
+      "tag": "2026q1_b080_160",
+      "slice_start": "2026-01-01",
+      "slice_end": "2026-03-31",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q1_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q1_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q1_b080_160_status.json"
+    },
+    {
+      "tag": "2026q1_b160_240",
+      "slice_start": "2026-01-01",
+      "slice_end": "2026-03-31",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q1_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q1_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q1_b160_240_status.json"
+    },
+    {
+      "tag": "2026q1_b240_320",
+      "slice_start": "2026-01-01",
+      "slice_end": "2026-03-31",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q1_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q1_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q1_b240_320_status.json"
+    },
+    {
+      "tag": "2026q1_b320_400",
+      "slice_start": "2026-01-01",
+      "slice_end": "2026-03-31",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q1_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q1_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q1_b320_400_status.json"
+    },
+    {
+      "tag": "2026q1_b400_480",
+      "slice_start": "2026-01-01",
+      "slice_end": "2026-03-31",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q1_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q1_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q1_b400_480_status.json"
+    },
+    {
+      "tag": "2026q1_b480_560",
+      "slice_start": "2026-01-01",
+      "slice_end": "2026-03-31",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q1_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q1_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q1_b480_560_status.json"
+    },
+    {
+      "tag": "2026q1_b560_640",
+      "slice_start": "2026-01-01",
+      "slice_end": "2026-03-31",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q1_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q1_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q1_b560_640_status.json"
+    },
+    {
+      "tag": "2026q2_b000_080",
+      "slice_start": "2026-04-01",
+      "slice_end": "2026-06-30",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q2_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q2_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q2_b000_080_status.json"
+    },
+    {
+      "tag": "2026q2_b080_160",
+      "slice_start": "2026-04-01",
+      "slice_end": "2026-06-30",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q2_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q2_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q2_b080_160_status.json"
+    },
+    {
+      "tag": "2026q2_b160_240",
+      "slice_start": "2026-04-01",
+      "slice_end": "2026-06-30",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q2_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q2_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q2_b160_240_status.json"
+    },
+    {
+      "tag": "2026q2_b240_320",
+      "slice_start": "2026-04-01",
+      "slice_end": "2026-06-30",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q2_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q2_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q2_b240_320_status.json"
+    },
+    {
+      "tag": "2026q2_b320_400",
+      "slice_start": "2026-04-01",
+      "slice_end": "2026-06-30",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q2_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q2_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q2_b320_400_status.json"
+    },
+    {
+      "tag": "2026q2_b400_480",
+      "slice_start": "2026-04-01",
+      "slice_end": "2026-06-30",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q2_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q2_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q2_b400_480_status.json"
+    },
+    {
+      "tag": "2026q2_b480_560",
+      "slice_start": "2026-04-01",
+      "slice_end": "2026-06-30",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q2_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q2_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q2_b480_560_status.json"
+    },
+    {
+      "tag": "2026q2_b560_640",
+      "slice_start": "2026-04-01",
+      "slice_end": "2026-06-30",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q2_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q2_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q2_b560_640_status.json"
+    },
+    {
+      "tag": "2026q3_b000_080",
+      "slice_start": "2026-07-01",
+      "slice_end": "2026-07-15",
+      "security_batch_offset": 0,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q3_b000_080.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q3_b000_080.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q3_b000_080_status.json"
+    },
+    {
+      "tag": "2026q3_b080_160",
+      "slice_start": "2026-07-01",
+      "slice_end": "2026-07-15",
+      "security_batch_offset": 80,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q3_b080_160.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q3_b080_160.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q3_b080_160_status.json"
+    },
+    {
+      "tag": "2026q3_b160_240",
+      "slice_start": "2026-07-01",
+      "slice_end": "2026-07-15",
+      "security_batch_offset": 160,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q3_b160_240.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q3_b160_240.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q3_b160_240_status.json"
+    },
+    {
+      "tag": "2026q3_b240_320",
+      "slice_start": "2026-07-01",
+      "slice_end": "2026-07-15",
+      "security_batch_offset": 240,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q3_b240_320.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q3_b240_320.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q3_b240_320_status.json"
+    },
+    {
+      "tag": "2026q3_b320_400",
+      "slice_start": "2026-07-01",
+      "slice_end": "2026-07-15",
+      "security_batch_offset": 320,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q3_b320_400.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q3_b320_400.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q3_b320_400_status.json"
+    },
+    {
+      "tag": "2026q3_b400_480",
+      "slice_start": "2026-07-01",
+      "slice_end": "2026-07-15",
+      "security_batch_offset": 400,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q3_b400_480.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q3_b400_480.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q3_b400_480_status.json"
+    },
+    {
+      "tag": "2026q3_b480_560",
+      "slice_start": "2026-07-01",
+      "slice_end": "2026-07-15",
+      "security_batch_offset": 480,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q3_b480_560.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q3_b480_560.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q3_b480_560_status.json"
+    },
+    {
+      "tag": "2026q3_b560_640",
+      "slice_start": "2026-07-01",
+      "slice_end": "2026-07-15",
+      "security_batch_offset": 560,
+      "security_batch_limit": 80,
+      "runner_path": "outputs/sources/joinquant/notebook_batches/structured_reversal/m_quant_structured_reversal_batch_runner_2026q3_b560_640.py",
+      "expected_json": "joinquant_structured_reversal_slice_2026q3_b560_640.json",
+      "expected_status": "joinquant_structured_reversal_slice_2026q3_b560_640_status.json"
+    }
+  ],
+  "next_step": "Paste each runner into JoinQuant Python3 research notebook, then copy generated joinquant_structured_reversal_slice_*.json files into outputs/sources/joinquant/inbox/structured_reversal_slices/."
+}

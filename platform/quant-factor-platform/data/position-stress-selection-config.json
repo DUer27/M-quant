@@ -1,0 +1,34 @@
+{
+  "structured_reversal_csi500_v1": {
+    "dailyTopN": 100,
+    "maxHoldings": 100
+  },
+  "csi500_low_crowding_reversal_index_enhancement_v0": {
+    "dailyTopN": 10,
+    "maxHoldings": 10
+  },
+  "csi500_low_crowding_reversal_index_enhancement_v2": {
+    "dailyTopN": 10,
+    "maxHoldings": 10
+  },
+  "csi500_low_crowding_reversal_index_enhancement_v2_1": {
+    "dailyTopN": 10,
+    "maxHoldings": 10
+  },
+  "akshare_regime_switch_contraction_mean_reversion_v1": {
+    "dailyTopN": 10,
+    "maxHoldings": 10
+  },
+  "jq_quality_profit_liquidity_v1": {
+    "dailyTopN": 10,
+    "maxHoldings": 10
+  },
+  "regime_switch_quality_kline_v1": {
+    "dailyTopN": 10,
+    "maxHoldings": 10
+  },
+  "huafu_emotion_weighted_kline": {
+    "dailyTopN": 50,
+    "maxHoldings": 50
+  }
+}

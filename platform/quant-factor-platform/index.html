@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>量化因子策略平台</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260714-position-stress-layout" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260913-progressive-dashboard" />
     <script src="/config/app-config.js"></script>
   </head>
   <body>
@@ -17,19 +17,12 @@
             <span>Factor Lab</span>
           </div>
         </div>
-        <nav class="nav">
-          <button class="active" data-view-target="dashboard">总览</button>
-          <button data-view-target="factor-library">因子库</button>
-          <button data-view-target="strategy-library">策略池</button>
+        <nav class="nav" aria-label="主导航">
+          <button class="active" data-view-target="dashboard">操作台</button>
+          <button class="group-nav" data-view-target="research-strategy" aria-controls="research-strategy-subnav">研究与策略</button>
+          <button class="group-nav" data-view-target="evidence-retest" aria-controls="evidence-retest-subnav">证据与复测</button>
           <button data-view-target="paper-watch">准模拟盘</button>
-          <button data-view-target="bigquant-export">BigQuant导出</button>
           <button data-view-target="position-stress">建仓压力测试</button>
-          <button data-view-target="research-pipeline">研究流水线</button>
-          <button data-view-target="backtest-center">回测中心</button>
-          <button data-view-target="validated-results">实测结果</button>
-          <button data-view-target="strategy-results">策略实测</button>
-          <button data-view-target="dashboard">风控监控</button>
-          <button data-view-target="dashboard">系统配置</button>
         </nav>
       </aside>
 
@@ -39,171 +32,85 @@
             <p class="eyebrow">Quant Factor Platform</p>
             <h1>量化因子策略平台</h1>
           </div>
-          <div class="status-strip">
-            <span class="status-dot"></span>
-            <span>开发环境</span>
-            <strong id="api-url">/api</strong>
+          <div class="topbar-actions">
+            <nav class="platform-switch" aria-label="平台切换">
+              <a class="active" href="/">M-quant 研究平台</a>
+              <a href="/paper/">Paper 模拟盘</a>
+            </nav>
+            <div class="status-strip">
+              <span class="status-dot"></span>
+              <span>开发环境</span>
+              <strong id="api-url">/api</strong>
+            </div>
+          </div>
+          <div class="load-strip" id="data-load-strip" hidden>
+            <span class="load-spinner"></span>
+            <span id="data-load-text">数据加载中…</span>
           </div>
         </header>
 
+        <div id="research-strategy-subnav" class="view-subnav" data-view-subnav="research-strategy" aria-label="研究与策略子页面" hidden>
+          <div class="view-subnav-heading">
+            <span class="eyebrow">Research &amp; Strategy</span>
+            <strong>研究与策略</strong>
+          </div>
+          <div class="view-subnav-actions" role="tablist" aria-label="研究与策略子页面切换">
+            <button class="active" type="button" role="tab" aria-selected="true" data-subview-target="research-agent">研究智能体</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="strategy-library">策略池</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="research-pipeline">研究流水线</button>
+          </div>
+        </div>
+        <div id="evidence-retest-subnav" class="view-subnav" data-view-subnav="evidence-retest" aria-label="证据与复测子页面" hidden>
+          <div class="view-subnav-heading">
+            <span class="eyebrow">Evidence &amp; Validation</span>
+            <strong>证据与复测</strong>
+          </div>
+          <div class="view-subnav-actions" role="tablist" aria-label="证据与复测子页面切换">
+            <button class="active" type="button" role="tab" aria-selected="true" data-subview-target="backtest-center">复测中心</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="validated-results">实测结果</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="factor-activity">因子活性</button>
+            <button type="button" role="tab" aria-selected="false" data-subview-target="strategy-results">策略实测</button>
+          </div>
+        </div>
         <div id="dashboard-view" class="view active">
-          <section class="metrics-grid" aria-label="核心指标">
-            <article class="metric">
-              <span>候选因子</span>
-              <strong id="candidate-factor-count">-</strong>
-              <small>当前系统登记数量</small>
-            </article>
-            <article class="metric">
-              <span>已验证因子</span>
-              <strong id="valid-factor-count">-</strong>
-              <small>真实历史回测通过</small>
-            </article>
-            <article class="metric">
-              <span>待验证因子</span>
-              <strong id="pending-factor-count">-</strong>
-              <small>需要真实数据检验</small>
-            </article>
-            <article class="metric">
-              <span>演示因子</span>
-              <strong id="demo-factor-count">-</strong>
-              <small>原型展示/估算数据</small>
-            </article>
+          <section class="panel operations-console" aria-labelledby="operations-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Operations Console</p>
+                <h2 id="operations-title">操作台</h2>
+              </div>
+            </div>
+            <div class="operations-strategy-panel">
+              <div class="operations-strategy-head">
+                <div>
+                  <strong>策略列表</strong>
+                  <span>当前系统已登记的策略</span>
+                </div>
+                <span id="operations-strategy-count" class="tag pending">加载中</span>
+              </div>
+              <label class="operations-strategy-search">
+                <span>搜索策略</span>
+                <input id="operations-strategy-search" type="search" placeholder="搜索名称、编号、状态或目标" aria-label="搜索策略名称、编号、状态或目标" />
+              </label>
+              <div id="operations-strategy-list" class="operations-strategy-list" role="list" aria-live="polite"></div>
+            </div>
           </section>
-
-          <section class="content-grid">
-            <section class="panel chart-panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Backtest Equity</p>
-                  <h2>策略净值曲线</h2>
-                </div>
-                <div class="segmented">
-                  <button class="active">3Y</button>
-                  <button>1Y</button>
-                  <button>6M</button>
-                </div>
-              </div>
-              <canvas id="equity-chart" width="920" height="360"></canvas>
-            </section>
-
-            <section class="panel config-panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Preferences</p>
-                  <h2>默认策略参数</h2>
-                </div>
-              </div>
-              <form class="settings-form">
-                <label>
-                  股票池
-                  <select id="universe">
-                    <option>沪深300</option>
-                    <option>中证500</option>
-                    <option>中证1000</option>
-                    <option>全A</option>
-                  </select>
-                </label>
-                <label>
-                  基准指数
-                  <select id="benchmark">
-                    <option value="000300.SH">沪深300</option>
-                    <option value="000905.SH">中证500</option>
-                    <option value="000852.SH">中证1000</option>
-                    <option value="881001.WI">万得全A</option>
-                  </select>
-                </label>
-                <label>
-                  调仓频率
-                  <select id="rebalance">
-                    <option value="monthly">每月</option>
-                    <option value="weekly">每周</option>
-                    <option value="daily">每日</option>
-                  </select>
-                </label>
-                <label>
-                  手续费率
-                  <input id="fee" type="number" min="0" max="0.01" step="0.0001" value="0.0003" />
-                </label>
-                <label class="switch-row">
-                  <span>启用风控</span>
-                  <input id="risk-control" type="checkbox" checked />
-                </label>
-                <div class="form-actions">
-                  <button id="save-preferences" type="button">保存配置</button>
-                  <button id="run-backtest" class="primary" type="button">模拟回测</button>
-                </div>
-                <p id="form-message" class="form-message">配置由本地后端 API 管理</p>
-              </form>
-            </section>
-          </section>
-
-          <section class="content-grid lower">
-            <section class="panel dashboard-factor-panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Real Factor Ranking</p>
-                  <h2>真实截面因子排名</h2>
-                </div>
-              </div>
-              <div class="collapsible-data dashboard-factor-preview" data-collapsible-data>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>股票</th>
-                      <th>综合分</th>
-                      <th>趋势</th>
-                      <th>过伸</th>
-                      <th>量价</th>
-                      <th>背离</th>
-                      <th>日内</th>
-                      <th>收盘位</th>
-                      <th>上影</th>
-                      <th>爆量</th>
-                      <th>K线</th>
-                      <th>拥挤风险</th>
-                      <th>交易挤</th>
-                      <th>警报</th>
-                      <th>标签</th>
-                    </tr>
-                  </thead>
-                  <tbody id="factor-table"></tbody>
-                </table>
-              </div>
-              <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
-            </section>
-
-            <section class="panel dashboard-risk-panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Risk Monitor</p>
-                  <h2>组合风险</h2>
-                </div>
-              </div>
-              <div class="risk-list">
-                <div>
-                  <span>行业偏离</span>
-                  <meter min="0" max="100" value="42"></meter>
-                  <strong>42%</strong>
-                </div>
-                <div>
-                  <span>个股集中度</span>
-                  <meter min="0" max="100" value="28"></meter>
-                  <strong>28%</strong>
-                </div>
-                <div>
-                  <span>换手率</span>
-                  <meter min="0" max="100" value="57"></meter>
-                  <strong>57%</strong>
-                </div>
-                <div>
-                  <span>暴露约束</span>
-                  <meter min="0" max="100" value="35"></meter>
-                  <strong>35%</strong>
-                </div>
-              </div>
-            </section>
-
-          </section>
+          <div hidden aria-hidden="true">
+            <select id="universe"><option>沪深300</option></select>
+            <select id="benchmark"><option value="000300.SH">沪深300</option></select>
+            <select id="rebalance"><option value="monthly">每月</option></select>
+            <input id="fee" type="number" value="0.0003" />
+            <input id="risk-control" type="checkbox" checked />
+            <span id="form-message"></span>
+            <span id="candidate-factor-count"></span>
+            <span id="valid-factor-count"></span>
+            <span id="pending-factor-count"></span>
+            <span id="demo-factor-count"></span>
+            <table><tbody id="factor-table"></tbody></table>
+            <canvas id="equity-chart" width="920" height="360"></canvas>
+            <button id="save-preferences" type="button"></button>
+            <button id="run-backtest" type="button"></button>
+          </div>
         </div>
 
         <div id="paper-watch-view" class="view">
@@ -214,14 +121,7 @@
                 <h2>准模拟盘观察台</h2>
               </div>
               <div class="paper-watch-head-actions">
-                <select id="paper-watch-refresh-mode" aria-label="一键刷新模式">
-                  <option value="joinquant_local">JoinQuant本地结果</option>
-                  <option value="local">本地快速</option>
-                  <option value="akshare_fast">AkShare核心50</option>
-                  <option value="akshare_csi300">AkShare沪深300</option>
-                </select>
-                <button id="run-paper-watch-daily-refresh" class="primary" type="button">一键刷新数据</button>
-                <span id="paper-watch-status" class="tag pending">未就绪</span>
+                <span class="tag neutral">策略由研究平台策略池管理</span>
               </div>
             </div>
             <section class="paper-watch-console">
@@ -231,8 +131,8 @@
                 <summary>JoinQuant准模拟报告</summary>
                 <div id="paper-watch-joinquant-report" class="paper-watch-joinquant-report">
                   <div class="paper-watch-note compact">
-                    <strong>等待刷新</strong>
-                    <p>点击一键刷新数据后，将自动扫描 JoinQuant 结果、生成信号账本和报告。</p>
+                    <strong>策略由研究平台策略池管理</strong>
+                    <p>请在研究与策略页面的“模拟盘策略列表”中加入或移除策略；此处只展示模拟盘运行结果。</p>
                   </div>
                 </div>
               </details>
@@ -255,6 +155,9 @@
                 </div>
                 <div class="backtest-actions">
                   <button id="build-bigquant-paper-watch-pack" type="button">生成BigQuant包</button>
+                  <a class="inline-link" href="/paper-watch-api/bigquant-test-pack.json">下载JSON包</a>
+                  <a class="inline-link" href="/paper-watch-api/bigquant-test-targets.csv">下载CSV清单</a>
+                  <a class="inline-link" href="/paper-watch-api/bigquant-test-guide.md">下载操作说明</a>
                 </div>
               </details>
               <div class="paper-watch-console-grid">
@@ -273,19 +176,6 @@
               </div>
             </section>
             <div id="paper-watch-list" class="paper-watch-list"></div>
-            <details class="compact-details" open>
-              <summary>账本回填</summary>
-              <div class="ledger-import">
-                <label>
-                  粘贴模拟观察账本 JSON 或 CSV
-                  <textarea id="paper-watch-ledger-json" rows="5" title="这里是给系统读取的账本格式。sleeve_id 是观察账户编号，strategy_id 是策略编号，planned_weight 是计划观察比例。" placeholder='{"date":"2026-07-09","sleeve_id":"jq_controller","strategy_id":"regime_switch_quality_kline_v1","signal_state":"ready","gate_status":"ready_for_controlled_paper_watch","paper_action":"open_allowed","planned_weight":1}'></textarea>
-                </label>
-                <div class="backtest-actions">
-                  <button id="import-paper-watch-ledger" class="primary" type="button">导入账本</button>
-                </div>
-                <p id="paper-watch-ledger-message" class="form-message">只导入真实观察记录；平台不生成收益或净值。</p>
-              </div>
-            </details>
             <details class="compact-details">
               <summary>运行约束</summary>
               <ul id="paper-watch-controls" class="text-list"></ul>
@@ -293,81 +183,120 @@
           </section>
         </div>
 
-        <div id="bigquant-export-view" class="view">
-          <section class="metrics-grid" aria-label="BigQuant导出指标">
-            <article class="metric">
-              <span>可测目标</span>
-              <strong id="bigquant-ready-count">-</strong>
-              <small>准入后才能导出</small>
-            </article>
-            <article class="metric">
-              <span>代码型目标</span>
-              <strong id="bigquant-code-target-count">-</strong>
-              <small>可生成CSV输入</small>
-            </article>
-            <article class="metric">
-              <span>输入行</span>
-              <strong id="bigquant-input-row-count">-</strong>
-              <small id="bigquant-first-date">等待生成</small>
-            </article>
-            <article class="metric">
-              <span>日期兼容</span>
-              <strong id="bigquant-date-rule">String</strong>
-              <small>规避 BigQuantDate</small>
-            </article>
-          </section>
-
-          <section class="content-grid">
-            <section class="panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">BigQuant Export</p>
-                  <h2>BigQuant模板导出</h2>
-                </div>
-              </div>
-              <div id="bigquant-export-summary" class="status-list"></div>
-              <div class="backtest-actions">
-                <button id="refresh-bigquant-export" type="button">刷新状态</button>
-                <button id="download-bigquant-template-script" class="primary" type="button">下载PY模板</button>
-              </div>
-            </section>
-
-            <section class="panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Compatibility</p>
-                  <h2>模板要点</h2>
-                </div>
-              </div>
-              <div id="bigquant-compatibility-list" class="status-list"></div>
-            </section>
-          </section>
-
-          <section class="panel">
+        <div id="research-agent-view" class="view active research-agent-page">
+          <section class="panel research-agent-hero">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Targets</p>
-                <h2>待提交BigQuant目标</h2>
+                <p class="eyebrow">Local Research Agent</p>
+                <h2>研究智能体</h2>
+                <p class="agent-intro">基于当前 M-quant 真实数据和本地规则，帮助整理研究证据、识别缺口并给出下一步。</p>
+              </div>
+              <div id="research-agent-status" class="assistant-status">
+                <span class="tag pending">本地规则</span>
+                <span>不接入外部 LLM，只读取当前页面已加载的 API 数据。</span>
               </div>
             </div>
-            <div class="collapsible-data compact-preview" data-collapsible-data>
-              <table>
-                <thead>
-                  <tr>
-                    <th>资金袖/策略</th>
-                    <th>状态</th>
-                    <th>信号日</th>
-                    <th>输入</th>
-                    <th>阻塞项</th>
-                  </tr>
-                </thead>
-                <tbody id="bigquant-target-table"></tbody>
-              </table>
+          </section>
+
+          <section class="research-agent-context-grid" aria-label="研究智能体当前上下文">
+            <article class="agent-context-card">
+              <span>当前策略</span>
+              <strong id="research-agent-current-strategy">等待 API 数据</strong>
+              <small id="research-agent-current-strategy-id">-</small>
+            </article>
+            <article class="agent-context-card">
+              <span>最新状态</span>
+              <strong id="research-agent-latest-status">等待刷新</strong>
+              <small id="research-agent-latest-status-detail">-</small>
+            </article>
+            <article class="agent-context-card">
+              <span>数据日期</span>
+              <strong id="research-agent-data-date">-</strong>
+              <small id="research-agent-data-date-detail">来自当前真实截面/信号</small>
+            </article>
+            <article class="agent-context-card">
+              <span>证据状态</span>
+              <strong id="research-agent-evidence-status">等待加载</strong>
+              <small id="research-agent-evidence-detail">-</small>
+            </article>
+          </section>
+
+          <section class="content-grid research-agent-layout">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Task Templates</p>
+                  <h2>研究任务</h2>
+                </div>
+              </div>
+              <label class="agent-field">
+                分析方向
+                <select id="research-agent-direction" aria-label="研究智能体分析方向">
+                  <option value="strategy_data_analysis">策略数据分析</option>
+                  <option value="factor_quality_activity">因子质量与活性</option>
+                  <option value="strategy_evidence_admission">策略证据与准入</option>
+                  <option value="backtest_layering">回测与分层</option>
+                  <option value="stress_execution">压力测试与执行</option>
+                  <option value="paper_pnl_review">模拟盘盈亏复盘</option>
+                  <option value="data_gaps_next_steps">数据缺口与下一步</option>
+                </select>
+              </label>
+              <div class="agent-quick-tasks" id="research-agent-quick-tasks" aria-label="快捷任务">
+                <button type="button" data-agent-task="当前策略有哪些真实证据和风险？">检查当前策略</button>
+                <button type="button" data-agent-task="当前因子质量与活性如何，哪些需要补测？">检查因子活性</button>
+                <button type="button" data-agent-task="当前距离准入还缺什么证据？">检查准入缺口</button>
+                <button type="button" data-agent-task="回测和分层下一步应该怎么做？">规划回测</button>
+                <button type="button" data-agent-task="压力测试与执行链路有哪些阻塞？">检查压力测试</button>
+                <button type="button" data-agent-task="模拟盘当前是否有可复盘的真实盈亏？">复盘模拟盘</button>
+                <button type="button" data-agent-task="当前数据缺口和下一步优先级是什么？">列出数据缺口</button>
+              </div>
+              <label class="agent-field">
+                研究问题
+                <textarea id="research-agent-input" rows="5" placeholder="例如：当前策略离受控模拟观察还差什么证据？只根据真实数据回答。"></textarea>
+              </label>
+              <div class="assistant-actions agent-submit-row">
+                <span class="agent-readonly-hint">只读分析，不执行策略变更。</span>
+                <button id="ask-research-agent" class="primary" type="button">分析问题</button>
+              </div>
+            </section>
+
+            <section class="panel research-agent-answer-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Grounded Answer</p>
+                  <h2>回答</h2>
+                </div>
+              </div>
+              <div id="research-agent-answer" class="research-agent-answer">
+                <div class="agent-empty-state">选择一个分析方向或快捷任务，回答将只基于本地规则和真实数据。</div>
+              </div>
+              <div class="agent-evidence-block">
+                <h3>证据来源</h3>
+                <div id="research-agent-evidence" class="agent-list"><div class="agent-empty-state">尚未生成回答。</div></div>
+              </div>
+              <div class="agent-evidence-block">
+                <h3>下一步建议</h3>
+                <div id="research-agent-next-steps" class="agent-list"><div class="agent-empty-state">尚未生成回答。</div></div>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel research-agent-constraints">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Read Only Policy</p>
+                <h2>只读约束</h2>
+              </div>
+              <span class="tag pending">本地规则回答</span>
             </div>
-            <button class="collapse-toggle" type="button" data-collapse-toggle>展开全部</button>
+            <ul class="agent-constraint-list">
+              <li>不改策略、不改准入。</li>
+              <li>不自动下单、不触发交易执行。</li>
+              <li>不生成未验证收益，不把候选、模拟观察或压力测试当作实盘结论。</li>
+              <li>证据不足时明确标记数据缺口，并给出可验证的下一步。</li>
+            </ul>
           </section>
         </div>
-
         <div id="factor-library-view" class="view">
           <section class="metrics-grid" aria-label="因子库指标">
             <article class="metric">
@@ -503,6 +432,16 @@
             <div id="strategy-live-list" class="strategy-list"></div>
             <div id="draft-strategy-pagination" class="pagination compact"></div>
           </section>
+          <section class="panel strategy-paper-management-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Paper Strategy Management</p>
+                <h2>模拟盘策略列表</h2>
+              </div>
+              <span class="library-source">只在这里添加或移除模拟盘策略</span>
+            </div>
+            <div id="strategy-paper-management-list" class="strategy-paper-management-list"></div>
+          </section>
 
           <section class="panel">
             <div class="panel-head">
@@ -562,12 +501,13 @@
             <article class="metric">
               <span>数据完整性</span>
               <strong id="position-stress-complete">-</strong>
-              <small id="position-stress-date-range">等待导入</small>
+              <small id="position-stress-date-range">等待内部行情</small>
             </article>
             <article class="metric">
-              <span>覆盖股票</span>
+              <span>当前报告覆盖股票</span>
               <strong id="position-stress-stock-count">-</strong>
               <small id="position-stress-row-count">行情行数</small>
+              <small id="position-stress-history-max-count">历史最大覆盖：-</small>
             </article>
             <article class="metric">
               <span>组合收益</span>
@@ -581,54 +521,58 @@
             </article>
           </section>
 
-          <section class="content-grid position-stress-hero">
-            <section class="panel position-stress-kline-panel">
+          <section class="panel position-stress-kline-panel">
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">K-Line Review</p>
                   <h2>入选股票K线</h2>
                 </div>
-                <select id="position-stress-kline-select" aria-label="选择股票K线"></select>
+                <div class="kline-toolbar">
+                  <input id="position-stress-kline-search" type="search" inputmode="search" autocomplete="off" aria-label="搜索股票序号、名称或代码" placeholder="序号 / 名称 / 代码">
+                  <select id="position-stress-kline-select" aria-label="选择股票K线"></select>
+                  <div class="segmented-control" aria-label="K线周期">
+                    <button id="position-stress-kline-daily" class="active" type="button" data-kline-period="daily">日K</button>
+                    <button id="position-stress-kline-monthly" type="button" data-kline-period="monthly">月K</button>
+                    <button id="position-stress-kline-yearly" type="button" data-kline-period="yearly">年K</button>
+                  </div>
+                  <button id="position-stress-kline-reset" type="button">重置</button>
+                </div>
               </div>
-              <canvas id="position-stress-kline-canvas" width="920" height="360"></canvas>
+              <div class="kline-chart-shell">
+                <canvas id="position-stress-kline-canvas" width="1280" height="520"></canvas>
+                <div id="position-stress-kline-tooltip" class="kline-tooltip" hidden></div>
+              </div>
               <div id="position-stress-kline-note" class="library-source">等待数据</div>
-              <div class="table-scroll stress-matrix-table kline-stress-matrix">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>类别</th>
-                      <th>场景</th>
-                      <th>收益</th>
-                      <th>回撤</th>
-                      <th>交易</th>
-                      <th>含义</th>
-                    </tr>
-                  </thead>
-                  <tbody id="position-stress-scenarios"></tbody>
-                </table>
-              </div>
             </section>
 
+          <section class="content-grid position-stress-hero">
             <section class="panel position-stress-control-panel">
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Import & Run</p>
-                  <h2>一键导入运行</h2>
+                  <h2>策略选股压测</h2>
                 </div>
               </div>
               <div id="position-stress-selected-strategy" class="stress-selected-strategy">等待从策略池选择策略</div>
+              <div id="position-stress-imported-strategy-list" class="position-stress-imported-strategy-list"></div>
               <div class="stress-controls">
                 <label>
                   开始日期
-                  <input id="position-stress-start" type="date" value="2026-07-06" />
+                  <input id="position-stress-start" type="date" value="2025-01-01" />
                 </label>
                 <label>
                   结束日期
-                  <input id="position-stress-end" type="date" value="2026-07-13" />
+                  <input id="position-stress-end" type="date" value="2026-07-22" />
                 </label>
                 <label>
-                  持仓数量
-                  <input id="position-stress-top-n" type="number" min="1" max="50" step="1" value="10" />
+                  每日选股数
+                  <input id="position-stress-top-n" type="number" min="1" max="100" step="1" value="10" readonly />
+                  <small class="strategy-locked-hint">由策略配置锁定</small>
+                </label>
+                <label>
+                  最大持仓数
+                  <input id="position-stress-max-holdings" type="number" min="1" max="100" step="1" value="10" readonly />
+                  <small class="strategy-locked-hint">由策略配置锁定</small>
                 </label>
                 <label>
                   初始资金
@@ -650,56 +594,95 @@
                   </select>
                 </label>
               </div>
-              <div class="backtest-actions stress-actions">
-                <button id="run-position-stress" class="primary" type="button">一键导入运行</button>
-                <button id="refresh-position-stress" type="button">刷新报告</button>
+              <p id="position-stress-paper-export-status" class="form-message">先选择压测策略，再导出目标持仓信号。</p>
+              <div id="position-stress-paper-export" class="backtest-actions stress-actions">
+                <button id="position-stress-export-json" type="button">导出模拟盘JSON</button>
+                <button id="position-stress-export-csv" type="button">导出组合CSV</button>
+                <button id="position-stress-export-zip" class="primary" type="button">导出模拟盘ZIP</button>
               </div>
-              <label class="stress-import-box">
-                粘贴真实行情CSV/JSON
-                <textarea id="position-stress-import-ohlcv" rows="5" placeholder="date,code,open,high,low,close,volume,amount&#10;2026-07-13,000001,10.5,10.8,10.4,10.7,123456,123456789"></textarea>
-              </label>
+              <div class="position-stress-history-box">
+                <label for="position-stress-history-select">
+                  历史压力测试报告
+                  <select id="position-stress-history-select" aria-label="选择历史压力测试报告">
+                    <option value="">加载历史报告…</option>
+                  </select>
+                </label>
+                <div id="position-stress-universe-context" class="position-stress-universe-context">
+                  当前最新报告若为中证500专项池，股票数不代表全部历史压测；历史版本包括3000只核心池和5578只全缓存全A（若存在）。
+                </div>
+              </div>
+
               <div class="backtest-actions stress-actions">
-                <button id="import-position-stress-ohlcv" type="button">导入真实行情</button>
+                <button id="run-position-stress" class="primary" type="button">运行</button>
+                <button id="refresh-position-stress" type="button">刷新报告</button>
               </div>
               <p id="position-stress-message" class="form-message">缺少任一请求日期真实行情时，正式运行会被阻断。</p>
               <div id="position-stress-warnings" class="status-list compact-status-list"></div>
             </section>
           </section>
 
-          <section class="content-grid lower position-stress-results-grid">
-            <section class="panel position-stress-equity-panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Equity Result</p>
-                  <h2>组合净值结果</h2>
-                </div>
+          <section class="panel position-stress-equity-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Equity Result</p>
+                <h2>组合净值结果</h2>
               </div>
-              <canvas id="position-stress-equity-canvas" width="920" height="300"></canvas>
-              <div id="position-stress-result-summary" class="result-summary-grid"></div>
-              <div id="position-stress-diagnostics" class="stress-diagnostics"></div>
-            </section>
+              <button id="export-position-stress-equity" type="button">导出Excel</button>
+            </div>
+            <canvas id="position-stress-equity-canvas" width="1280" height="380"></canvas>
+            <div id="position-stress-result-summary" class="result-summary-grid"></div>
+            <div id="position-stress-diagnostics" class="stress-diagnostics"></div>
+          </section>
 
-            <section class="panel position-stress-trades-panel">
-              <div class="panel-head">
-                <div>
-                  <p class="eyebrow">Trade Detail</p>
-                  <h2>成交明细</h2>
-                </div>
+          <section class="panel position-stress-trades-panel position-stress-trades-row">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Trade Detail</p>
+                <h2>成交明细</h2>
               </div>
-              <div class="table-scroll stress-trade-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>信号日</th>
-                      <th>股票</th>
-                      <th>权重</th>
-                      <th>收益</th>
-                    </tr>
-                  </thead>
-                  <tbody id="position-stress-trade-table"></tbody>
-                </table>
+              <button id="export-position-stress-trades" type="button">导出Excel</button>
+            </div>
+            <div class="table-scroll stress-trade-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>信号日</th>
+                    <th>股票</th>
+                    <th>权重/股数</th>
+                    <th>成交金额</th>
+                    <th>盈亏/成本</th>
+                    <th>收益</th>
+                  </tr>
+                </thead>
+                <tbody id="position-stress-trade-table"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel position-stress-scenarios-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Stress Matrix</p>
+                <h2>压力场景矩阵</h2>
               </div>
-            </section>
+            </div>
+            <div class="table-scroll stress-matrix-table kline-stress-matrix">
+              <table>
+                <thead>
+                  <tr>
+                    <th>类别</th>
+                    <th>场景</th>
+                    <th>收益</th>
+                    <th>回撤</th>
+                    <th>交易</th>
+                    <th>期末资产</th>
+                    <th>成本</th>
+                    <th>成交率</th>
+                    <th>含义</th>
+                  </tr>
+                </thead>
+                <tbody id="position-stress-scenarios"></tbody>
+              </table>
+            </div>
           </section>
 
           <section class="content-grid lower position-stress-support-grid">
@@ -712,6 +695,34 @@
               </div>
               <div id="position-stress-selection-list" class="status-list"></div>
             </section>
+            <section class="panel position-stress-run-record-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Strategy Run Ledger</p>
+                  <h2>策略选股与买卖记录</h2>
+                </div>
+                <div id="position-stress-run-summary" class="library-source">等待策略运行</div>
+              </div>
+              <div id="position-stress-run-batches" class="position-stress-run-batches"></div>
+              <div class="table-scroll position-stress-run-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>选股日</th>
+                      <th>股票</th>
+                      <th>分数/排名</th>
+                      <th>买入</th>
+                      <th>卖出</th>
+                      <th>收益</th>
+                      <th>退出原因</th>
+                    </tr>
+                  </thead>
+                  <tbody id="position-stress-run-record-table"></tbody>
+                </table>
+              </div>
+              <p class="library-source">记录来自本次策略运行结果；K 线中的 BUY/SELL 标记按真实交易日期匹配。表格最多展示最近 300 条，完整记录保存在本地运行账本。</p>
+            </section>
+
 
             <section class="panel position-stress-notes-panel">
               <div class="panel-head">
@@ -771,24 +782,25 @@
         <div id="research-pipeline-view" class="view">
           <section class="metrics-grid" aria-label="因子研究流水线指标">
             <article class="metric">
-              <span>研究因子</span>
+            <article class="metric">
+              <span>流水线条目</span>
               <strong id="research-factor-count">-</strong>
-              <small>纳入流水线</small>
+              <small>唯一 factorId，不去重变体</small>
             </article>
             <article class="metric">
-              <span>已实测</span>
-              <strong id="research-tested-count">-</strong>
-              <small>真实结果回填</small>
+              <span>逻辑因子</span>
+              <strong id="research-logical-factor-count">-</strong>
+              <small>CSI300/500 变体归并后</small>
             </article>
             <article class="metric">
-              <span>策略候选</span>
-              <strong id="research-candidate-count">-</strong>
-              <small>满足初筛规则</small>
+              <span>指数池变体</span>
+              <strong id="research-variant-count">-</strong>
+              <small>仅统计 csi300/csi500 前缀</small>
             </article>
             <article class="metric">
-              <span>等待数据</span>
-              <strong id="research-blocked-count">-</strong>
-              <small>字段/历史不足</small>
+              <span>状态合计校验</span>
+              <strong id="research-count-consistency">-</strong>
+              <small>互斥状态合计必须等于条目数</small>
             </article>
           </section>
 
@@ -893,6 +905,7 @@
                 </div>
               </div>
               <div class="backtest-actions">
+                <button id="download-joinquant-csv" class="primary" type="button">下载全部因子CSV</button>
                 <button id="refresh-backtest-center" type="button">刷新状态</button>
               </div>
               <div id="joinquant-export-summary" class="status-list"></div>
@@ -935,28 +948,6 @@
               <ol id="joinquant-step-list" class="step-list"></ol>
             </section>
 
-            <details class="panel disclosure-panel">
-              <summary>
-                <div>
-                  <p class="eyebrow">Import Result</p>
-                  <h2>结果回填</h2>
-                </div>
-                <span class="summary-label-open">点击展开</span>
-                <span class="summary-label-close">收起</span>
-              </summary>
-              <div class="disclosure-content">
-                <label>
-                  粘贴 JoinQuant 检查结果文件
-                  <textarea id="backtest-result-json" rows="8" title="这里粘贴 JoinQuant 或其他真实检查产出的结果文件。source 表示来源，strategy_id 表示策略编号，decision 表示检查结论。" placeholder='{"source":"joinquant_akshare_latest_signal_tradeability_review","strategy_id":"ak_mean_reversion_quality_combo","decision":"tradeability_review_passed"}'></textarea>
-                </label>
-                <div class="backtest-actions">
-                  <button id="validate-tradeability-review" type="button">校验检查结果</button>
-                  <button id="import-backtest-result" class="primary" type="button">导入结果</button>
-                </div>
-                <p id="backtest-import-message" class="form-message">只接收你实际在 JoinQuant 跑出的结果；交易复核会单独入库，不计入收益回测。</p>
-                <div id="imported-backtest-list" class="status-list compact-status-list"></div>
-              </div>
-            </details>
           </section>
         </div>
 
@@ -965,7 +956,7 @@
             <article class="metric">
               <span>结果记录</span>
               <strong id="validated-result-count">-</strong>
-              <small>JoinQuant 实跑导入</small>
+              <small>内部策略测试结果</small>
             </article>
             <article class="metric">
               <span>覆盖因子</span>
@@ -1016,6 +1007,62 @@
           </section>
         </div>
 
+        <div id="factor-activity-view" class="view">
+          <section class="metrics-grid" aria-label="因子活性摘要">
+            <article class="metric">
+              <span>活跃因子</span>
+              <strong id="activity-active-count">-</strong>
+              <small>已通过历史活性门槛</small>
+            </article>
+            <article class="metric">
+              <span>观察因子</span>
+              <strong id="activity-watch-count">-</strong>
+              <small>方向可跟踪，强度待确认</small>
+            </article>
+            <article class="metric">
+              <span>待测/休眠</span>
+              <strong id="activity-dormant-count">-</strong>
+              <small>有信号但缺真实回测</small>
+            </article>
+            <article class="metric">
+              <span>阻塞因子</span>
+              <strong id="activity-blocked-count">-</strong>
+              <small>字段或样本不足</small>
+            </article>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Factor Activity</p>
+                <h2>因子活性检查</h2>
+              </div>
+              <div id="activity-source-file" class="library-source">等待加载</div>
+            </div>
+            <div id="activity-summary" class="result-summary-grid"></div>
+            <div class="table-scroll result-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>因子</th>
+                    <th>活性</th>
+                    <th>分数</th>
+                    <th>最佳周期</th>
+                    <th>RankIC</th>
+                    <th>t值</th>
+                    <th>好坏组差距</th>
+                    <th>结果</th>
+                    <th>证据</th>
+                    <th>下一步</th>
+                  </tr>
+                </thead>
+                <tbody id="activity-table"></tbody>
+              </table>
+            </div>
+            <div id="activity-notes" class="result-notes"></div>
+          </section>
+        </div>
+
         <div id="strategy-results-view" class="view">
           <section class="metrics-grid" aria-label="策略实测摘要">
             <article class="metric">
@@ -1063,7 +1110,6 @@
 	                    <th>历史收益</th>
                     <th>年化参考</th>
                     <th>赚钱次数占比</th>
-                    <th>最好/最差一次</th>
                     <th>候选数</th>
                     <th>来源</th>
                     <th>判断</th>
@@ -1078,6 +1124,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260714-position-stress-layout"></script>
+    <script type="module" src="/assets/app.js?v=20260913-paper-strategy-management"></script>
   </body>
 </html>

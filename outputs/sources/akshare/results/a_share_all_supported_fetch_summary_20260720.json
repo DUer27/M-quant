@@ -1,0 +1,19 @@
+{
+  "total_supported_non_st": 5062,
+  "checked": 2060,
+  "skipped_full": 3002,
+  "fetched": 1995,
+  "full_after": 0,
+  "partial_after": 0,
+  "missing_after": 0,
+  "failed": 65,
+  "full_370_supported": 4408,
+  "partial_supported": 589,
+  "missing_supported": 65,
+  "combined_codes": 4997,
+  "combined_rows": 1822236,
+  "combined_dates": 370,
+  "combined_output": "outputs/sources/akshare/processed/a_share_all_supported_20250101_20260715_qfq.csv",
+  "elapsed_seconds": 692.3,
+  "generated_at": "2026-07-20T03:53:26"
+}

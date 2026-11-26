@@ -32,32 +32,33 @@ const categoryNames = {
 };
 
 const elements = {
+  activityActiveCount: document.querySelector('#activity-active-count'),
+  activityBlockedCount: document.querySelector('#activity-blocked-count'),
+  activityDormantCount: document.querySelector('#activity-dormant-count'),
+  activityNotes: document.querySelector('#activity-notes'),
+  activitySourceFile: document.querySelector('#activity-source-file'),
+  activitySummary: document.querySelector('#activity-summary'),
+  activityTable: document.querySelector('#activity-table'),
+  activityWatchCount: document.querySelector('#activity-watch-count'),
   benchmark: document.querySelector('#benchmark'),
   backtestDateCount: document.querySelector('#backtest-date-count'),
   backtestExternalStatus: document.querySelector('#backtest-external-status'),
   backtestFactorCount: document.querySelector('#backtest-factor-count'),
   backtestFactorTable: document.querySelector('#backtest-factor-table'),
-  backtestImportMessage: document.querySelector('#backtest-import-message'),
   backtestLocalStatus: document.querySelector('#backtest-local-status'),
   backtestResultNotes: document.querySelector('#backtest-result-notes'),
-  backtestResultJson: document.querySelector('#backtest-result-json'),
   backtestResultSummary: document.querySelector('#backtest-result-summary'),
   backtestResultTable: document.querySelector('#backtest-result-table'),
   backtestRowCount: document.querySelector('#backtest-row-count'),
   backtestSourceFile: document.querySelector('#backtest-source-file'),
   backtestStatusList: document.querySelector('#backtest-status-list'),
-  bigquantCodeTargetCount: document.querySelector('#bigquant-code-target-count'),
-  bigquantCompatibilityList: document.querySelector('#bigquant-compatibility-list'),
-  bigquantDateRule: document.querySelector('#bigquant-date-rule'),
-  bigquantExportSummary: document.querySelector('#bigquant-export-summary'),
-  bigquantFirstDate: document.querySelector('#bigquant-first-date'),
-  bigquantInputRowCount: document.querySelector('#bigquant-input-row-count'),
-  bigquantReadyCount: document.querySelector('#bigquant-ready-count'),
-  bigquantTargetTable: document.querySelector('#bigquant-target-table'),
   buildBigquantPaperWatchPack: document.querySelector('#build-bigquant-paper-watch-pack'),
   candidateFactorCount: document.querySelector('#candidate-factor-count'),
+  dataLoadStrip: document.querySelector('#data-load-strip'),
+  dataLoadText: document.querySelector('#data-load-text'),
   demoFactorCount: document.querySelector('#demo-factor-count'),
-  downloadBigquantTemplateScript: document.querySelector('#download-bigquant-template-script'),
+  downloadJoinquantCsv: document.querySelector('#download-joinquant-csv'),
+  downloadJoinquantFactorScript: document.querySelector('#download-joinquant-factor-script'),
   draftStrategyJump: document.querySelector('#draft-strategy-jump'),
   draftStrategyPagination: document.querySelector('#draft-strategy-pagination'),
   draftStrategySearch: document.querySelector('#draft-strategy-search'),
@@ -73,8 +74,6 @@ const elements = {
   formalStrategyPolicy: document.querySelector('#formal-strategy-policy'),
   formalStrategySearch: document.querySelector('#formal-strategy-search'),
   formalStrategyToggle: document.querySelector('#formal-strategy-toggle'),
-  importedBacktestList: document.querySelector('#imported-backtest-list'),
-  importBacktestResult: document.querySelector('#import-backtest-result'),
   joinquantExportSummary: document.querySelector('#joinquant-export-summary'),
   joinquantStepList: document.querySelector('#joinquant-step-list'),
   klineRulesTable: document.querySelector('#kline-rules-table'),
@@ -85,21 +84,20 @@ const elements = {
   librarySourceKind: document.querySelector('#library-source-kind'),
   libraryUnavailableCount: document.querySelector('#library-unavailable-count'),
   navButtons: document.querySelectorAll('.nav button[data-view-target]'),
+  subnavButtons: document.querySelectorAll('[data-subview-target]'),
+  subnavs: document.querySelectorAll('[data-view-subnav]'),
   paperWatchControls: document.querySelector('#paper-watch-controls'),
   paperWatchConsoleSummary: document.querySelector('#paper-watch-console-summary'),
-  paperWatchLedgerJson: document.querySelector('#paper-watch-ledger-json'),
   paperWatchLedgerMessage: document.querySelector('#paper-watch-ledger-message'),
   paperWatchLedgerSummary: document.querySelector('#paper-watch-ledger-summary'),
   paperWatchList: document.querySelector('#paper-watch-list'),
   paperWatchBigquantSummary: document.querySelector('#paper-watch-bigquant-summary'),
   paperWatchJoinquantReport: document.querySelector('#paper-watch-joinquant-report'),
   paperWatchPerformanceReport: document.querySelector('#paper-watch-performance-report'),
-  paperWatchRefreshMode: document.querySelector('#paper-watch-refresh-mode'),
   paperWatchRefreshSummary: document.querySelector('#paper-watch-refresh-summary'),
   paperWatchSignalList: document.querySelector('#paper-watch-signal-list'),
   paperWatchStatus: document.querySelector('#paper-watch-status'),
   paperWatchUpgradeList: document.querySelector('#paper-watch-upgrade-list'),
-  runPaperWatchDailyRefresh: document.querySelector('#run-paper-watch-daily-refresh'),
   positionStressArtifacts: document.querySelector('#position-stress-artifacts'),
   positionStressCapital: document.querySelector('#position-stress-capital'),
   positionStressComplete: document.querySelector('#position-stress-complete'),
@@ -109,47 +107,80 @@ const elements = {
   positionStressDiagnostics: document.querySelector('#position-stress-diagnostics'),
   positionStressEnd: document.querySelector('#position-stress-end'),
   positionStressEquityCanvas: document.querySelector('#position-stress-equity-canvas'),
-  positionStressImportOhlcv: document.querySelector('#position-stress-import-ohlcv'),
+  exportPositionStressEquity: document.querySelector('#export-position-stress-equity'),
+  exportPositionStressTrades: document.querySelector('#export-position-stress-trades'),
+  positionStressExportJson: document.querySelector('#position-stress-export-json'),
+  positionStressExportCsv: document.querySelector('#position-stress-export-csv'),
+  positionStressExportZip: document.querySelector('#position-stress-export-zip'),
+  positionStressPaperExportStatus: document.querySelector('#position-stress-paper-export-status'),
   positionStressKlineCanvas: document.querySelector('#position-stress-kline-canvas'),
+  positionStressKlineDaily: document.querySelector('#position-stress-kline-daily'),
+  positionStressKlineMonthly: document.querySelector('#position-stress-kline-monthly'),
   positionStressKlineNote: document.querySelector('#position-stress-kline-note'),
+  positionStressKlineReset: document.querySelector('#position-stress-kline-reset'),
+  positionStressKlineSearch: document.querySelector('#position-stress-kline-search'),
   positionStressKlineSelect: document.querySelector('#position-stress-kline-select'),
+  positionStressKlineTooltip: document.querySelector('#position-stress-kline-tooltip'),
+  positionStressKlineYearly: document.querySelector('#position-stress-kline-yearly'),
   positionStressMessage: document.querySelector('#position-stress-message'),
   positionStressSelectedStrategy: document.querySelector('#position-stress-selected-strategy'),
+  positionStressHistorySelect: document.querySelector('#position-stress-history-select'),
+  positionStressUniverseContext: document.querySelector('#position-stress-universe-context'),
   positionStressReturn: document.querySelector('#position-stress-return'),
   positionStressResultSummary: document.querySelector('#position-stress-result-summary'),
   positionStressRowCount: document.querySelector('#position-stress-row-count'),
   positionStressRunStatus: document.querySelector('#position-stress-run-status'),
   positionStressScenarios: document.querySelector('#position-stress-scenarios'),
   positionStressSelectionList: document.querySelector('#position-stress-selection-list'),
+  positionStressRunBatches: document.querySelector('#position-stress-run-batches'),
+  positionStressRunRecordTable: document.querySelector('#position-stress-run-record-table'),
+  positionStressRunSummary: document.querySelector('#position-stress-run-summary'),
+  operationsStrategyCount: document.querySelector('#operations-strategy-count'),
+  operationsStrategyList: document.querySelector('#operations-strategy-list'),
+  operationsStrategySearch: document.querySelector('#operations-strategy-search'),
   positionStressSource: document.querySelector('#position-stress-source'),
   positionStressStart: document.querySelector('#position-stress-start'),
   positionStressStrategySelect: document.querySelector('#position-stress-strategy-select'),
+  positionStressImportedStrategyList: document.querySelector('#position-stress-imported-strategy-list'),
   positionStressStockCount: document.querySelector('#position-stress-stock-count'),
+  positionStressHistoryMaxCount: document.querySelector('#position-stress-history-max-count'),
   positionStressTopN: document.querySelector('#position-stress-top-n'),
+  positionStressMaxHoldings: document.querySelector('#position-stress-max-holdings'),
   positionStressTradeTable: document.querySelector('#position-stress-trade-table'),
   positionStressTrades: document.querySelector('#position-stress-trades'),
   positionStressWarnings: document.querySelector('#position-stress-warnings'),
   refreshPositionStress: document.querySelector('#refresh-position-stress'),
-  refreshBigquantExport: document.querySelector('#refresh-bigquant-export'),
-  importPositionStressOhlcv: document.querySelector('#import-position-stress-ohlcv'),
-  runPositionStress: document.querySelector('#run-position-stress'),
-  importPaperWatchLedger: document.querySelector('#import-paper-watch-ledger'),
   pendingFactorCount: document.querySelector('#pending-factor-count'),
   rebalance: document.querySelector('#rebalance'),
-  askResearchAssistant: document.querySelector('#ask-research-assistant'),
+  askResearchAgent: document.querySelector('#ask-research-agent'),
+  researchAgentAnswer: document.querySelector('#research-agent-answer'),
+  researchAgentCurrentStrategy: document.querySelector('#research-agent-current-strategy'),
+  researchAgentCurrentStrategyId: document.querySelector('#research-agent-current-strategy-id'),
+  researchAgentDataDate: document.querySelector('#research-agent-data-date'),
+  researchAgentDataDateDetail: document.querySelector('#research-agent-data-date-detail'),
+  researchAgentDirection: document.querySelector('#research-agent-direction'),
+  researchAgentEvidence: document.querySelector('#research-agent-evidence'),
+  researchAgentEvidenceDetail: document.querySelector('#research-agent-evidence-detail'),
+  researchAgentEvidenceStatus: document.querySelector('#research-agent-evidence-status'),
+  researchAgentInput: document.querySelector('#research-agent-input'),
+  researchAgentLatestStatus: document.querySelector('#research-agent-latest-status'),
+  researchAgentLatestStatusDetail: document.querySelector('#research-agent-latest-status-detail'),
+  researchAgentNextSteps: document.querySelector('#research-agent-next-steps'),
+  researchAgentStatus: document.querySelector('#research-agent-status'),
+  researchAgentQuickTasks: document.querySelector('#research-agent-quick-tasks'),
   refreshBacktestCenter: document.querySelector('#refresh-backtest-center'),
   researchActionList: document.querySelector('#research-action-list'),
   researchAssistantFactor: document.querySelector('#research-assistant-factor'),
   researchAssistantInput: document.querySelector('#research-assistant-input'),
   researchAssistantMessages: document.querySelector('#research-assistant-messages'),
   researchAssistantStatus: document.querySelector('#research-assistant-status'),
-  researchBlockedCount: document.querySelector('#research-blocked-count'),
-  researchCandidateCount: document.querySelector('#research-candidate-count'),
+  researchCountConsistency: document.querySelector('#research-count-consistency'),
   researchFactorCount: document.querySelector('#research-factor-count'),
+  researchLogicalFactorCount: document.querySelector('#research-logical-factor-count'),
+  researchVariantCount: document.querySelector('#research-variant-count'),
   researchFactorDetail: document.querySelector('#research-factor-detail'),
   researchFactorList: document.querySelector('#research-factor-list'),
   researchSourceFile: document.querySelector('#research-source-file'),
-  researchTestedCount: document.querySelector('#research-tested-count'),
   risk: document.querySelector('#risk-control'),
   savePreferences: document.querySelector('#save-preferences'),
   runBacktest: document.querySelector('#run-backtest'),
@@ -176,7 +207,6 @@ const elements = {
   strategyStrongCount: document.querySelector('#strategy-strong-count'),
   strategyUnavailableList: document.querySelector('#strategy-unavailable-list'),
   universe: document.querySelector('#universe'),
-  validateTradeabilityReview: document.querySelector('#validate-tradeability-review'),
   validFactorCount: document.querySelector('#valid-factor-count'),
   validatedBestHorizon: document.querySelector('#validated-best-horizon'),
   validatedFactorDirectory: document.querySelector('#validated-factor-directory'),
@@ -194,7 +224,17 @@ let activeResearchFactor = null;
 let currentResearchPipeline = null;
 let currentStrategySignalPack = null;
 let currentPositionStressCatalog = null;
+let currentPositionStressHistory = [];
 let currentPositionStressReport = null;
+let currentPositionStressImportedIds = new Set();
+let currentStrategyDefinitions = [];
+let currentPositionStressRuns = [];
+let currentOperationsStrategies = [];
+let currentPositionStressExplicitStrategyId = '';
+let positionStressKlinePeriod = 'daily';
+let positionStressKlineSearchTimer = 0;
+let positionStressKlineSearchRequestId = 0;
+const positionStressKlineView = { start: 0, count: 70, dragging: false, dragX: 0, dragStart: 0, hoverIndex: null };
 let draftStrategyExpanded = false;
 let draftStrategyGrade = 'all';
 let draftStrategyPage = 1;
@@ -398,6 +438,7 @@ function renderPreferences(preferences) {
 
 function renderRisk(risks) {
   const riskList = document.querySelector('.risk-list');
+  if (!riskList) return;
   riskList.innerHTML = risks
     .map((risk) => {
       const tone = risk.status === 'ready' ? 'good' : risk.status === 'blocked' ? 'watch' : 'pending';
@@ -534,6 +575,7 @@ function renderTradeabilityReviewTaskPack(pack) {
         要通过，至少要有 ${escapeHtml(passGate.min_tradable_count ?? 10)} 只股票确认可以买卖。
       </p>
       <div class="inline-actions">
+        ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载交易复核脚本</a>` : ''}
         <button type="button" data-paper-watch-rebuild="true">刷新派生包</button>
       </div>
       <details class="compact-details">
@@ -590,6 +632,7 @@ function renderCoreMediumSmallPromotionTaskPack(pack) {
         ${review.decision_reason ? `<p>${escapeHtml(review.decision_reason)}</p>` : ''}
       ` : ''}
       <div class="inline-actions">
+        ${script.download_endpoint ? `<a class="inline-link" href="${escapeHtml(script.download_endpoint)}">下载核心量价复核脚本</a>` : ''}
       </div>
       <details class="compact-details">
         <summary>查看晋级步骤</summary>
@@ -711,73 +754,6 @@ function renderBigQuantPaperWatchPack(pack) {
       </details>
     </div>
   `;
-}
-
-function renderBigQuantExport(status) {
-  if (!elements.bigquantExportSummary) return;
-  const metrics = status?.metrics || {};
-  const compatibility = status?.compatibility || {};
-  const targets = Array.isArray(status?.targets) ? status.targets : [];
-
-  elements.bigquantReadyCount.textContent = metrics.readyTargetCount ?? '-';
-  elements.bigquantCodeTargetCount.textContent = metrics.selectedCodeTargetCount ?? '-';
-  elements.bigquantInputRowCount.textContent = metrics.inputRowCount ?? '-';
-  elements.bigquantFirstDate.textContent = metrics.firstDate ? `首个信号日 ${metrics.firstDate}` : '等待输入行';
-  elements.bigquantDateRule.textContent = 'String';
-
-  elements.bigquantExportSummary.innerHTML = `
-    <div class="status-item">
-      <div>
-        <strong>模板来源</strong>
-        <span>参考成功运行的 ${escapeHtml(compatibility.templateReference || 'BigQuant notebook')}，保留 input_features_dai / extract_data_dai / bigtrader 结构。</span>
-      </div>
-      <span class="tag good">可下载</span>
-    </div>
-    <div class="status-item">
-      <div>
-        <strong>数据边界</strong>
-        <span>${escapeHtml(status?.dataPolicy || '只导出待测输入，不生成 BigQuant 结果。')}</span>
-      </div>
-      <span class="tag pending">无绩效</span>
-    </div>
-  `;
-
-  elements.bigquantCompatibilityList.innerHTML = `
-    <div class="status-item">
-      <div>
-        <strong>日期参数</strong>
-        <span>${escapeHtml(compatibility.dateRule || '模块日期保持字符串。')}</span>
-      </div>
-      <span class="tag good">BigQuantDate safe</span>
-    </div>
-    <div class="status-item">
-      <div>
-        <strong>已规避错误</strong>
-        <span>${escapeHtml(compatibility.avoidedError || 'TypeError: Expected unicode, got BigQuantDate')}</span>
-      </div>
-      <span class="tag good">显式转换</span>
-    </div>
-  `;
-
-  elements.bigquantTargetTable.innerHTML = targets.map((target) => {
-    const ready = target.status === 'ready_for_bigquant_real_test';
-    return `
-      <tr>
-        <td><strong>${escapeHtml(target.sleeve_id || '-')}</strong><br><small>${escapeHtml(target.strategy_id || target.strategy_name || '-')} / ${escapeHtml(target.source_type || '-')}</small></td>
-        <td><span class="tag ${ready ? 'good' : 'watch'}">${escapeHtml(target.priority || target.status || '-')}</span></td>
-        <td>${escapeHtml(target.signal_date || '-')}</td>
-        <td>${escapeHtml(target.selected_count || 0)} 行 / ${escapeHtml(target.payload_type || '-')}</td>
-        <td>${escapeHtml((target.blocked_reasons || []).join('；') || '-')}</td>
-      </tr>
-    `;
-  }).join('') || '<tr><td colspan="5">暂无 BigQuant 待测目标。</td></tr>';
-}
-
-async function refreshBigQuantExport() {
-  const status = await request('/paper-watch-api/bigquant-template-export');
-  renderBigQuantExport(status);
-  bindCollapsibleData();
-  requestAnimationFrame(syncCollapsibleData);
 }
 
 function renderJoinQuantPaperWatchReport(report) {
@@ -1010,6 +986,7 @@ function renderPaperWatchRoutes(pack) {
           <strong>AkShare 最新信号还要做交易检查</strong>
           <span>${pack.localBacktest.latestTradeabilityReview ? '已有导入复核' : '等待真实复核 JSON'}</span>
           <p>本地历史表现不错还不够。开始观察前，还要确认这些股票当天没有停牌、涨跌停等买不了卖不了的问题。</p>
+          <a class="inline-link" href="${escapeHtml(pack.localBacktest.tradeabilityReviewScriptEndpoint)}">下载复核脚本</a>
         </div>
       ` : ''}
       ${pack.localBacktest?.regimeSwitch ? `
@@ -1196,6 +1173,7 @@ function labelForStatus(status) {
   if (status === 'factor_tested_strategy_unvalidated') return ['因子已测策略待测', 'pending'];
   if (status === 'real_strategy_backtested') return ['策略已实测', 'good'];
   if (status === 'has_formal_candidates') return ['有正式候选', 'good'];
+  if (status === 'experimental_candidate') return ['试验版', 'pending'];
   if (status === 'exportable') return ['可导出', 'good'];
   if (status === 'partial_real_data') return ['部分可用', 'pending'];
   if (status === 'joinquant_ready') return ['聚宽可测', 'good'];
@@ -1223,18 +1201,69 @@ function factorDisplayName(id) {
     ak_liquidity_stability: 'AkShare流动性稳定',
     ak_mean_reversion_quality_combo: 'AkShare均值回归组合',
     ak_trend_quality: 'AkShare趋势质量',
+    f_anti_crowding: '指数增长反拥挤',
+    f_close_strength: '指数增长收盘强度',
+    f_drawdown_control: '指数增长回撤控制',
+    f_gap_risk_control: '指数增长跳空风险控制',
+    f_long_momentum: '指数增长长期趋势',
+    f_market_regime_fit: '指数增强市场适配',
+    f_medium_momentum: '指数增长中期趋势',
+    f_orderly_trend: '指数增强有序趋势',
+    f_residual_low_volatility: '指数增强残差低波',
+    f_short_reversal: '指数增长短期反转',
+    f_volume_stability: '指数增长量能稳定',
+    f_volume_confirmation: '指数增长量价确认',
+    z_f_volume_confirmation: '指数增长量价确认',
+    csi300_index_growth_anti_crowding: '沪深300指数增长反拥挤',
+    csi300_index_growth_close_strength: '沪深300指数增长收盘强度',
+    csi300_index_growth_drawdown_control: '沪深300指数增长回撤控制',
+    csi300_index_growth_gap_risk_control: '沪深300指数增长跳空风险控制',
+    csi300_index_growth_long_trend: '沪深300指数增长长期趋势',
+    csi300_index_growth_low_volatility: '沪深300指数增长低波动',
+    csi300_index_growth_medium_trend: '沪深300指数增长中期趋势',
+    csi300_index_growth_short_reversal: '沪深300指数增长短期反转',
+    csi300_index_growth_volume_price_confirmation: '沪深300指数增长量价确认',
+    csi300_index_growth_volume_stability: '沪深300指数增长量能稳定',
+    csi500_index_growth_anti_crowding: '中证500指数增长反拥挤',
+    csi500_index_growth_close_strength: '中证500指数增长收盘强度',
+    csi500_index_growth_drawdown_control: '中证500指数增长回撤控制',
+    csi500_index_growth_gap_risk_control: '中证500指数增长跳空风险控制',
+    csi500_index_growth_long_trend: '中证500指数增长长期趋势',
+    csi500_index_growth_low_volatility: '中证500指数增长低波动',
+    csi500_index_growth_medium_trend: '中证500指数增长中期趋势',
+    csi500_index_growth_short_reversal: '中证500指数增长短期反转',
+    csi500_index_growth_volume_price_confirmation: '中证500指数增长量价确认',
+    csi500_index_growth_volume_stability: '中证500指数增长量能稳定',
+    index_enhancement_csi300_anti_crowding: '沪深300指数增强反拥挤',
+    index_enhancement_csi300_close_strength: '沪深300指数增强收盘强度',
+    index_enhancement_csi300_drawdown_control: '沪深300指数增强回撤控制',
+    index_enhancement_csi300_gap_risk_control: '沪深300指数增强跳空风险控制',
+    index_enhancement_csi300_long_trend: '沪深300指数增强长期趋势',
+    index_enhancement_csi300_low_volatility: '沪深300指数增强低波动',
+    index_enhancement_csi300_medium_trend: '沪深300指数增强中期趋势',
+    index_enhancement_csi300_short_reversal: '沪深300指数增强短期反转',
+    index_enhancement_csi300_volume_price_confirmation: '沪深300指数增强量价确认',
+    index_enhancement_csi300_volume_stability: '沪深300指数增强量能稳定',
+    index_enhancement_csi500_anti_crowding: '中证500指数增强反拥挤',
+    index_enhancement_csi500_close_strength: '中证500指数增强收盘强度',
+    index_enhancement_csi500_drawdown_control: '中证500指数增强回撤控制',
+    index_enhancement_csi500_gap_risk_control: '中证500指数增强跳空风险控制',
+    index_enhancement_csi500_long_trend: '中证500指数增强长期趋势',
+    index_enhancement_csi500_low_volatility: '中证500指数增强低波动',
+    index_enhancement_csi500_medium_trend: '中证500指数增强中期趋势',
+    index_enhancement_csi500_short_reversal: '中证500指数增强短期反转',
+    index_enhancement_csi500_volume_price_confirmation: '中证500指数增强量价确认',
+    index_enhancement_csi500_volume_stability: '中证500指数增强量能稳定',
     ak_volatility_contraction_quality: 'AkShare波动收缩质量',
     ak_volume_price_confirmation: 'AkShare量价确认',
     capital_source_count: '资金来源数',
     chip_health: '筹码健康',
     crowding_risk: '拥挤风险',
-    emotion_weighted_kline_score: '情绪加权K线',
     flow_vs_ma: '资金相对均值',
     intraday_strength: '日内强度',
     intraday_ap_slope: '日内暗盘斜率',
     kdj_momentum: 'KDJ动能',
     kline_event_score: '单根K线评分',
-    low_emotion_score: '低情绪反向',
     macd_acceleration: 'MACD动能加速',
     professional_sub_factors: '专业解释子因子',
     liquidity_quality_jq: '流动性质量_JQ',
@@ -1248,7 +1277,6 @@ function factorDisplayName(id) {
     valuation_safety_jq: '估值安全垫_JQ',
     volume_price_confirmation: '量价确认',
     volume_price_divergence_risk: '量价背离风险',
-    volume_price_resonance_60_5: '价量共振_60_5',
     active_ap_accumulation: '活跃暗盘吸筹',
     active_large_order_accumulation: '超大/大单吸筹代理',
     capital_follow_factor: '资金跟随因子',
@@ -1279,6 +1307,13 @@ function formatPercent(value, digits = 2) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '-';
   return `${(number * 100).toFixed(digits)}%`;
+}
+
+function formatCurrency(value, digits = 0) {
+  if (value === undefined || value === null || value === '') return '-';
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  return `¥${number.toLocaleString('zh-CN', { maximumFractionDigits: digits, minimumFractionDigits: digits })}`;
 }
 
 function plainStatus(value) {
@@ -2101,6 +2136,75 @@ function renderBacktestResultSummary(results) {
   `;
 }
 
+function renderFactorActivity(report) {
+  if (!elements.activityTable) return;
+  const metrics = report?.metrics || {};
+  const entries = Array.isArray(report?.entries) ? report.entries : [];
+  const source = report?.source || {};
+  const summary = report?.summary || {};
+
+  elements.activityActiveCount.textContent = metrics.activeCount ?? 0;
+  elements.activityWatchCount.textContent = metrics.watchCount ?? 0;
+  elements.activityDormantCount.textContent = metrics.dormantCount ?? 0;
+  elements.activityBlockedCount.textContent = metrics.blockedCount ?? 0;
+  elements.activitySourceFile.textContent = source.file || '未找到数据源';
+  elements.activitySourceFile.title = fieldHint('source_file', source.file || '');
+
+  elements.activitySummary.innerHTML = `
+    <div class="result-card result-card-wide">
+      <span>直接结论</span>
+      <strong>${escapeHtml(summary.headline || '等待因子活性检查')}</strong>
+      <small>${escapeHtml(summary.nextAction || '暂无下一步')}</small>
+    </div>
+    <div class="result-card">
+      <span>覆盖因子</span>
+      <strong>${escapeHtml(metrics.factorCount ?? entries.length)}</strong>
+      <small>${escapeHtml(metrics.testedCount ?? 0)} 个已有真实结果</small>
+    </div>
+    <div class="result-card">
+      <span>历史结果</span>
+      <strong>${escapeHtml(metrics.historicalResultCount ?? 0)}</strong>
+      <small>样本不少于 20 截面</small>
+    </div>
+    <div class="result-card">
+      <span>最佳活性</span>
+      <strong>${escapeHtml(summary.bestFactor?.activityScore ?? '-')}</strong>
+      <small>${escapeHtml(summary.bestFactor?.name || '-')}</small>
+    </div>
+  `;
+
+  elements.activityTable.innerHTML = entries.length
+    ? entries.map((entry) => {
+      const blockers = Array.isArray(entry.blockers) ? entry.blockers.filter(Boolean) : [];
+      const evidence = [entry.evidence, blockers.length ? `缺口：${blockers.slice(0, 2).join('；')}` : '']
+        .filter(Boolean)
+        .join(' ');
+      return `
+        <tr>
+          <td><strong>${escapeHtml(entry.name)}</strong><br><small>${explainable(entry.factorId, 'factor_id')}</small></td>
+          <td><span class="tag ${escapeHtml(entry.activityTone || 'pending')}">${escapeHtml(entry.activityLabel || '-')}</span><br><small>${escapeHtml(entry.decision || '-')}</small></td>
+          <td><strong>${escapeHtml(entry.activityScore ?? '-')}</strong></td>
+          <td>${entry.bestHorizon ? `${escapeHtml(entry.bestHorizon)}日` : '-'}</td>
+          <td>${formatNumber(entry.bestRankIc)}</td>
+          <td>${formatNumber(entry.bestRankIcT, 2)}</td>
+          <td>${formatPercent(entry.bestLongShort)}</td>
+          <td>${escapeHtml(entry.resultCount ?? 0)} 条<br><small>历史 ${escapeHtml(entry.historicalCount ?? 0)} / 可导出 ${escapeHtml(entry.exportRows ?? 0)}</small></td>
+          <td>${escapeHtml(evidence || '-')}</td>
+          <td>${escapeHtml(entry.nextAction || '-')}</td>
+        </tr>
+      `;
+    }).join('')
+    : '<tr><td colspan="10">暂无可检查因子。</td></tr>';
+
+  elements.activityNotes.innerHTML = `
+    <strong>怎么看：</strong>
+    活跃表示已有足够真实历史结果，且排序有效度、稳定性和好坏组差距同步达标；观察表示方向可跟踪但显著性不足；休眠表示有信号但还缺真实回测；阻塞表示字段或样本不足。
+    <br><strong>边界：</strong>
+    ${escapeHtml(report?.dataPolicy || '只使用真实证据，不生成估算收益。')}
+    当前因子截面 ${escapeHtml(source.uniqueDates ?? 0)} 日 / ${escapeHtml(source.uniqueStocks ?? 0)} 股，可导出 ${escapeHtml(source.exportableRows ?? 0)} 行。
+  `;
+}
+
 function renderResearchDetail(entry) {
   if (!entry) {
     elements.researchFactorDetail.innerHTML = '<div class="library-source">暂无因子档案。</div>';
@@ -2118,6 +2222,17 @@ function renderResearchDetail(entry) {
     ? explainFieldList(entry.dataDependencies)
     : '当前没有登记字段依赖';
 
+  const sourceReferences = Array.isArray(entry.sourceReferences) ? entry.sourceReferences : [];
+  const sourceReferencesHtml = sourceReferences.length
+    ? sourceReferences.map((source) => {
+      const status = source.status === 'available' ? '项目内可用' : '历史记录/当前缺失';
+      const tone = source.status === 'available' ? 'good' : 'watch';
+      const action = source.url
+        ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">打开文件</a>`
+        : '<span class="source-missing">不可打开</span>';
+      return `<li><span class="tag ${tone}">${status}</span> <strong>${escapeHtml(source.label || '来源文件')}</strong> ${action}<br><small>${escapeHtml(source.path || '')}；${escapeHtml(source.note || '')}</small></li>`;
+    }).join('')
+    : '<li>尚未登记来源文件。</li>';
   elements.researchFactorDetail.innerHTML = `
     <div class="research-detail-head">
       <div>
@@ -2167,6 +2282,11 @@ function renderResearchDetail(entry) {
       <p>${dependenciesHtml}</p>
     </div>
     <div class="research-section">
+      <strong>来源文件</strong>
+      <p class="source-trace-policy">项目内文件保留可点击链接；历史来源若当前不存在，保留登记路径但不伪造链接。</p>
+      <ul class="source-trace-list">${sourceReferencesHtml}</ul>
+    </div>
+    <div class="research-section">
       <strong>数据缺口</strong>
       <ul>${dataGaps}</ul>
     </div>
@@ -2187,13 +2307,35 @@ function renderResearchPipeline(pipeline) {
   }
 
   elements.researchFactorCount.textContent = metrics.factorCount ?? '-';
-  elements.researchTestedCount.textContent = metrics.testedCount ?? '-';
-  elements.researchCandidateCount.textContent = metrics.strategyCandidateCount ?? '-';
-  elements.researchBlockedCount.textContent = metrics.blockedCount ?? '-';
-  elements.researchSourceFile.textContent = pipeline.source?.file
-    ? `当前研究数据源：${pipeline.source.file}`
-    : '当前研究数据源：未加载';
-  elements.researchSourceFile.title = pipeline.source?.file ? fieldHint('source_file', pipeline.source.file) : '';
+  elements.researchLogicalFactorCount.textContent = metrics.logicalFactorCount ?? '-';
+  elements.researchVariantCount.textContent = metrics.variantCount ?? '-';
+  elements.researchCountConsistency.textContent = metrics.countsConsistent ? '通过' : `异常 ${metrics.statusCountsSum ?? 0}/${metrics.factorCount ?? 0}`;
+  const pipelineSources = Array.isArray(pipeline.sourceReferences) ? pipeline.sourceReferences : [];
+  const availableSources = pipelineSources.filter((source) => source.status === 'available');
+  const missingSources = pipelineSources.filter((source) => source.status !== 'available');
+  const literatureIndex = Array.isArray(pipeline.literatureIndex) ? pipeline.literatureIndex : [];
+  const literatureHtml = literatureIndex.length
+    ? `<div class="literature-index"><strong>文献 → 因子索引</strong>${literatureIndex.map((literature) => {
+      const source = literature.source || {};
+      const sourceLink = source.url
+        ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">打开文献</a>`
+        : `<span class="source-missing">文献缺失</span>`;
+      const factorLinks = (literature.factors || []).map((factor) => `<button type="button" class="literature-factor-link" data-literature-factor="${escapeHtml(factor.factorId)}">${escapeHtml(factor.name)}<small>${escapeHtml(factor.status)} / ${escapeHtml(factor.resultCount)} 条实测</small></button>`).join('');
+      return `<div class="literature-item"><div><strong>${escapeHtml(literature.title)}</strong> ${sourceLink}<small>${escapeHtml(literature.evidencePolicy || '')}</small></div><div class="literature-factor-list">${factorLinks || '<span class="source-missing">尚未登记关联因子</span>'}</div></div>`;
+    }).join('')}</div>`
+    : '';
+  elements.researchSourceFile.innerHTML = `${pipelineSources.length
+    ? `<strong>研究来源目录</strong><span class="source-trace-summary">${availableSources.length} 个项目内文件可打开；${missingSources.length} 个历史来源缺失</span><div class="source-trace-links">${pipelineSources.map((source) => source.url
+      ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.label)}</a>`
+      : `<span class="source-missing" title="${escapeHtml(source.note || '')}">${escapeHtml(source.label)}（缺失）</span>`).join('')}</div>`
+    : '当前研究来源：未登记'}${literatureHtml}`;
+  elements.researchSourceFile.title = pipelineSources.map((source) => `${source.label}: ${source.path}`).join('\n');
+  elements.researchSourceFile.querySelectorAll('[data-literature-factor]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeResearchFactor = button.dataset.literatureFactor;
+      renderResearchPipeline(currentResearchPipeline);
+    });
+  });
 
   elements.researchAssistantStatus.innerHTML = `
     <span class="tag ${pipeline.assistant?.llmStatus === 'configured' ? 'good' : 'pending'}">
@@ -2417,6 +2559,16 @@ function factorLibraryProfile(id, value, pipelineEntry) {
     macd_acceleration: 'confirmation',
     main_force_alignment: 'confirmation',
     market_capital_regime: 'environment',
+    f_anti_crowding: 'risk_filter',
+    f_close_strength: 'confirmation',
+    f_gap_risk_control: 'risk_filter',
+    f_market_regime_fit: 'environment',
+    f_medium_momentum: 'main_signal',
+    f_orderly_trend: 'confirmation',
+    f_residual_low_volatility: 'risk_filter',
+    f_short_reversal: 'confirmation',
+    f_volume_stability: 'confirmation',
+    f_volume_confirmation: 'main_signal',
     profit_growth_jq: 'fundamental',
     quality_growth_jq: 'fundamental',
     sentiment_overheat_factor: 'risk_filter',
@@ -2564,6 +2716,14 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
           ? value.requiredFields.join(', ')
         : value.formula || '-';
       const note = value.reason || value.note || value.signal || value.formula || '基于当前真实明细数据计算';
+      const referenceSources = Array.isArray(pipelineEntry?.sourceReferences)
+        ? pipelineEntry.sourceReferences.filter((source) => source.kind === 'reference_document')
+        : [];
+      const referenceSourcesHtml = referenceSources.length
+        ? `<div class="factor-reference-links">${referenceSources.map((source) => source.url
+          ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">参考文件：${escapeHtml(source.label)}</a>`
+          : `<span class="source-missing">参考文件缺失：${escapeHtml(source.path || source.label)}</span>`).join('')}</div>`
+        : '';
 
       return `
         <tr>
@@ -2588,6 +2748,7 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
               <summary>字段/口径</summary>
               <small>${explainFieldList(fields)}</small>
             </details>
+            ${referenceSourcesHtml}
           </td>
         </tr>
       `;
@@ -2635,34 +2796,48 @@ function renderFactorLibrary(summary, strategies, factorDefinitions, researchPip
 }
 
 function renderStrategyLibrary(strategies) {
-  elements.strategyLibraryList.innerHTML = strategies
+  currentStrategyDefinitions = Array.isArray(strategies) ? strategies : [];
+  elements.strategyLibraryList.innerHTML = currentStrategyDefinitions
     .map((strategy) => {
       const [label, tone] = labelForStatus(strategy.status);
       const effective = strategy.currentRealDataState?.effectiveNow || [];
       const pending = strategy.currentRealDataState?.notEffectiveYet || [];
+      const action = '';
       return `
         <article class="strategy-item">
           <div class="strategy-head">
             <div>
               <h3>${escapeHtml(strategy.name)}</h3>
+              <small>${escapeHtml(strategy.id)}</small>
               <p>${escapeHtml(strategy.dataPolicy)}</p>
             </div>
             <span class="tag ${tone}">${escapeHtml(label)}</span>
           </div>
           <div class="strategy-columns">
-            <div>
-              <strong>当前可用</strong>
-              <span>${escapeHtml(effective.join(', ') || '-')}</span>
-            </div>
-            <div>
-              <strong>等待数据</strong>
-              <span>${escapeHtml(pending.join(', ') || '-')}</span>
-            </div>
+            <div><strong>当前可用</strong><span>${escapeHtml(effective.join(', ') || '-')}</span></div>
+            <div><strong>等待数据</strong><span>${escapeHtml(pending.join(', ') || '-')}</span></div>
           </div>
+          <div class="strategy-import-actions">${action}</div>
         </article>
       `;
     })
     .join('');
+}
+
+function renderPaperStrategyManagement(strategies = currentStrategyDefinitions) {
+  if (!elements.strategyPaperManagementList) return;
+  const catalog = currentPositionStressCatalog?.strategies || [];
+  elements.strategyPaperManagementList.innerHTML = (strategies || []).map((strategy) => {
+    const executable = catalog.find((item) => item.strategyId === strategy.id && item.runnable);
+    const imported = currentPositionStressImportedIds.has(strategy.id);
+    return `<div class="strategy-paper-management-row">
+      <div><strong>${escapeHtml(strategy.name)}</strong><small>${escapeHtml(strategy.id)} · ${executable ? '可执行' : '待执行门槛'}</small></div>
+      ${executable ? (imported
+        ? `<span class="tag good">已加入模拟盘</span><button class="strategy-import-remove" type="button" data-remove-position-stress-strategy="${escapeHtml(strategy.id)}">移除</button>`
+        : `<button class="primary-lite strategy-import-add" type="button" data-import-position-stress-strategy="${escapeHtml(strategy.id)}">加入模拟盘</button>`)
+        : '<span class="tag neutral">不可加入</span>'}
+    </div>`;
+  }).join('') || '<div class="library-source">暂无研究策略。</div>';
 }
 
 function renderTextList(items) {
@@ -2776,7 +2951,20 @@ function toneForAction(actionTone) {
 function renderStrategyCard(strategy, options = {}) {
   const [label, tone] = labelForStatus(strategy.status);
   const compactClass = options.compact ? ' compact-strategy-item' : '';
+  const exportBase = `/strategy-api/joinquant-strategy-export.json?strategy=${encodeURIComponent(strategy.id)}`;
+  const exportCsv = `/strategy-api/joinquant-strategy-export.csv?strategy=${encodeURIComponent(strategy.id)}`;
+  const exportScript = `/strategy-api/joinquant-strategy-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const historicalScript = `/strategy-api/joinquant-strategy-historical-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const volatilityRegimeScript = `/strategy-api/joinquant-volatility-regime-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const marketCapScript = `/strategy-api/joinquant-market-cap-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const volatilitySizeScript = `/strategy-api/joinquant-volatility-size-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const tradingBacktestScript = `/strategy-api/joinquant-trading-backtest-script.py?strategy=${encodeURIComponent(strategy.id)}`;
+  const paperSignalJson = `/strategy-api/paper-signal-export.json?strategy=${encodeURIComponent(strategy.id)}`;
+  const paperSignalCsv = `/strategy-api/paper-signal-export.csv?strategy=${encodeURIComponent(strategy.id)}`;
+  const paperSignalZip = `/strategy-api/paper-signal-export.zip?strategy=${encodeURIComponent(strategy.id)}`;
   const canSendToStress = strategy.canSendToPositionStress || strategy.positionStressReady;
+  const imported = currentPositionStressImportedIds.has(strategy.id);
+  const importAction = '';
   return `
     <article class="strategy-item${compactClass}">
       <div class="strategy-head">
@@ -2831,17 +3019,31 @@ function renderStrategyCard(strategy, options = {}) {
         <strong>下一步</strong>
         <span>${escapeHtml(strategy.nextAction || strategy.exportStatus || '-')}</span>
       </div>
+      <div class="strategy-import-actions">${canSendToStress && imported ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">选为压测策略</button>` : ''}</div>
       ${strategy.exportable === false
         ? `<div class="strategy-export-note">
           <strong>导出状态</strong>
           <span>${escapeHtml(strategy.exportStatus || '该策略路线等待专用 JoinQuant 重建脚本，不提供通用导出。')}</span>
+          ${strategy.specialBacktestScriptEndpoint ? `
+            <div class="strategy-export-actions inline-actions">
+              <button type="button" data-strategy-download="${escapeHtml(strategy.specialBacktestScriptEndpoint)}">聚宽实测脚本</button>
+            </div>
+          ` : ''}
         </div>`
         : `<div class="strategy-export-actions">
-          ${canSendToStress ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">送入建仓压测</button>` : ''}
+          ${canSendToStress ? `<button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">选为压测策略</button>` : ''}
+          <button type="button" data-strategy-download="${escapeHtml(exportBase)}">路线JSON</button>
+          <button type="button" data-strategy-download="${escapeHtml(exportCsv)}">策略CSV</button>
+          <button type="button" data-strategy-download="${escapeHtml(exportScript)}">聚宽脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(historicalScript)}">历史脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(volatilityRegimeScript)}">波动率脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(marketCapScript)}">市值脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(volatilitySizeScript)}">交叉脚本</button>
+          <button type="button" data-strategy-download="${escapeHtml(tradingBacktestScript)}">回测脚本</button>
         </div>`}
       ${strategy.exportable === false && canSendToStress ? `
         <div class="strategy-export-actions inline-actions">
-          <button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">送入建仓压测</button>
+          <button class="primary-lite" type="button" data-position-stress-strategy="${escapeHtml(strategy.id)}">选为压测策略</button>
         </div>
       ` : ''}
     </article>
@@ -2998,6 +3200,7 @@ function renderDraftStrategies(signalPack) {
     : '<div class="empty-state"><strong>没有匹配的策略</strong><span>换一个等级、策略名、因子名、状态或周期再筛选。</span></div>';
 
   const hiddenCount = Math.max(0, filtered.length - visibleStrategies.length);
+  renderPaperStrategyManagement(currentStrategyDefinitions);
   elements.draftStrategyToggle.textContent = filtered.length <= 2
     ? '已全部显示'
     : draftStrategyExpanded
@@ -3137,6 +3340,33 @@ function renderLiveStrategies(signalPack) {
     `)
     .join('');
 }
+function renderOperationsStrategies(signalPack) {
+  const strategies = buildUnifiedStrategies(signalPack || {});
+  currentOperationsStrategies = strategies;
+  if (!elements.operationsStrategyList || !elements.operationsStrategyCount) return;
+
+  const query = String(elements.operationsStrategySearch?.value || '').trim().toLowerCase();
+  const filtered = strategies.filter((strategy) => !query || strategySearchText(strategy).includes(query));
+  elements.operationsStrategyCount.textContent = query
+    ? `${filtered.length} / ${strategies.length}`
+    : `${strategies.length} 条`;
+  elements.operationsStrategyList.innerHTML = filtered.length
+    ? filtered.map((strategy) => {
+      const [statusLabel, statusTone] = labelForStatus(strategy.status);
+      const summary = strategy.objective || strategy.dataBasis || strategy.role || '暂无策略目标说明';
+      return `
+        <article class="operations-strategy-item" role="listitem">
+          <div class="operations-strategy-item-main">
+            <strong>${escapeHtml(strategy.name || strategy.id || '未命名策略')}</strong>
+            <small>${escapeHtml(strategy.id || '-')}</small>
+          </div>
+          <span class="tag ${statusTone}">${escapeHtml(statusLabel)}</span>
+          <p>${escapeHtml(summary)}</p>
+        </article>
+      `;
+    }).join('')
+    : '<div class="operations-strategy-empty">没有匹配的策略</div>';
+}
 
 function renderBacktestCenter(status) {
   const metrics = status.metrics || {};
@@ -3173,7 +3403,7 @@ function renderBacktestCenter(status) {
     <div class="status-item">
       <div>
         <strong>导出格式</strong>
-        <span>当前仅展示可用因子和样本行数；下载入口已收口到 PY 模板。</span>
+        <span>每个因子都可单独下载；全部导出仅作为批量研究备用。</span>
       </div>
       <span class="tag good">${escapeHtml(metrics.exportableRows ?? 0)} 行</span>
     </div>
@@ -3196,134 +3426,438 @@ function renderBacktestCenter(status) {
           <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
           <td>${escapeHtml(factor.usage)}</td>
           <td>${escapeHtml(factor.blocker)}</td>
-          <td><small>${escapeHtml(factor.exportRows ?? 0)} 行</small></td>
+          <td>
+            <button
+              class="table-action"
+              data-factor-export="${escapeHtml(factor.id)}"
+              type="button"
+            >下载该因子</button>
+            <br><small>${escapeHtml(factor.exportRows ?? 0)} 行</small>
+          </td>
         </tr>
       `;
     })
     .join('');
 
+  elements.backtestFactorTable.querySelectorAll('[data-factor-export]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const factor = button.dataset.factorExport;
+      window.location.href = `/backtest-api/joinquant-factor-export.csv?factor=${encodeURIComponent(factor)}`;
+    });
+  });
+
   elements.joinquantStepList.innerHTML = (status.joinquant?.steps || [])
     .map((step) => `<li>${escapeHtml(step)}</li>`)
     .join('');
 
-  const importedResults = status.importedResults || [];
-  const factorResults = importedResults.filter((result) => !isStrategyBacktestResult(result));
-  const strategyResults = flattenStrategyResults(importedResults);
-  renderBacktestResultSummary(factorResults);
-  renderStrategyResultSummary(strategyResults);
-
-  elements.importedBacktestList.innerHTML = importedResults
-    .map((result) => {
-      const isStrategy = isStrategyBacktestResult(result);
-      const title = isStrategy
-        ? result.strategy_name || result.summary?.[0]?.strategy_name || '策略实测结果'
-        : result.factor_name || result.factor || result.name || 'JoinQuant结果';
-      const detail = isStrategy
-        ? `策略检查结果：${escapeHtml(result.summary?.length ?? 1)} 条 / 来源：${escapeHtml(plainSource(result.source || result.summary?.[0]?.source || 'joinquant'))}`
-        : `排序有效度：${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 好坏组差距：${formatPercent(result.long_short_mean ?? result.longShort)} / 来源：${escapeHtml(plainSource(result.source || 'joinquant'))}`;
-      return `
-        <div class="status-item">
-          <div>
-            <strong>${escapeHtml(title)}</strong>
-            <span>${detail}</span>
-          </div>
-          <span class="tag good">已导入</span>
-        </div>
-      `;
-    })
-    .join('') || '<div class="library-source">暂无导入结果。等你在 JoinQuant 跑完，把真实结果 JSON 粘贴回来。</div>';
 }
 
-function drawPositionStressKline(item) {
+function positionStressKlineRows(item) {
+  const rows = (item?.rows || [])
+    .filter((row) => Number.isFinite(Number(row.high)) && Number.isFinite(Number(row.low)))
+    .map((row) => ({
+      ...row,
+      amount: Number(row.amount),
+      close: Number(row.close),
+      high: Number(row.high),
+      low: Number(row.low),
+      open: Number(row.open),
+      volume: Number(row.volume),
+    }));
+  if (positionStressKlinePeriod === 'daily') return rows;
+  const buckets = new Map();
+  rows.forEach((row) => {
+    const key = positionStressKlinePeriod === 'yearly' ? String(row.date || '').slice(0, 4) : String(row.date || '').slice(0, 7);
+    if (!key) return;
+    const current = buckets.get(key);
+    if (!current) {
+      buckets.set(key, {
+        ...row,
+        amount: Number.isFinite(row.amount) ? row.amount : 0,
+        date: key,
+        high: row.high,
+        low: row.low,
+        volume: Number.isFinite(row.volume) ? row.volume : 0,
+      });
+      return;
+    }
+    current.close = row.close;
+    current.high = Math.max(current.high, row.high);
+    current.low = Math.min(current.low, row.low);
+    current.volume += Number.isFinite(row.volume) ? row.volume : 0;
+    current.amount += Number.isFinite(row.amount) ? row.amount : 0;
+    current.strategy_score = row.strategy_score;
+
+  });
+  return [...buckets.values()];
+}
+function positionStressKlineEventMatches(item, row) {
+  const rowKey = String(row?.date || '');
+  return positionStressTradeEventsFor(item).flatMap((trade) => {
+    const events = [];
+    if (trade.entryDate && (positionStressKlinePeriod === 'daily' ? String(trade.entryDate) === rowKey : String(trade.entryDate).startsWith(rowKey))) events.push({ side: 'buy', date: trade.entryDate, price: Number(trade.entryPrice ?? trade.entryClose), trade });
+    if (trade.exitDate && (positionStressKlinePeriod === 'daily' ? String(trade.exitDate) === rowKey : String(trade.exitDate).startsWith(rowKey))) events.push({ side: 'sell', date: trade.exitDate, price: Number(trade.exitPrice ?? trade.exitClose), trade });
+    return events;
+  }).filter((event) => Number.isFinite(event.price) && event.price > 0);
+}
+
+function movingAverage(rows, windowSize) {
+  return rows.map((_, index) => {
+    if (index + 1 < windowSize) return null;
+    const slice = rows.slice(index + 1 - windowSize, index + 1);
+    return slice.reduce((sum, row) => sum + row.close, 0) / windowSize;
+  });
+}
+
+function fitPositionStressKlineView(rows, force = false) {
+  const maxCount = positionStressKlinePeriod === 'yearly' ? 12 : positionStressKlinePeriod === 'monthly' ? 36 : 90;
+  const minCount = positionStressKlinePeriod === 'yearly' ? 2 : positionStressKlinePeriod === 'monthly' ? 6 : 18;
+  const desired = Math.min(maxCount, Math.max(minCount, rows.length));
+  if (force || !positionStressKlineView.count || positionStressKlineView.count > rows.length) {
+    positionStressKlineView.count = desired;
+    positionStressKlineView.start = Math.max(0, rows.length - desired);
+  }
+  positionStressKlineView.count = Math.min(Math.max(positionStressKlineView.count, minCount), Math.max(rows.length, minCount));
+  positionStressKlineView.start = Math.min(Math.max(0, positionStressKlineView.start), Math.max(0, rows.length - positionStressKlineView.count));
+}
+
+function activePositionStressKlineItem() {
+  const report = currentPositionStressReport || {};
+  const klineItems = report.kline || [];
+  return klineItems.find((item) => item.code === elements.positionStressKlineSelect?.value) || klineItems[0];
+}
+
+function setPositionStressKlineNote(message, tone = 'success') {
+  if (!elements.positionStressKlineNote || !message) return;
+  elements.positionStressKlineNote.textContent = message;
+  elements.positionStressKlineNote.dataset.tone = tone;
+}
+
+function positionStressKlineDefaultNote(report = currentPositionStressReport) {
+  const klineItems = report?.kline || [];
+  const complete = Boolean(report?.complete || report?.runGate?.formalRunAllowed);
+  const latestSelection = (report?.strategy?.dailySelections || []).at(-1);
+  const selectedCount = latestSelection?.selectedCount ?? report?.strategy?.parameters?.topN ?? klineItems.length;
+  return complete
+    ? `展示最新调仓日入选股票 K 线：${klineItems.length}/${selectedCount} 只；也可搜索本地缓存中的任意股票。`
+    : `展示当前已落地的最新入选股票 K 线：${klineItems.length}/${selectedCount} 只；也可搜索本地缓存中的任意股票。`;
+}
+
+function ensurePositionStressKlineItem(item) {
+  if (!item?.code || !currentPositionStressReport) return;
+  const klineItems = currentPositionStressReport.kline || [];
+  const index = klineItems.findIndex((candidate) => candidate.code === item.code);
+  if (index >= 0) {
+    klineItems[index] = { ...klineItems[index], ...item };
+  } else {
+    klineItems.push({ ...item, fromLocalCache: true });
+  }
+  currentPositionStressReport.kline = klineItems;
+  if (elements.positionStressKlineSelect && ![...elements.positionStressKlineSelect.options].some((option) => option.value === item.code)) {
+    const option = document.createElement('option');
+    option.value = item.code;
+    option.textContent = `${klineItems.length}. ${item.name || item.code} ${item.code} 本地缓存`;
+    elements.positionStressKlineSelect.append(option);
+  }
+}
+
+function positionStressKlineSearchText(item, index) {
+  return [
+    String(index + 1),
+    item?.code,
+    item?.security,
+    item?.name,
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
+function findPositionStressKlineItem(query) {
+  const term = String(query || '').trim().toLowerCase();
+  if (!term) return null;
+  const klineItems = currentPositionStressReport?.kline || [];
+  const numericIndex = /^\d+$/.test(term) ? Number(term) - 1 : -1;
+  if (numericIndex >= 0 && numericIndex < klineItems.length) {
+    return klineItems[numericIndex];
+  }
+  return klineItems.find((item, index) => positionStressKlineSearchText(item, index).includes(term)) || null;
+}
+
+function selectPositionStressKlineItem(item, options = {}) {
+  if (!item || !elements.positionStressKlineSelect) return;
+  ensurePositionStressKlineItem(item);
+  elements.positionStressKlineSelect.value = item.code;
+  if (options.syncSearch && elements.positionStressKlineSearch) {
+    const klineItems = currentPositionStressReport?.kline || [];
+    const index = klineItems.findIndex((candidate) => candidate.code === item.code);
+    elements.positionStressKlineSearch.value = index >= 0 ? `${index + 1}. ${item.name || item.code}` : (item.name || item.code || '');
+  }
+  positionStressKlineView.hoverIndex = null;
+  elements.positionStressKlineTooltip.hidden = true;
+  refreshPositionStressKline({ resetView: options.resetView });
+  if (options.note) setPositionStressKlineNote(options.note, options.noteTone || 'success');
+}
+
+async function searchPositionStressKlineCache(query) {
+  const term = String(query || '').trim();
+  if (!term) return null;
+  const params = new URLSearchParams({ q: term });
+  try {
+    return await request(`/position-stress-api/kline-search?${params.toString()}`);
+  } catch (error) {
+    return null;
+  }
+}
+
+async function handlePositionStressKlineSearch(query) {
+  const requestId = ++positionStressKlineSearchRequestId;
+  const item = findPositionStressKlineItem(query);
+  if (item) {
+    selectPositionStressKlineItem(item, { resetView: true });
+    setPositionStressKlineNote(positionStressKlineDefaultNote(), 'success');
+    return;
+  }
+  const term = String(query || '').trim();
+  if (term.length < 2) {
+    setPositionStressKlineNote(positionStressKlineDefaultNote(), 'success');
+    return;
+  }
+  setPositionStressKlineNote('当前策略名单未命中，正在查找本地全市场行情缓存...', 'success');
+  const response = await searchPositionStressKlineCache(term);
+  if (requestId !== positionStressKlineSearchRequestId) return;
+  if (response?.item) {
+    selectPositionStressKlineItem(response.item, {
+      note: response.message || `已从本地行情缓存加载 ${response.item.name || response.item.code}。`,
+      resetView: true,
+      syncSearch: true,
+    });
+    return;
+  }
+  setPositionStressKlineNote(`当前策略名单和本地行情缓存都没有命中：${term}`, 'error');
+}
+
+function drawPositionStressKline(item, options = {}) {
   const canvas = elements.positionStressKlineCanvas;
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const width = canvas.width;
-  const height = canvas.height;
-  const padding = 44;
-  const rows = (item?.rows || []).filter((row) => Number.isFinite(Number(row.high)) && Number.isFinite(Number(row.low)));
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = Math.max(760, Math.floor(rect.width || canvas.clientWidth || 1280));
+  const cssHeight = Math.max(480, Math.floor(rect.height || 520));
+  if (canvas.width !== Math.floor(cssWidth * dpr) || canvas.height !== Math.floor(cssHeight * dpr)) {
+    canvas.width = Math.floor(cssWidth * dpr);
+    canvas.height = Math.floor(cssHeight * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = cssWidth;
+  const height = cssHeight;
+  const rows = positionStressKlineRows(item);
+  fitPositionStressKlineView(rows, options.resetView);
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
   if (!rows.length) {
     ctx.fillStyle = '#607086';
     ctx.font = '16px sans-serif';
-    ctx.fillText('暂无K线数据', padding, height / 2);
+    ctx.fillText('暂无K线数据', 48, height / 2);
     return;
   }
 
-  const highs = rows.map((row) => Number(row.high));
-  const lows = rows.map((row) => Number(row.low));
+  const leftPad = 58;
+  const rightPad = 72;
+  const topPad = 36;
+  const bottomPad = 34;
+  const volumeHeight = 90;
+  const gap = 16;
+  const chartWidth = width - leftPad - rightPad;
+  const priceHeight = height - topPad - bottomPad - volumeHeight - gap;
+  const volumeTop = topPad + priceHeight + gap;
+  const start = Math.floor(positionStressKlineView.start);
+  const count = Math.min(Math.floor(positionStressKlineView.count), rows.length);
+  const visible = rows.slice(start, start + count);
+  const ma5 = movingAverage(rows, 5);
+  const ma20 = movingAverage(rows, 20);
+  const highs = visible.map((row) => row.high);
+  const lows = visible.map((row) => row.low);
+  const maVisible = [...ma5.slice(start, start + count), ...ma20.slice(start, start + count)].filter((value) => Number.isFinite(value));
+  if (maVisible.length) {
+    highs.push(Math.max(...maVisible));
+    lows.push(Math.min(...maVisible));
+  }
   const maxPrice = Math.max(...highs);
   const minPrice = Math.min(...lows);
   const span = Math.max(maxPrice - minPrice, 0.01);
-  const paddedMax = maxPrice + span * 0.08;
-  const paddedMin = minPrice - span * 0.08;
+  const paddedMax = maxPrice + span * 0.10;
+  const paddedMin = minPrice - span * 0.10;
   const paddedSpan = Math.max(paddedMax - paddedMin, 0.01);
-  const chartHeight = height - padding * 2;
-  const chartWidth = width - padding * 2;
+  const maxVolume = Math.max(...visible.map((row) => Number.isFinite(row.volume) ? row.volume : 0), 1);
 
   function y(price) {
-    return padding + ((paddedMax - price) / paddedSpan) * chartHeight;
+    return topPad + ((paddedMax - price) / paddedSpan) * priceHeight;
+  }
+
+  function x(index) {
+    const slot = chartWidth / Math.max(visible.length, 1);
+    return leftPad + slot * index + slot / 2;
   }
 
   ctx.strokeStyle = '#d7e0ea';
   ctx.lineWidth = 1;
-  for (let i = 0; i < 5; i += 1) {
-    const yy = padding + (chartHeight / 4) * i;
+  ctx.font = '12px sans-serif';
+  for (let i = 0; i <= 5; i += 1) {
+    const yy = topPad + (priceHeight / 5) * i;
+    const price = paddedMax - (paddedSpan / 5) * i;
     ctx.beginPath();
-    ctx.moveTo(padding, yy);
-    ctx.lineTo(width - padding, yy);
+    ctx.moveTo(leftPad, yy);
+    ctx.lineTo(width - rightPad, yy);
     ctx.stroke();
+    ctx.fillStyle = '#607086';
+    ctx.fillText(formatNumber(price, 2), width - rightPad + 10, yy + 4);
   }
 
-  const slot = chartWidth / Math.max(rows.length, 1);
-  const candleWidth = Math.max(12, Math.min(34, slot * 0.34));
-
-  const closes = rows.map((row) => Number(row.close));
-  ctx.strokeStyle = '#146eb4';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  closes.forEach((close, index) => {
-    const x = padding + slot * index + slot / 2;
-    const yy = y(close);
-    if (index === 0) ctx.moveTo(x, yy);
-    else ctx.lineTo(x, yy);
+  const firstOpen = visible[0]?.open;
+  const latestClose = visible.at(-1)?.close;
+  [firstOpen, latestClose].filter((value) => Number.isFinite(value)).forEach((value, index) => {
+    const yy = y(value);
+    ctx.strokeStyle = index === 0 ? '#95a3b5' : '#146eb4';
+    ctx.setLineDash(index === 0 ? [6, 5] : [4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(leftPad, yy);
+    ctx.lineTo(width - rightPad, yy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = index === 0 ? '#607086' : '#146eb4';
+    ctx.fillText(index === 0 ? `开盘 ${formatNumber(value, 2)}` : `最新 ${formatNumber(value, 2)}`, leftPad + 8, yy - 6);
   });
-  ctx.stroke();
 
-  rows.forEach((row, index) => {
-    const x = padding + slot * index + slot / 2;
-    const open = Number(row.open);
-    const close = Number(row.close);
-    const high = Number(row.high);
-    const low = Number(row.low);
+  const slot = chartWidth / Math.max(visible.length, 1);
+  const candleWidth = Math.max(4, Math.min(18, slot * 0.58));
+
+  function drawLine(values, color, label, labelX) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    let moved = false;
+    values.slice(start, start + count).forEach((value, index) => {
+      if (!Number.isFinite(value)) return;
+      const xx = x(index);
+      const yy = y(value);
+      if (!moved) {
+        ctx.moveTo(xx, yy);
+        moved = true;
+      } else {
+        ctx.lineTo(xx, yy);
+      }
+    });
+    if (moved) ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fillText(label, labelX, topPad - 12);
+  }
+
+  drawLine(ma5, '#e0a326', 'MA5', leftPad + 260);
+  drawLine(ma20, '#6d5bd0', 'MA20', leftPad + 308);
+
+  visible.forEach((row, index) => {
+    const xx = x(index);
+    const open = row.open;
+    const close = row.close;
+    const high = row.high;
+    const low = row.low;
     const up = close >= open;
     const color = up ? '#d64b4b' : '#0f8b6f';
-    ctx.strokeStyle = '#162033';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.moveTo(x, y(high));
-    ctx.lineTo(x, y(low));
+    ctx.moveTo(xx, y(high));
+    ctx.lineTo(xx, y(low));
     ctx.stroke();
     const top = y(Math.max(open, close));
     const bottom = y(Math.min(open, close));
-    ctx.fillStyle = up ? 'rgba(214, 75, 75, 0.82)' : 'rgba(15, 139, 111, 0.82)';
+    ctx.fillStyle = up ? 'rgba(214, 75, 75, 0.82)' : '#ffffff';
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.fillRect(x - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 3));
-    ctx.strokeRect(x - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 3));
-    ctx.fillStyle = '#607086';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(String(row.date).slice(5), x - 16, height - 16);
+    ctx.lineWidth = 1.4;
+    ctx.fillRect(xx - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 2));
+    ctx.strokeRect(xx - candleWidth / 2, top, candleWidth, Math.max(bottom - top, 2));
+
+    const volumeBarHeight = ((Number.isFinite(row.volume) ? row.volume : 0) / maxVolume) * (volumeHeight - 18);
+    ctx.fillStyle = up ? 'rgba(214, 75, 75, 0.45)' : 'rgba(15, 139, 111, 0.45)';
+    ctx.fillRect(xx - candleWidth / 2, volumeTop + volumeHeight - volumeBarHeight, candleWidth, volumeBarHeight);
   });
+  visible.forEach((row, index) => {
+    const events = positionStressKlineEventMatches(item, row);
+    if (!events.length) return;
+    const xx = x(index);
+    events.forEach((event) => {
+      const buy = event.side === 'buy';
+      const yy = y(event.price);
+      const color = buy ? '#0f8b6f' : '#d64b4b';
+      const markerY = buy ? Math.max(topPad + 12, yy - 34) : Math.min(volumeTop - 12, yy + 34);
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (buy) {
+        ctx.moveTo(xx, markerY - 10); ctx.lineTo(xx - 7, markerY + 3); ctx.lineTo(xx - 3, markerY + 3); ctx.lineTo(xx - 3, markerY + 11); ctx.lineTo(xx + 3, markerY + 11); ctx.lineTo(xx + 3, markerY + 3); ctx.lineTo(xx + 7, markerY + 3);
+      } else {
+        ctx.moveTo(xx, markerY + 10); ctx.lineTo(xx - 7, markerY - 3); ctx.lineTo(xx - 3, markerY - 3); ctx.lineTo(xx - 3, markerY - 11); ctx.lineTo(xx + 3, markerY - 11); ctx.lineTo(xx + 3, markerY - 3); ctx.lineTo(xx + 7, markerY - 3);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(buy ? 'BUY' : 'SELL', xx + 9, buy ? markerY + 4 : markerY - 4);
+    });
+  });
+
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#0f8b6f';
+  ctx.fillText('▲ BUY', leftPad + 370, topPad - 12);
+  ctx.fillStyle = '#d64b4b';
+  ctx.fillText('▼ SELL', leftPad + 430, topPad - 12);
+
+  const highRow = visible.reduce((best, row, index) => (row.high > best.row.high ? { row, index } : best), { row: visible[0], index: 0 });
+  const lowRow = visible.reduce((best, row, index) => (row.low < best.row.low ? { row, index } : best), { row: visible[0], index: 0 });
+  ctx.fillStyle = '#162033';
+  ctx.font = '12px sans-serif';
+  ctx.fillText(`高 ${formatNumber(highRow.row.high, 2)}`, x(highRow.index) + 6, y(highRow.row.high) - 6);
+  ctx.fillText(`低 ${formatNumber(lowRow.row.low, 2)}`, x(lowRow.index) + 6, y(lowRow.row.low) + 16);
+
+  ctx.strokeStyle = '#d7e0ea';
+  ctx.beginPath();
+  ctx.moveTo(leftPad, volumeTop);
+  ctx.lineTo(width - rightPad, volumeTop);
+  ctx.stroke();
+  ctx.fillStyle = '#607086';
+  ctx.fillText(`成交量 max ${formatNumber(maxVolume / 10000, 0)}万`, leftPad, volumeTop + 14);
+
+  const tickEvery = Math.max(1, Math.ceil(visible.length / 8));
+  visible.forEach((row, index) => {
+    if (index % tickEvery !== 0 && index !== visible.length - 1) return;
+    ctx.fillStyle = '#607086';
+    ctx.fillText(positionStressKlinePeriod === 'daily' ? String(row.date).slice(5) : row.date, x(index) - 18, height - 12);
+  });
+
+  const hoverIndex = Number.isInteger(positionStressKlineView.hoverIndex) ? positionStressKlineView.hoverIndex : null;
+  if (hoverIndex !== null && hoverIndex >= 0 && hoverIndex < visible.length) {
+    const row = visible[hoverIndex];
+    const xx = x(hoverIndex);
+    ctx.strokeStyle = '#162033';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(xx, topPad);
+    ctx.lineTo(xx, volumeTop + volumeHeight);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(leftPad, y(row.close));
+    ctx.lineTo(width - rightPad, y(row.close));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   ctx.fillStyle = '#162033';
   ctx.font = '16px sans-serif';
-  ctx.fillText(`${item.name || item.code} ${item.code || ''}`, padding, 24);
+  ctx.fillText(`${item.name || item.code} ${item.code || ''}`, leftPad, 24);
   ctx.fillStyle = '#607086';
   ctx.font = '13px sans-serif';
-  ctx.fillText(`策略分 ${formatNumber(item.latestScore, 4)} / ${rows.length} 根日K / 蓝线=收盘`, padding + 170, 24);
+  const periodLabel = positionStressKlinePeriod === 'yearly' ? '年K' : positionStressKlinePeriod === 'monthly' ? '月K' : '日K';
+  ctx.fillText(`${periodLabel} ${visible.length}/${rows.length} 根 / 滚轮缩放 / 拖拽平移 / 策略分 ${formatNumber(item.latestScore, 4)}`, leftPad + 170, 24);
 }
 
 function formatAmountYi(value) {
@@ -3417,39 +3951,210 @@ function drawPositionStressEquity(curve = []) {
   ctx.fillText(`起点 1.0000 / 终点 ${formatNumber(values.at(-1), 4)}`, padding + 76, 24);
 }
 
+function positionStressControlMismatches(report) {
+  const mismatches = [];
+  const dateRange = report?.requestedDateRange || {};
+  const parameters = report?.strategy?.parameters || {};
+  const start = elements.positionStressStart?.value || '';
+  const end = elements.positionStressEnd?.value || '';
+  const topN = Number(elements.positionStressTopN?.value || 0);
+  const capital = Number(elements.positionStressCapital?.value || 0);
+  const strategyId = currentPositionStressExplicitStrategyId || elements.positionStressStrategySelect?.value || '';
+  if (start && dateRange.start && start !== dateRange.start) mismatches.push('开始日期');
+  if (end && dateRange.end && end !== dateRange.end) mismatches.push('结束日期');
+  if (Number.isFinite(topN) && topN > 0 && parameters.topN !== undefined && topN !== Number(parameters.topN)) mismatches.push('持仓数量');
+  if (Number.isFinite(capital) && capital > 0 && parameters.capital !== undefined && capital !== Number(parameters.capital)) mismatches.push('初始资金');
+  if (strategyId && report?.strategy?.id && strategyId !== report.strategy.id) mismatches.push('压测策略');
+  return mismatches;
+}
+function positionStressCoverageLabel(mode) {
+  const labels = {
+    broad_pool_min_tradable: '宽股票池，按每日最低可交易样本覆盖',
+    selected_codes_relaxed: '指定股票名单，放宽覆盖检查',
+    auto_cache_all_relaxed: '全缓存全A，放宽覆盖检查',
+    strict_pool_full_coverage: '核心股票池，要求严格全覆盖',
+  };
+  return labels[mode] || String(mode || '未标注').replaceAll('_', ' ');
+}
+
+function positionStressHistoryPoolLabel(item) {
+  const size = Number(item?.universe?.size ?? item?.stockCount ?? 0);
+  const source = String(item?.universe?.sourceFile || '').toLowerCase();
+  if (size === 500 && source.includes('csi500_pool')) return '当前中证500专项';
+  if (size === 3000 || source.includes('core_3000')) return '历史3000只核心池';
+  if (size === 5578 || source.includes('auto_cache_all')) return '历史5578只全缓存全A';
+  if (size) return `${size}只股票池`;
+  return '股票池未标注';
+}
+
+function positionStressHistoryOptionLabel(item) {
+  const range = item?.requestedDateRange || {};
+  const dates = [range.start, range.end].filter(Boolean).join(' 至 ');
+  const pool = positionStressHistoryPoolLabel(item);
+  const status = item?.complete ? '完整' : (item?.status || '未完成');
+  return `${pool} / ${dates || '日期未标注'} / ${item?.stockCount ?? '-'}只 / ${status}`;
+}
+
+function renderPositionStressHistory(history = []) {
+  currentPositionStressHistory = Array.isArray(history) ? history : [];
+  const historyMaxCount = Math.max(0, ...currentPositionStressHistory.map((item) => Number(item.stockCount || item.universe?.size || 0)));
+  if (elements.positionStressHistoryMaxCount) elements.positionStressHistoryMaxCount.textContent = `历史最大覆盖：${historyMaxCount || '-'} 只`;
+  const select = elements.positionStressHistorySelect;
+  if (!select) return;
+  const current = currentPositionStressReport || {};
+  const currentPath = current.reportPath || '';
+  const entries = [...currentPositionStressHistory];
+  if (currentPath && !entries.some((item) => item.reportPath === currentPath)) {
+    entries.unshift({
+      complete: current.complete,
+      coverage: { mode: current.coverage?.mode || '' },
+      generatedAt: current.generatedAt || '',
+      reportPath: currentPath,
+      requestedDateRange: current.requestedDateRange || {},
+      rowCount: current.rowCount,
+      status: current.status,
+      stockCount: current.stockCount,
+      strategy: current.strategy || {},
+      universe: current.universe || {},
+    });
+  }
+  select.innerHTML = entries.length
+    ? entries.map((item) => `<option value="${escapeHtml(item.reportPath || '')}">${escapeHtml(positionStressHistoryOptionLabel(item))}</option>`).join('')
+    : '<option value="">暂无历史报告</option>';
+  if (currentPath && entries.some((item) => item.reportPath === currentPath)) {
+    select.value = currentPath;
+  }
+}
+
+
+function renderPositionStressUniverseContext(report = {}) {
+  if (!elements.positionStressUniverseContext) return;
+  const universe = report.universe || {};
+  const sourceFile = universe.sourceFile || report.artifacts?.universeFile || '未标注';
+  const size = universe.size ?? report.stockCount ?? '-';
+  const mode = report.coverage?.mode || '';
+  const poolLabel = positionStressHistoryPoolLabel({ stockCount: report.stockCount, universe });
+  const warning = Number(size) === 500 || String(sourceFile).toLowerCase().includes('csi500_pool')
+    ? '当前最新报告是中证500专项池，股票数不代表全部历史压测。'
+    : '历史压测应按报告标注的股票池口径比较，不能只看单个报告的股票数。';
+  elements.positionStressUniverseContext.innerHTML = `
+    <strong>当前口径：${escapeHtml(poolLabel)}</strong>
+    <span>${escapeHtml(warning)}</span>
+    <span>覆盖股票 ${escapeHtml(report.stockCount ?? '-')} 只 / 股票池规模 ${escapeHtml(size)} 只；股票池文件：${escapeHtml(sourceFile)}；覆盖模式：${escapeHtml(positionStressCoverageLabel(mode))}。</span>
+    <span>历史版本包括3000只核心池和5578只全缓存全A（若存在），请通过上方选择器切换查看。</span>
+  `;
+}
+function positionStressTradeEventsFor(item, report = currentPositionStressReport) {
+  const code = String(item?.code || '').trim();
+  return (report?.strategy?.trades || []).filter((trade) => String(trade.code || '').trim() === code);
+}
+
+function renderPositionStressRunRecords(runs = currentPositionStressRuns, report = currentPositionStressReport) {
+  currentPositionStressRuns = Array.isArray(runs) ? runs : [];
+  const activeRecord = report ? {
+    runId: report.generatedAt ? `当前运行 ${String(report.generatedAt).replace('T', ' ')}` : '当前运行',
+    generatedAt: report.generatedAt || '',
+    strategy: report.strategy || {},
+    dateRange: report.requestedDateRange || {},
+    selectionCount: (report.strategy?.dailySelections || []).reduce((sum, day) => sum + Number(day.selectedCount || day.items?.length || 0), 0),
+    selectedStockCount: new Set((report.strategy?.dailySelections || []).flatMap((day) => (day.items || []).map((item) => item.code)).filter(Boolean)).size,
+    tradeCount: (report.strategy?.trades || []).length,
+    buyCount: (report.strategy?.trades || []).filter((trade) => trade.entryDate).length,
+    sellCount: (report.strategy?.trades || []).filter((trade) => trade.exitDate).length,
+    selectedStocks: (report.strategy?.dailySelections || []).flatMap((day) => (day.items || []).map((item) => ({ ...item, date: day.date }))),
+    trades: report.strategy?.trades || [],
+  } : null;
+  const records = activeRecord ? [activeRecord, ...currentPositionStressRuns.filter((item) => item.reportPath !== report?.reportPath)] : currentPositionStressRuns;
+  const selected = records.flatMap((run) => (run.selectedStocks || []).map((stock) => {
+    const trade = (run.trades || []).find((item) => item.code === stock.code && (!item.signalDate || item.signalDate === stock.date));
+    return { ...stock, trade, run };
+  }));
+  if (elements.positionStressRunSummary) {
+    const latest = records[0];
+    elements.positionStressRunSummary.textContent = latest
+      ? `${latest.strategy?.name || latest.strategy?.id || '策略'} / ${latest.selectionCount || 0} 条选股 / 买 ${latest.buyCount || 0} / 卖 ${latest.sellCount || 0}`
+      : '暂无策略运行记录';
+  }
+  if (elements.positionStressRunBatches) {
+    elements.positionStressRunBatches.innerHTML = records.slice(0, 5).map((run) => `<span class="tag neutral">${escapeHtml(run.runId || '-')} · ${escapeHtml(run.generatedAt || '')} · 选股 ${escapeHtml(run.selectionCount ?? 0)} · 交易 ${escapeHtml(run.tradeCount ?? 0)}</span>`).join('') || '<span class="library-source">暂无已保存运行批次</span>';
+  }
+  if (elements.positionStressRunRecordTable) {
+    elements.positionStressRunRecordTable.innerHTML = selected.slice(0, 300).map((item) => {
+      const trade = item.trade || {};
+      return `<tr>
+        <td>${escapeHtml(item.date || trade.signalDate || '-')}</td>
+        <td><strong>${escapeHtml(item.name || trade.name || item.code || '-')}</strong><br><small>${escapeHtml(item.code || trade.code || '')}</small></td>
+        <td>${formatNumber(item.strategy_score ?? trade.strategyScore, 4)} / ${escapeHtml(item.rank ?? trade.entryRank ?? '-')}</td>
+        <td>${escapeHtml(trade.entryDate || '-')}<br><small>${formatNumber(trade.entryPrice ?? trade.entryClose, 2)}</small></td>
+        <td>${escapeHtml(trade.exitDate || '-')}<br><small>${formatNumber(trade.exitPrice ?? trade.exitClose, 2)}</small></td>
+        <td class="${Number(trade.return) >= 0 ? 'positive-number' : 'negative-number'}">${formatPercent(trade.return, 2)}</td>
+        <td>${escapeHtml(trade.exitReason || (item.trade ? '持仓中/未卖出' : '-'))}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="7">暂无选股记录。请先运行策略。</td></tr>';
+  }
+}
+
 function renderPositionStress(report) {
   if (!elements.positionStressComplete) return;
-  currentPositionStressReport = report;
-  const metrics = report.strategy?.metrics || {};
+  currentPositionStressReport = report || {};
+  renderPositionStressRunRecords(currentPositionStressRuns, currentPositionStressReport);
+  renderPositionStressUniverseContext(currentPositionStressReport);
+  const metrics = report?.strategy?.metrics || {};
+  const parameters = report?.strategy?.parameters || {};
+  const isConstrainedLiquidity = parameters.executionModel === 'constrained_liquidity' || metrics.executionModel === 'constrained_liquidity';
   const gate = report.runGate || {};
   const complete = Boolean(report.complete || gate.formalRunAllowed);
   const dateRange = report.requestedDateRange || {};
+  const staleControls = positionStressControlMismatches(report);
+  const controlsStale = staleControls.length > 0;
   const missingText = (report.missingDates || []).length ? `缺 ${report.missingDates.join(', ')}` : '日期完整';
-  const statusTone = complete ? 'good' : 'watch';
+  const statusTone = controlsStale ? 'pending' : complete ? 'good' : 'watch';
 
-  elements.positionStressComplete.innerHTML = `<span class="tag ${statusTone}">${complete ? '完整' : '缺数据'}</span>`;
+  elements.positionStressComplete.innerHTML = `<span class="tag ${statusTone}">${controlsStale ? '待重算' : complete ? '完整' : '缺数据'}</span>`;
   elements.positionStressDateRange.textContent = `${dateRange.start || '-'} 至 ${dateRange.end || '-'} / ${missingText}`;
   elements.positionStressStockCount.textContent = report.stockCount ?? '-';
+  const reportTopN = Number(parameters.dailyTopN ?? parameters.topN ?? report.strategy?.dailyTopN ?? 0);
+  const reportMaxHoldings = Number(parameters.maxHoldings ?? report.strategy?.maxHoldings ?? reportTopN);
+  if (elements.positionStressTopN && reportTopN > 0) elements.positionStressTopN.value = reportTopN;
+  if (elements.positionStressMaxHoldings && reportMaxHoldings > 0) elements.positionStressMaxHoldings.value = reportMaxHoldings;
+  if (elements.positionStressTopN) elements.positionStressTopN.readOnly = true;
+  if (elements.positionStressMaxHoldings) elements.positionStressMaxHoldings.readOnly = true;
   elements.positionStressRowCount.textContent = `${report.rowCount ?? 0} 行 / ${report.actualDates?.length ?? 0} 天`;
   elements.positionStressReturn.textContent = formatPercent(metrics.totalReturn, 2);
-  elements.positionStressRunStatus.textContent = report.strategy?.runStatus === 'complete_short_window' ? '短窗压测' : '仅链路预览';
+  elements.positionStressRunStatus.textContent = controlsStale ? '参数待重算' : isConstrainedLiquidity ? '真实成交约束' : report.strategy?.runStatus === 'complete_short_window' ? '短窗压测' : '仅链路预览';
   elements.positionStressDrawdown.textContent = formatPercent(metrics.maxDrawdown, 2);
   elements.positionStressTrades.textContent = `${metrics.tradeCount ?? 0} 笔 / ${metrics.simulatedReturnDays ?? 0} 天`;
-  elements.positionStressMessage.textContent = gate.reason || report.sourceMessage || '等待报告';
-  elements.positionStressMessage.dataset.tone = complete ? 'success' : 'error';
-  elements.positionStressArtifacts.textContent = report.artifacts?.dailyCsv ? `行情文件：${report.artifacts.dailyCsv}` : '等待产物';
+  elements.positionStressMessage.textContent = controlsStale
+    ? `参数已变更（${staleControls.join('、')}），点击运行重新计算。`
+    : gate.reason || report.sourceMessage || '等待报告';
+  elements.positionStressMessage.dataset.tone = controlsStale ? 'error' : complete ? 'success' : 'error';
+  const reportFileText = report.reportPath ? `报告：${report.reportPath}` : '';
+  elements.positionStressArtifacts.textContent = report.artifacts?.dailyCsv
+    ? `行情文件：${report.artifacts.dailyCsv}${reportFileText ? ` / ${reportFileText}` : ''}`
+    : reportFileText || '等待产物';
   elements.positionStressArtifacts.title = report.artifacts?.dailyCsv ? fieldHint('source_file', report.artifacts.dailyCsv) : '';
   if (elements.positionStressSelectedStrategy) {
-    const selected = report.selectedStrategy || currentPositionStressCatalog?.current || null;
-    const strategyName = report.strategy?.name || selected?.name || '默认策略';
-    const adapterNote = report.strategy?.adapterNote || selected?.runnableReason || '从策略池选择达标策略后，这里会显示压测口径。';
-    const gateStatus = selected?.gateStatus || report.strategy?.adapter || '默认口径';
+    const runnable = currentPositionStressCatalog?.strategies || [];
+    const reportStrategyId = report.strategy?.id || report.selectedStrategy?.strategyId || '';
+    const hasPendingSelection = currentPositionStressExplicitStrategyId && currentPositionStressExplicitStrategyId !== reportStrategyId;
+    const pendingStrategy = hasPendingSelection
+      ? runnable.find((item) => item.strategyId === currentPositionStressExplicitStrategyId)
+      : null;
+    const selected = pendingStrategy || report.selectedStrategy || currentPositionStressCatalog?.current || null;
+    const strategyName = pendingStrategy?.name || report.strategy?.name || selected?.name || '等待选择策略';
+    const adapterNote = pendingStrategy
+      ? '已选择，点击运行后将保存策略、执行策略选股并生成建仓压力测试结果。'
+      : report.strategy?.adapterNote || selected?.runnableReason || '从策略池选择达标策略后，点击运行生成结果。';
+    const gateStatus = pendingStrategy ? '待运行' : selected?.gateStatus || report.strategy?.adapter || '未运行';
+    const selectedTopN = Number(pendingStrategy?.dailyTopN ?? selected?.dailyTopN ?? parameters.dailyTopN ?? parameters.topN ?? reportTopN);
+    const selectedMaxHoldings = Number(pendingStrategy?.maxHoldings ?? selected?.maxHoldings ?? parameters.maxHoldings ?? reportMaxHoldings);
     elements.positionStressSelectedStrategy.innerHTML = `
       <div>
         <strong>${escapeHtml(strategyName)}</strong>
         <span>${escapeHtml(adapterNote)}</span>
+        <span>每日选股：前${escapeHtml(selectedTopN)}只；最大持仓：${escapeHtml(selectedMaxHoldings)}只；两项由策略配置锁定。</span>
       </div>
-      <span class="tag ${selected ? 'good' : 'pending'}">${escapeHtml(selected ? gateStatus || '已选择' : '未选择')}</span>
+      <span class="tag ${pendingStrategy ? 'pending' : selected ? 'good' : 'pending'}">${escapeHtml(selected ? gateStatus || '已选择' : '未选择')}</span>
     `;
   }
 
@@ -3457,7 +4162,13 @@ function renderPositionStress(report) {
   if (elements.positionStressResultSummary) {
     const summaryCards = [
       ['总收益', formatPercent(metrics.totalReturn, 2)],
+      ['期初资金', formatCurrency(metrics.initialCapital, 0)],
+      ['期末资产', formatCurrency(metrics.endingValue, 0)],
+      ['累计盈亏', formatCurrency(metrics.totalPnl, 0)],
       ['最大回撤', formatPercent(metrics.maxDrawdown, 2)],
+      ['累计成本', formatCurrency(metrics.totalCostAmount, 0)],
+      ['平均成交率', formatPercent(metrics.averageFillRatio, 1)],
+      ['换手倍数', formatNumber(metrics.turnover, 2)],
       ['收益回撤比', formatNumber(metrics.returnDrawdownRatio, 2)],
       ['Calmar 类指标', formatNumber(metrics.calmarLike, 2)],
       ['收益波动比', formatNumber(metrics.returnVolatilityRatio, 2)],
@@ -3474,7 +4185,16 @@ function renderPositionStress(report) {
       ['交易胜率', formatPercent(metrics.tradeWinRate, 1)],
       ['平均单笔', formatPercent(metrics.averageTradeReturn, 2)],
       ['最差单笔', formatPercent(metrics.worstTradeReturn, 2)],
+      ['成交订单', `${escapeHtml(metrics.tradeCount ?? 0)}/${escapeHtml(metrics.orderCount ?? 0)} 笔`],
       ['持仓覆盖', `${escapeHtml(metrics.uniqueHeldStocks ?? '-')}只`],
+      ...(isConstrainedLiquidity ? [
+        ['未成交买入', formatCurrency(metrics.unfilledBuyNotional, 0)],
+        ['未卖出金额', formatCurrency(metrics.unfilledSellNotional, 0)],
+        ['最大滞留金额', formatCurrency(metrics.maxLingeringNotional, 0)],
+        ['最大滞留天数', `${escapeHtml(metrics.maxLingeringDays ?? 0)} 天`],
+        ['最大参与率', formatPercent(metrics.maxSingleStockParticipation, 2)],
+        ['95分位参与率', formatPercent(metrics.p95Participation, 2)],
+      ] : []),
     ];
     elements.positionStressResultSummary.innerHTML = summaryCards.map(([label, value]) => `
       <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
@@ -3492,8 +4212,14 @@ function renderPositionStress(report) {
       ['最差交易日', `${worstDay.date || '-'} ${formatPercent(worstDay.dailyReturn, 2)}`],
       ['调仓次数', `${metrics.rebalanceCount ?? '-'} 次`],
       ['平均持仓数', `${metrics.averageHoldingCount ?? '-'} 只`],
+      ['期末资产', formatCurrency(metrics.endingValue, 0)],
+      ['累计成本', formatCurrency(metrics.totalCostAmount, 0)],
       ['日波动', formatPercent(metrics.dailyVolatility, 2)],
       ['年化收益', formatPercent(metrics.annualizedReturn, 2)],
+      ...(isConstrainedLiquidity ? [
+        ['成交模型', '真实成交约束'],
+        ['流动性事件', `${metrics.liquidityEventCount ?? 0} 次`],
+      ] : []),
     ];
     elements.positionStressDiagnostics.innerHTML = diagnostics.map(([label, value]) => `
       <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
@@ -3548,20 +4274,25 @@ function renderPositionStress(report) {
         <td><strong class="${Number(scenario.resultReturn) >= 0 ? 'positive-number' : 'negative-number'}">${formatPercent(scenario.resultReturn, 2)}</strong></td>
         <td>${formatPercent(scenario.maxDrawdown, 2)}</td>
         <td>${escapeHtml(scenario.tradeCount ?? '-')}</td>
+        <td>${formatCurrency(scenario.endingValue, 0)}</td>
+        <td>${formatCurrency(scenario.totalCostAmount, 0)}</td>
+        <td>${formatPercent(scenario.averageFillRatio, 1)}</td>
         <td>${escapeHtml(scenario.impact)}</td>
       </tr>
-    `).join('') || '<tr><td colspan="6">暂无压力场景。</td></tr>';
+    `).join('') || '<tr><td colspan="9">暂无压力场景。</td></tr>';
 
   if (elements.positionStressTradeTable) {
-    elements.positionStressTradeTable.innerHTML = (report.strategy?.trades || []).slice(0, 80)
+    elements.positionStressTradeTable.innerHTML = (report.strategy?.trades || [])
       .map((trade) => `
         <tr>
           <td>${escapeHtml(trade.signalDate)}<br><small>${escapeHtml(trade.exitDate || '')}</small></td>
           <td><strong>${escapeHtml(trade.name)}</strong><br><small>${escapeHtml(trade.security || trade.code)}</small></td>
-          <td>${formatPercent(trade.targetWeight, 1)}<br><small>${formatNumber(trade.notional, 0)}</small></td>
-          <td><strong>${formatPercent(trade.return, 2)}</strong><br><small>${formatNumber(trade.entryClose, 2)} -> ${formatNumber(trade.exitClose, 2)}</small></td>
+          <td>${formatPercent(trade.targetWeight, 1)} / ${formatPercent(trade.actualWeight, 1)}<br><small>${formatNumber(trade.shares, 0)} 股</small></td>
+          <td>${formatCurrency(trade.filledNotional, 0)}<br><small>成交 ${formatPercent(trade.fillRatio, 1)}</small></td>
+          <td>${formatCurrency(trade.pnl, 0)}<br><small>成本 ${formatCurrency(trade.costAmount, 0)}</small></td>
+          <td><strong>${formatPercent(trade.return, 2)}</strong><br><small>${formatNumber(trade.entryPrice ?? trade.entryClose, 2)} -> ${formatNumber(trade.exitPrice ?? trade.exitClose, 2)}</small></td>
         </tr>
-      `).join('') || '<tr><td colspan="4">暂无成交明细。</td></tr>';
+      `).join('') || '<tr><td colspan="6">暂无成交明细。</td></tr>';
   }
 
   elements.positionStressDataTable.innerHTML = (report.dataTable || []).slice(0, 120)
@@ -3582,7 +4313,7 @@ function renderPositionStress(report) {
   const klineItems = report.kline || [];
   const selectedCode = elements.positionStressKlineSelect.value;
   elements.positionStressKlineSelect.innerHTML = klineItems
-    .map((item) => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.name)} ${escapeHtml(item.code)}</option>`)
+    .map((item, index) => `<option value="${escapeHtml(item.code)}">${index + 1}. ${escapeHtml(item.name)} ${escapeHtml(item.code)}</option>`)
     .join('');
   if (selectedCode && klineItems.some((item) => item.code === selectedCode)) {
     elements.positionStressKlineSelect.value = selectedCode;
@@ -3591,35 +4322,165 @@ function renderPositionStress(report) {
   if (activeItem) {
     elements.positionStressKlineSelect.value = activeItem.code;
   }
-  elements.positionStressKlineNote.textContent = complete
-    ? 'K线来自完整真实行情窗口。'
-    : 'K线来自当前已落地真实行情，缺失日期不会补画。';
+  setPositionStressKlineNote(positionStressKlineDefaultNote(report), 'success');
   drawPositionStressKline(activeItem);
 }
 
 function renderPositionStressCatalog(catalog) {
   currentPositionStressCatalog = catalog;
+  if (elements.positionStressImportedStrategyList) {
+    const imported = (catalog?.strategies || []).filter((item) => item.runnable && item.imported);
+    elements.positionStressImportedStrategyList.innerHTML = imported.length
+      ? `<strong>已导入模拟盘策略（${imported.length}）</strong>${imported.map((item) => `
+          <div class="position-stress-imported-strategy ${catalog.current?.strategyId === item.strategyId ? 'active' : ''}">
+            <div><span class="tag good">已导入</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.strategyId)} · 选${item.dailyTopN ?? 10}/持${item.maxHoldings ?? 10}</small></div>
+            <button type="button" data-select-imported-strategy="${escapeHtml(item.strategyId)}">${catalog.current?.strategyId === item.strategyId ? '当前策略' : '选择'}</button>
+          </div>`).join('')}`
+      : '<div class="library-source">暂无已导入策略，请先到研究平台策略池点击“加入模拟盘”。</div>';
+  }
   if (elements.positionStressStrategySelect) {
-    const runnable = (catalog?.strategies || []).filter((item) => item.runnable);
-    const currentId = catalog?.current?.strategyId || '';
+    const runnable = (catalog?.strategies || []).filter((item) => item.runnable && item.imported);
     elements.positionStressStrategySelect.innerHTML = [
       '<option value="">从策略池选择</option>',
-      ...runnable.map((item) => `<option value="${escapeHtml(item.strategyId)}">${escapeHtml(item.name)}</option>`),
+      ...runnable.map((item) => {
+        const topN = Number(item.dailyTopN ?? item.execution?.dailyTopN ?? 10);
+        const maxHoldings = Number(item.maxHoldings ?? item.execution?.maxHoldings ?? topN);
+        return `<option value="${escapeHtml(item.strategyId)}">${escapeHtml(item.name)} · 选${topN}/持${maxHoldings}</option>`;
+      }),
     ].join('');
-    if (currentId) elements.positionStressStrategySelect.value = currentId;
+    if (currentPositionStressExplicitStrategyId && runnable.some((item) => item.strategyId === currentPositionStressExplicitStrategyId)) {
+      elements.positionStressStrategySelect.value = currentPositionStressExplicitStrategyId;
+    } else if (catalog?.current?.strategyId && runnable.some((item) => item.strategyId === catalog.current.strategyId)) {
+      elements.positionStressStrategySelect.value = catalog.current.strategyId;
+    }
   }
   if (currentPositionStressReport) {
     renderPositionStress({ ...currentPositionStressReport, selectedStrategy: catalog.current || currentPositionStressReport.selectedStrategy });
   }
 }
 
+function selectedPositionStressStrategyId() {
+  return String(elements.positionStressStrategySelect?.value || '').trim();
+}
+
+function requireSelectedPositionStressStrategy() {
+  const strategyId = selectedPositionStressStrategyId();
+  if (!strategyId) {
+    elements.positionStressMessage.textContent = '请先从策略池选择压测策略，再运行建仓压力测试。';
+    elements.positionStressMessage.dataset.tone = 'error';
+    elements.positionStressStrategySelect?.focus();
+    return '';
+  }
+  return strategyId;
+}
+
+function refreshPositionStressKline(options = {}) {
+  drawPositionStressKline(activePositionStressKlineItem(), options);
+}
+
+function setPositionStressKlinePeriod(period) {
+  positionStressKlinePeriod = ['daily', 'monthly', 'yearly'].includes(period) ? period : 'daily';
+  elements.positionStressKlineDaily?.classList.toggle('active', positionStressKlinePeriod === 'daily');
+  elements.positionStressKlineMonthly?.classList.toggle('active', positionStressKlinePeriod === 'monthly');
+  elements.positionStressKlineYearly?.classList.toggle('active', positionStressKlinePeriod === 'yearly');
+  positionStressKlineView.hoverIndex = null;
+  elements.positionStressKlineTooltip.hidden = true;
+  refreshPositionStressKline({ resetView: true });
+}
+
+function updatePositionStressKlineTooltip(event) {
+  const canvas = elements.positionStressKlineCanvas;
+  const tooltip = elements.positionStressKlineTooltip;
+  if (!canvas || !tooltip) return;
+  const item = activePositionStressKlineItem();
+  const rows = positionStressKlineRows(item);
+  if (!rows.length) return;
+  fitPositionStressKlineView(rows);
+  const rect = canvas.getBoundingClientRect();
+  const leftPad = 58;
+  const rightPad = 72;
+  const chartWidth = rect.width - leftPad - rightPad;
+  const count = Math.min(Math.floor(positionStressKlineView.count), rows.length);
+  const slot = chartWidth / Math.max(count, 1);
+  const localX = event.clientX - rect.left;
+  const index = Math.min(Math.max(0, Math.floor((localX - leftPad) / slot)), count - 1);
+  const row = rows[Math.floor(positionStressKlineView.start) + index];
+  if (!row || localX < leftPad || localX > rect.width - rightPad) {
+    tooltip.hidden = true;
+    positionStressKlineView.hoverIndex = null;
+    refreshPositionStressKline();
+    return;
+  }
+  positionStressKlineView.hoverIndex = index;
+  const change = row.open ? row.close / row.open - 1 : null;
+  const events = positionStressKlineEventMatches(item, row);
+  const eventText = events.length
+    ? `<br><strong>${events.map((event) => `${event.side === 'buy' ? 'BUY买入' : 'SELL卖出'} ${event.date} @ ${formatNumber(event.price, 2)}`).join('<br>')}</strong>`
+    : '';
+  tooltip.innerHTML = `
+    <strong>${escapeHtml(item?.name || item?.code || '')} ${escapeHtml(row.date)}</strong>
+    开 ${formatNumber(row.open, 2)}　高 ${formatNumber(row.high, 2)}　低 ${formatNumber(row.low, 2)}　收 ${formatNumber(row.close, 2)}<br>
+    涨跌 ${formatPercent(change, 2)}　成交量 ${formatNumber(row.volume / 10000, 1)}万<br>
+    成交额 ${formatAmountYi(row.amount)}　策略分 ${formatNumber(row.strategy_score, 4)}${eventText}
+  `;
+  const tipLeft = Math.min(Math.max(10, event.clientX - rect.left + 16), rect.width - 280);
+  const tipTop = Math.min(Math.max(10, event.clientY - rect.top + 16), rect.height - 110);
+  tooltip.style.left = `${tipLeft}px`;
+  tooltip.style.top = `${tipTop}px`;
+  tooltip.hidden = false;
+  refreshPositionStressKline();
+}
+
+const viewGroups = {
+  'research-strategy': {
+    defaultView: 'factor-library',
+    subnav: 'research-strategy',
+    views: ['factor-library', 'strategy-library', 'research-pipeline'],
+  },
+  'evidence-retest': {
+    defaultView: 'backtest-center',
+    subnav: 'evidence-retest',
+    views: ['backtest-center', 'validated-results', 'factor-activity', 'strategy-results'],
+  },
+};
+
+const activeGroupViews = {
+  'research-strategy': 'factor-library',
+  'evidence-retest': 'backtest-center',
+};
+
+function groupForView(viewName) {
+  return Object.entries(viewGroups).find(([, group]) => group.views.includes(viewName))?.[0] || null;
+}
+
 function showView(viewName) {
+  const groupName = viewGroups[viewName] ? viewName : groupForView(viewName);
+  const resolvedView = groupName
+    ? (viewGroups[groupName].defaultView && viewGroups[groupName].views.includes(viewName)
+      ? viewName
+      : activeGroupViews[groupName] || viewGroups[groupName].defaultView)
+    : viewName;
+
+  if (groupName) activeGroupViews[groupName] = resolvedView;
+
   elements.views.forEach((view) => {
-    view.classList.toggle('active', view.id === `${viewName}-view`);
+    view.classList.toggle('active', view.id === `${resolvedView}-view`);
   });
 
   elements.navButtons.forEach((button) => {
-    button.classList.toggle('active', button.dataset.viewTarget === viewName);
+    const target = button.dataset.viewTarget;
+    button.classList.toggle('active', target === (groupName || resolvedView));
+  });
+
+  elements.subnavs.forEach((subnav) => {
+    const isVisible = groupName && subnav.dataset.viewSubnav === groupName;
+    subnav.hidden = !isVisible;
+  });
+
+  elements.subnavButtons.forEach((button) => {
+    const isActive = button.dataset.subviewTarget === resolvedView;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-selected', String(isActive));
   });
 }
 
@@ -3684,48 +4545,118 @@ function drawChart(equity) {
   ctx.fillRect(padding + 202, 16, 24, 4);
 }
 
-async function refreshDashboard() {
-  const [summary, factors, equity, risks, paperWatchRoutes, factorSummary, strategies, factorDefinitions, liveStrategies, backtestStatus, researchPipeline, positionStress, positionStressCatalog, bigQuantExport] = await Promise.all([
-    request('/api/summary'),
-    request('/factor-api/real-factor-results?limit=100'),
-    request('/backtest-api/equity'),
-    request('/api/risk'),
-    request('/strategy-api/paper-watch-routes'),
-    request('/factor-api/real-factor-summary'),
-    request('/strategy-api/definitions'),
-    request('/factor-api/indicator-factor-definitions'),
-    request('/strategy-api/live-signals'),
-    request('/backtest-api/research-status'),
-    request('/research-api/pipeline'),
-    request('/position-stress-api/report'),
-    request('/position-stress-api/strategies'),
-    request('/paper-watch-api/bigquant-template-export'),
-  ]);
+function setDashboardLoading(isLoading, failures = []) {
+  if (!elements.dataLoadStrip || !elements.dataLoadText) return;
+  const strip = elements.dataLoadStrip;
+  if (isLoading) {
+    delete strip.dataset.tone;
+    elements.dataLoadText.textContent = '数据加载中…';
+    strip.hidden = false;
+    return;
+  }
+  if (failures.length) {
+    strip.dataset.tone = 'error';
+    elements.dataLoadText.textContent = `部分板块加载失败：${failures.join('、')}`;
+    return;
+  }
+  strip.hidden = true;
+}
 
-  currentPositionStressCatalog = positionStressCatalog;
-  renderSummary(summary);
-  renderFactors(factors);
-  renderRisk(risks);
-  renderPaperWatchRoutes(paperWatchRoutes);
-  drawChart(equity);
-  renderFactorLibrary(factorSummary, strategies, factorDefinitions, researchPipeline);
-  renderStrategyLibrary(strategies);
-  renderLiveStrategies(liveStrategies);
-  renderBacktestCenter(backtestStatus);
-  renderResearchPipeline(researchPipeline);
-  renderPositionStress(positionStress);
-  renderPositionStressCatalog(positionStressCatalog);
-  renderBigQuantExport(bigQuantExport);
+async function refreshDashboard() {
+  setDashboardLoading(true);
+  const failures = [];
+  const tasks = [];
+  const track = (label, task, render) => {
+    tasks.push(
+      task
+        .then((data) => render(data))
+        .catch((error) => {
+          failures.push(label);
+          console.error(`[dashboard] ${label}加载失败`, error);
+        }),
+    );
+  };
+  track('策略运行记录', request('/position-stress-api/runs'), (runs) => {
+    currentPositionStressRuns = Array.isArray(runs) ? runs : [];
+    renderPositionStressRunRecords(currentPositionStressRuns);
+  });
+
+  const importedStrategiesTask = request('/position-stress-api/imported-strategies').then((state) => {
+    currentPositionStressImportedIds = new Set(state.importedStrategyIds || []);
+    return state;
+  });
+  track('模拟盘策略清单', importedStrategiesTask, (state) => {
+    renderPaperStrategyManagement(currentStrategyDefinitions);
+  });
+  const strategiesTask = request('/strategy-api/definitions');
+  track('操作台策略', request('/strategy-api/live-signals'), renderOperationsStrategies);
+  const pipelineTask = request('/research-api/pipeline');
+  track('真实因子排名', request('/factor-api/real-factor-results?limit=100'), renderFactors);
+  track('策略净值曲线', request('/backtest-api/equity'), drawChart);
+  track('组合风险', request('/api/risk'), renderRisk);
+  track('准模拟盘路线', request('/strategy-api/paper-watch-routes'), renderPaperWatchRoutes);
+  track('因子动态', request('/factor-api/activity'), renderFactorActivity);
+  track('策略池', strategiesTask, renderStrategyLibrary);
+  track('研究流水线', pipelineTask, renderResearchPipeline);
+  track('回测中心', request('/backtest-api/research-status'), renderBacktestCenter);
+
+  const catalogTask = request('/position-stress-api/strategies').then((catalog) => {
+    currentPositionStressCatalog = catalog;
+    return catalog;
+  });
+  track('压测策略目录', catalogTask, renderPositionStressCatalog);
+  track('实测策略', Promise.all([catalogTask, importedStrategiesTask]).then(([catalog]) => request('/strategy-api/live-signals').then((pack) => ({ ...pack, strategies: (pack.strategies || []).map((item) => ({ ...item, imported: currentPositionStressImportedIds.has(item.id) })), formalStrategies: (pack.formalStrategies || []).map((item) => ({ ...item, imported: currentPositionStressImportedIds.has(item.id) })) }))), renderLiveStrategies);
+  track('建仓压力测试', catalogTask.then(() => request(positionStressReportEndpoint())), renderPositionStress);
+  track('压力测试历史', request('/position-stress-api/history'), renderPositionStressHistory);
+  track(
+    '因子库',
+    Promise.all([
+      request('/factor-api/real-factor-summary'),
+      strategiesTask,
+      request('/factor-api/indicator-factor-definitions'),
+      pipelineTask,
+    ]),
+    ([factorSummary, strategies, factorDefinitions, researchPipeline]) => {
+      renderFactorLibrary(factorSummary, strategies, factorDefinitions, researchPipeline);
+    },
+  );
+
+  await Promise.all(tasks);
   bindCollapsibleData();
   requestAnimationFrame(syncCollapsibleData);
+  setDashboardLoading(false, failures);
+  return failures;
+}
+
+function positionStressDateParams() {
+  const params = new URLSearchParams();
+  const start = elements.positionStressStart?.value || '';
+  const end = elements.positionStressEnd?.value || '';
+  if (start) params.set('start', start);
+  if (end) params.set('end', end);
+  return params;
+}
+
+function positionStressEndpoint(path) {
+  const params = positionStressDateParams();
+  const suffix = params.toString();
+  return suffix ? `${path}?${suffix}` : path;
+}
+
+function positionStressReportEndpoint() {
+  return positionStressEndpoint('/position-stress-api/report');
 }
 
 async function boot() {
   try {
     const preferences = await request('/api/preferences');
     renderPreferences(preferences);
-    await refreshDashboard();
-    setFormMessage('已连接本地后端 API', 'success');
+    const failures = await refreshDashboard();
+    if (failures.length) {
+      setFormMessage(`部分数据加载失败：${failures.join('、')}`, 'error');
+    } else {
+      setFormMessage('已连接本地后端 API', 'success');
+    }
   } catch (error) {
     setFormMessage(`加载失败：${error.message}`, 'error');
   }
@@ -3834,36 +4765,86 @@ elements.formalStrategyPagination?.addEventListener('click', (event) => {
   renderFormalStrategies(currentStrategySignalPack);
 });
 
+async function refreshPositionStressImportedState() {
+  const state = await request('/position-stress-api/imported-strategies');
+  currentPositionStressImportedIds = new Set(state.importedStrategyIds || []);
+  return state;
+}
+
+async function refreshStrategyAndStressState() {
+  const [signalPack, catalog, importedState] = await Promise.all([
+    request('/strategy-api/live-signals'),
+    request('/position-stress-api/strategies'),
+    refreshPositionStressImportedState(),
+  ]);
+  currentPositionStressCatalog = catalog;
+  currentStrategySignalPack = signalPack;
+  renderPaperStrategyManagement(currentStrategyDefinitions);
+  renderLiveStrategies(signalPack);
+  renderPositionStressCatalog(catalog);
+  renderStrategyLibrary(currentStrategyDefinitions);
+  return importedState;
+}
+
+async function changeStrategyImport(strategyId, action) {
+  const endpoint = `/position-stress-api/import-strategy?strategyId=${encodeURIComponent(strategyId)}`;
+  const response = await request(endpoint, {
+    method: action === 'remove' ? 'DELETE' : 'POST',
+    ...(action === 'remove' ? {} : { body: JSON.stringify({ strategyId }), headers: { 'Content-Type': 'application/json' } }),
+  });
+  await refreshStrategyAndStressState();
+  if (elements.positionStressMessage) {
+    elements.positionStressMessage.textContent = response.message || (action === 'remove' ? '策略已移除。' : '策略已加入模拟盘。');
+    elements.positionStressMessage.dataset.tone = 'success';
+  }
+}
+
 function handleStrategyCardClick(event) {
+  const importedSelectButton = event.target.closest('[data-select-imported-strategy]');
+  if (importedSelectButton) {
+    const strategyId = importedSelectButton.dataset.selectImportedStrategy;
+    currentPositionStressExplicitStrategyId = strategyId;
+    if (elements.positionStressStrategySelect) elements.positionStressStrategySelect.value = strategyId;
+    elements.positionStressMessage.textContent = '已选择模拟盘策略，点击运行即可执行。';
+    elements.positionStressMessage.dataset.tone = 'success';
+    return;
+  }
+  const importButton = event.target.closest('[data-import-position-stress-strategy]');
+  const removeButton = event.target.closest('[data-remove-position-stress-strategy]');
+  if (importButton || removeButton) {
+    const button = importButton || removeButton;
+    const strategyId = button.dataset.importPositionStressStrategy || button.dataset.removePositionStressStrategy;
+    button.disabled = true;
+    changeStrategyImport(strategyId, removeButton ? 'remove' : 'import').catch((error) => {
+      button.disabled = false;
+      if (elements.positionStressMessage) {
+        elements.positionStressMessage.textContent = `策略${removeButton ? '移除' : '加入'}失败：${error.message}`;
+        elements.positionStressMessage.dataset.tone = 'error';
+      }
+    });
+    return;
+  }
   const stressButton = event.target.closest('[data-position-stress-strategy]');
   if (stressButton) {
     const strategyId = stressButton.dataset.positionStressStrategy;
-    stressButton.disabled = true;
-    const originalText = stressButton.textContent;
-    stressButton.textContent = '送入中';
-    request('/position-stress-api/select-strategy', {
-      body: JSON.stringify({ strategyId }),
-      method: 'POST',
-    })
-      .then(async (response) => {
-        currentPositionStressCatalog = response.catalog;
-        renderPositionStress(response.report);
-        showView('position-stress');
-        elements.navButtons.forEach((button) => {
-          button.classList.toggle('active', button.dataset.viewTarget === 'position-stress');
-        });
-        elements.positionStressMessage.textContent = `${response.message} 可以点击一键导入运行。`;
-        elements.positionStressMessage.dataset.tone = 'success';
-      })
-      .catch((error) => {
-        stressButton.textContent = `失败：${error.message}`;
-      })
-      .finally(() => {
-        window.setTimeout(() => {
-          stressButton.disabled = false;
-          stressButton.textContent = originalText || '送入建仓压测';
-        }, 1000);
-      });
+    currentPositionStressExplicitStrategyId = strategyId;
+    showView('position-stress');
+    elements.navButtons.forEach((button) => {
+      button.classList.toggle('active', button.dataset.viewTarget === 'position-stress');
+    });
+    renderPositionStressCatalog(currentPositionStressCatalog || { strategies: [], current: null });
+    if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
+    elements.positionStressMessage.textContent = '已选择策略，点击运行生成选股和压测结果。';
+    elements.positionStressMessage.dataset.tone = 'success';
+    window.setTimeout(() => {
+      elements.positionStressStrategySelect?.focus();
+    }, 1000);
+    return;
+  }
+
+  const downloadButton = event.target.closest('[data-strategy-download]');
+  if (downloadButton) {
+    window.location.href = downloadButton.dataset.strategyDownload;
     return;
   }
 
@@ -3886,12 +4867,11 @@ function handleStrategyCardClick(event) {
 
 elements.strategyLiveList?.addEventListener('click', handleStrategyCardClick);
 elements.formalStrategyList?.addEventListener('click', handleStrategyCardClick);
-
+elements.strategyPaperManagementList?.addEventListener('click', handleStrategyCardClick);
 elements.paperWatchList?.addEventListener('click', async (event) => {
   const rebuildButton = event.target.closest('[data-paper-watch-rebuild]');
   if (!rebuildButton) return;
   rebuildButton.disabled = true;
-  rebuildButton.textContent = '刷新中';
   try {
     await request('/paper-watch-api/rebuild-derived-packs', { method: 'POST' });
     await refreshDashboard();
@@ -3901,51 +4881,6 @@ elements.paperWatchList?.addEventListener('click', async (event) => {
   }
 });
 
-elements.runPaperWatchDailyRefresh?.addEventListener('click', async () => {
-  const button = elements.runPaperWatchDailyRefresh;
-  const mode = elements.paperWatchRefreshMode?.value || 'local';
-  button.disabled = true;
-  const originalText = button.textContent;
-  button.textContent = mode === 'joinquant_local'
-    ? 'JoinQuant刷新中'
-    : mode === 'local'
-      ? '本地刷新中'
-      : '联网刷新中';
-  if (elements.paperWatchRefreshSummary) {
-    elements.paperWatchRefreshSummary.innerHTML = `
-      <div class="paper-watch-note compact">
-        <strong>一键刷新运行中</strong>
-        <span class="tag pending">${escapeHtml(mode)}</span>
-        <p>${mode === 'joinquant_local'
-          ? '正在扫描并导入 JoinQuant 真实结果，随后自动生成信号账本和报告。'
-          : '正在执行真实数据流水线，时间取决于 AkShare 接口和股票池大小。'}</p>
-      </div>
-    `;
-  }
-  try {
-    const response = await request('/paper-watch-api/run-daily-refresh', {
-      body: JSON.stringify({ mode }),
-      method: 'POST',
-    });
-    renderPaperWatchRefreshSummary(response.refresh);
-    renderJoinQuantPaperWatchReport(response.refresh?.report);
-    renderPaperWatchPerformanceReport(response.refresh?.report?.performance_report);
-    await refreshDashboard();
-  } catch (error) {
-    if (elements.paperWatchRefreshSummary) {
-      elements.paperWatchRefreshSummary.innerHTML = `
-        <div class="paper-watch-note compact">
-          <strong>一键刷新失败</strong>
-          <span class="tag watch">失败</span>
-          <p>${escapeHtml(error.message)}</p>
-        </div>
-      `;
-    }
-  } finally {
-    button.disabled = false;
-    button.textContent = originalText || '一键刷新数据';
-  }
-});
 
 elements.buildBigquantPaperWatchPack?.addEventListener('click', async () => {
   const button = elements.buildBigquantPaperWatchPack;
@@ -3975,52 +4910,110 @@ elements.buildBigquantPaperWatchPack?.addEventListener('click', async () => {
   }
 });
 
-elements.refreshBigquantExport?.addEventListener('click', async () => {
-  const button = elements.refreshBigquantExport;
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = '刷新中';
-  try {
-    await refreshBigQuantExport();
-    button.textContent = '已刷新';
-  } catch (error) {
-    if (elements.bigquantExportSummary) {
-      elements.bigquantExportSummary.innerHTML = `
-        <div class="status-item">
-          <div>
-            <strong>BigQuant导出刷新失败</strong>
-            <span>${escapeHtml(error.message)}</span>
-          </div>
-          <span class="tag watch">失败</span>
-        </div>
-      `;
-    }
-    button.textContent = '刷新失败';
-  } finally {
-    window.setTimeout(() => {
-      button.disabled = false;
-      button.textContent = originalText || '刷新状态';
-    }, 900);
-  }
+elements.downloadJoinquantCsv?.addEventListener('click', () => {
+  window.location.href = '/backtest-api/joinquant-factor-export.csv';
 });
 
-elements.downloadBigquantTemplateScript?.addEventListener('click', () => {
-  window.location.href = '/paper-watch-api/bigquant-template-strategy.py';
+elements.downloadJoinquantFactorScript?.addEventListener('click', () => {
+  window.location.href = '/backtest-api/joinquant-factor-test-script.py';
+});
+
+elements.positionStressHistorySelect?.addEventListener('change', async () => {
+  const selectedPath = elements.positionStressHistorySelect.value;
+  const selected = currentPositionStressHistory.find((item) => item.reportPath === selectedPath);
+  if (!selectedPath || !selected) return;
+  const range = selected.requestedDateRange || {};
+  if (range.start && elements.positionStressStart) elements.positionStressStart.value = range.start;
+  if (range.end && elements.positionStressEnd) elements.positionStressEnd.value = range.end;
+  try {
+    const params = new URLSearchParams();
+    params.set('reportPath', selectedPath);
+    if (range.start) params.set('start', range.start);
+    if (range.end) params.set('end', range.end);
+    const report = await request(`/position-stress-api/report?${params.toString()}`);
+    renderPositionStress(report);
+    renderPositionStressHistory(currentPositionStressHistory);
+    elements.positionStressMessage.textContent = '已切换历史压力测试报告；未重新计算。';
+    elements.positionStressMessage.dataset.tone = 'success';
+  } catch (error) {
+    elements.positionStressMessage.textContent = `历史报告加载失败：${error.message}`;
+    elements.positionStressMessage.dataset.tone = 'error';
+  }
 });
 
 elements.positionStressKlineSelect?.addEventListener('change', async () => {
-  try {
-    const report = await request('/position-stress-api/report');
-    renderPositionStress(report);
-  } catch (error) {
-    elements.positionStressKlineNote.textContent = `K线刷新失败：${error.message}`;
+  selectPositionStressKlineItem(activePositionStressKlineItem(), { resetView: true, syncSearch: true });
+});
+
+elements.positionStressKlineSearch?.addEventListener('input', () => {
+  window.clearTimeout(positionStressKlineSearchTimer);
+  positionStressKlineSearchTimer = window.setTimeout(() => {
+    handlePositionStressKlineSearch(elements.positionStressKlineSearch.value);
+  }, 220);
+});
+
+elements.positionStressKlineDaily?.addEventListener('click', () => setPositionStressKlinePeriod('daily'));
+elements.positionStressKlineMonthly?.addEventListener('click', () => setPositionStressKlinePeriod('monthly'));
+elements.positionStressKlineYearly?.addEventListener('click', () => setPositionStressKlinePeriod('yearly'));
+elements.positionStressKlineReset?.addEventListener('click', () => refreshPositionStressKline({ resetView: true }));
+
+elements.positionStressKlineCanvas?.addEventListener('wheel', (event) => {
+  event.preventDefault();
+  const item = activePositionStressKlineItem();
+  const rows = positionStressKlineRows(item);
+  if (!rows.length) return;
+  const minCount = positionStressKlinePeriod === 'yearly' ? 2 : positionStressKlinePeriod === 'monthly' ? 6 : 18;
+  const oldCount = positionStressKlineView.count || Math.min(rows.length, 70);
+  const nextCount = Math.min(rows.length, Math.max(minCount, Math.round(oldCount * (event.deltaY > 0 ? 1.18 : 0.84))));
+  const rect = elements.positionStressKlineCanvas.getBoundingClientRect();
+  const ratio = Math.min(Math.max((event.clientX - rect.left - 58) / Math.max(rect.width - 130, 1), 0), 1);
+  const anchor = positionStressKlineView.start + oldCount * ratio;
+  positionStressKlineView.count = nextCount;
+  positionStressKlineView.start = Math.round(anchor - nextCount * ratio);
+  positionStressKlineView.hoverIndex = null;
+  elements.positionStressKlineTooltip.hidden = true;
+  refreshPositionStressKline();
+}, { passive: false });
+
+elements.positionStressKlineCanvas?.addEventListener('pointerdown', (event) => {
+  positionStressKlineView.dragging = true;
+  positionStressKlineView.dragX = event.clientX;
+  positionStressKlineView.dragStart = positionStressKlineView.start;
+  elements.positionStressKlineCanvas.setPointerCapture?.(event.pointerId);
+});
+
+elements.positionStressKlineCanvas?.addEventListener('pointermove', (event) => {
+  if (positionStressKlineView.dragging) {
+    const item = activePositionStressKlineItem();
+    const rows = positionStressKlineRows(item);
+    const rect = elements.positionStressKlineCanvas.getBoundingClientRect();
+    const slot = Math.max((rect.width - 130) / Math.max(positionStressKlineView.count, 1), 1);
+    const delta = Math.round((event.clientX - positionStressKlineView.dragX) / slot);
+    positionStressKlineView.start = positionStressKlineView.dragStart - delta;
+    fitPositionStressKlineView(rows);
+    positionStressKlineView.hoverIndex = null;
+    elements.positionStressKlineTooltip.hidden = true;
+    refreshPositionStressKline();
+    return;
   }
+  updatePositionStressKlineTooltip(event);
+});
+
+['pointerup', 'pointercancel', 'pointerleave'].forEach((eventName) => {
+  elements.positionStressKlineCanvas?.addEventListener(eventName, () => {
+    positionStressKlineView.dragging = false;
+    if (eventName === 'pointerleave') {
+      positionStressKlineView.hoverIndex = null;
+      elements.positionStressKlineTooltip.hidden = true;
+      refreshPositionStressKline();
+    }
+  });
 });
 
 elements.refreshPositionStress?.addEventListener('click', async () => {
   try {
     const [report, catalog] = await Promise.all([
-      request('/position-stress-api/report'),
+      request(positionStressReportEndpoint()),
       request('/position-stress-api/strategies'),
     ]);
     renderPositionStress(report);
@@ -4033,45 +5026,148 @@ elements.refreshPositionStress?.addEventListener('click', async () => {
   }
 });
 
-elements.positionStressStrategySelect?.addEventListener('change', async () => {
-  const strategyId = elements.positionStressStrategySelect.value;
-  if (!strategyId) return;
+async function downloadPositionStressExcel(button, endpoint, filenamePrefix, successMessage, fallbackText) {
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = '导出中';
   try {
-    const response = await request('/position-stress-api/select-strategy', {
-      body: JSON.stringify({ strategyId }),
-      method: 'POST',
-    });
-    currentPositionStressCatalog = response.catalog;
-    renderPositionStress(response.report);
-    renderPositionStressCatalog(response.catalog);
-    elements.positionStressMessage.textContent = `${response.message} 可以点击一键导入运行。`;
+    const response = await fetch(new URL(endpoint, window.location.origin));
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `导出接口返回 ${response.status}`);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filenamePrefix}-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    elements.positionStressMessage.textContent = successMessage;
     elements.positionStressMessage.dataset.tone = 'success';
   } catch (error) {
-    elements.positionStressMessage.textContent = `策略选择失败：${error.message}`;
+    elements.positionStressMessage.textContent = `导出失败：${error.message}`;
     elements.positionStressMessage.dataset.tone = 'error';
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText || fallbackText;
   }
+}
+
+elements.exportPositionStressEquity?.addEventListener('click', async () => {
+  await downloadPositionStressExcel(
+    elements.exportPositionStressEquity,
+    positionStressEndpoint('/position-stress-api/equity-export.xlsx'),
+    'm-quant-position-stress-equity',
+    '组合净值 Excel 已导出。',
+    '导出Excel',
+  );
 });
 
+elements.exportPositionStressTrades?.addEventListener('click', async () => {
+  await downloadPositionStressExcel(
+    elements.exportPositionStressTrades,
+    positionStressEndpoint('/position-stress-api/trades-export.xlsx'),
+    'm-quant-position-stress-trades',
+    '成交明细 Excel 已导出。',
+    '导出Excel',
+  );
+});
+
+function selectedPaperExportStrategy() {
+  const strategyId = selectedPositionStressStrategyId();
+  if (!strategyId) {
+    if (elements.positionStressPaperExportStatus) {
+      elements.positionStressPaperExportStatus.dataset.tone = 'error';
+      elements.positionStressPaperExportStatus.textContent = '请先选择压测策略。';
+    }
+    return '';
+  }
+  return strategyId;
+}
+
+function downloadPaperSignalFromStress(kind) {
+  const strategyId = selectedPaperExportStrategy();
+  if (!strategyId) return;
+  const endpoints = {
+    json: `/strategy-api/paper-signal-export.json?strategy=${encodeURIComponent(strategyId)}`,
+    csv: `/strategy-api/paper-signal-export.csv?strategy=${encodeURIComponent(strategyId)}`,
+    zip: `/strategy-api/paper-signal-export.zip?strategy=${encodeURIComponent(strategyId)}`,
+  };
+  window.location.href = endpoints[kind];
+  if (elements.positionStressPaperExportStatus) {
+    elements.positionStressPaperExportStatus.dataset.tone = 'success';
+    elements.positionStressPaperExportStatus.textContent = `已按当前压测策略 ${strategyId} 准备模拟盘${kind.toUpperCase()}导出。`;
+  }
+}
+
+elements.positionStressExportJson?.addEventListener('click', () => downloadPaperSignalFromStress('json'));
+elements.positionStressExportCsv?.addEventListener('click', () => downloadPaperSignalFromStress('csv'));
+elements.positionStressExportZip?.addEventListener('click', () => downloadPaperSignalFromStress('zip'));
+
+elements.positionStressStrategySelect?.addEventListener('change', async () => {
+  const strategyId = elements.positionStressStrategySelect.value;
+  currentPositionStressExplicitStrategyId = strategyId;
+  const strategy = (currentPositionStressCatalog?.strategies || []).find((item) => item.strategyId === strategyId);
+  const dailyTopN = Number(strategy?.dailyTopN ?? strategy?.execution?.dailyTopN ?? 10);
+  const maxHoldings = Number(strategy?.maxHoldings ?? strategy?.execution?.maxHoldings ?? dailyTopN);
+  if (elements.positionStressTopN) {
+    elements.positionStressTopN.value = dailyTopN;
+    elements.positionStressTopN.readOnly = true;
+  }
+  if (elements.positionStressMaxHoldings) {
+    elements.positionStressMaxHoldings.value = maxHoldings;
+    elements.positionStressMaxHoldings.readOnly = true;
+  }
+  if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
+  elements.positionStressMessage.textContent = strategyId
+    ? `已锁定策略口径：每日选前${dailyTopN}只，最大持仓${maxHoldings}只；点击运行生成选股和压测结果。`
+    : '请先选择压测策略。';
+  elements.positionStressMessage.dataset.tone = strategyId ? 'success' : 'error';
+});
+
+[elements.positionStressStart, elements.positionStressEnd, elements.positionStressCapital]
+  .filter(Boolean)
+  .forEach((control) => {
+    control.addEventListener('input', () => {
+      if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
+    });
+    control.addEventListener('change', () => {
+      if (currentPositionStressReport) renderPositionStress(currentPositionStressReport);
+    });
+  });
+
 elements.runPositionStress?.addEventListener('click', async () => {
+  const strategyId = requireSelectedPositionStressStrategy();
+  if (!strategyId) return;
   const button = elements.runPositionStress;
   const originalText = button.textContent;
   button.disabled = true;
-  button.textContent = '导入运行中';
-  elements.positionStressMessage.textContent = '正在拉取/导入真实行情并生成建仓压力测试报告。';
+  button.textContent = '运行中';
+  elements.positionStressMessage.textContent = '正在保存策略、执行策略选股并生成建仓压力测试结果。';
   elements.positionStressMessage.dataset.tone = 'success';
   try {
+    const dailyTopN = Number(elements.positionStressTopN?.value || 10);
+    const maxHoldings = Number(elements.positionStressMaxHoldings?.value || dailyTopN);
     const response = await request('/position-stress-api/run', {
       body: JSON.stringify({
         capital: Number(elements.positionStressCapital?.value || 1000000),
-        end: elements.positionStressEnd?.value || '2026-07-13',
+        end: elements.positionStressEnd?.value || '2026-07-22',
+        maxHoldings,
         source: elements.positionStressSource?.value || 'auto',
-        start: elements.positionStressStart?.value || '2026-07-06',
-        strategyId: currentPositionStressCatalog?.current?.strategyId || currentPositionStressReport?.selectedStrategy?.strategyId || '',
-        topN: Number(elements.positionStressTopN?.value || 10),
+        start: elements.positionStressStart?.value || '2025-01-01',
+        strategyId,
+        topN: dailyTopN,
       }),
       method: 'POST',
     });
+    if (response.runRecord) currentPositionStressRuns = [response.runRecord, ...currentPositionStressRuns.filter((item) => item.reportPath !== response.runRecord.reportPath)];
     renderPositionStress(response.report);
+    renderPositionStressRunRecords(currentPositionStressRuns, response.report);
+    elements.positionStressMessage.textContent = response.message || response.report?.runGate?.reason || '运行完成';
+    elements.positionStressMessage.dataset.tone = response.report?.runGate?.formalRunAllowed ? 'success' : 'error';
     elements.positionStressMessage.textContent = response.message || response.report?.runGate?.reason || '运行完成';
     elements.positionStressMessage.dataset.tone = response.report?.runGate?.formalRunAllowed ? 'success' : 'error';
   } catch (error) {
@@ -4079,100 +5175,18 @@ elements.runPositionStress?.addEventListener('click', async () => {
     elements.positionStressMessage.dataset.tone = 'error';
   } finally {
     button.disabled = false;
-    button.textContent = originalText || '一键导入运行';
+    button.textContent = originalText || '运行';
   }
 });
 
-elements.importPositionStressOhlcv?.addEventListener('click', async () => {
-  const button = elements.importPositionStressOhlcv;
-  const originalText = button.textContent;
-  const text = elements.positionStressImportOhlcv?.value?.trim() || '';
-  if (!text) {
-    elements.positionStressMessage.textContent = '请先粘贴真实行情 CSV 或 JSON。';
-    elements.positionStressMessage.dataset.tone = 'error';
-    return;
-  }
-  button.disabled = true;
-  button.textContent = '导入中';
-  try {
-    const response = await request('/position-stress-api/import-ohlcv', {
-      body: text,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      method: 'POST',
-    });
-    renderPositionStress(response.report);
-    elements.positionStressImportOhlcv.value = '';
-    elements.positionStressMessage.textContent = response.message || '真实行情已导入';
-    elements.positionStressMessage.dataset.tone = response.report?.runGate?.formalRunAllowed ? 'success' : 'error';
-  } catch (error) {
-    elements.positionStressMessage.textContent = `导入失败：${error.message}`;
-    elements.positionStressMessage.dataset.tone = 'error';
-  } finally {
-    button.disabled = false;
-    button.textContent = originalText || '导入真实行情';
-  }
-});
 
 elements.refreshBacktestCenter?.addEventListener('click', async () => {
   try {
     renderBacktestCenter(await request('/backtest-api/research-status'));
-    elements.backtestImportMessage.textContent = '复测中心状态已刷新';
-    elements.backtestImportMessage.dataset.tone = 'success';
   } catch (error) {
-    elements.backtestImportMessage.textContent = `刷新失败：${error.message}`;
-    elements.backtestImportMessage.dataset.tone = 'error';
+    console.error('复测中心刷新失败', error);
   }
 });
-
-elements.validateTradeabilityReview?.addEventListener('click', async () => {
-  try {
-    const payload = JSON.parse(elements.backtestResultJson.value || '{}');
-    const response = await request('/backtest-api/validate-tradeability-review', {
-      body: JSON.stringify(payload),
-      method: 'POST',
-    });
-    elements.backtestImportMessage.textContent = response.message;
-    elements.backtestImportMessage.dataset.tone = 'success';
-  } catch (error) {
-    elements.backtestImportMessage.textContent = `校验失败：${error.message}`;
-    elements.backtestImportMessage.dataset.tone = 'error';
-  }
-});
-
-elements.importBacktestResult?.addEventListener('click', async () => {
-  try {
-    const payload = JSON.parse(elements.backtestResultJson.value || '{}');
-    const response = await request('/backtest-api/import-results', {
-      body: JSON.stringify(payload),
-      method: 'POST',
-    });
-    elements.backtestImportMessage.textContent = response.message;
-    elements.backtestImportMessage.dataset.tone = 'success';
-    elements.backtestResultJson.value = '';
-    renderBacktestCenter(await request('/backtest-api/research-status'));
-  } catch (error) {
-    elements.backtestImportMessage.textContent = `导入失败：${error.message}`;
-    elements.backtestImportMessage.dataset.tone = 'error';
-  }
-});
-
-elements.importPaperWatchLedger?.addEventListener('click', async () => {
-  try {
-    const response = await request('/paper-watch-api/import-ledger', {
-      body: elements.paperWatchLedgerJson.value || '',
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      method: 'POST',
-    });
-    elements.paperWatchLedgerMessage.textContent = response.message;
-    elements.paperWatchLedgerMessage.dataset.tone = 'success';
-    elements.paperWatchLedgerJson.value = '';
-    await refreshDashboard();
-  } catch (error) {
-    elements.paperWatchLedgerMessage.textContent = `导入失败：${error.message}`;
-    elements.paperWatchLedgerMessage.dataset.tone = 'error';
-  }
-});
-
 elements.askResearchAssistant?.addEventListener('click', async () => {
   const message = elements.researchAssistantInput.value.trim();
   const factorId = elements.researchAssistantFactor.value || activeResearchFactor || '';
@@ -4197,10 +5211,79 @@ elements.askResearchAssistant?.addEventListener('click', async () => {
     elements.askResearchAssistant.disabled = false;
   }
 });
+function renderResearchAgentContext() {
+  const signalPack = currentStrategySignalPack || {};
+  const catalog = currentPositionStressCatalog || {};
+  const current = catalog.current || {};
+  const strategy = (signalPack.formalStrategies || []).concat(signalPack.strategies || []).find((item) => item.id === current.strategyId) || current;
+  const status = current.gateStatus || current.gate_status || strategy.status || '等待加载';
+  const date = current.signalDate || signalPack.generatedAt || '-';
+  if (elements.researchAgentCurrentStrategy) elements.researchAgentCurrentStrategy.textContent = strategy.name || '暂无当前策略';
+  if (elements.researchAgentCurrentStrategyId) elements.researchAgentCurrentStrategyId.textContent = strategy.id || current.strategyId || '-';
+  if (elements.researchAgentLatestStatus) elements.researchAgentLatestStatus.textContent = status;
+  if (elements.researchAgentLatestStatusDetail) elements.researchAgentLatestStatusDetail.textContent = current.runnableReason || strategy.validationState || '上下文来自当前真实 API。';
+  if (elements.researchAgentDataDate) elements.researchAgentDataDate.textContent = dateOnly(date) || '-';
+  if (elements.researchAgentEvidenceStatus) elements.researchAgentEvidenceStatus.textContent = signalPack.formalStrategies?.length ? '有策略证据' : '证据待补齐';
+  if (elements.researchAgentEvidenceDetail) elements.researchAgentEvidenceDetail.textContent = '回答只使用研究流水线、复测状态、因子活性、策略信号和压力测试目录。';
+}
+
+function renderResearchAgentResponse(response) {
+  const answer = Array.isArray(response?.answer) ? response.answer : [response?.answer || '暂无本地规则回答。'];
+  const evidence = Array.isArray(response?.evidence) ? response.evidence : [];
+  const nextSteps = Array.isArray(response?.nextSteps) ? response.nextSteps : [];
+  if (elements.researchAgentAnswer) elements.researchAgentAnswer.innerHTML = `<ul>${answer.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+  if (elements.researchAgentEvidence) elements.researchAgentEvidence.innerHTML = evidence.length ? evidence.map((item) => `<div class="agent-list-item"><strong>${escapeHtml(item.name || '来源')}</strong><span>${escapeHtml(item.detail || item.source || '-')}</span></div>`).join('') : '<div class="agent-empty-state">暂无结构化来源。</div>';
+  if (elements.researchAgentNextSteps) elements.researchAgentNextSteps.innerHTML = [...nextSteps, ...(response?.limitations || [])].map((item) => `<div class="agent-list-item"><span>${escapeHtml(item)}</span></div>`).join('') || '<div class="agent-empty-state">暂无下一步建议。</div>';
+}
+
+elements.researchAgentQuickTasks?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-agent-task]');
+  if (!button || !elements.researchAgentInput) return;
+  elements.researchAgentInput.value = button.dataset.agentTask || '';
+  elements.researchAgentInput.focus();
+});
+
+elements.askResearchAgent?.addEventListener('click', async () => {
+  const message = elements.researchAgentInput?.value?.trim() || '';
+  const direction = elements.researchAgentDirection?.value || 'strategy_data_analysis';
+  if (!message) {
+    if (elements.researchAgentAnswer) elements.researchAgentAnswer.innerHTML = '<div class="agent-empty-state">请先选择快捷任务或输入研究问题。</div>';
+    return;
+  }
+  elements.askResearchAgent.disabled = true;
+  if (elements.researchAgentStatus) elements.researchAgentStatus.innerHTML = '<span class="tag pending">分析中</span><span>正在读取当前真实数据与证据状态。</span>';
+  try {
+    const response = await request('/research-api/assistant', { body: JSON.stringify({ direction, message }), method: 'POST' });
+    renderResearchAgentResponse(response);
+    if (elements.researchAgentStatus) elements.researchAgentStatus.innerHTML = '<span class="tag good">本地规则</span><span>回答已生成；未执行任何策略或交易操作。</span>';
+  } catch (error) {
+    if (elements.researchAgentAnswer) elements.researchAgentAnswer.innerHTML = `<div class="agent-empty-state">分析失败：${escapeHtml(error.message)}</div>`;
+  } finally {
+    elements.askResearchAgent.disabled = false;
+  }
+});
+
+const originalRefreshDashboard = refreshDashboard;
+refreshDashboard = async function refreshDashboardWithAgent() {
+  const result = await originalRefreshDashboard();
+  renderResearchAgentContext();
+  return result;
+};
+
+elements.operationsStrategySearch?.addEventListener('input', () => {
+  renderOperationsStrategies({ strategies: currentOperationsStrategies });
+});
 
 elements.navButtons.forEach((button) => {
   button.addEventListener('click', () => {
     showView(button.dataset.viewTarget);
+    requestAnimationFrame(syncCollapsibleData);
+  });
+});
+
+elements.subnavButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    showView(button.dataset.subviewTarget);
     requestAnimationFrame(syncCollapsibleData);
   });
 });

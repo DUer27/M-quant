@@ -1,28 +1,30 @@
 {
   "source": "akshare",
   "script": "outputs/sources/akshare/scripts/fetch_a_share_history.py",
-  "generated_at": "2026-07-09T12:50:10",
-  "start": "20240101",
-  "end": "20260709",
+  "generated_at": "2026-07-17T10:57:55",
+  "start": "20250101",
+  "end": "20260715",
   "adjust": "qfq",
-  "stocks_requested": 300,
-  "stocks_success": 300,
-  "rows": 180816,
-  "dates": 608,
-  "output": "outputs/sources/akshare/processed/a_share_daily_20240101_20260709_qfq.csv",
+  "stocks_requested": 3000,
+  "stocks_success": 142,
+  "rows": 52441,
+  "dates": 370,
+  "output": "outputs/sources/akshare/processed/position_stress_core_3000_candidate_20250101_20260715_qfq.csv",
   "pool_source": [
-    "outputs/sources/akshare/processed/a_share_csi300_pool.csv"
+    "outputs/sources/akshare/symbols/position_stress_core_3000_candidate.csv"
   ],
   "pool_error": null,
   "retries": 2,
-  "provider": "em",
+  "provider": "em_tx",
   "source_counts": {
-    "akshare.stock_zh_a_hist_tx": 152858,
-    "akshare.stock_zh_a_hist": 27958
+    "akshare.stock_zh_a_hist": 31600,
+    "akshare.stock_zh_a_hist_tx": 20046,
+    "eastmoney.push2his.kline": 585,
+    "tencent.ifzq.fqkline": 210
   },
-  "reused_existing": 300,
-  "combine_only": true,
-  "interrupted": false,
+  "reused_existing": 68,
+  "combine_only": false,
+  "interrupted": true,
   "failures_output": "outputs/sources/akshare/results/a_share_daily_history_failures.csv",
   "failures": []
 }

@@ -1,10 +1,212 @@
 [
   {
+    "id": "structured_reversal_csi500_v1",
+    "name": "长江结构化反转因子指数增强策略 v1",
+    "source": {
+      "evidence": "joinquant_structured_reversal_csi500_v1_pending_high_frequency_gate",
+      "researchPlan": "docs/structured-reversal-factor-implementation-plan.md",
+      "note": "已完成 JoinQuant 高频因子、因子活性、Top100回测和准入脚本；真实10m因子门禁和交易门禁通过前，不进入正式压力测试。"
+    },
+    "status": "candidate_pending_joinquant_gate",
+    "dataPolicy": "当前仅为研究候选；未通过真实 JoinQuant 10m/1m 聚合10m 高频因子 RankIC、分组收益和5日调仓交易门禁前，不进入正式压力测试，不展示代理压测收益为该策略业绩。",
+    "universe": {
+      "current": "中证500；正式回测使用 JoinQuant 历史中证500成分",
+      "filters": [
+        "剔除 ST、停牌、新股、低成交额、连续跌停和极端无流动性下跌样本",
+        "正式因子必须来自 JoinQuant 10分钟K线或1分钟聚合10分钟K线",
+        "真实门禁未通过前不写入压力测试名单"
+      ]
+    },
+    "factors": [
+      {
+        "id": "structured_reversal_score",
+        "name": "结构化反转因子（structured_reversal_score）",
+        "weight": 0.55,
+        "formula": "Rev_struct = Rev_rev - Rev_mom；Rev_struct 越低得分越高"
+      },
+      {
+        "id": "high_volume_reversal_score",
+        "name": "高成交量反转确认因子（high_volume_reversal_score）",
+        "weight": 0.2,
+        "formula": "Rev_rev 越低得分越高，用于检查高成交量下跌后的反转是否才是核心 alpha"
+      },
+      {
+        "id": "low_volatility_score",
+        "name": "低波动控制因子（low_volatility_score）",
+        "weight": 0.15
+      },
+      {
+        "id": "liquidity_quality_score",
+        "name": "流动性质量因子（liquidity_quality_score）",
+        "weight": 0.1,
+        "diagnostic": "当前重点怀疑项：按 money_ma20 加分可能引入成交额体量偏置，稀释结构化反转。"
+      },
+      {
+        "id": "liquidity_premium_proxy_score",
+        "name": "高频流动性溢价代理因子（liquidity_premium_proxy_score）",
+        "weight": 0.05,
+        "diagnostic": "当前重点怀疑项：低成交冲击更像可交易性过滤，不应强行作为正向 alpha。"
+      },
+      {
+        "id": "volume_stability_score",
+        "name": "量能稳定因子（volume_stability_score）",
+        "weight": 0.1
+      },
+      {
+        "id": "gap_risk_control_score",
+        "name": "跳空风险控制因子（gap_risk_control_score）",
+        "weight": 0.05
+      },
+      {
+        "id": "structured_reversal_confirmed_score",
+        "name": "结构化反转确认总分（structured_reversal_confirmed_score）",
+        "weight": 1,
+        "formula": "0.70*结构化反转 + 0.20*高成交量反转确认 + 0.10*量能稳定"
+      },
+      {
+        "id": "structured_reversal_tradeable_score",
+        "name": "结构化反转可交易总分（structured_reversal_tradeable_score）",
+        "weight": 1,
+        "formula": "0.65*结构化反转 + 0.15*高成交量反转确认 + 0.10*量能稳定 + 0.05*跳空风险控制 + 0.05*低波动"
+      }
+    ],
+    "portfolioRules": {
+      "ranking": "正式回测使用结构化反转增强总分（structured_reversal_enhanced_score）；未通过真实 JoinQuant 高频门禁前不进入正式压力测试",
+      "selection": "Top100 等权；持仓排名150以内保留，新进优先前80名",
+      "rebalance": "每5个交易日调仓",
+      "positionSizing": "高波动100%，中波动90%，低波动65%",
+      "cost": "正式 JoinQuant 回测扣单边成本0.15%和滑点0.02%"
+    },
+    "pressureTest": {
+      "ready": false,
+      "adapter": null,
+      "gateStatus": "candidate_pending_joinquant_gate",
+      "symbolsFile": "auto_cache_all",
+      "warning": "真实 JoinQuant 10m 高频因子门禁和5日调仓交易门禁未通过前，不放入正式压力测试。"
+    }
+  },
+  {
+    "id": "csi500_low_crowding_reversal_index_enhancement_v2",
+    "name": "中证500低拥挤反转指数增强试验版 v2（固定名单版）",
+    "source": {
+      "baseStrategy": "csi500_low_crowding_reversal_index_enhancement_v1",
+      "evidence": "joinquant_csi500_lcr_v1_true_rebalance_candidate",
+      "note": "v2 作为固定最新名单试验版保留，不改 v1 因子门禁；主要用于复查固定名单口径下的执行层动态持仓表现。"
+    },
+    "status": "experimental_candidate",
+    "dataPolicy": "v2 是固定名单试验版：沿用 v1 最新候选名单做固定篮子压力测试；本地 OHLCV 代理收益不直接写成正式策略收益，后续仍需 JoinQuant 原生账本复核。",
+    "universe": {
+      "current": "v1 最新候选名单固定篮子",
+      "fallback": "outputs/sources/akshare/symbols/position_stress_core_3000.csv 仅作为 v1/旧压测对照",
+      "filters": [
+        "只使用 v1 最新候选名单中有真实 OHLCV 缓存的股票",
+        "每日可交易样本数不足时标记 weakCoverageDates",
+        "目标候选名单缺行情时阻断正式压测"
+      ]
+    },
+    "executionRules": {
+      "holdingPolicy": "dynamic_signal",
+      "minHoldingDays": 1,
+      "baseHoldingDays": 5,
+      "trendReviewDays": 20,
+      "hardMaxHoldingDays": 60,
+      "signalBufferN": 80,
+      "trendExtendBufferN": 40,
+      "trendExtendMinReturn": 0.03,
+      "stopLossPct": 0.08,
+      "takeProfitPct": 0.12,
+      "trailingStopPct": 0.06,
+      "scoreDropPct": 0.3
+    },
+    "portfolioRules": {
+      "ranking": "沿用 v1 最新候选名单固定篮子；压测阶段使用 selected_codes_mean_reversion + OHLCV 代理分数进行每日排序复核。",
+      "selection": "空仓槽位按当天信号补入，不再每日全卖全买。",
+      "exit": "T+1 后每日复核；跌出Buffer80、分数衰减且没有趋势保护、止损、止盈回撤、趋势健康超时或60日硬上限时退出。",
+      "trendProtection": "20日后若仍在前40、持仓收益大于3%、且未触发峰值回撤，则允许继续持有。",
+      "riskControls": [
+        "单票亏损达到8%止损",
+        "浮盈达到12%后从峰值回撤6%止盈",
+        "趋势保护不能覆盖止损和止盈回撤",
+        "60个交易日为硬上限"
+      ]
+    },
+    "auditPlan": [
+      "覆盖审计：确认使用 auto_cache_all 且 stockCount 大于3000",
+      "持仓审计：确认成交明细存在多日持仓，不再一日卖出",
+      "退出审计：统计 stop_loss、take_profit_trailing、trend_health_timeout、hard_max_holding_days、sample_end 等退出原因",
+      "趋势审计：抽查盈利且仍在前40的股票是否被趋势保护延续",
+      "回归审计：v1 next_day 口径仍可运行，v2 和 v2.1 都作为试验版保留"
+    ]
+  },
+  {
+    "id": "csi500_low_crowding_reversal_index_enhancement_v2_1",
+    "name": "中证500低拥挤反转指数增强试验版 v2.1（动态池修正版）",
+    "source": {
+      "baseStrategy": "csi500_low_crowding_reversal_index_enhancement_v2",
+      "evidence": "csi500_lcr_v2_dynamic_pool_bugfix",
+      "note": "v2.1 作为动态池修正式验版保留，用中证500池逐日动态选股，和 v2 固定名单试验版并列对照。"
+    },
+    "status": "experimental_candidate",
+    "dataPolicy": "v2.1 是动态池试验版：使用本地 AkShare 中证500池逐日动态选股；本地 OHLCV 代理收益不直接写成正式策略收益，后续仍需 JoinQuant 原生账本复核。",
+    "universe": {
+      "current": "outputs/sources/akshare/index_enhancement/processed/csi500_pool.csv",
+      "fallback": "auto_cache_all 仅用于覆盖检查和缺失披露",
+      "filters": [
+        "每日在中证500池内重算代理分数",
+        "只使用有真实 OHLCV 缓存的股票",
+        "每日可交易样本数不足时标记 weakCoverageDates",
+        "固定名单运行不用于 v2.1，避免最新名单回灌历史"
+      ]
+    },
+    "executionRules": {
+      "holdingPolicy": "dynamic_signal",
+      "minHoldingDays": 1,
+      "baseHoldingDays": 5,
+      "trendReviewDays": 20,
+      "hardMaxHoldingDays": 60,
+      "signalBufferN": 80,
+      "trendExtendBufferN": 40,
+      "trendExtendMinReturn": 0.03,
+      "stopLossPct": 0.08,
+      "takeProfitPct": 0.12,
+      "trailingStopPct": 0.06,
+      "scoreDropPct": 0.3
+    },
+    "portfolioRules": {
+      "ranking": "每日在中证500池内用 OHLCV 低拥挤、反转修复、成交活跃和收盘强度代理分数动态排序。",
+      "selection": "空仓槽位按当天信号补入，不再每日全卖全买。",
+      "exit": "T+1 后每日复核；跌出Buffer80、分数衰减且没有趋势保护、止损、止盈回撤、趋势健康超时或60日硬上限时退出。",
+      "trendProtection": "20日后若仍在前40、持仓收益大于3%、且未触发峰值回撤，则允许继续持有。",
+      "riskControls": [
+        "单票亏损达到8%止损",
+        "浮盈达到12%后从峰值回撤6%止盈",
+        "真实成交约束使用单票单日成交额参与率上限",
+        "60个交易日为硬上限"
+      ]
+    },
+    "auditPlan": [
+      "覆盖审计：确认使用中证500池逐日动态选股",
+      "回灌审计：确认 v2.1 不传 selectedCodes 固定名单",
+      "持仓审计：确认成交明细存在多日持仓，不再一日卖出",
+      "退出审计：统计 stop_loss、take_profit_trailing、trend_health_timeout、hard_max_holding_days、sample_end 等退出原因",
+      "对照审计：和 v2 固定名单试验版并列比较，不互相覆盖"
+    ]
+  },
+  {
     "id": "huafu_emotion_weighted_kline",
     "name": "华福情绪系数加权K线评分策略",
     "source": {
       "file": "/Users/Admin/Desktop/2026-05-28_华福证券_情绪系数加权个股K线评分的选股策略.pdf",
-      "pages": [16, 17, 18, 24, 25, 29, 30, 31],
+      "pages": [
+        16,
+        17,
+        18,
+        24,
+        25,
+        29,
+        30,
+        31
+      ],
       "note": "仅复现报告中可由当前真实数据支持的逻辑；报告原始业绩不作为本平台业绩。"
     },
     "status": "partial_real_data",
@@ -23,37 +225,25 @@
         "id": "kline_event_score",
         "name": "K线形态离散评分因子",
         "formula": "识别K线形态后按PDF第17页Kelly离散分数赋值；当前已覆盖PDF第17页有明确分数的单根K线形态。",
-        "requiredFields": ["kaipan", "zuigao", "zuidi", "zuixin", "liangbi", "ma5", "ma13", "ma20", "ma5_dir", "ma13_dir", "ma20_dir"],
+        "requiredFields": [
+          "kaipan",
+          "zuigao",
+          "zuidi",
+          "zuixin",
+          "liangbi",
+          "ma5",
+          "ma13",
+          "ma20",
+          "ma5_dir",
+          "ma13_dir",
+          "ma20_dir"
+        ],
         "currentStatus": "computed",
         "currentLimit": "倒锤头、低成交量纺锤线已识别但不计分，因为PDF第17页未给出明确Kelly分数；多根形态需要更长OHLCV历史和更完整形态规则。"
-      },
-      {
-        "id": "volume_price_resonance_60_5",
-        "name": "价量共振情绪因子",
-        "formula": "MA(volume,5)/MA(volume,240) * MA(close,60)/lag(MA(close,60),5)",
-        "requiredFields": ["stock_code", "date", "zuixin", "zongshou"],
-        "currentStatus": "insufficient_history",
-        "currentLimit": "每只股票至少需要240个交易日成交量和65个交易日价格。"
-      },
-      {
-        "id": "low_emotion_score",
-        "name": "低情绪反向因子",
-        "formula": "-zscore(volume_price_resonance_60_5) by date",
-        "requiredFields": ["volume_price_resonance_60_5"],
-        "currentStatus": "blocked_by_resonance_history",
-        "currentLimit": "价量共振暂无有效值，不能标准化。"
-      },
-      {
-        "id": "emotion_weighted_kline_score",
-        "name": "情绪系数加权K线因子",
-        "formula": "low_emotion_score * kline_event_score",
-        "requiredFields": ["low_emotion_score", "kline_event_score"],
-        "currentStatus": "blocked_by_resonance_history",
-        "currentLimit": "等待足够历史后才可计算。"
       }
     ],
     "portfolioRules": {
-      "ranking": "按 emotion_weighted_kline_score 降序；当前历史不足时仅可观察 kline_event_score 与 technical_composite。",
+      "ranking": "当前仅以 kline_event_score 作为辅助观察；主排序使用 technical_composite。",
       "selection": "报告使用Top50等权多头；本平台必须等待足够历史和未来收益标签后再启用真实回测。",
       "rebalance": "日频生成信号，实际调仓频率待回测确认。",
       "riskControls": [
@@ -67,8 +257,23 @@
       "computedRows": 600,
       "latestMergedPack": "/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/merged-batches/yiwan-merged-indicators-20260707-093737-p001-p020.json",
       "latestFactorOutput": "/Users/Admin/Documents/Codex/2026-07-06/ke/outputs/research-factor-pipeline/yiwan-research-factor-results.json",
-      "effectiveNow": ["kline_event_score", "kline_unscored_patterns", "technical_composite", "trend_alignment", "volume_price_confirmation", "kdj_momentum", "macd_acceleration", "chip_health", "crowding_risk"],
-      "notEffectiveYet": ["volume_price_resonance_60_5", "low_emotion_score", "emotion_weighted_kline_score", "IC", "RankIC", "win_rate", "annual_return"]
+      "effectiveNow": [
+        "kline_event_score",
+        "kline_unscored_patterns",
+        "technical_composite",
+        "trend_alignment",
+        "volume_price_confirmation",
+        "kdj_momentum",
+        "macd_acceleration",
+        "chip_health",
+        "crowding_risk"
+      ],
+      "notEffectiveYet": [
+        "IC",
+        "RankIC",
+        "win_rate",
+        "annual_return"
+      ]
     }
   }
 ]

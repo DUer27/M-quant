@@ -1,0 +1,59 @@
+{
+  "request_start": "2025-01-01",
+  "request_end": "2026-09-11",
+  "previous_cache_end": "2026-07-22",
+  "expected_trading_days": 412,
+  "trading_calendar": "tencent ifzq SSE index kline (sh000001), same source as OHLCV",
+  "data_source_this_run": "tencent",
+  "data_policy": "Only real returned OHLCV rows are saved; no generated, interpolated, or forward-filled rows.",
+  "pool_total": 5581,
+  "pool_unique_codes": 5581,
+  "st_or_delist_name_count": 256,
+  "all": {
+    "full_412": 4645,
+    "partial": 936,
+    "missing_raw": 0
+  },
+  "pressure_supported_non_st": {
+    "total": 4997,
+    "full_412": 4381,
+    "partial": 616,
+    "missing_raw": 0
+  },
+  "non_pressure_prefix_non_st": {
+    "total": 328,
+    "full_412": 252,
+    "partial": 76,
+    "missing_raw": 0
+  },
+  "combined_codes": 5581,
+  "combined_rows": 2242860,
+  "combined_dates": 412,
+  "run_outcomes": {
+    "current": 5516,
+    "appended": 12,
+    "full_replaced": 1,
+    "empty": 52,
+    "failed": 0
+  },
+  "validation": {
+    "duplicate_code_date_rows": 0,
+    "ohlc_shape_violations": 0,
+    "non_positive_prices": 0,
+    "rows_with_missing_ohlc": 0,
+    "date_min": "2025-01-02",
+    "date_max": "2026-09-11",
+    "stocks_updated_to_end_date": 5517,
+    "stocks_total": 5581
+  },
+  "elapsed_seconds": 105.2,
+  "generated_at": "2026-09-14T01:53:54",
+  "outputs": {
+    "audit": "outputs\\sources\\akshare\\results\\a_share_all_completion_audit_20260911.csv",
+    "missing_or_partial": "outputs\\sources\\akshare\\results\\a_share_all_completion_missing_or_partial_20260911.csv",
+    "combined_real_ohlcv": "outputs\\sources\\akshare\\processed\\a_share_all_real_20250101_20260911_qfq.csv",
+    "available_pool": "outputs\\sources\\akshare\\processed\\a_share_all_available_pool_20250101_20260911.csv",
+    "full_412_pool": "outputs\\sources\\akshare\\processed\\a_share_all_full_412_pool_20250101_20260911.csv",
+    "pressure_supported_non_st_full_412_pool": "outputs\\sources\\akshare\\processed\\a_share_pressure_supported_non_st_full_412_pool_20250101_20260911.csv"
+  }
+}
