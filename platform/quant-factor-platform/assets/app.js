@@ -45,10 +45,8 @@ const elements = {
   backtestExternalStatus: document.querySelector('#backtest-external-status'),
   backtestFactorCount: document.querySelector('#backtest-factor-count'),
   backtestFactorTable: document.querySelector('#backtest-factor-table'),
-  backtestImportMessage: document.querySelector('#backtest-import-message'),
   backtestLocalStatus: document.querySelector('#backtest-local-status'),
   backtestResultNotes: document.querySelector('#backtest-result-notes'),
-  backtestResultJson: document.querySelector('#backtest-result-json'),
   backtestResultSummary: document.querySelector('#backtest-result-summary'),
   backtestResultTable: document.querySelector('#backtest-result-table'),
   backtestRowCount: document.querySelector('#backtest-row-count'),
@@ -76,8 +74,6 @@ const elements = {
   formalStrategyPolicy: document.querySelector('#formal-strategy-policy'),
   formalStrategySearch: document.querySelector('#formal-strategy-search'),
   formalStrategyToggle: document.querySelector('#formal-strategy-toggle'),
-  importedBacktestList: document.querySelector('#imported-backtest-list'),
-  importBacktestResult: document.querySelector('#import-backtest-result'),
   joinquantExportSummary: document.querySelector('#joinquant-export-summary'),
   joinquantStepList: document.querySelector('#joinquant-step-list'),
   klineRulesTable: document.querySelector('#kline-rules-table'),
@@ -139,7 +135,9 @@ const elements = {
   positionStressRunBatches: document.querySelector('#position-stress-run-batches'),
   positionStressRunRecordTable: document.querySelector('#position-stress-run-record-table'),
   positionStressRunSummary: document.querySelector('#position-stress-run-summary'),
-  strategyPaperManagementList: document.querySelector('#strategy-paper-management-list'),
+  operationsStrategyCount: document.querySelector('#operations-strategy-count'),
+  operationsStrategyList: document.querySelector('#operations-strategy-list'),
+  operationsStrategySearch: document.querySelector('#operations-strategy-search'),
   positionStressSource: document.querySelector('#position-stress-source'),
   positionStressStart: document.querySelector('#position-stress-start'),
   positionStressStrategySelect: document.querySelector('#position-stress-strategy-select'),
@@ -209,7 +207,6 @@ const elements = {
   strategyStrongCount: document.querySelector('#strategy-strong-count'),
   strategyUnavailableList: document.querySelector('#strategy-unavailable-list'),
   universe: document.querySelector('#universe'),
-  validateTradeabilityReview: document.querySelector('#validate-tradeability-review'),
   validFactorCount: document.querySelector('#valid-factor-count'),
   validatedBestHorizon: document.querySelector('#validated-best-horizon'),
   validatedFactorDirectory: document.querySelector('#validated-factor-directory'),
@@ -232,6 +229,7 @@ let currentPositionStressReport = null;
 let currentPositionStressImportedIds = new Set();
 let currentStrategyDefinitions = [];
 let currentPositionStressRuns = [];
+let currentOperationsStrategies = [];
 let currentPositionStressExplicitStrategyId = '';
 let positionStressKlinePeriod = 'daily';
 let positionStressKlineSearchTimer = 0;
@@ -440,6 +438,7 @@ function renderPreferences(preferences) {
 
 function renderRisk(risks) {
   const riskList = document.querySelector('.risk-list');
+  if (!riskList) return;
   riskList.innerHTML = risks
     .map((risk) => {
       const tone = risk.status === 'ready' ? 'good' : risk.status === 'blocked' ? 'watch' : 'pending';
@@ -3341,6 +3340,33 @@ function renderLiveStrategies(signalPack) {
     `)
     .join('');
 }
+function renderOperationsStrategies(signalPack) {
+  const strategies = buildUnifiedStrategies(signalPack || {});
+  currentOperationsStrategies = strategies;
+  if (!elements.operationsStrategyList || !elements.operationsStrategyCount) return;
+
+  const query = String(elements.operationsStrategySearch?.value || '').trim().toLowerCase();
+  const filtered = strategies.filter((strategy) => !query || strategySearchText(strategy).includes(query));
+  elements.operationsStrategyCount.textContent = query
+    ? `${filtered.length} / ${strategies.length}`
+    : `${strategies.length} 条`;
+  elements.operationsStrategyList.innerHTML = filtered.length
+    ? filtered.map((strategy) => {
+      const [statusLabel, statusTone] = labelForStatus(strategy.status);
+      const summary = strategy.objective || strategy.dataBasis || strategy.role || '暂无策略目标说明';
+      return `
+        <article class="operations-strategy-item" role="listitem">
+          <div class="operations-strategy-item-main">
+            <strong>${escapeHtml(strategy.name || strategy.id || '未命名策略')}</strong>
+            <small>${escapeHtml(strategy.id || '-')}</small>
+          </div>
+          <span class="tag ${statusTone}">${escapeHtml(statusLabel)}</span>
+          <p>${escapeHtml(summary)}</p>
+        </article>
+      `;
+    }).join('')
+    : '<div class="operations-strategy-empty">没有匹配的策略</div>';
+}
 
 function renderBacktestCenter(status) {
   const metrics = status.metrics || {};
@@ -3424,49 +3450,6 @@ function renderBacktestCenter(status) {
     .map((step) => `<li>${escapeHtml(step)}</li>`)
     .join('');
 
-  const importedResults = status.importedResults || [];
-  const factorResults = importedResults.filter((result) => !isStrategyBacktestResult(result));
-  const strategyResults = flattenStrategyResults(importedResults);
-  renderBacktestResultSummary(factorResults);
-  renderStrategyResultSummary(strategyResults);
-
-  const importedFactorResults = importedResults.filter((result) => !isStrategyBacktestResult(result));
-  const importedStrategyResults = importedResults.filter(isStrategyBacktestResult);
-  const renderImportedGroup = (title, rows, renderRow, emptyText) => `
-    <div class="library-source"><strong>${escapeHtml(title)}</strong></div>
-    ${rows.length ? rows.map(renderRow).join('') : `<div class="library-source">${escapeHtml(emptyText)}</div>`}
-  `;
-  elements.importedBacktestList.innerHTML = importedResults.length
-    ? [
-      renderImportedGroup('因子回测结果', importedFactorResults, (result) => {
-        const factor = resultFactorId(result);
-        const title = result.factor_display_name || factorDisplayName(factor);
-        const detail = `排序有效度：${escapeHtml(result.rank_ic_mean ?? result.rankIc ?? '-')} / 好坏组差距：${formatPercent(result.long_short_mean ?? result.longShort)} / 来源：${escapeHtml(plainSource(result.source || 'joinquant'))}`;
-        return `
-          <div class="status-item">
-            <div>
-              <strong>${escapeHtml(title)}</strong>
-              <span>${detail}</span>
-            </div>
-            <span class="tag pending">因子</span>
-          </div>
-        `;
-      }, '暂无因子回测导入结果。'),
-      renderImportedGroup('策略回测结果', importedStrategyResults, (result) => {
-        const title = result.strategy_name || result.summary?.[0]?.strategy_name || '策略实测结果';
-        const detail = `策略检查结果：${escapeHtml(result.summary?.length ?? 1)} 条 / 来源：${escapeHtml(plainSource(result.source || result.summary?.[0]?.source || 'joinquant'))}`;
-        return `
-          <div class="status-item">
-            <div>
-              <strong>${escapeHtml(title)}</strong>
-              <span>${detail}</span>
-            </div>
-            <span class="tag good">策略</span>
-          </div>
-        `;
-      }, '暂无策略回测导入结果。'),
-    ].join('')
-    : '<div class="library-source">暂无导入结果。等你在 JoinQuant 跑完，把真实结果 JSON 粘贴回来。</div>';
 }
 
 function positionStressKlineRows(item) {
@@ -4612,6 +4595,7 @@ async function refreshDashboard() {
     renderPaperStrategyManagement(currentStrategyDefinitions);
   });
   const strategiesTask = request('/strategy-api/definitions');
+  track('操作台策略', request('/strategy-api/live-signals'), renderOperationsStrategies);
   const pipelineTask = request('/research-api/pipeline');
   track('真实因子排名', request('/factor-api/real-factor-results?limit=100'), renderFactors);
   track('策略净值曲线', request('/backtest-api/equity'), drawChart);
@@ -5205,47 +5189,10 @@ elements.runPositionStress?.addEventListener('click', async () => {
 elements.refreshBacktestCenter?.addEventListener('click', async () => {
   try {
     renderBacktestCenter(await request('/backtest-api/research-status'));
-    elements.backtestImportMessage.textContent = '复测中心状态已刷新';
-    elements.backtestImportMessage.dataset.tone = 'success';
   } catch (error) {
-    elements.backtestImportMessage.textContent = `刷新失败：${error.message}`;
-    elements.backtestImportMessage.dataset.tone = 'error';
+    console.error('复测中心刷新失败', error);
   }
 });
-
-elements.validateTradeabilityReview?.addEventListener('click', async () => {
-  try {
-    const payload = JSON.parse(elements.backtestResultJson.value || '{}');
-    const response = await request('/backtest-api/validate-tradeability-review', {
-      body: JSON.stringify(payload),
-      method: 'POST',
-    });
-    elements.backtestImportMessage.textContent = response.message;
-    elements.backtestImportMessage.dataset.tone = 'success';
-  } catch (error) {
-    elements.backtestImportMessage.textContent = `校验失败：${error.message}`;
-    elements.backtestImportMessage.dataset.tone = 'error';
-  }
-});
-
-elements.importBacktestResult?.addEventListener('click', async () => {
-  try {
-    const payload = JSON.parse(elements.backtestResultJson.value || '{}');
-    const response = await request('/backtest-api/import-results', {
-      body: JSON.stringify(payload),
-      method: 'POST',
-    });
-    elements.backtestImportMessage.textContent = response.message;
-    elements.backtestImportMessage.dataset.tone = 'success';
-    elements.backtestResultJson.value = '';
-    renderBacktestCenter(await request('/backtest-api/research-status'));
-  } catch (error) {
-    elements.backtestImportMessage.textContent = `导入失败：${error.message}`;
-    elements.backtestImportMessage.dataset.tone = 'error';
-  }
-});
-
-
 elements.askResearchAssistant?.addEventListener('click', async () => {
   const message = elements.researchAssistantInput.value.trim();
   const factorId = elements.researchAssistantFactor.value || activeResearchFactor || '';
@@ -5328,6 +5275,10 @@ refreshDashboard = async function refreshDashboardWithAgent() {
   renderResearchAgentContext();
   return result;
 };
+
+elements.operationsStrategySearch?.addEventListener('input', () => {
+  renderOperationsStrategies({ strategies: currentOperationsStrategies });
+});
 
 elements.navButtons.forEach((button) => {
   button.addEventListener('click', () => {
