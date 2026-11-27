@@ -3,6 +3,9 @@ __pycache__/
 platform/quant-factor-platform/data/return-mapping/
 *.pyc
 node_modules/
+outputs/live-market-data/
+tools/windows/deployment.json
+tools/windows/logs/
 .env.local
 .env.joinquant
 .env.joinquant.local

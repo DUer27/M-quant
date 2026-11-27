@@ -44,7 +44,16 @@ function navigation() {
         : elements.subnavButtons.find((button) => button.dataset.subviewTarget === target?.[2]);
     },
   };
-  const context = { elements, document, window: { scrollX: 0, scrollY: 900 } };
+  const location = { pathname: '/', search: '?preview=1', hash: '' };
+  const events = [];
+  const context = { elements, document, window: {
+    scrollX: 0, scrollY: 900, location,
+    history: { replaceState(_state, _title, value) {
+      const url = new URL(value, `http://127.0.0.1/${location.search}`);
+      Object.assign(location, { pathname: url.pathname, search: url.search, hash: url.hash });
+    } },
+    dispatchEvent: (event) => { events.push(event); return true; },
+  }, CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } } };
   // Exercise the existing navigation and origin capture against the page's real controls.
   runInNewContext([
     app.match(/^const viewGroups = \{.*?^\};/ms)[0],
@@ -56,7 +65,7 @@ function navigation() {
   for (const button of [...elements.navButtons, ...elements.subnavButtons]) {
     button.click = () => context.controls.showView(button.dataset.viewTarget || button.dataset.subviewTarget);
   }
-  return { elements, ...context.controls };
+  return { elements, location, events, ...context.controls };
 }
 
 function activeViews(elements) {
@@ -89,4 +98,25 @@ test('returning from explanation retains the research agent and its navigation g
   jump(state.explanationOrigin.view);
   assertResearchNavigation(elements);
   assert.equal(state.explanationOrigin.y, 900);
+});
+
+test('data collection and model explanation switch independently and notify the visible panel', () => {
+  const { elements, location, events, jump, rememberExplanationOrigin, state } = navigation();
+  jump('data-collection');
+  assert.deepEqual(activeViews(elements), ['data-collection-view']);
+  assert.equal(location.hash, '#data-collection');
+  assert.equal(elements.subnavs.every((subnav) => subnav.hidden), true);
+  rememberExplanationOrigin();
+  jump('model-explanation');
+  assert.deepEqual(activeViews(elements), ['model-explanation-view']);
+  assert.equal(location.hash, '');
+  assert.equal(location.search, '?preview=1');
+  jump(state.explanationOrigin.view);
+  assert.deepEqual(activeViews(elements), ['data-collection-view']);
+  assert.equal(location.hash, '#data-collection');
+  assert.deepEqual(events.map((event) => [event.type, event.detail.view]), [
+    ['platform:viewchange', 'data-collection'],
+    ['platform:viewchange', 'model-explanation'],
+    ['platform:viewchange', 'data-collection'],
+  ]);
 });

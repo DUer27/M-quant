@@ -2,6 +2,21 @@
 
 > This file is the human-readable upgrade ledger. Every meaningful platform, data, factor, or strategy change should be recorded here with the matching local git commit.
 
+## 2026-11-27 · CC'text-version 分支整合
+
+- 将`v0.2.0`数据采集中心合入新分支，保留收益映射、模型解释、研究智能体默认首页和主线策略控制台。
+- 合并后157项采集层Python、12项收益映射Python和203项Node测试通过；重启后两组服务及行情缓存读取正常。
+- 详细整合范围与边界：[分支整合记录](docs/releases/20261127-branch-integration.md)。原版本标签保持不变。
+
+## 2026-11-27 · v0.2.0 数据采集中心
+
+- 保存11月23日至27日数据层建设：日线自动更新、报价15秒/分钟60秒独立调度、来源诊断与有限恢复、独立补采、分钟证据与策略准入保护、股票库及历史准备。
+- 新增独立采集中心和图表：涨跌/成交额概览、五档盘口、日内真实分钟OHLC、精简周/月聚合、量额切换、缩放和平移、历史视窗保留及周末排程说明。
+- 增加普通权限Windows登录启动与独立后台守护，区分服务中断、来源问题和手动暂停，有界重试并保存事件。
+- 合入主线`97823834`的内部策略控制台/搜索和统一Paper入口；独立模拟执行项目尚未安装，本仓库不宣称其已就绪。合并后157项Python及176项Node测试通过，守护重启及只读接口复检通过。
+- 本版功能标注、实测范围、运行方式及距真实秒级行情的剩余工作：[发布说明](docs/releases/v0.2.0-data-collection.md)。
+- 版本以Git标签`v0.2.0`定位最终同步提交；所有行情均为来源数据，模拟测试不发布为真实行情。正式闭合分钟K线及策略准入仍为0，不声明秒级行情或自动交易。
+
 ## 2026-07-10
 
 ### Import real JoinQuant latest-signal reviews and reach 2/2

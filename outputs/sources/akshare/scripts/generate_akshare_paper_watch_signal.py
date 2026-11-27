@@ -7,6 +7,7 @@ does not create prices, and does not expand the audited route boundaries.
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 from datetime import datetime
@@ -48,8 +49,8 @@ def latest_daily_input_path() -> Path:
     return max(files, key=lambda path: path.stat().st_mtime)
 
 
-def latest_factor_frame() -> pd.DataFrame:
-    raw = prepare_frame(latest_daily_input_path())
+def latest_factor_frame(input_path: Path | None = None) -> pd.DataFrame:
+    raw = prepare_frame(input_path or latest_daily_input_path())
     factors = add_factor_columns(raw)
     latest_date = factors["date"].max()
     return factors[factors["date"] == latest_date].copy()
@@ -140,7 +141,7 @@ def build_route_signal(route: dict, latest: pd.DataFrame) -> dict:
     }
 
 
-def write_doc(pack: dict) -> None:
+def write_doc(pack: dict, output_path: Path = DOC_PATH) -> None:
     lines = [
         "# AkShare 本地模拟观察最新信号",
         "",
@@ -169,35 +170,64 @@ def write_doc(pack: dict) -> None:
             codes = ", ".join(item["code"] for item in route["selected"][:20])
             lines.append(f"- Top20：{codes}")
             lines.append("")
-    DOC_PATH.parent.mkdir(parents=True, exist_ok=True)
-    DOC_PATH.write_text("\n".join(lines), encoding="utf-8")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def json_safe(value):
+    if isinstance(value, dict):
+        return {key: json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [json_safe(item) for item in value]
+    if value is pd.NA or value is pd.NaT or isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path)
+    parser.add_argument("--expected-date")
+    parser.add_argument("--result", type=Path, default=RESULT_PATH)
+    parser.add_argument("--doc", type=Path, default=DOC_PATH)
+    parser.add_argument("--record-only", action="store_true")
+    args = parser.parse_args()
+    input_path = args.input.resolve() if args.input else latest_daily_input_path()
     execution_pack = json.loads(EXECUTION_PACK_PATH.read_text(encoding="utf-8"))
-    latest = latest_factor_frame()
+    latest = latest_factor_frame(input_path)
     routes = [
         build_route_signal(route, latest)
         for route in execution_pack.get("routes", [])
     ]
+    if args.expected_date and not routes:
+        raise SystemExit("执行包没有可用观察路线，不能声称信号已生成。")
     signal_date = latest["date"].iloc[0].strftime("%Y-%m-%d") if not latest.empty else None
+    if args.expected_date and signal_date != args.expected_date:
+        raise SystemExit("新行情日期与观察信号日期不一致，未发布信号。")
+    if args.record_only:
+        for route in routes:
+            route["action"] = "record_only"
+            route["reason"] = "自动更新产生的观察信号，仅记录；需要最新交易可行性复核后再决定是否执行。"
     pack = {
         "source": "akshare_local_paper_watch_latest_signal",
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "input": str(latest_daily_input_path().relative_to(ROOT)),
+        "input": str(input_path.relative_to(ROOT)) if input_path.is_relative_to(ROOT) else str(input_path),
         "execution_pack": str(EXECUTION_PACK_PATH.relative_to(ROOT)),
         "signal_date": signal_date,
+        "observation_only": bool(args.record_only),
         "data_policy": "只使用本地已落地 AkShare 真实 OHLCV 和已审计执行包；信号只用当日及以前数据；不使用未来收益。",
         "route_count": len(routes),
         "open_allowed_count": sum(1 for route in routes if route["action"] == "paper_watch_open_allowed"),
         "record_only_count": sum(1 for route in routes if route["action"] != "paper_watch_open_allowed"),
         "routes": routes,
     }
-    RESULT_PATH.write_text(json.dumps(pack, ensure_ascii=False, indent=2), encoding="utf-8")
-    write_doc(pack)
+    pack = json_safe(pack)
+    args.result.parent.mkdir(parents=True, exist_ok=True)
+    args.result.write_text(json.dumps(pack, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
+    write_doc(pack, args.doc)
     print(json.dumps({
-        "result": str(RESULT_PATH.relative_to(ROOT)),
-        "doc": str(DOC_PATH.relative_to(ROOT)),
+        "result": str(args.result),
+        "doc": str(args.doc),
         "signal_date": signal_date,
         "open_allowed_count": pack["open_allowed_count"],
         "route_count": pack["route_count"],
