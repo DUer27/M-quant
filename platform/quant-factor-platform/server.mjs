@@ -13,6 +13,14 @@ import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { basename, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createMarketDataController } from './market-data.mjs';
+import { createIntradayTrial } from './intraday-trial.mjs';
+import { createStockLibrary } from './stock-library.mjs';
+import { createHistoryPreparation } from './history-preparation.mjs';
+import { createMinuteReadiness } from './minute-readiness.mjs';
+import { createMinuteSourceVerification } from './minute-source-verification.mjs';
+import { createServiceHealth } from './service-health.mjs';
+import { createCandleHistory } from './candle-history.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const host = process.env.HOST || '127.0.0.1';
@@ -28,6 +36,16 @@ const projectRoot = projectRootCandidates.find((path) => existsSync(join(path, '
 const outputPath = (...parts) => join(projectRoot, 'outputs', ...parts);
 const bundledPythonPath = '/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3';
 const pythonExecutable = existsSync(bundledPythonPath) ? bundledPythonPath : (process.env.PYTHON || 'python3');
+const stockLibrary = createStockLibrary({projectRoot,platformRoot:root});
+stockLibrary.initialize();
+const marketData = createMarketDataController({ projectRoot, platformRoot: root, python: pythonExecutable });
+const intradayTrial = createIntradayTrial({ projectRoot, platformRoot: root, python: pythonExecutable });
+const minuteReadiness = createMinuteReadiness({projectRoot});
+const minuteSourceVerification=createMinuteSourceVerification({projectRoot});
+const serviceHealth=createServiceHealth({projectRoot,collector:()=>intradayTrial.health()});
+const candleHistory=createCandleHistory({projectRoot,parseCsv:parseDelimitedCsv});
+const historyPreparation = createHistoryPreparation({projectRoot,platformRoot:root,python:pythonExecutable,
+  busy:()=>marketData.isRunning()||intradayTrial.backgroundBusy()});
 const realFactorResultsPath = outputPath('real-factors', 'yiwan-real-factor-results.json');
 const realFactorSummaryPath = outputPath('real-factors', 'yiwan-real-factor-summary.json');
 const researchFactorResultsPath = outputPath('research-factor-pipeline', 'yiwan-research-factor-results.json');
@@ -8132,8 +8150,125 @@ function buildExecutionHealth() {
 }
 
 async function handleApi(req, res, pathname) {
+  if(req.method==='GET'&&pathname==='/market-data-api/service/health'){sendJson(res,serviceHealth.probe());return true;}
   const state = readState();
   const url = new URL(req.url || '/', `http://localhost:${port}`);
+  if(req.method==='GET'&&pathname==='/market-data-api/intraday/candles'){
+    const version=url.searchParams.get('pool_version'),result=candleHistory.get(url.searchParams.get('code')||'',url.searchParams.get('period')||'',version===null?null:Number(version));
+    if(result.error){sendError(res,result.error,result.status);return true;}sendJson(res,result);return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/market-data-api/intraday/status') {
+    const status=intradayTrial.status();sendJson(res,{...status,service_health:serviceHealth.summary(),minute_readiness:minuteReadiness.summary(status),minute_source_verification:minuteSourceVerification.summary(status)});
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/market-data-api/intraday/summary') {
+    const status=intradayTrial.status({light:true});sendJson(res,{...status,service_health:serviceHealth.summary(),minute_readiness:minuteReadiness.summary(status),minute_source_verification:minuteSourceVerification.summary(status)});
+    return true;
+  }
+  if(req.method==='GET'&&pathname==='/market-data-api/intraday/minute-source-verification'){
+    const status=intradayTrial.status({light:true}),code=url.searchParams.get('code');
+    const result=code?minuteSourceVerification.detail(code,status):minuteSourceVerification.summary(status);
+    if(!result){sendError(res,'股票不在当前3只分钟核查样本中',400);return true;}
+    sendJson(res,result);return true;
+  }
+  if(req.method==='GET'&&['/market-data-api/intraday/minute-readiness','/market-data-api/intraday/strategy-minutes'].includes(pathname)){
+    const status=intradayTrial.status({light:true}),code=url.searchParams.get('code')||'';
+    if(pathname.endsWith('/minute-readiness')&&!code){sendJson(res,minuteReadiness.summary(status));return true;}
+    const strategy=pathname.endsWith('/strategy-minutes'),result=strategy?minuteReadiness.strategy(code,status):minuteReadiness.detail(code,status);
+    if(!result){sendError(res,'股票不在当前分钟采集范围',400);return true;}
+    sendJson(res,result,strategy&&!result.available?409:200);return true;
+  }
+  if (req.method === 'GET' && pathname === '/market-data-api/intraday/minute') {
+    const entry = intradayTrial.minute(url.searchParams.get('code') || '');
+    if (!entry) { sendError(res, '股票不在当前采集范围', 400); return true; }
+    sendJson(res, entry);
+    return true;
+  }
+  if (req.method === 'GET' && pathname === '/market-data-api/intraday/validation') {
+    const day = url.searchParams.get('date') || undefined;
+    if (day && !/^\d{4}-\d{2}-\d{2}$/.test(day)) { sendError(res, '日期格式应为YYYY-MM-DD', 400); return true; }
+    const report = url.searchParams.get('session') === '1' ? intradayTrial.validationSession() : intradayTrial.validation(day);
+    if (!report) { sendError(res, '尚未开始独立验收窗口', 404); return true; }
+    if (url.searchParams.get('download') === '1') res.setHeader('Content-Disposition', `attachment; filename="intraday-validation-${report.day}.json"`);
+    sendJson(res, report);
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/market-data-api/intraday/probe') {
+    if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) {
+      sendError(res, '只允许从本平台发起接入试验。', 403);
+      return true;
+    }
+    const body=await readJsonBody(req);
+    if(body.lane&&!['quote','minute','both'].includes(body.lane)){sendError(res,'采集类型无效',400);return true;}
+    sendJson(res, intradayTrial.start('manual',body.lane||'both'), 202);
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/market-data-api/intraday/validation-session') {
+    if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) {
+      sendError(res, '只允许从本平台开始验收。', 403); return true;
+    }
+    await readJsonBody(req);
+    sendJson(res, intradayTrial.beginValidation(), 202); return true;
+  }
+  if (req.method === 'POST' && pathname === '/market-data-api/intraday/automatic') {
+    if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) {
+      sendError(res, '只允许从本平台修改自动更新。', 403);
+      return true;
+    }
+    const body = await readJsonBody(req);
+    if (typeof body?.enabled !== 'boolean') { sendError(res, 'enabled必须为布尔值', 400); return true; }
+    sendJson(res, intradayTrial.setAutomatic(body.enabled));
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/market-data-api/intraday/backfill') {
+    if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) {
+      sendError(res, '只允许从本平台操作补采。', 403); return true;
+    }
+    const body = await readJsonBody(req);
+    if (body.action === 'run-one') sendJson(res, intradayTrial.startBackfill(), 202);
+    else if (typeof body.enabled === 'boolean') sendJson(res, intradayTrial.setBackfillEnabled(body.enabled));
+    else sendError(res, '请选择执行一项或修改补采开关', 400);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/market-data-api/status') {
+    sendJson(res, marketData.status());
+    return true;
+  }
+  if (pathname === '/market-data-api/stock-library') {
+    try {
+      if(req.method==='GET'){
+        const library=stockLibrary.status(),preparation=historyPreparation.status(),byCode=new Map(preparation.stocks.map(s=>[s.code,s]));
+        sendJson(res,{...library,history_preparation:preparation,stocks:library.stocks.map(stock=>({...stock,availability:{...stock.availability,daily_history:byCode.get(stock.code)||null}}))});return true;
+      }
+      if(req.method==='POST'){
+        if(req.headers.origin && new URL(req.headers.origin).host!==req.headers.host){sendError(res,'只允许从本平台修改股票池',403);return true;}
+        const body=await readJsonBody(req);
+        if(body.action==='prepare-history'){sendJson(res,historyPreparation.start({expectedVersion:body.expected_version}),202);return true;}
+        if(body.action==='review-daily-gaps'){sendJson(res,historyPreparation.start({expectedVersion:body.expected_version,reviewGaps:true}),202);return true;}
+        if(body.action==='history-automatic'){sendJson(res,historyPreparation.setEnabled(body.enabled));return true;}
+        const result=body.action==='preview'?stockLibrary.preview(body.stocks,body.expected_version)
+          :body.action==='save'?stockLibrary.save(body.stocks,body.expected_version)
+            :body.action==='restore'?stockLibrary.restore(body.version,body.expected_version):null;
+        if(!result){sendError(res,'操作无效',400);return true;}
+        sendJson(res,result);return true;
+      }
+    }catch(error){sendError(res,error.message,400);return true;}
+  }
+  if (req.method === 'GET' && pathname === '/market-data-api/signals') {
+    sendJson(res, marketData.signals());
+    return true;
+  }
+  if (req.method === 'POST' && pathname === '/market-data-api/refresh') {
+    if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) {
+      sendError(res, '只允许从本平台发起行情更新。', 403);
+      return true;
+    }
+    await readJsonBody(req);
+    sendJson(res, marketData.start(), 202);
+    return true;
+  }
 
   if (req.method === 'GET' && pathname === '/strategy-api/execution-health') {
     sendJson(res, buildExecutionHealth());
@@ -9007,6 +9142,7 @@ createServer(async (req, res) => {
     || pathname.startsWith('/factor-api/')
     || pathname.startsWith('/backtest-api/')
     || pathname.startsWith('/market-api/')
+    || pathname.startsWith('/market-data-api/')
     || pathname.startsWith('/research-api/')
     || pathname.startsWith('/strategy-api/')
     || pathname.startsWith('/paper-watch-api/')
@@ -9044,4 +9180,7 @@ createServer(async (req, res) => {
   createReadStream(fullPath).pipe(res);
 }).listen(port, host, () => {
   console.log(`Quant factor platform is running at http://${host}:${port}`);
+  marketData.schedule();
+  intradayTrial.schedule();
+  historyPreparation.schedule();
 });

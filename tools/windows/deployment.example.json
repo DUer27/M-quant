@@ -1,0 +1,7 @@
+{
+  "repository": "C:\\M-quant",
+  "node": "C:\\Program Files\\nodejs\\node.exe",
+  "python": "C:\\M-quant\\.venv\\Scripts\\python.exe",
+  "host": "127.0.0.1",
+  "port": 5555
+}

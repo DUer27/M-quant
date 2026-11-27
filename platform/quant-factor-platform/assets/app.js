@@ -4499,6 +4499,12 @@ function showView(viewName) {
     button.classList.toggle('active', isActive);
     button.setAttribute('aria-selected', String(isActive));
   });
+  if (resolvedView === 'data-collection' && window.location.hash !== '#data-collection') {
+    window.history.replaceState(null, '', '#data-collection');
+  } else if (resolvedView !== 'data-collection' && window.location.hash === '#data-collection') {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+  window.dispatchEvent(new CustomEvent('platform:viewchange', { detail: { view: resolvedView } }));
 }
 
 function drawChart(equity) {
@@ -5341,4 +5347,10 @@ window.addEventListener('resize', () => {
   requestAnimationFrame(syncCollapsibleData);
 });
 
+import { mountDataCollectionCenter } from './data-collection.js';
+mountDataCollectionCenter();
+window.addEventListener('hashchange', () => {
+  if (window.location.hash === '#data-collection') showView('data-collection');
+});
+if (window.location.hash === '#data-collection') showView('data-collection');
 boot();

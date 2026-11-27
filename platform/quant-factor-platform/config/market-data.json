@@ -1,0 +1,20 @@
+{
+    "enabled":  true,
+    "profile":  "core50",
+    "label":  "核心50股票池",
+    "symbols_file":  "outputs/sources/akshare/symbols/core_liquid_50.csv",
+    "start_date":  "2024-01-01",
+    "schedule_time":  "18:30",
+    "completed_bar_after":  "16:30",
+    "timezone":  "Asia/Shanghai",
+    "min_history_days":  240,
+    "max_workers":  2,
+    "backfill_workers": 1,
+    "source_interval_seconds": 0.6,
+    "source_failure_threshold": 3,
+    "source_cooldown_seconds": 300,
+    "request_timeout":  10,
+    "retries":  1,
+    "retry_interval_minutes":  30,
+    "max_auto_attempts_per_slot":  3
+}

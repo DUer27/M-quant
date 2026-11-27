@@ -2,6 +2,14 @@
 
 > This file is the human-readable upgrade ledger. Every meaningful platform, data, factor, or strategy change should be recorded here with the matching local git commit.
 
+## 2026-11-27 · v0.2.0 数据采集中心
+
+- 保存11月23日至27日数据层建设：日线自动更新、报价15秒/分钟60秒独立调度、来源诊断与有限恢复、独立补采、分钟证据与策略准入保护、股票库及历史准备。
+- 新增独立采集中心和图表：涨跌/成交额概览、五档盘口、日内真实分钟OHLC、精简周/月聚合、量额切换、缩放和平移、历史视窗保留及周末排程说明。
+- 增加普通权限Windows登录启动与独立后台守护，区分服务中断、来源问题和手动暂停，有界重试并保存事件。
+- 本版功能标注、实测范围、运行方式及距真实秒级行情的剩余工作：[发布说明](docs/releases/v0.2.0-data-collection.md)。
+- 版本以Git标签`v0.2.0`定位最终同步提交；所有行情均为来源数据，模拟测试不发布为真实行情。正式闭合分钟K线及策略准入仍为0，不声明秒级行情或自动交易。
+
 ## 2026-07-10
 
 ### Import real JoinQuant latest-signal reviews and reach 2/2

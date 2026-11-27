@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>量化因子策略平台</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260913-progressive-dashboard" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20261125-data-collection" />
     <script src="/config/app-config.js"></script>
   </head>
   <body>
@@ -19,6 +19,7 @@
         </div>
         <nav class="nav" aria-label="主导航">
           <button data-view-target="dashboard">总览</button>
+          <button data-view-target="data-collection" aria-controls="data-collection-view">数据采集中心</button>
           <button class="group-nav active" data-view-target="research-strategy" aria-controls="research-strategy-subnav">研究与策略</button>
           <button class="group-nav" data-view-target="evidence-retest" aria-controls="evidence-retest-subnav">证据与复测</button>
           <button data-view-target="paper-watch">准模拟盘</button>
@@ -48,6 +49,186 @@
             <span id="data-load-text">数据加载中…</span>
           </div>
         </header>
+
+        <div id="data-collection-view" class="view" aria-labelledby="data-collection-title">
+          <section class="panel collection-center-intro">
+            <div><p class="eyebrow">数据服务</p><h2 id="data-collection-title">数据采集中心</h2><p>集中查看行情采集、更新进度、图表和质量检查。切换页面不会停止后台采集。</p></div>
+            <span class="collection-center-note">分钟闭合规则仍待核实 · 当前仅供观察</span>
+          </section>
+          <div class="collection-center-tabs view-subnav-actions" role="tablist" aria-label="数据采集中心功能">
+            <button id="collection-tab-stocks" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="stock-library-panel" data-collection-target="stocks">股票数据管理库</button>
+            <button id="collection-tab-monitor" type="button" role="tab" class="active" aria-selected="true" aria-controls="collection-monitor-pane" data-collection-target="monitor">采集监控</button>
+            <button id="collection-tab-charts" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="collection-charts-pane" data-collection-target="charts">行情图表</button>
+            <button id="collection-tab-quality" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="collection-quality-pane" data-collection-target="quality">质量与记录</button>
+            <button id="collection-tab-daily" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="market-data-panel" data-collection-target="daily">日线更新</button>
+          </div>
+        <section id="intraday-trial-panel" class="panel market-data-panel" aria-label="盘中数据采集">
+          <div class="panel-head">
+            <div><h2>盘中数据</h2><span>报价、五档盘口与分钟走势 · 仅观察</span></div>
+            <div class="market-data-actions"><strong data-intraday="state">正在连接…</strong></div>
+          </div>
+          <div id="collection-monitor-pane" data-collection-pane="monitor" role="tabpanel" aria-labelledby="collection-tab-monitor">
+          <section class="service-health-card" data-service="card" data-tone="waiting" aria-label="后台常驻与中断告警">
+            <div class="panel-head"><h3>后台常驻与中断告警</h3><strong data-service="state" role="status">读取守护状态…</strong></div>
+            <p data-service="description">服务与行情来源分开检查。</p><p class="library-source"><span data-service="heartbeat"></span> · <span data-service="retry"></span></p>
+            <details><summary>查看最近中断、恢复与停止记录</summary><ol data-service="events"></ol></details>
+          </section>
+          <section id="automatic-collection-monitor" class="collection-monitor" data-monitor="card" data-tone="waiting" aria-label="自动采集监控">
+            <div class="collection-monitor-head">
+              <div><p class="collection-eyebrow" data-intraday="pool-label">自动采集监控</p><h3 data-monitor="status" role="status" aria-live="polite">正在连接后台…</h3><p data-monitor="description">读取真实后台状态和采集记录。</p></div>
+              <div class="market-data-actions"><button type="button" data-intraday="automatic" disabled>读取开关中…</button><button type="button" data-intraday="probe">手动采集一次</button></div>
+            </div>
+            <div class="collection-kpis">
+              <div><span>自动采集开关</span><strong data-monitor="enabled">—</strong><small>仅在交易时段自动请求</small></div>
+              <div><span>当前采集间隔</span><strong data-monitor="interval">—</strong><small>按数据类型分别调度，异常自动降频</small></div>
+              <div><span>下一次盘中自动采集</span><strong data-monitor="next">等待后台确认</strong><small data-monitor="next-at"></small><small data-monitor="next-reason"></small></div>
+              <div><span>今日自动完成</span><strong data-monitor="auto-count">—</strong><small data-monitor="last-auto">仅统计自动触发的盘中轮次</small></div>
+            </div>
+            <div class="collection-progress-grid">
+              <div><div class="collection-progress-label"><span>本轮报价与盘口</span><strong data-monitor="quotes">—</strong></div><div class="collection-progress-track"><div data-monitor="quote-progress" role="progressbar" aria-label="本轮报价覆盖" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div></div></div>
+              <div><div class="collection-progress-label"><span>本轮分钟数据</span><strong data-monitor="minutes">—</strong></div><div class="collection-progress-track"><div data-monitor="minute-progress" role="progressbar" aria-label="本轮分钟覆盖" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div></div></div>
+            </div>
+            <p class="collection-result">最近完成：<strong data-monitor="result">尚无记录</strong></p>
+            <div class="split-lane-grid" data-intraday="lanes" hidden></div>
+            <div class="market-data-actions"><button type="button" data-intraday="probe-quote" disabled>只更新报价</button><button type="button" data-intraday="probe-minute" disabled>只更新分钟</button></div>
+            <p data-monitor="scope" class="library-source"></p>
+            <div class="collection-timeline"><h4>最近自动采集动态</h4><ol data-monitor="timeline"><li>读取中…</li></ol></div>
+            <div class="collection-monitor-footer"><span data-monitor="heartbeat">等待后台状态</span><span>网页每5秒同步状态 · 倒计时每秒变化 · 服务需保持运行</span></div>
+            <span data-intraday="monitor-connection" class="library-source"></span>
+          </section>
+          <p data-intraday="summary"></p>
+          <p data-intraday="pool-version" class="library-source"></p>
+          <p data-intraday="freshness"></p>
+          <p data-intraday="source-health" class="library-source" role="status"></p>
+          <p data-intraday="notice" role="status" aria-live="polite"></p>
+          <p data-intraday="schedule" class="library-source"></p>
+          </div>
+          <div id="collection-charts-pane" data-collection-pane="charts" role="tabpanel" aria-labelledby="collection-tab-charts" hidden>
+          <div class="intraday-toolbar">
+            <label>选择股票 <select data-intraday="stock" aria-label="选择图表股票"></select></label>
+            <label>报价来源 <select data-intraday="quote-source" aria-label="选择报价来源"><option value="sina.quote">新浪</option><option value="tencent.quote">腾讯</option></select></label>
+            <label>量额指标 <select data-intraday="activity-metric" aria-label="选择成交指标"><option value="volume">成交量</option><option value="amount">成交额</option></select></label>
+            <label>走势 <select data-intraday="price-view" aria-label="选择走势类型"><option value="candles">K线</option><option value="line">分时线</option></select></label>
+            <label>周期 <select data-intraday="candle-period" aria-label="选择K线周期"><option value="intraday">日内 · 1分钟</option><option value="week">周K · 最近12周</option><option value="month">月K · 最近12月</option></select></label>
+            <label>日内范围 <select data-intraday="candle-window" aria-label="选择日内K线显示范围"><option value="all">当天全部</option><option value="60">最近60根</option><option value="30">最近30根</option><option value="custom" disabled>自定义缩放范围</option></select></label>
+            <label>筛选列表 <input data-intraday="chart-filter" type="search" placeholder="股票名称或代码" aria-label="筛选图表股票列表"></label>
+            <span>点击排行或状态卡切换股票 · 红涨绿跌 · 概览始终统计当前来源的整个股票池</span>
+          </div>
+          <div data-chart="overview" class="intraday-overview" aria-label="股票池概览"></div>
+          <p data-chart="scope-note" class="library-source"></p>
+          <div class="intraday-chart-grid intraday-overview-grid">
+            <section class="intraday-chart-card"><h3>股票池涨跌分布 <small>仅当前股票池，非全市场</small></h3><div data-chart="breadth"></div></section>
+            <section class="intraday-chart-card"><h3>累计成交额 Top 6 <small>单一报价来源 · 元</small></h3><div data-chart="turnover"></div></section>
+          </div>
+          <div class="intraday-chart-grid">
+            <section class="intraday-chart-card"><h3>股票池涨跌排行 <small>较昨收 · 列表内滚动</small></h3><p data-chart="ranking-note" class="library-source"></p><div data-chart="changes" class="intraday-ranking-scroll" tabindex="0" aria-label="股票池涨跌排行列表"></div></section>
+            <section class="intraday-chart-card intraday-price-card">
+              <div data-chart="selected" class="intraday-selected"></div>
+              <div data-chart="selected-metrics" class="intraday-selected-metrics" aria-label="所选股票行情摘要"></div>
+              <p data-chart="minute-note" class="library-source"></p>
+              <p data-intraday="chart-error" class="library-source" role="status"></p>
+              <h3 data-chart="price-title">日内一分钟K线 · 元 · 红涨绿跌，灰色平盘</h3>
+              <div data-chart="viewport-controls" class="candle-viewport-controls" aria-label="K线缩放与平移">
+                <button type="button" data-intraday="candle-zoom-in" aria-label="放大K线">＋ 放大</button><button type="button" data-intraday="candle-zoom-out" aria-label="缩小K线">− 缩小</button>
+                <button type="button" data-intraday="candle-earlier">← 前移</button><button type="button" data-intraday="candle-later">后移 →</button>
+                <button type="button" data-intraday="candle-latest">回到最新</button><button type="button" data-intraday="candle-reset">重置</button>
+                <span data-chart="viewport-status" role="status"></span><small>价格和量额同步缩放 · Ctrl＋滚轮也可缩放</small>
+              </div>
+              <div data-chart="price" class="intraday-price-plot"></div>
+              <p data-chart="candle-inspector" class="candle-inspector" role="status">悬停、点选或键盘聚焦K线查看原始数值。</p>
+              <h3 data-chart="activity-title">分钟成交量（股）</h3><div data-chart="volume" class="intraday-volume-plot"></div>
+            </section>
+          </div>
+          <div class="intraday-chart-grid intraday-secondary-grid">
+            <section class="intraday-chart-card"><h3>所选股票五档盘口 <small>价格：元 · 数量：股</small></h3><div data-chart="book"></div></section>
+            <section class="intraday-chart-card"><h3>报价与分钟采集耗时 <small>独立展示最近20轮</small></h3><div data-chart="latency"></div></section>
+          </div>
+          <section class="intraday-chart-card intraday-health-card"><h3>数据覆盖与新鲜度 <small>当前选择的报价来源</small></h3><div data-chart="health-summary" class="intraday-health-summary"></div><details><summary>展开逐股状态与更新时间</summary><div data-chart="health" class="intraday-health-grid"></div></details></section>
+          </div>
+          <div id="collection-quality-pane" data-collection-pane="quality" role="tabpanel" aria-labelledby="collection-tab-quality" hidden>
+          <p data-intraday="storage" class="library-source" role="status"></p>
+          <section class="intraday-chart-card" aria-label="独立补采队列">
+            <div class="panel-head"><h3>独立补采队列 <small data-intraday="backfill-state">等待连接</small></h3><div class="market-data-actions"><button type="button" data-intraday="backfill-run" disabled>休市执行一项</button><button type="button" data-intraday="backfill-toggle">读取补采开关</button></div></div>
+            <p data-intraday="backfill-summary"></p><p data-intraday="backfill-note" class="library-source"></p>
+            <p data-intraday="backfill-explanation" class="backfill-explanation" role="status"></p>
+            <details><summary>查看最近20项任务与未完成原因</summary><div class="intraday-toolbar"><label>记录范围 <select data-intraday="backfill-filter"><option value="latest">最近数据日 · 当前股票池</option><option value="all">全部记录（含历史/移出股票）</option></select></label><span data-intraday="backfill-list-scope"></span></div><div class="intraday-table-scroll backfill-table"><table><thead><tr><th>股票</th><th>来源</th><th>日期</th><th>目标标签时段</th><th>未覆盖/目标标签</th><th>状态</th><th>请求尝试</th><th>原因与处理</th></tr></thead><tbody data-intraday="backfill-tasks"></tbody></table></div></details>
+          </section>
+          <section class="intraday-chart-card" aria-label="逐股更新诊断与定向恢复">
+            <div class="panel-head"><h3>逐股更新诊断与定向恢复</h3><label>显示 <select data-intraday="diagnostics-filter"><option value="attention">需关注与复查</option><option value="all">全部观测</option></select></label></div>
+            <p data-intraday="diagnostics-summary">等待逐股诊断</p>
+            <div class="intraday-table-scroll"><table><thead><tr><th>股票</th><th>来源 / 类型</th><th>阶段</th><th>观察结果</th><th>前次源时间</th><th>本次源时间</th><th>接收时间</th><th>内容</th><th>接收时源时间差</th></tr></thead><tbody data-intraday="diagnostics-entries"></tbody></table></div>
+            <details open><summary>定向恢复过程与预算</summary><div data-intraday="diagnostics-recovery"></div></details>
+          </section>
+          <div class="intraday-validation" aria-label="分钟标签与缺口核查">
+            <div class="panel-head"><h3>分钟标签与缺口核查 <small data-intraday="audit-state">等待样本</small></h3></div>
+            <p data-intraday="audit-summary"></p>
+            <details><summary>查看核查样本的时间标签、修订与疑似缺口</summary><div data-intraday="audit-details"></div></details>
+          </div>
+          <section class="intraday-chart-card" aria-label="分钟K线状态与策略准入">
+            <div class="panel-head"><h3>分钟K线状态与策略准入</h3><span class="tag neutral">观察与策略取数分开</span></div>
+            <p data-intraday="readiness-summary">等待使用规则检查…</p>
+            <details><summary>查看分钟池各股状态数量</summary><div class="intraday-table-scroll"><table><thead><tr><th>股票</th><th>时效状态</th><th>观察标签</th><th>可能形成中</th><th>边界标签待核实</th><th>闭合待验证</th><th>隔离候选</th><th>内部疑似缺失标签</th><th>边界待核查标签</th><th>策略使用</th></tr></thead><tbody data-intraday="readiness-rows"></tbody></table></div></details>
+            <div class="intraday-toolbar"><label>核查样本 <select data-intraday="readiness-stock" aria-label="选择分钟状态核查样本"></select></label><span>只读取已有数据，不额外请求行情。</span></div>
+            <p data-intraday="readiness-error" role="status"></p><div class="intraday-table-scroll" data-intraday="readiness-details"></div>
+            <details open><summary>来源核实与边界观测</summary>
+              <p data-intraday="source-review-summary">读取来源核实进度…</p>
+              <div data-intraday="source-review-references" class="library-source"></div>
+              <div data-intraday="source-review-records"></div>
+              <details><summary>尚缺哪些确认依据</summary><div data-intraday="source-review-pending"></div></details>
+              <p class="library-source">被动记录现有采集的3只核查样本，不增加行情请求；导入历史响应不计作新的盘中证据，不触发策略准入或统一连续验收。</p>
+            </details>
+          </section>
+          <section class="intraday-chart-card intraday-validation-card">
+            <div class="panel-head"><h3>盘中连续验收 <small data-intraday="validation-state">等待盘中记录</small></h3><div class="market-data-actions"><button type="button" data-intraday="begin-validation">开始新验收窗口</button><a data-intraday="validation-download" href="/market-data-api/intraday/validation?download=1">下载当前验收报告</a><a href="/market-data-api/intraday/validation?download=1">查看全天记录</a></div></div>
+            <p data-intraday="validation-window" class="library-source"></p>
+            <p data-intraday="validation-summary"></p><p class="library-source" data-intraday="validation-timing"></p>
+            <details><summary>查看验收条件与未通过原因</summary><div data-intraday="validation-reasons"></div></details>
+          </section>
+          <details><summary>查看两路报价原始数值</summary><div class="intraday-table-scroll"><table><tbody data-intraday="quotes"></tbody></table></div></details>
+          <p class="library-source" data-intraday="timestamp-note"></p>
+          <details><summary>查看一分钟接口样本</summary><div data-intraday="minutes"></div></details>
+          <details><summary>查看各来源接入耗时与失败记录</summary><div data-intraday="results"></div></details>
+          <details><summary>查看自动降频、恢复与暂停记录</summary><div data-intraday="events"></div></details>
+          <details><summary>查看最近20轮采集验收记录</summary><div data-intraday="history"></div></details>
+          </div>
+          <div class="intraday-toast-wrap"><div data-intraday="toast" class="intraday-toast" role="status" aria-live="polite" hidden></div><button type="button" data-intraday="dismiss-toast">清除弹出提示</button></div>
+        </section>
+        <section id="stock-library-panel" class="panel market-data-panel" data-collection-pane="stocks" role="tabpanel" aria-labelledby="collection-tab-stocks" hidden>
+          <div class="panel-head"><div><h2>股票数据管理库</h2><p>选择采集对象与数据类型。备用股票是采集示例，不代表投资建议。</p></div><button type="button" data-stock-library="reload">重新加载 / 丢弃草稿</button></div>
+          <p data-stock-library="summary">读取股票管理库…</p><p data-stock-library="message" role="status" aria-live="polite"></p>
+          <div class="stock-history-preparation">
+            <h3>换股后的历史数据准备</h3>
+            <p data-stock-library="preparation" role="status" aria-live="polite">读取准备进度…</p>
+            <div class="market-data-actions"><button type="button" data-stock-library="prepare">检查并准备历史</button><button type="button" data-stock-library="history-toggle">暂停自动准备</button></div>
+            <p>保存名单后，休市时自动检查历史并分批补采，每批最多3只。已通过校验的旧历史继续复用；当日更新状态另行显示。缺口可能涉及停牌，仍需核实。分钟数据是否闭合继续在质量页检查。</p>
+          </div>
+          <details class="stock-history-preparation" open><summary>历史日线缺口交叉核查</summary>
+            <p data-stock-library="gap-summary">等待核查记录…</p><button type="button" data-stock-library="review-gaps">核查历史缺口（每批最多3只）</button>
+            <div data-stock-library="gap-details"></div>
+            <p>列出缺失日期，尝试其他来源。找到的行情先保存为候选；多个来源都缺失也不能单独证明停牌。不会补零或直接拼接到主历史。</p>
+          </details>
+          <div class="intraday-toolbar"><label>搜索 <input data-stock-library="search" type="search" placeholder="股票代码或名称"></label><label>范围 <select data-stock-library="filter"><option value="all">全部股票</option><option value="active">已选采集</option><option value="inactive">管理库备用</option></select></label><span>分钟自动包含报价，核查样本最多3只，报价池最多50只。</span></div>
+          <div class="intraday-table-scroll"><table><thead><tr><th>代码</th><th>名称</th><th>日线</th><th>报价</th><th>分钟</th><th>核查</th><th>优先级</th><th>数据准备情况</th><th>操作</th></tr></thead><tbody data-stock-library="rows"></tbody></table></div>
+          <details><summary>批量加入股票管理库</summary><label>每行：代码,名称<textarea data-stock-library="import" rows="4" placeholder="600519,贵州茅台&#10;600036,招商银行"></textarea></label><button type="button" data-stock-library="add">加入草稿（默认不采集）</button></details>
+          <div class="market-data-actions"><button type="button" data-stock-library="preview">预览变更</button><button type="button" data-stock-library="apply" disabled>保存，下一轮生效</button></div>
+          <div data-stock-library="changes" class="library-source"></div>
+          <details><summary>恢复此前股票池名单</summary><label>版本 <select data-stock-library="restore-version"></select></label><button type="button" data-stock-library="restore">恢复所选名单</button><p>恢复会生成新版本。停采不会删除历史行情、缓存或运行记录。</p></details>
+        </section>
+        <section id="market-data-panel" class="panel market-data-panel" data-collection-pane="daily" role="tabpanel" aria-labelledby="collection-tab-daily" hidden>
+          <div class="panel-head">
+            <div><h2>日线更新</h2><span data-market="scope">当前日线股票池</span></div>
+            <div class="market-data-actions"><strong data-market="state">正在连接…</strong><button type="button" data-market="refresh">立即更新行情</button></div>
+          </div>
+          <p>数据截至 <strong data-market="date">尚未校验</strong> · <span data-market="coverage">等待校验</span></p>
+          <p class="library-source" data-market="schedule"></p>
+          <p data-market="message">按真实数据日期和覆盖率检查，不以文件生成时间代替行情时间。</p>
+          <p class="library-source" data-market="timing"></p>
+          <p class="library-source" data-market="scheduler"></p>
+          <details data-market="diagnostics"><summary>查看更新耗时、数据源与待补齐明细</summary><div data-market="diagnostic-list"></div></details>
+          <details><summary>最近10轮更新记录</summary><div data-market="run-list"></div></details>
+          <details data-market="signals"><summary>查看本轮观察信号</summary><div data-market="signal-list">新数据通过完整性检查后，才会展示本轮观察信号。</div></details>
+        </section>
+        </div>
 
         <div id="research-strategy-subnav" class="view-subnav" data-view-subnav="research-strategy" aria-label="研究与策略子页面">
           <div class="view-subnav-heading">
@@ -1265,6 +1446,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/app.js?v=20260913-paper-strategy-management"></script>
+    <script type="module" src="/assets/app.js?v=20261125-data-collection"></script>
   </body>
 </html>
